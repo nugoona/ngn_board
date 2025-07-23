@@ -3,3 +3,5 @@ __pycache__/
 *.env
 service-account.json
 *.pyc
+node_modules
+lh_report*.html

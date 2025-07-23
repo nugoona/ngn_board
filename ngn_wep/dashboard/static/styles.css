@@ -1,0 +1,2132 @@
+/* ================================
+   1) 공통 페이지 스타일
+================================ */
+body {
+  font-family: 'Pretendard', sans-serif;
+  background: linear-gradient(to bottom, #dceefc 0%, #a0c4ff 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  color: #333;
+  margin: 0;
+  padding-top: 80px; /* 필터가 콘텐츠를 가리지 않도록 */
+}
+
+.container {
+width: 100%;
+max-width: none;  /* 💥 너비 제한 없애기 */
+padding: 0 1vw;   /* 💡 좌우 여백만 약간 */
+box-sizing: border-box;
+}
+
+
+/* ================================
+ 2) 네비게이션 + 필터
+================================ */
+.nav-buttons {
+  position: fixed;
+  top: 10px;
+  right: 20px;
+  z-index: 1100;
+  display: flex;
+  gap: 10px;
+}
+.nav-buttons a {
+  padding: 10px 18px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s ease-in-out;
+  color: white;
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5);
+}
+.nav-buttons a.active {
+  background-color: #0C4779;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+}
+.nav-buttons a:not(.active) {
+  background-color: #186BB3;
+}
+.nav-buttons a:hover {
+  background-color: #282727;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+}
+
+/* 필터 영역 (상단 고정) */
+.filter-wrapper {
+  background: #2A7EC6;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 커스텀 드롭다운 */
+.custom-dropdown {
+  position: relative;
+  background: white;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  width: 180px;
+}
+.custom-dropdown select {
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* 날짜 직접입력 영역 */
+.date-range-container {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+#startDate,
+#endDate {
+  width: 130px;
+  padding: 8px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: white;
+}
+#applyDateFilter {
+  background-color: #2A7EC6;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#applyDateFilter:hover {
+  background-color: #1f5ea8;
+}
+
+/* ================================
+ ✅ 테이블 컨테이너
+================================ */
+.table-wrapper {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  /* 폭 자체는 .left-wide / .right-narrow에서 결정 */
+}
+
+/* ✅ 모든 테이블 헤더 고정 */
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #2A7EC6; /* 배경 필수 */
+}
+
+/* 테이블 높이가 넘어가면 내부 스크롤 */
+.table-content-container {
+  position: relative;
+  max-height: 450px; /* 필요 시 높이 조정 */
+  overflow: auto;    /* 스크롤 활성화 */
+}
+
+/* 테이블 기본 스타일 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+/* 폰트·셀 간격 조금 축소 */
+th, td {
+  font-size: 15px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  text-align: center;
+  white-space: nowrap;
+}
+th {
+  background-color: #2A7EC6;
+  color: white;
+}
+
+/* ✅ 로딩 시 테이블만 반투명 */
+.table-wrapper.loading .table-content-container table {
+  opacity: 0.5;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* ✅ 로딩 중일 때 클릭 차단은 오버레이로만 처리 (전체 박스에 영향 X) */
+.table-wrapper .loading-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.table-wrapper.loading .loading-overlay {
+  display: flex !important;
+  pointer-events: auto;
+}
+
+
+/* ================================
+ 좌우 비율 
+================================ */
+.tables-row {
+  display: flex;
+  flex-wrap: nowrap;  /* ✅ 강제로 한 줄 유지 */
+  gap: 20px;
+  overflow-x: auto; 
+}
+
+.table-wrapper.left-wide,
+.left-wide {
+  flex: 1 1 62%;
+  min-width: 0;
+}
+
+.table-wrapper.right-narrow,
+.right-narrow {
+  flex: 1 1 36%;
+  min-width: 0;
+}
+
+
+/* ================================
+ 로딩 오버레이 (스피너)
+================================ */
+.loading-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+.table-wrapper.loading .loading-overlay {
+  display: flex !important;
+  pointer-events: auto;
+}
+.spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+.loading-text {
+  font-size: 14px;
+  color: #333;
+}
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 
+
+
+/* ================================
+ 페이지네이션, 드롭다운
+================================ */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 15px;
+  gap: 5px;
+}
+.pagination-btn {
+  background-color: #2A7EC6;
+  color: white;
+  padding: 6px 10px;
+  margin: 5px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+.pagination-btn.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.pagination-btn.active {
+  background-color: #186BB3;
+  color: #fff;
+  border: 2px solid #0C4779;
+}
+.dropdown {
+  padding: 8px 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+  min-width: 140px;
+}
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+/* ================================
+   성과 요약 (Full Width)
+================================ */
+
+.performance-summary-full-width {
+  margin-top: 20px;  /* 👈 적당히 띄워주기 */
+}
+
+
+.performance-summary-section {
+  background-color: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  margin-bottom: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+}
+
+/* ✅ 제목 스타일 */
+.summary-header {
+  font-size: 24px;
+  font-weight: bold;
+  color: #272424;
+  margin-bottom: 16px;
+}
+
+/* ✅ 카드 줄: 한 줄 유지, 카드 자동 확장 */
+.summary-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  gap: 15px;
+}
+
+/* ✅ 사이트 성과 요약 - 한 줄 유지 */
+.site-summary {
+  flex-wrap: nowrap;
+}
+
+/* ✅ 총 광고 성과 - 한 줄 유지 */
+.ad-summary {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+/* ✅ 카드 공통 스타일 */
+.summary-card {
+  background-color: #E7EDF6;
+  padding: 20px;
+  border-radius: 8px;
+  flex: 1 1 0;
+  min-width: 120px;
+  box-shadow: none;
+  transition: opacity 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ✅ 카드 내부 라벨 */
+.summary-card .label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #7A7C7D;
+  margin-bottom: 8px;
+}
+
+/* ✅ 카드 내부 값 */
+.summary-card .value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #000;
+  text-align: right;
+}
+
+.performance-summary-wrapper {
+  position: relative;
+  min-height: 180px; /* ✅ 로딩 스피너를 카드 영역 중앙에 위치시키기 위해 추가 */
+}
+
+.performance-summary-wrapper.loading .summary-grid .summary-card {
+  opacity: 0.4;
+}
+
+.performance-summary-wrapper.loading #loadingOverlayPerformanceSummary {
+  display: flex !important;
+}
+
+
+
+/* ✅ 로딩 오버레이 설정 (카드 위에만 표시, 배경 영향 X) */
+#loadingOverlayPerformanceSummary {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent; /* 배경 흐림 없음 */
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ✅ 로딩 활성화 시 스피너 표시 */
+.performance-summary-wrapper.loading #loadingOverlayPerformanceSummary {
+  display: flex !important;
+}
+
+
+
+/* ================================
+ 구분 제목 스타일
+================================ */
+
+
+
+/* 📌 새로운 구분 제목 스타일 */
+.section-divider {
+  /* 예시 스타일 */
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  background-color: #597fa5;
+  padding: 20px 30px;
+  border-radius: 0px;
+  margin: 30px 0 16px 0; /* 위 50, 아래 20px */
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+/* 좌측 넓게(약 65%), 우측 좁게(약 35%) */
+.left-wide {
+  flex: 0 0 65%;
+  max-width: 65%;
+  min-width: 0;
+}
+
+.right-narrow {
+  flex: 0 0 35%;
+  max-width: 35%;
+  min-width: 0;
+}
+
+/* ================================
+ 월별 매출 유입 테이블 스타일 (개별 테이블)
+================================ */
+.monthly-summary-table table {
+background-color: #f8f9fa;
+color: #333;
+font-size: 13.5px;
+border-collapse: collapse;
+width: 100%;
+}
+
+.monthly-summary-table th {
+background-color: #2A7EC6;
+color: white;
+font-weight: bold;
+padding: 6px 10px;
+text-align: center;
+border: 1px solid #ccc;
+min-width: 60px;
+}
+
+.monthly-summary-table td {
+padding: 6px 10px;
+border: 1px solid #ddd;
+text-align: right;
+white-space: nowrap;
+}
+
+.monthly-summary-table td:first-child {
+text-align: left;
+}
+
+.monthly-summary-table tr:hover {
+background-color: #eef3fa;
+}
+
+/* ================================
+ 월별 매출 유입 전체 wrapper (테이블 + 차트)
+================================ */
+.monthly-sales-traffic-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 30px;
+  background-color: transparent !important;  /* ✅ 내부 배경 제거 */
+  padding: 0 0;                               /* ✅ padding도 outer에서 처리 */
+  border-radius: 0 !important;               /* ✅ 이중 테두리 제거 */
+  box-shadow: none !important;               /* ✅ 이중 그림자 제거 */
+  box-sizing: border-box;
+  width: 100%;
+}
+
+
+/* 왼쪽 테이블 wrapper */
+.monthly-summary-table-wrapper {
+flex: 1 1 35%;
+min-width: 280px;
+max-width: 400px;
+}
+
+/* 오른쪽 차트 wrapper */
+.monthly-summary-chart-wrapper {
+flex: 1 1 65%;
+min-width: 300px;
+}
+
+/* 차트 크기 고정 (canvas 안에 있음) */
+.monthly-summary-chart-wrapper canvas {
+background-color: transparent !important;
+width: 100%;
+height: 360px;
+}
+
+/* ================================
+ ✅ 상품군 매출 비중 (Chart + Table)
+================================ */
+.table-wrapper.full-wide {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.product-sales-ratio-wrapper {
+  background: white;
+  padding: 0px;
+  margin-top: 30px;
+  border-radius: 12px;
+  box-shadow: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 50px; /* ✅ 테이블과 차트 사이 간격 충분히 확보 */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ✅ 왼쪽 테이블 */
+.product-sales-ratio-table {
+  flex: 0.9;
+  min-width: 45%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ✅ 오른쪽 차트 */
+.product-sales-ratio-chart {
+  flex: 1.1;
+  min-width: 45%;
+  display: flex;
+  justify-content: center; /* 차트 중앙 배치 */
+  align-items: center;     /* 차트 중앙 배치 */
+  position: relative;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* ✅ 차트 박스 스타일 */
+.pie-chart-container {
+  position: relative;
+  width: 100%;
+  padding: 20px 20px 40px;
+  border: 2px solid black;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+/* ✅ 차트 라벨 */
+.pie-label {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  background-color: black;
+  color: white;
+  padding: 5px 12px;
+  font-size: 17px;
+  font-weight: bold;
+  border-radius: 6px;
+  text-align: center;
+  z-index: 10;
+}
+
+/* ✅ 캔버스 wrapper */
+.pie-chart-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* ✅ 파이 차트 크기 */
+.pie-chart-wrapper canvas {
+  width: 100%;
+  height: 360px;
+  max-width: 100%;
+  max-height: 360px;
+}
+
+
+
+
+
+/* ========================
+ META 광고 성과 탭 스타일
+======================== */
+.meta-ads-tabs {
+display: flex;
+flex-wrap: wrap;
+gap: 12px;
+margin: 20px 0 14px 0;
+border-bottom: 2px solid #d0d7e2;
+padding-bottom: 6px;
+overflow-x: auto;
+scrollbar-width: thin;
+}
+
+/* ✅ 탭 버튼 스타일 수정 (탭 너비, 패딩 조정) */
+.tab-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* ✅ 가운데 정렬 */
+  background-color: #f5f7fa;
+  color: #333;
+  padding: 12px 30px; /* ✅ 패딩 키움 */
+  border-radius: 8px 8px 0 0; /* ✅ 모서리 덜 둥글게 */
+  font-weight: 600;
+  font-size: 16px; /* ✅ 글자 약간 키움 */
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  transition: background 0.3s ease, color 0.3s ease;
+  min-width: 140px; /* ✅ 탭 가로폭 넓힘 */
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ 탭 활성화 스타일 */
+.tab-btn.active {
+  background-color: #2A7EC6;
+  color: white;
+  border-color: #2A7EC6;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2); /* ✅ 그림자 조금 강하게 */
+}
+
+/* ✅ 선택된 필터 태그 스타일 */
+.filter-tag {
+  background-color: #d0e7fa;
+  color: #105a97;
+  padding: 6px 12px; /* ✅ 패딩 키워서 태그 커지게 */
+  border-radius: 8px; /* ✅ 덜 둥글게 */
+  font-size: 14px; /* ✅ 폰트 키움 */
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* ✅ 그림자 추가 */
+}
+
+/* ✅ 태그 내부 X 버튼 (remove-tag) 스타일 */
+.filter-tag .remove-tag {
+  margin-left: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #105a97;
+  font-size: 18px; /* ✅ X 크기 키움 */
+  line-height: 1;
+}
+
+
+/* ✅ 날짜 범위 박스 */
+.selected-info-text {
+margin-bottom: 0;
+font-weight: bold;
+font-size: 14px;
+color: #2A7EC6;
+padding: 6px 0;
+}
+
+/* ✅ 테이블 컨테이너 */
+.meta-ads-table-container {
+overflow-x: auto;
+margin-bottom: 30px;
+position: relative; /* 로딩 오버레이 대응을 위해 추가 */
+}
+
+.meta-ads-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 14.2px;
+background-color: #fff;
+}
+
+.meta-ads-table th,
+.meta-ads-table td {
+padding: 10px 12px;
+border: 1px solid #e0e0e0;
+text-align: center;
+white-space: nowrap;
+}
+
+.meta-ads-table th {
+background-color: #2A7EC6;
+color: white;
+font-weight: 600;
+font-size: 13.5px;
+transition: background-color 0.2s ease;
+cursor: pointer;
+}
+
+/* ✅ 정렬된 컬럼 강조 */
+.meta-ads-table th.sorted {
+background-color: #1f65a3 !important;
+color: white;
+}
+
+/* ✅ 마우스 오버 효과 */
+.meta-ads-table th:hover {
+background-color: #3b90d6 !important;
+}
+
+/* ✅ 짝수 행 배경 */
+.meta-ads-table tr:nth-child(even) {
+background-color: #f8f9fc;
+}
+
+/* ✅ 행 호버 */
+.meta-ads-table tr:hover {
+background-color: #eaf3fc;
+transition: background 0.2s ease-in-out;
+}
+
+/* ✅ 요약(합계) 행 강조 */
+.meta-ads-table tfoot {
+display: table-row-group; /* 일부 브라우저 대응 */
+}
+
+.meta-ads-table tfoot tr {
+background-color: #e0f1ff;
+font-weight: bold;
+color: #003366;
+}
+
+.meta-ads-table tfoot td {
+border-top: 2px solid #a0c4ff;
+}
+
+/* ✅ 광고 바로가기 링크 */
+.meta-ads-table a {
+color: #2a7ec6;
+font-weight: 600;
+text-decoration: none;
+}
+
+.meta-ads-table a:hover {
+text-decoration: underline;
+}
+
+/* ✅ 선택된 날짜 박스 */
+.selected-date-display {
+font-size: 16px;
+font-weight: 600;
+padding: 10px 18px;
+background-color: #eef5ff;
+border: 1px solid #c6dfff;
+border-radius: 8px;
+color: #2A7EC6;
+display: inline-block;
+box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ✅ 팝업 메시지 */
+.custom-popup {
+position: fixed;
+top: 25%;
+left: 50%;
+transform: translate(-50%, -50%);
+background-color: #2a7ec6;
+color: #fff;
+padding: 16px 24px;
+border-radius: 8px;
+box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+font-size: 15px;
+z-index: 9999;
+animation: fadeInOut 3s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+0% { opacity: 0; transform: translate(-50%, -60%); }
+10% { opacity: 1; transform: translate(-50%, -50%); }
+90% { opacity: 1; transform: translate(-50%, -50%); }
+100% { opacity: 0; transform: translate(-50%, -40%); }
+}
+
+#updatedAtText {
+  font-size: 13px;
+  color: #fff;
+  font-weight: bold;
+  background: none;
+  padding: 4px 10px;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+/* ✅ 그림자 효과 추가 */
+text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 👉 테이블 헤더 정렬 가능 컬럼 표시 */
+th.sortable {
+  cursor: pointer;
+}
+
+th.sortable.asc::after {
+  content: " ▲";
+  font-size: 0.8em;
+}
+
+th.sortable.desc::after {
+  content: " ▼";
+  font-size: 0.8em;
+}
+
+/* ========================
+광고 미리보기 카드 스타일
+======================== */
+
+/* 광고 미리보기 전체 wrapper */
+.preview-wrapper {
+  width: 100%;  /* 💬 폭은 부모(left-wide)가 65% 잡으니까 100%로 */
+  max-width: none;
+  padding: 0 1vw;  /* ✅ 좌우 여백 추가 (메타 광고 성과랑 통일) */
+  box-sizing: border-box;
+}
+
+/* Masonry 레이아웃 */
+#previewCardContainer {
+  column-count: 3; /* 💡 필요시 4로 변경 가능 */
+  column-gap: 20px;
+}
+
+/* 카드 스타일 */
+.insta-card {
+  width: 100%;
+  margin-bottom: 20px;
+  break-inside: avoid; /* ✅ Masonry 깨짐 방지 */
+  background: white;
+  border: 1px solid #dbdbdb;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+}
+
+/* 광고 이미지 */
+.insta-image {
+  position: relative; /* ✅ 부모 relative (플레이 버튼용) */
+  background: #f0f0f0;
+}
+
+.ad-image {
+  width: 100%;
+  height: auto; /* ✅ 원본 비율 유지 */
+  display: block;
+}
+
+/* 플레이 버튼 오버레이 (영상 광고 전용) */
+.play-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.0); /* 투명 배경 */
+}
+
+.play-icon {
+  width: 60px;
+  height: 60px;
+  opacity: 0.8;
+}
+
+/* 헤더/푸터 공통 */
+.insta-header, .insta-footer {
+  padding: 12px;
+  font-size: 14px;
+}
+
+/* 헤더 */
+.insta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.insta-header-left {
+  display: flex;
+  align-items: center;
+}
+
+.profile-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.insta-account-name {
+  font-weight: bold;
+}
+
+.insta-menu {
+  font-size: 20px;
+  cursor: pointer;
+  color: #555;
+}
+
+/* CTA 영역 */
+.insta-cta {
+  padding: 10px 12px;
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.insta-cta a {
+  text-decoration: none;
+  color: #385185;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 아이콘 영역 */
+.insta-icons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.insta-icons-left {
+  display: flex;
+  gap: 12px;
+}
+
+.insta-icons svg {
+  width: 24px;
+  height: 24px;
+  stroke: #000;
+}
+
+/* 캡션 */
+.insta-caption {
+  margin-top: 8px;
+  white-space: pre-line;
+}
+
+
+/* ================================
+   캠페인 목표별 성과 요약 차트 전용
+================================= */
+.campaign-goal-chart-wrapper {
+  flex: 0 0 35%;
+  max-width: 35%;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.campaign-goal-chart-box {
+  position: relative;
+  width: 100%;
+  padding: 20px 20px 40px;
+  border: 2px solid black;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.campaign-goal-label {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  background-color: black;
+  color: white;
+  padding: 5px 12px;
+  font-size: 17px;
+  font-weight: bold;
+  border-radius: 6px;
+  text-align: center;
+  z-index: 10;
+}
+
+.campaign-goal-chart-canvas-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.campaign-goal-chart-canvas-wrapper canvas {
+  width: 100%;
+  height: 360px;
+  max-height: 360px;
+}
+
+/* ✅ 성과 테이블 하단 여백 제거 (토글 버튼과 딱 붙게) */
+.table-wrapper.meta-ads-table-wrapper {
+  margin-bottom: -10px !important;  /* 테이블과 토글 버튼 사이 공백 제거 */
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+}
+
+/* ✅ 토글 버튼 wrapper 여백 및 스타일 */
+.meta-ads-toggle-bar.no-border {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none !important;
+  text-align: left;
+}
+
+/* ✅ 토글 버튼 디자인 (코랄 오렌지 + 입체감) */
+.toggle-btn {
+  background-color: #c96a5b;  /* 코랄 오렌지 */
+  color: white;
+  padding: 11px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.1)  
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.toggle-btn:hover {
+  background-color: #9e564a;
+  box-shadow: 0 6px 14px rgba(255, 107, 74, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ✅ wrapper 전체 여백 조정 */
+.meta-ads-wrapper {
+  margin-bottom: -6px;  /* 광고 미리보기 container와 간격 최소화 */
+}
+
+/* ✅ 테이블과 토글 버튼 사이 여백 제거 */
+.meta-ads-insight-container {
+  margin-bottom: 0;
+}
+
+/* ✅ 테이블과 그 다음 container (ex. 광고 미리보기) 간 여백 제거 */
+.meta-ads-insight-container + .container {
+  margin-top: -24px !important;
+}
+
+
+
+#platformSalesSummaryTable .total-row {
+  font-weight: bold;
+  background-color: #f2f2f2;
+  border-top: 2px solid #000;
+}
+
+#metaAdsSummaryTable .total-row {
+  font-weight: bold;
+  background-color: #f2f2f2;
+  border-top: 2px solid #000;
+}
+
+
+.compact-loading-popup {
+  font-family: 'Noto Sans KR', sans-serif;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.compact-loading-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.compact-loading-text {
+  font-size: 14px;
+  color: #555;
+}
+
+
+
+
+/* ✅ 플랫폼 요약 → 월별 매출 사이 고정 공간 확보 */
+.platform-summary-to-monthly-gap {
+  height: 40px;
+  width: 100%;
+}
+
+/* ✅ 플랫폼 매출: wrapper는 박스 역할만, 스크롤은 내부에서 */
+.platform-sales-summary-wrapper .table-wrapper,
+.platform-sales-wrapper .table-wrapper {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ✅ 내부 컨테이너: 가로 스크롤만 허용, 세로 자동 확장 */
+.platform-sales-summary-wrapper .table-content-container,
+.platform-sales-wrapper .table-content-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ✅ 실제 테이블: 내용에 따라 자동 확장되며 가로 스크롤 보장 */
+.platform-sales-summary-wrapper table,
+.platform-sales-wrapper table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+}
+
+/* ✅ 플랫폼 요약 → 월별 매출 사이 고정 공간 확보 */
+.platform-summary-to-monthly-gap {
+  height: 40px;
+  width: 100%;
+}
+
+/* ✅ 플랫폼 매출 테이블 wrapper: 외곽 박스 스타일 */
+.platform-sales-summary-wrapper .table-wrapper,
+.platform-sales-wrapper .table-wrapper {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ✅ 내부 컨테이너: 가로 스크롤만 허용, 세로는 내용에 따라 자동 */
+.platform-sales-summary-wrapper .table-content-container,
+.platform-sales-wrapper .table-content-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ✅ 테이블 본체: 가로 폭 자동 확장 */
+.platform-sales-summary-wrapper table,
+.platform-sales-wrapper table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+}
+
+
+
+
+/* ✅ 모바일 대응 */
+@media screen and (max-width: 768px) {
+  html, body {
+    overflow-x: hidden !important;
+  }
+
+  /* ✅ 공통 테이블 구조: 여백 방지 및 구조 정렬 */
+  .tables-row {
+    flex-direction: column;
+  }
+
+  .filter-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .custom-dropdown {
+    width: 100%;
+  }
+
+  .table-wrapper {
+    padding: 15px;
+    box-sizing: border-box;
+  }
+
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+  }
+
+  /* ✅ 대부분의 테이블은 기본 폭 유지 (스크롤 필요 없음) */
+  .table-content-container {
+    overflow-x: auto !important;
+    overflow-y: visible;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .table-content-container table,
+  table {
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+  }
+
+  /* ✅ 플랫폼 월별 매출 테이블만 예외로 강제 가로 스크롤 적용 */
+  .platform-sales-wrapper .table-content-container {
+    overflow-x: auto !important;
+    width: 100vw !important;
+  }
+
+  .platform-sales-wrapper table {
+    min-width: 1200px !important;
+    width: auto !important;
+    table-layout: auto !important;
+  }
+
+  /* ✅ 플랫폼 요약 테이블은 기본 폭 유지 (모바일도 스크롤 없이 적응) */
+  .platform-sales-summary-wrapper table {
+    min-width: unset !important;
+    width: 100% !important;
+  }
+}
+
+.nav-buttons {
+  position: fixed;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: center; /* ✅ 가운데 정렬 기준 */
+  pointer-events: none;     /* 내부 클릭 이벤트 방지 안되도록 */
+}
+
+/* 왼쪽: 업데이트 문구 */
+.nav-left {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 60px;  /* ← 여기 숫자를 조절하여 햄버거와 거리 최소화 */
+}
+
+
+
+/* 오른쪽: 햄버거 메뉴 */
+.nav-right {
+  position: absolute;
+  right: 20px;
+  pointer-events: auto;
+}
+
+/* ✅ 햄버거 아이콘 스타일 */
+.hamburger-menu-wrapper {
+  position: fixed;
+  top: 12px;             /* 약간 아래로 내려서 자연스럽게 */
+  right: 12px;
+  z-index: 1100;
+}
+
+.hamburger-icon {
+  width: 32px;
+  height: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px;
+  background-color: rgba(255, 255, 255, 0.15);   /* 투명 배경으로 버튼 효과 */
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);         /* 입체감 */
+  transition: all 0.2s ease-in-out;
+}
+
+.hamburger-icon:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);                        /* 살짝 커지는 효과 */
+}
+
+.hamburger-icon div {
+  width: 100%;
+  height: 4px;
+  background-color: white;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+/* ✅ 햄버거 드롭다운 메뉴 스타일 */
+.hamburger-dropdown {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: #186BB3;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  overflow: hidden;
+  min-width: 140px;
+}
+
+/* 공통 링크 스타일 */
+.hamburger-dropdown a {
+  padding: 12px 20px;
+  text-decoration: none;
+  color: black;            /* 텍스트 색상 */
+  font-weight: bold;
+  white-space: nowrap;
+
+  /* ✅ 정중앙 정렬 추가 */
+  display: flex;
+  align-items: center;     /* 세로 중앙 */
+  justify-content: center; /* 가로 중앙 */
+}
+
+/* 사이트 성과, 광고 성과 */
+.hamburger-dropdown a:not(:last-child) {
+  background-color: #f3f2f1;
+}
+.hamburger-dropdown a:not(:last-child):hover,
+.hamburger-dropdown a:not(:last-child).active {
+  background-color: #097db8;
+  color: white;
+}
+
+/* 로그아웃 버튼 - 마지막 a 태그 */
+.hamburger-dropdown a:last-child {
+  background-color: #f3f2f1; /* 코랄 */
+}
+.hamburger-dropdown a:last-child:hover {
+  background-color: #cf6352; /* hover 시 진한 코랄 */
+  color: white;
+}
+
+
+
+
+/* ========== META CATALOG – sidebar.css  (완전-교체용) ========== */
+
+
+
+/* ✅ 사이드바 전체 팝업 구조 */
+.catalog-sidebar-wrapper {
+  position: fixed;
+  top: 20px;
+  right: 0;
+  width: auto;
+  max-width: 95vw;
+  min-width: 800px;
+  max-height: calc(100vh - 40px);
+  background: #eef2f6; /* 변경됨: 연한 블루그레이 */
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2); /* 강조됨 */
+  z-index: 2000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  visibility: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* 패딩 제거 → 내부 header + content로 분리 */
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  overflow: hidden;
+}
+
+.catalog-sidebar-wrapper.active {
+  transform: translateX(0%);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.catalog-sidebar-wrapper.hidden {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ✅ 헤더 스타일 개선 */
+.catalog-header {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background-color: #003366;
+  padding: 12px 16px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.catalog-header-title {
+  font-size: 27px;
+  font-weight: bold;
+  flex-grow: 1;
+  text-align: left;
+}
+
+.catalog-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.catalog-header-id {
+  font-size: 14px;
+  color: white;
+  white-space: nowrap;
+}
+
+
+
+/* ✅ 닫기 버튼: 동그란 스타일 */
+.catalog-close-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 28px;
+  background-color: white;
+  color: #dd3333;
+  border: none;
+  border-radius: 50%;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+
+.catalog-close-btn:hover {
+  background-color: #f8f8f8;
+}
+
+
+/* ✅ 내용 영역 */
+.catalog-sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* ✅ 테이블 컨테이너 */
+.catalog-tables-container {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  flex-grow: 1;
+}
+
+/* ✅ 테이블 카드 */
+.catalog-table-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* ✅ 테이블 제목 */
+.catalog-table-title {
+  background-color: #003366;
+  color: #fff;
+  font-weight: bold;
+  padding: 10px;
+  text-align: center;
+}
+
+/* ✅ 테이블 스크롤 */
+.catalog-table-scroll {
+  overflow-y: auto;
+  max-height: 420px;
+  padding-bottom: 8px;
+}
+
+/* ✅ 테이블 본문 */
+.catalog-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.catalog-table th,
+.catalog-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  color: #333;
+}
+
+.catalog-table td:first-child {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+/* ✅ 테이블 헤더 고정 */
+.catalog-table th {
+  background-color: #f1f1f1;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* ✅ 사이드버튼 */
+.catalog-toggle-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 0;
+  background-color: #003366;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 22px;
+  padding: 36px 14px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  cursor: pointer;
+  z-index: 1500;
+
+  /* ✅ 입체감 강조 */
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
+
+  /* ✅ 부드러운 전환 효과 */
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.catalog-toggle-btn:hover {
+  background-color: #ffffff;
+  color: #d2455a;
+  border: 1px solid #d2455a;
+
+  /* ✅ hover 시 그림자 강화로 더 깊은 입체감 */
+  box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* ✅ 로딩 오버레이 */
+.catalog-sidebar-wrapper.loading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.65);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.catalog-sidebar-wrapper .loading-spinner {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #333;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 11;
+}
+
+.catalog-sidebar-wrapper.loading .loading-spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.catalog-subheading {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 20px 0 8px 0;
+  color: #333;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  padding-left: 8px;
+}
+
+
+/* ✅ 공통 너비 클래스: 검색창과 테이블에 함께 적용 */
+.manual-set-shared-width {
+  width: 100%;
+  max-width: 640px;
+  box-sizing: border-box;
+}
+
+/* 좌측 입력 영역 */
+.manual-set-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+
+/* ✅ 로딩 텍스트 + 스피너 */
+.manual-loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 16px;
+  color: #003366;
+  font-weight: bold;
+}
+
+.manual-loading-spinner.hidden {
+  display: none;
+}
+
+.loading-spinner.small {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #ccc;
+  border-top: 3px solid #003366;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ✅ 테이블: 검색창과 동일한 너비 */
+.manual-set-table.adjusted {
+  flex: none;
+  margin-top: 32px;
+} 
+
+
+/* ✅ 팝업 모달: 배경 오버레이 */
+.modal {
+  position: fixed;
+  inset: 0; /* top, right, bottom, left = 0 */
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none !important;
+}
+
+/* ✅ 팝업 모달: 콘텐츠 박스 */
+.modal-content {
+  background-color: #ffffff;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ✅ 팝업 모달: 헤더 영역 */
+.modal-header {
+  background-color: #003366;
+  color: #ffffff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ✅ 팝업 모달: 닫기 버튼 */
+.modal-header .close-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+/* ✅ 팝업 모달: 본문 영역 */
+.modal-body {
+  padding: 20px;
+  font-family: monospace, Consolas, "Courier New", Courier, monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+
+.catalog-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #003366;
+  color: white;
+  padding: 10px 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.preview-btn {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent; /* ✅ 배경 제거 */
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4); /* ✅ 그림자만 추가 */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.preview-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.preview-btn svg {
+  width: 48px;  /* ✅ 아이콘 크기 키움 */
+  height: 48px;
+  stroke: #ffffff; /* 아이콘 색상을 배경에 맞게 조정 (필요 시) */
+}
+
+/* ✅ 추가된 상품 테이블 전용 스타일 */
+#manualSelectedItemBody .no-data {
+  color: #999;
+  font-style: italic;
+}
+
+/* ✅ 검색 결과 테이블의 상품 추가 버튼 스타일 */
+.catalog-table .add-product-btn {
+  padding: 6px 12px;
+  background-color: #003366;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.catalog-table .add-product-btn:hover {
+  background-color: #005599;
+}
+
+/* ✅ 버튼이 들어가는 셀 정렬용 (가운데 정렬) */
+.catalog-table td:last-child {
+  text-align: center;
+}
+
+/* ───────── 공통 버튼 (우측 세트 생성) ───────── */
+.primary-btn {
+  padding: 8px 18px;
+  background: #d2455a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .25s ease;
+}
+.primary-btn:hover { background: #a82e40; }
+
+/* ───────── 우측 입력 줄 레이아웃 ───────── */
+/* ───────── 우측 입력·검색 라인 레이아웃 ───────── */
+.manual-create-row,
+.manual-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;          /* 요소 간 간격 */
+  margin-top: 16px;
+  width: 100%;
+}
+
+/* 라벨 공통 */
+.manual-create-row label,
+.manual-search-row label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 인풋·셀렉트 공통 */
+.manual-create-row input,
+.manual-search-row input,
+.manual-search-row select {
+  flex: 1 1 0;        /* 남은 공간 가득 */
+  min-width: 0;       /* flex 내부 overflow 방지 */
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1.5px solid #003366;
+  border-radius: 8px;
+  box-sizing: border-box; /* ✅ padding+border 포함해도 100% 폭 유지 */
+}
+
+/* ───────── disabled 상태(선택) ───────── */
+.add-product-btn:disabled {
+  background: #ccc;
+  cursor: default;
+}
+
+/* ✅ 선택 목록의 삭제 버튼 */
+.remove-product-btn{
+  padding:6px 12px;
+  background:#999;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-size:13px;
+  cursor:pointer;
+  transition:background-color .2s;
+}
+.remove-product-btn:hover{background:#555;}
+
+/* ────────────────────────────────
+ * 1) 흰색 카드 컨테이너 (.manual-card)
+ * ────────────────────────────────*/
+.manual-card{
+  background:#ffffff;
+  border:1px solid #dcdcdc;
+  border-radius:12px;
+  padding:20px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  display:flex;
+  flex-direction:column;
+  gap:24px;          /* 내부 블록 간격 */
+}
+
+/* ────────────────────────────────
+ * 2) ‘세트명 작성’ 라벨
+ * ────────────────────────────────*/
+.manual-create-row label{
+  font-weight:600;
+  white-space:nowrap;
+  margin-right:6px;  /* 입력창과 간격 */
+}
+
+/* ────────────────────────────────
+ * 3) 검색행 : 좁은 select · 넓은 input
+ * ────────────────────────────────*/
+.manual-search-row select{max-width:160px;}
+.manual-search-row input {flex:1 1 auto;}
+
+/* ────────────────────────────────
+ * 4) 좌·우 카드가 화면 절반을 꽉 채우도록
+ *    (flex:1 1 0; 은 이미 지정돼 있으면 생략)
+ * ────────────────────────────────*/
+.manual-set-left,
+.manual-set-right{
+  flex:1 1 0;
+}
+
+/* ==================================================
+   검색창(좌·우 공통) + URL 전용 폭 조정 + 버튼 통일
+   ================================================== */
+
+/* ─── 공통 래퍼 ─── */
+.manual-set-searchbox{
+  width:100%;
+  display:flex;
+  align-items:center;
+  background:#fff;
+  border:2px solid #003366;
+  border-radius:12px;
+  padding:10px 16px;
+  box-shadow:0 2px 5px rgba(0,0,0,.06);
+  box-sizing:border-box;        /* 패딩·테두리 포함해도 100% 초과 방지 */
+}
+
+/* ↳ 좌측 URL 입력 전용 : 폭을 줄이고 가운데 정렬 */
+.url-searchbox{
+  max-width:720px;              /* 필요하면 640~800px 내에서 조정 */
+  margin:0 auto;
+}
+
+/* ─── 입력 필드 ─── */
+.manual-set-searchbox input{
+  flex:1 1 0;
+  min-width:0;
+  border:none;
+  background:transparent;
+  color:#333;
+  font-size:16px;
+  outline:none;
+}
+.manual-set-searchbox input::placeholder{color:#999;}
+
+/* ─── 돋보기 버튼(좌·우 통일) ─── */
+.manual-set-searchbox button.manual-search-btn,
+.manual-search-row   > button.manual-search-btn{
+  width:42px;
+  height:42px;
+  background:#003366;
+  border:none;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background-color .25s ease;
+}
+.manual-set-searchbox button.manual-search-btn:hover,
+.manual-search-row   > button.manual-search-btn:hover{
+  background:#005599;
+}
+.manual-set-searchbox button.manual-search-btn svg,
+.manual-search-row   > button.manual-search-btn svg{
+  width:20px;
+  height:20px;
+  stroke:#fff;
+  fill:none;
+}
+
+/* ─── ② 미리보기 아이콘이 버튼 안에 딱 맞게 ─── */
+.preview-btn svg { width: 32px; height: 32px; }
+
+/* ─── ③ 640px 제한 해제 (선택) ─── */
+/*.manual-set-shared-width { max-width: none; }
+
+
+/* ---------- URL 검색박스(좌측) 얇은 테두리 & 버튼 분리 ---------- */
+.url-searchbox{border:none!important;padding:0!important;background:transparent!important;box-shadow:none!important;}
+.url-searchbox input{border:1.5px solid #003366;border-radius:8px;padding:10px 14px;}
+.url-searchbox button.manual-search-btn{margin-left:8px;}   /* 입력창과 8px 간격 */
+
+
+
+
+
+
+
+
+/* =====================================================
+ * ② 세트 생성 완료 카드
+ *    ─ 별도 래퍼 + 카드 : 기존 팝업과 충돌 없음
+ * =====================================================*/
+/* (1) 래퍼 : 화면 중앙 고정 */
+.set-created-popup-wrapper{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:10000;          /* .custom-popup 보다 위 */
+}
+
+/* (2) 카드 본체 */
+.set-created-popup{
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:14px;
+  box-shadow:0 12px 28px rgba(0,0,0,.14);
+  padding:22px 26px;
+  max-width:440px;
+  font:15px/1.6 "Pretendard","Apple SD Gothic Neo",sans-serif;
+  color:#222;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* ── 헤더(첫 줄) 강조 ───────────────────────────*/
+.set-created-popup .popup-header{
+  background:#f2f2f2;
+  border:3px solid #4CAF50;
+  border-radius:8px;
+  padding:12px 16px;
+  font-weight:600;
+  font-size:16.5px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.set-created-popup .popup-header svg{
+  width:22px;height:22px;
+  stroke:#4caf50;
+  stroke-width:2.2;
+  fill:none;
+  flex-shrink:0;
+  margin-top:1px;
+}
+
+/* ── 상세 행 ───────────────────────────*/
+.set-created-popup .popup-row{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:14.5px;
+  line-height:1.5;
+  margin-top:-4px;
+}
+.set-created-popup .popup-text{
+  flex:1;
+  word-break:break-word;
+}
+
+/* ── 모바일 ─────────────────────────────*/
+@media(max-width:480px){
+  .set-created-popup{font-size:14px;padding:18px 20px;}
+  .set-created-popup .popup-header{font-size:15.5px;}
+  .set-created-popup .popup-header svg{width:20px;height:20px;}
+}
+
+.set-created-popup.error { background:#ffecec; border:1px solid #ff6b6b; }
+
+/* ======================= 1. 모달 ======================= */
+
+/* 모달 덮개 */
+.modal {
+  position: fixed;
+  inset: 0;                      /* top/left/right/bottom = 0 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+/* 모달 박스 */
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  padding: 24px 28px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 모달 헤더 */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 닫기 버튼 */
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+.close-btn:hover { color: #333; }
+
+/* 숨김 util */
+.hidden { display: none !important; }
+
+/* 등장 애니메이션 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+

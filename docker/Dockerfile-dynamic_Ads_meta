@@ -1,0 +1,34 @@
+# ──────────────────────────────────────────────
+#  Dockerfile-dynamic_Ads_meta   (fixed v2)
+# ──────────────────────────────────────────────
+FROM python:3.9-slim
+
+# 1. 기본 작업 디렉터리
+WORKDIR /app
+
+# 2. 파이썬 패키지 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir python-dotenv
+
+# 3. 코드 & 설정 복사
+COPY ngn_wep/meta_api/dynamic_Ads_meta.py ./dynamic_Ads_meta.py
+COPY ngn_wep/meta_api/adset_config.json   ./adset_config.json
+COPY config/service-account.json          ./service-account.json
+
+# 컨테이너 내부: /app/.env 로 복사
+COPY config/ngn.env ./.env
+
+
+
+# 4. (★) 기존 경로용 심볼릭-링크 생성
+#    dynamic_Ads_meta.py 는  ~/ngn_board/config/ngn.env  를 찾음
+RUN mkdir -p /root/ngn_board/config \
+ && ln -s /app/.env /root/ngn_board/config/ngn.env
+
+# 5. 런타임 환경변수
+ENV PYTHONUNBUFFERED=1 \
+    GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+
+# 6. 실행
+ENTRYPOINT ["python", "/app/dynamic_Ads_meta.py"]

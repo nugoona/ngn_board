@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>NGN 대시보드</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<script>
+  const userCompanyList = {{ session['company_names'] | tojson }};
+  const currentUserId = "{{ session['user_id'] }}";
+</script>
+
+<!-- ✅ 햄버거 메뉴 및 최종 업데이트 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ✅ 공통 필터 -->
+<section class="filter-wrapper">
+  <div class="filter-section">
+    {% include 'components/filters.html' %}
+  </div>
+</section>
+
+<!-- ✅ 메타 광고 성과 테이블 -->
+<div class="container meta-ads-wrapper">
+  {% include 'components/meta_ads_insight_table.html' %}
+</div>
+
+<!-- ✅ 캠페인 목표별 요약 테이블 (토글) -->
+<div id="typeSummaryContainer" class="container" style="display: none;">
+  {% include 'components/meta_ads_adset_summary_by_type_table.html' %}
+</div>
+
+<!-- ✅ 광고 미리보기 + 슬라이드/콜렉션 광고 -->
+<div class="container">
+  <div class="tables-row">
+    <!-- 좌측: 단일 이미지/영상 -->
+    <section class="table-wrapper left-wide">
+      <div class="preview-wrapper">
+        <h2 class="summary-section-title">LIVE 광고 미리보기 - 단일 이미지/영상</h2>
+        <div id="previewLoading" class="loading-overlay" style="display: none;">
+          <div class="spinner"></div>
+          <div class="loading-text">로딩 중...</div>
+        </div>
+        <div id="previewCardContainer" style="margin-top: 20px;"></div>
+        {% include 'components/meta_ads_preview_cards.html' %}
+      </div>
+    </section>
+
+    <!-- 우측: 슬라이드/콜렉션 광고 -->
+    <section class="table-wrapper right-narrow">
+      <div class="preview-wrapper">
+        <h2 class="summary-section-title">LIVE 광고 미리보기 - 슬라이드/콜렉션[실계정]</h2>
+        <div id="slideCollectionLoading" class="loading-overlay" style="display: none;">
+          <div class="spinner"></div>
+          <div class="loading-text">로딩 중...</div>
+        </div>
+        <div id="slideCollectionContainer" class="table-content-container" style="margin-top: 20px; overflow-x: auto;">
+          {% include 'components/meta_ads_slide_collection_table.html' %}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ✅ 카탈로그 사이드바 (슬라이드 방식 + 닫기 버튼 포함) -->
+{% include "components/catalog_sidebar.html" %}
+
+<!-- ✅ 공통 유틸 -->
+<script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}"></script>
+
+<!-- ✅ JS 모듈 -->
+<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_state.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_tags.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_preview.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_slide_collection.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_adset_summary_by_type.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
+
+<!-- ✅ 기타 공통 JS -->
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+<script src="{{ url_for('static', filename='js/session_timeout.js') }}"></script>
+
+<!-- ✅ 햄버거 토글 -->
+<script>
+  document.getElementById("hamburgerIcon").addEventListener("click", () => {
+    const dropdown = document.getElementById("hamburgerDropdown");
+    dropdown.style.display = (dropdown.style.display === "flex") ? "none" : "flex";
+  });
+</script>
+
+</body>
+</html>

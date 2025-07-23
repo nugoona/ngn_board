@@ -1,0 +1,51 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  annotations:
+    run.googleapis.com/client-name: gcloud
+    run.googleapis.com/client-version: 513.0.0
+    run.googleapis.com/creator: oscar@nugoona.co.kr
+    run.googleapis.com/lastModifier: oscar@nugoona.co.kr
+    run.googleapis.com/operation-id: 0d1a73e9-e03e-45d4-9616-11f79b0e69c2
+  creationTimestamp: '2025-03-12T22:17:15.834737Z'
+  generation: 1
+  labels:
+    cloud.googleapis.com/location: asia-northeast3
+    run.googleapis.com/lastUpdatedTime: '2025-03-12T22:17:15.834737Z'
+    run.googleapis.com/satisfiesPzs: 'true'
+  name: ngn-ga4-view-job
+  namespace: '439320386143'
+  resourceVersion: AAYwLJFuT+E
+  selfLink: /apis/run.googleapis.com/v1/namespaces/439320386143/jobs/ngn-ga4-view-job
+  uid: 1eb32174-6d32-4d1e-8f01-a46dc22a17d4
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 513.0.0
+        run.googleapis.com/execution-environment: gen2
+      labels:
+        client.knative.dev/nonce: hos_mek_lih
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          containers:
+          - env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /app/service-account.json
+            image: gcr.io/winged-precept-443218-v8/ngn-ga4-view-job
+            resources:
+              limits:
+                cpu: '1'
+                memory: 1024Mi
+          maxRetries: 3
+          serviceAccountName: 439320386143-compute@developer.gserviceaccount.com
+          timeoutSeconds: '600'
+status:
+  conditions:
+  - lastTransitionTime: '2025-03-12T22:17:16.883937Z'
+    status: 'True'
+    type: Ready
+  observedGeneration: 1

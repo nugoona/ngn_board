@@ -1,0 +1,51 @@
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  annotations:
+    run.googleapis.com/client-name: gcloud
+    run.googleapis.com/client-version: 506.0.0
+    run.googleapis.com/creator: oscar@nugoona.co.kr
+    run.googleapis.com/lastModifier: oscar@nugoona.co.kr
+    run.googleapis.com/operation-id: 5b82cb9e-316c-4ca7-9d18-c46bddc1da23
+  creationTimestamp: '2025-01-24T13:12:34.401582Z'
+  generation: 1
+  labels:
+    cloud.googleapis.com/location: asia-northeast3
+    run.googleapis.com/lastUpdatedTime: '2025-01-24T13:12:34.401582Z'
+    run.googleapis.com/satisfiesPzs: 'true'
+  name: ngn-orders-job
+  namespace: '439320386143'
+  resourceVersion: AAYsc3roeFg
+  selfLink: /apis/run.googleapis.com/v1/namespaces/439320386143/jobs/ngn-orders-job
+  uid: e8f5bd27-c78e-41ef-8c73-7e675f6e63d0
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 506.0.0
+        run.googleapis.com/execution-environment: gen2
+      labels:
+        client.knative.dev/nonce: gej_var_zuk
+    spec:
+      taskCount: 1
+      template:
+        spec:
+          containers:
+          - env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /app/service-account.json
+            image: gcr.io/winged-precept-443218-v8/ngn-orders-job
+            resources:
+              limits:
+                cpu: '1'
+                memory: 1024Mi
+          maxRetries: 3
+          serviceAccountName: 439320386143-compute@developer.gserviceaccount.com
+          timeoutSeconds: '600'
+status:
+  conditions:
+  - lastTransitionTime: '2025-01-24T13:12:35.180632Z'
+    status: 'True'
+    type: Ready
+  observedGeneration: 1

@@ -1,0 +1,20 @@
+# /home/oscar/ngn_board/docker/Dockerfile-performance_summar-today
+
+FROM python:3.9-slim
+
+# 작업 디렉토리 생성
+WORKDIR /app
+
+# 필요한 파일 복사
+COPY ../ngn_wep/dashboard/services/insert_performance_summary.py /app/insert_performance_summary.py
+COPY ../config/service-account.json /app/service-account.json
+COPY ../requirements.txt /app/requirements.txt
+
+# 라이브러리 설치
+RUN pip install --no-cache-dir -r requirements.txt
+
+# GCP 인증 환경 변수 설정
+ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
+
+# 실행 명령 (오늘 기준)
+CMD ["python", "insert_performance_summary.py"]

@@ -1,0 +1,87 @@
+// File: static/js/meta_ads_preview.js
+
+import { metaAdsState } from "./meta_ads_state.js";
+import { showLoading, hideLoading } from "./loading_utils.js";
+import { latestAjaxRequest } from "./request_utils.js";
+
+// ✅ 미리보기 카드 렌더링
+function renderMetaAdsPreviewCards(adList) {
+  const $container = $("#previewCardContainer");
+  $container.empty();
+
+  if (!adList.length) {
+    $container.append(`<p style="text-align:center; color:#777;">미리볼 광고가 없습니다.</p>`);
+    return;
+  }
+
+  adList.forEach(ad => {
+    const template = document.getElementById("previewCardTemplate");
+    const clone = document.importNode(template.content, true);
+
+    // ✅ 동적 데이터 삽입
+    $(clone).find(".insta-account-name").text(ad.instagram_acc_name || "No Name");
+    $(clone).find(".ad-image").attr("src", ad.image_url || "");
+    $(clone).find(".cta-link").attr("href", ad.link || "#");
+
+    if (ad.is_video) {
+      $(clone).find(".play-overlay").css("display", "flex");
+    } else {
+      $(clone).find(".play-overlay").css("display", "none");
+    }
+
+    // ✅ 문구 더보기/접기 기능 구현
+    const $caption = $(clone).find(".ad-caption");
+    const fullMessage = ad.message || "(문구 없음)";
+    const firstLine = fullMessage.split("\n")[0];
+
+    const accountNameHTML = `<span style='font-weight:bold;'>${ad.instagram_acc_name || "No Name"}</span>`;
+    const shortCaption = `${accountNameHTML} ${firstLine} <span class='more-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... more</span>`;
+    const fullCaption = `${accountNameHTML} ${fullMessage} <span class='less-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... less</span>`;
+
+    $caption.html(shortCaption);
+
+    $caption.off("click").on("click", function (e) {
+      if (e.target.classList.contains("more-toggle")) {
+        $caption.html(fullCaption);
+      } else if (e.target.classList.contains("less-toggle")) {
+        $caption.html(shortCaption);
+      }
+    });
+
+    $container.append(clone);
+  });
+}
+
+// ✅ 광고 미리보기 데이터 요청
+export function fetchMetaAdsPreviewList() {
+  const accountId = metaAdsState.accountId;
+  if (!accountId) {
+    console.warn("[PREVIEW] 계정이 선택되지 않았습니다.");
+    $("#previewCardContainer").empty();
+    return;
+  }
+
+  showLoading("#previewLoading");
+
+  latestAjaxRequest("meta_ads_preview_list", {
+    url: "/dashboard/get_data",
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify({
+      data_type: "meta_ads_preview_list",
+      account_id: accountId
+    }),
+    success: function (res) {
+      if (res.status === "success") {
+        renderMetaAdsPreviewCards(res.meta_ads_preview_list || []);
+      } else {
+        console.error("[PREVIEW] 데이터 불러오기 실패");
+      }
+      hideLoading("#previewLoading");
+    },
+    error: function () {
+      console.error("[PREVIEW] AJAX 오류");
+      hideLoading("#previewLoading");
+    }
+  }, () => {});
+}

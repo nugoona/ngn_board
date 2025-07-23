@@ -1,0 +1,16 @@
+# /home/oscar/ngn_board/docker/Dockerfile-performance_summar-yesterday
+
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY ../ngn_wep/dashboard/services/insert_performance_summary.py /app/insert_performance_summary.py
+COPY ../config/service-account.json /app/service-account.json
+COPY ../requirements.txt /app/requirements.txt
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
+
+# 실행 명령 (어제 기준)
+CMD ["python", "insert_performance_summary.py", "yesterday"]

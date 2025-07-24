@@ -2402,6 +2402,7 @@ th.sortable.desc::after {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important;  /* 모든 로딩 오버레이 배경 투명화 */
+  background-color: transparent !important;  /* 추가 보장 */
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2409,6 +2410,15 @@ th.sortable.desc::after {
   z-index: 1000 !important;
   pointer-events: none !important;
   transition: opacity 0.3s ease-in-out !important;
+}
+
+/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) */
+.loading-overlay,
+.loading-overlay *,
+[class*="loading-overlay"],
+[id*="loadingOverlay"] {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* 스피너 스타일 */

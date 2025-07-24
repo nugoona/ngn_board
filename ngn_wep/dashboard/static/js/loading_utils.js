@@ -322,23 +322,23 @@ const lazyLoader = new LazyLoadManager();
 // 전역 함수로 노출
 window.lazyLoader = lazyLoader;
 
-// 기존 함수들과의 호환성을 위한 전역 함수들
-window.hideLoading = function(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-        }
-    }
-};
+// ✅ 로딩 오버레이 헬퍼 (모듈 export + 글로벌 노출)
+export function showLoading(target) {
+    const element = typeof target === 'string' ? document.querySelector(target) : target;
+    if (!element) return;
+    const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
+    if (loadingIndicator) loadingIndicator.style.display = 'block';
+    element.classList.add('loading');
+}
 
-window.showLoading = function(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'block';
-        }
-    }
-};
+export function hideLoading(target) {
+    const element = typeof target === 'string' ? document.querySelector(target) : target;
+    if (!element) return;
+    const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
+    if (loadingIndicator) loadingIndicator.style.display = 'none';
+    element.classList.remove('loading');
+}
+
+// 과거 코드 호환성을 위해 window 객체에도 등록
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;

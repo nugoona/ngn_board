@@ -204,10 +204,23 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             SUM(i.item_quantity) AS item_quantity,
             SUM(i.item_product_sales) AS item_product_sales,
             SUM(i.total_first_order) AS total_first_order,
-            -- ✅ 간소화된 URL (복잡한 JOIN 제거)
-            CONCAT('https://product-', CAST(i.product_no AS STRING)) AS product_url,
+            -- ✅ SEO 친화적인 URL 생성 (정규식 복원)
+            CONCAT(
+                'https://', MAX(info.main_url),
+                '/product/',
+                REPLACE(LOWER(REGEXP_REPLACE(MAX(i.product_name), r'[^\w]+', '-')), '--', '-'),
+                '/',
+                CAST(i.product_no AS STRING),
+                '/category/',
+                CAST(MAX(prod.category_no) AS STRING),
+                '/display/1/'
+            ) AS product_url,
             MAX(i.updated_at) AS updated_at
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
+        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS info
+            ON i.company_name = info.company_name
+        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products` AS prod
+            ON i.product_no = prod.product_no AND i.company_name = prod.company_name
         WHERE i.payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
           AND i.item_product_sales > 0

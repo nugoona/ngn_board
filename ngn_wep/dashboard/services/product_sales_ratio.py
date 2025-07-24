@@ -36,7 +36,7 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
     # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
     SELECT
-      FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS report_period,
+      CONCAT(FORMAT_DATE('%Y-%m-%d', @start_date), ' ~ ', FORMAT_DATE('%Y-%m-%d', @end_date)) AS report_period,
       company_name,
       REGEXP_REPLACE(
         REGEXP_REPLACE(

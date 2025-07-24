@@ -2450,3 +2450,13 @@ th.sortable.desc::after {
   opacity: 1 !important;
 }
 
+/* 🔥 더 구체적인 선택자로 강제 덮어쓰기 */
+.performance-summary-wrapper #loadingOverlayPerformanceSummary,
+.performance-summary-wrapper.loading #loadingOverlayPerformanceSummary,
+body #loadingOverlayPerformanceSummary,
+html body #loadingOverlayPerformanceSummary {
+  background: transparent !important;
+  background-color: transparent !important;
+  opacity: 1 !important;
+}
+

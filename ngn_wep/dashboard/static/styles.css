@@ -207,6 +207,41 @@ th {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* 로딩 상태가 아닐 때 오버레이 완전 숨김 */
+.table-wrapper:not(.loading) .loading-overlay,
+.performance-summary-wrapper:not(.loading) .loading-overlay {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 기본 로딩 오버레이 스타일 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+/* 로딩 중일 때만 오버레이 표시 */
+.table-wrapper.loading .loading-overlay,
+.performance-summary-wrapper.loading .loading-overlay {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 

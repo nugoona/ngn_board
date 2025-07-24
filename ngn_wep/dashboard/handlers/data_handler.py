@@ -134,7 +134,9 @@ def get_dashboard_data_route():
         period = str(data.get("period", "today")).strip()
         start_date = data.get("start_date")
         end_date = data.get("end_date")
-        data_type = data.get("data_type", "all")
+        data_type = (data.get("data_type", "all") or "").strip().lower()
+        data_type = data_type.replace("-", "_")  # kebab-case -> snake_case
+        data_type = data_type.replace(" ", "_")  # spaces -> underscores
         date_type = str(data.get("date_type", "summary")).strip()
         date_sort = str(data.get("date_sort", "desc")).strip()
         sort_by = str(data.get("sort_by", "item_product_sales")).strip()
@@ -150,6 +152,7 @@ def get_dashboard_data_route():
         print(f"[DEBUG] 요청 필터 - company_name={company_name}, period={period}, "
               f"start_date={start_date}, end_date={end_date}, page={page}, limit={limit}, data_type={data_type}")
         print(f"[DEBUG] date_type={date_type}, date_sort={date_sort}, sort_by={sort_by}")
+        print(f"[DEBUG] 정규화된 data_type: '{data_type}'")
 
         response_data = {"status": "success"}
         timing_log = {}

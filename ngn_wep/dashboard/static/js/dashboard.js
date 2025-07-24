@@ -177,6 +177,8 @@ async function updateAllData() {
     console.error("[ERROR] updateAllData() 전체 오류:", e);
   } finally {
     isLoading = false;
+    // 모든 로딩 클래스 강제 제거 (예외 잔존 방지)
+    $(".loading").removeClass("loading");
   }
 }
 

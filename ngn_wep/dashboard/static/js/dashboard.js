@@ -96,34 +96,25 @@ async function updateAllData() {
 
   isLoading = true;
 
-  // 의존성 로딩 스피너 시작 - 카페24 매출과 사이트 성과 요약 동시 표시
-  console.log("🔄 의존성 로딩 스피너 시작");
+  // 🔥 즉시 의존성 로딩 스피너 시작 - 가장 먼저 실행
+  console.log("🔄 의존성 로딩 스피너 시작 - 즉시 실행");
   
-  // 여러 방법으로 로딩 스피너 표시
+  // 성과 요약 로딩 오버레이 즉시 표시
   const performanceOverlay = $("#loadingOverlayPerformanceSummary");
   if (performanceOverlay.length > 0) {
-    console.log("✅ 성과 요약 로딩 오버레이 찾음");
+    console.log("✅ 성과 요약 로딩 오버레이 찾음 - 즉시 표시");
     
-    // 방법 1: showLoading 함수
-    showLoading("#loadingOverlayPerformanceSummary");
+    // 즉시 모든 방법으로 표시
+    performanceOverlay.show();
+    performanceOverlay.css('display', 'flex');
+    performanceOverlay.css('visibility', 'visible');
+    performanceOverlay.css('opacity', '1');
+    performanceOverlay.css('pointer-events', 'auto');
     
-    // 방법 2: 직접 스타일 설정
-    performanceOverlay.css({
-      'display': 'flex',
-      'visibility': 'visible',
-      'opacity': '1',
-      'pointer-events': 'auto'
-    });
-    
-    // 방법 3: 강제 스타일 속성 설정
+    // 강제 스타일 속성 설정
     performanceOverlay.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
     
-    // 방법 4: 지연 실행으로 확실히 표시
-    setTimeout(() => {
-      performanceOverlay.show().css('display', 'flex');
-      console.log("✅ 지연 실행으로 로딩 스피너 표시");
-    }, 100);
-    
+    console.log("✅ 성과 요약 로딩 스피너 즉시 표시 완료");
   } else {
     console.error("❌ 성과 요약 로딩 오버레이를 찾을 수 없음");
   }
@@ -143,6 +134,8 @@ async function updateAllData() {
   });
 
   try {
+    console.log("🔄 Cafe24 데이터 요청 시작");
+    
     // 필수 데이터는 병렬로 실행하되 실패해도 계속 진행
     await Promise.all([
       fetchCafe24SalesData(salesRequest).catch(e => {
@@ -153,6 +146,8 @@ async function updateAllData() {
       }),
     ]);
 
+    console.log("✅ Cafe24 데이터 요청 완료");
+    
     // 카페24 매출 완료 후 사이트 성과 요약 로딩 스피너도 함께 숨김
     console.log("✅ 의존성 로딩 스피너 종료");
     hideLoading("#loadingOverlayPerformanceSummary");

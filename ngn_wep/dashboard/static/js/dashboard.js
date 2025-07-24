@@ -241,6 +241,12 @@ async function updateAllData() {
     } catch (e) {
       console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
     }
+    
+    try {
+      fetchProductSalesRatio();
+    } catch (e) {
+      console.error("[ERROR] fetchProductSalesRatio 실패:", e);
+    }
 
     // 빈 배열이므로 Promise.all 호출 불필요
     // await Promise.all([

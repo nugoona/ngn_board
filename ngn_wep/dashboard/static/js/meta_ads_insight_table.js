@@ -1,6 +1,6 @@
 import { metaAdsState } from "./meta_ads_state.js";
 import { renderSelectedTags } from "./meta_ads_tags.js";
-import { showLoading, hideLoading } from "./loading_utils.js";
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 import {
   fetchMetaAdsInsight,
   renderMetaAdsInsightTable,

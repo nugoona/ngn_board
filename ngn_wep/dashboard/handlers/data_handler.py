@@ -239,8 +239,11 @@ def get_dashboard_data_route():
                 def fetch_platform_sales_summary():
                     t1 = time.time()
                     from services.platform_sales_summary import get_platform_sales_by_day
+                    # ⬇️ 서비스 함수는 리스트 파라미터를 기대하므로 문자열이면 리스트로 래핑
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+
                     data_rows                                      = get_platform_sales_by_day(
-                        company_names                              = company_name, # Changed from company_names to company_name for single company
+                        company_names                              = _company_names,
                         start_date                                 = start_date,
                         end_date                                   = end_date,
                         date_type                                  = date_type,
@@ -255,8 +258,10 @@ def get_dashboard_data_route():
                 def fetch_platform_sales_ratio():
                     t1 = time.time()
                     from services.platform_sales_summary import get_platform_sales_ratio
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+
                     data_rows                                      = get_platform_sales_ratio(
-                        company_names                              = company_name, # Changed from company_names to company_name for single company
+                        company_names                              = _company_names,
                         start_date                                 = start_date,
                         end_date                                   = end_date
                     )
@@ -269,7 +274,8 @@ def get_dashboard_data_route():
                 def fetch_monthly_platform_sales():
                     t1 = time.time()
                     from services.platform_sales_summary import get_monthly_platform_sales
-                    data_rows                                      = get_monthly_platform_sales(company_name)
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+                    data_rows                                      = get_monthly_platform_sales(_company_names)
                     t2 = time.time()
                     timing_log["platform_sales_monthly"]        = round(t2-t1, 3)
                     return ("platform_sales_monthly", data_rows, len(data_rows))

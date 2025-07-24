@@ -114,10 +114,11 @@ function fetchCafe24SalesData(requestData) {
   const { period, end_date } = requestData;
   if (period === "manual" && (!end_date || end_date === "")) return Promise.resolve();
 
-  if (lastXhrSales) {
-    console.log("[DEBUG] 이전 Cafe24 매출 요청 abort");
-    lastXhrSales.abort();
-  }
+  // 순차 실행이므로 abort 제거
+  // if (lastXhrSales) {
+  //   console.log("[DEBUG] 이전 Cafe24 매출 요청 abort");
+  //   lastXhrSales.abort();
+  // }
 
   showLoading("#loadingOverlayCafe24Sales");
   const startTime = performance.now();

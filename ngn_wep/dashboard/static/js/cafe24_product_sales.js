@@ -111,10 +111,11 @@ function fetchCafe24ProductSalesData(requestData) {
 
   if (period === "manual" && (!end_date || end_date === "")) return Promise.resolve();
 
-  if (lastXhrProductSales) {
-    console.log("[DEBUG] 이전 Cafe24 상품 판매 요청 abort");
-    lastXhrProductSales.abort();
-  }
+  // 순차 실행이므로 abort 제거
+  // if (lastXhrProductSales) {
+  //   console.log("[DEBUG] 이전 Cafe24 상품 판매 요청 abort");
+  //   lastXhrProductSales.abort();
+  // }
 
   showLoading("#loadingOverlayCafe24Products");
   const startTime = performance.now();

@@ -10,9 +10,10 @@ let adsetSummaryRequest = null;
 
 // ✅ 파라미터 기본값 추가: {} → undefined 방지
 export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
-  if (adsetSummaryRequest) {
-    adsetSummaryRequest.abort();
-  }
+  // 순차 실행이므로 abort 제거
+  // if (adsetSummaryRequest) {
+  //   adsetSummaryRequest.abort();
+  // }
 
   // ✅ 기간 보정 로직 추가 (manual 외엔 자동 계산)
   if ((!start_date || !end_date) && period !== "manual") {

@@ -96,13 +96,13 @@ async function updateAllData() {
 
   isLoading = true;
 
-  // 🔥 즉시 의존성 로딩 스피너 시작 - 가장 먼저 실행
-  console.log("🔄 의존성 로딩 스피너 시작 - 즉시 실행");
+  // 🔥 즉시 의존성 로딩 스피너 시작 - 필터 변경 시에도 작동
+  console.log("🔄 의존성 로딩 스피너 시작 - 필터 변경 감지");
   
   // 성과 요약 로딩 오버레이 즉시 표시
   const performanceOverlay = $("#loadingOverlayPerformanceSummary");
   if (performanceOverlay.length > 0) {
-    console.log("✅ 성과 요약 로딩 오버레이 찾음 - 즉시 표시");
+    console.log("✅ 성과 요약 로딩 오버레이 찾음 - 필터 변경 시 즉시 표시");
     
     // 즉시 모든 방법으로 표시
     performanceOverlay.show();
@@ -114,7 +114,7 @@ async function updateAllData() {
     // 강제 스타일 속성 설정
     performanceOverlay.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
     
-    console.log("✅ 성과 요약 로딩 스피너 즉시 표시 완료");
+    console.log("✅ 성과 요약 로딩 스피너 즉시 표시 완료 - 필터 변경");
   } else {
     console.error("❌ 성과 요약 로딩 오버레이를 찾을 수 없음");
   }
@@ -134,7 +134,7 @@ async function updateAllData() {
   });
 
   try {
-    console.log("🔄 Cafe24 데이터 요청 시작");
+    console.log("🔄 Cafe24 데이터 요청 시작 - 필터 변경");
     
     // 필수 데이터는 병렬로 실행하되 실패해도 계속 진행
     await Promise.all([
@@ -146,10 +146,10 @@ async function updateAllData() {
       }),
     ]);
 
-    console.log("✅ Cafe24 데이터 요청 완료");
+    console.log("✅ Cafe24 데이터 요청 완료 - 필터 변경");
     
     // 카페24 매출 완료 후 사이트 성과 요약 로딩 스피너도 함께 숨김
-    console.log("✅ 의존성 로딩 스피너 종료");
+    console.log("✅ 의존성 로딩 스피너 종료 - 필터 변경");
     hideLoading("#loadingOverlayPerformanceSummary");
 
     // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
@@ -199,7 +199,7 @@ async function updateAllData() {
   } finally {
     isLoading = false;
     // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음
-    console.log("✅ updateAllData completed");
+    console.log("✅ updateAllData completed - 필터 변경");
   }
 }
 

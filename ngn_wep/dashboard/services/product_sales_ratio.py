@@ -62,6 +62,8 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
 
     print(f"[DEBUG] 최종 필터 조건: {company_filter}")
     print(f"[DEBUG] 날짜 범위: {start_date} ~ {end_date}")
+    print(f"[DEBUG] user_id: {user_id}")
+    print(f"[DEBUG] query_params 개수: {len(query_params)}")
 
     # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
@@ -94,6 +96,12 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
 
     try:
         client = get_bigquery_client()
+        
+        # 쿼리 파라미터 디버깅
+        print(f"[DEBUG] 쿼리 파라미터 상세:")
+        for i, param in enumerate(query_params):
+            print(f"  {i}: {param.name} = {param.value} (타입: {param.parameter_type})")
+        
         rows = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         data = [dict(row) for row in rows]
         print(f"[DEBUG] product_sales_ratio 결과: {len(data)} 건")
@@ -118,6 +126,42 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
             check_result = client.query(check_query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
             total_count = next(check_result).total_count
             print(f"  - 조건에 맞는 총 레코드 수: {total_count}")
+            
+            # 전체 테이블 데이터 확인
+            total_check_query = """
+            SELECT 
+              COUNT(*) as total_rows,
+              COUNT(DISTINCT company_name) as unique_companies,
+              MIN(payment_date) as min_date,
+              MAX(payment_date) as max_date
+            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+            WHERE item_product_sales > 0
+            """
+            total_check_result = client.query(total_check_query).result()
+            total_info = next(total_check_result)
+            print(f"  - 전체 테이블 정보:")
+            print(f"    * 총 레코드 수: {total_info.total_rows}")
+            print(f"    * 고유 업체 수: {total_info.unique_companies}")
+            print(f"    * 날짜 범위: {total_info.min_date} ~ {total_info.max_date}")
+            
+            # 특정 업체 데이터 확인
+            if isinstance(company_name, list) and len(company_name) > 0:
+                company_check_query = f"""
+                SELECT 
+                  company_name,
+                  COUNT(*) as row_count,
+                  MIN(payment_date) as min_date,
+                  MAX(payment_date) as max_date
+                FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+                WHERE LOWER(company_name) IN UNNEST(@company_name_list)
+                  AND item_product_sales > 0
+                GROUP BY company_name
+                """
+                company_check_params = [bigquery.ArrayQueryParameter("company_name_list", "STRING", [name.lower() for name in company_name])]
+                company_check_result = client.query(company_check_query, job_config=bigquery.QueryJobConfig(query_parameters=company_check_params)).result()
+                print(f"  - 요청된 업체별 데이터:")
+                for row in company_check_result:
+                    print(f"    * {row.company_name}: {row.row_count}건 ({row.min_date} ~ {row.max_date})")
         
         return data
     except Exception as ex:

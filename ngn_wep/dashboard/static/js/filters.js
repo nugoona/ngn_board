@@ -269,20 +269,28 @@ async function fetchFilteredData() {
 
   try {
     if (pathname === "/" || pathname === "/dashboard") {
+      // 순차적으로 실행하여 abort 방지
       const requests = [
-        fetchCafe24SalesData?.(requestData),
-        fetchCafe24ProductSalesData?.(requestData),
-        fetchPerformanceSummaryData?.(requestData),
-        fetchMonthlyNetSalesVisitors?.(requestData),
-        fetchProductSalesRatio?.(requestData),
-        fetchPlatformSalesSummary?.(requestData),
-        fetchPlatformSalesRatio?.(requestData),
-        fetchGa4SourceSummaryData?.(requestData),
-        fetchGa4ViewItemSummaryData?.(requestData),
-        fetchMonthlyPlatformSalesData?.(requestData)
+        () => fetchCafe24SalesData?.(requestData),
+        () => fetchCafe24ProductSalesData?.(requestData),
+        () => fetchPerformanceSummaryData?.(requestData),
+        () => fetchMonthlyNetSalesVisitors?.(requestData),
+        () => fetchProductSalesRatio?.(requestData),
+        () => fetchPlatformSalesSummary?.(requestData),
+        () => fetchPlatformSalesRatio?.(requestData),
+        () => fetchGa4SourceSummaryData?.(requestData),
+        () => fetchGa4ViewItemSummaryData?.(requestData),
+        () => fetchMonthlyPlatformSalesData?.(requestData)
       ].filter(Boolean);
 
-      await Promise.all(requests);
+      // 순차 실행
+      for (const request of requests) {
+        try {
+          await request();
+        } catch (error) {
+          console.warn("[WARN] 요청 실패:", error);
+        }
+      }
     } else if (pathname === "/ads") {
       metaAdsState.period = selectedPeriod;
 

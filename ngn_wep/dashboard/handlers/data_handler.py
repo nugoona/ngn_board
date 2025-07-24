@@ -228,7 +228,7 @@ def get_dashboard_data_route():
             if data_type == "product_sales_ratio":
                 def fetch_product_sales_ratio():
                     t1 = time.time()
-                    from services.product_sales_ratio import get_product_sales_ratio
+                    from ..services.product_sales_ratio import get_product_sales_ratio
                     data_rows = get_product_sales_ratio(company_name, start_date, end_date, limit=50)
                     t2 = time.time()
                     timing_log["product_sales_ratio"] = round(t2-t1, 3)
@@ -238,7 +238,7 @@ def get_dashboard_data_route():
             if data_type == "platform_sales_summary":
                 def fetch_platform_sales_summary():
                     t1 = time.time()
-                    from services.platform_sales_summary import get_platform_sales_by_day
+                    from ..services.platform_sales_summary import get_platform_sales_by_day
                     # ⬇️ 서비스 함수는 리스트 파라미터를 기대하므로 문자열이면 리스트로 래핑
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
 
@@ -257,7 +257,7 @@ def get_dashboard_data_route():
             if data_type == "platform_sales_ratio":
                 def fetch_platform_sales_ratio():
                     t1 = time.time()
-                    from services.platform_sales_summary import get_platform_sales_ratio
+                    from ..services.platform_sales_summary import get_platform_sales_ratio
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
 
                     data_rows                                      = get_platform_sales_ratio(
@@ -273,7 +273,7 @@ def get_dashboard_data_route():
             if data_type == "platform_sales_monthly":
                 def fetch_monthly_platform_sales():
                     t1 = time.time()
-                    from services.platform_sales_summary import get_monthly_platform_sales
+                    from ..services.platform_sales_summary import get_monthly_platform_sales
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
                     data_rows                                      = get_monthly_platform_sales(_company_names)
                     t2 = time.time()
@@ -284,7 +284,7 @@ def get_dashboard_data_route():
             # Meta 광고 관련 데이터 요청 처리
             if data_type == "meta_ads_insight_table":
                 t1 = time.time()
-                from services.meta_ads_insight import get_meta_ads_insight_table
+                from ..services.meta_ads_insight import get_meta_ads_insight_table
 
                 level = data.get("level", "account")
                 account_id = data.get("account_id")
@@ -313,7 +313,7 @@ def get_dashboard_data_route():
                 if user_id == "demo":
                     session["company_names"] = ["demo"]
 
-                from services.meta_ads_insight import get_meta_account_list_filtered
+                from ..services.meta_ads_insight import get_meta_account_list_filtered
                 rows = get_meta_account_list_filtered(company_name)
                 response_data["meta_accounts"] = rows
 
@@ -339,7 +339,7 @@ def get_dashboard_data_route():
 
             # Meta Ads 광고 미리보기 - 단일
             if data_type == "meta_ads_preview_list":
-                from services.meta_ads_preview import get_meta_ads_preview_list
+                from ..services.meta_ads_preview import get_meta_ads_preview_list
 
                 account_id = data.get("account_id")
                 ad_list = get_meta_ads_preview_list(account_id)
@@ -348,7 +348,7 @@ def get_dashboard_data_route():
 
             # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
             if data_type == "slide_collection_ads":
-                from services.meta_ads_slide_collection import get_slide_collection_ads
+                from ..services.meta_ads_slide_collection import get_slide_collection_ads
 
                 account_id = data.get("account_id")
                 ad_list = get_slide_collection_ads(account_id)
@@ -357,7 +357,7 @@ def get_dashboard_data_route():
 
             # catalog_sidebar
             if data_type == "catalog_sidebar":
-                from services.catalog_sidebar_service import get_catalog_sidebar_data
+                from ..services.catalog_sidebar_service import get_catalog_sidebar_data
 
                 account_id = data.get("account_id")
                 if not account_id:
@@ -371,7 +371,7 @@ def get_dashboard_data_route():
 
             # catalog_manual  ─ 자사몰 URL 수집
             if data_type == "catalog_manual":
-                from services.catalog_sidebar_service import get_manual_product_list
+                from ..services.catalog_sidebar_service import get_manual_product_list
 
                 category_url = data.get("category_url")
                 if not category_url:
@@ -385,7 +385,7 @@ def get_dashboard_data_route():
 
             # catalog_manual_search  ─ 수동 세트 키워드 검색
             if data_type == "catalog_manual_search":
-                from services.catalog_sidebar_service import search_products_for_manual_set
+                from ..services.catalog_sidebar_service import search_products_for_manual_set
 
                 account_id  = data.get("account_id")
                 keyword     = (data.get("keyword") or "").strip()

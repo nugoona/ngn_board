@@ -12,7 +12,7 @@ from google.cloud import bigquery
 # ───────────────────────────────────────────────
 #  서비스 모듈
 # ───────────────────────────────────────────────
-from services.meta_demo_service import (
+from ..services.meta_demo_service import (
     get_ad_accounts,
     get_businesses,
     get_pages,

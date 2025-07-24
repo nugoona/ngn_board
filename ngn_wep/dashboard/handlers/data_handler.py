@@ -229,7 +229,9 @@ def get_dashboard_data_route():
                 def fetch_product_sales_ratio():
                     t1 = time.time()
                     from ..services.product_sales_ratio import get_product_sales_ratio
-                    data_rows = get_product_sales_ratio(company_name, start_date, end_date, limit=50)
+                    # ⬇️ 서비스 함수는 리스트 파라미터를 기대하므로 문자열이면 리스트로 래핑
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+                    data_rows = get_product_sales_ratio(_company_names, start_date, end_date, limit=50)
                     t2 = time.time()
                     timing_log["product_sales_ratio"] = round(t2-t1, 3)
                     return ("product_sales_ratio", data_rows)

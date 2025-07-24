@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NGN 대시보드 로그인</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <style>
     * {
@@ -36,6 +37,15 @@
       font-weight: 600;
       margin-bottom: 20px;
       color: #1e81ce;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .login-logo img {
+      width: 32px;
+      height: 32px;
     }
 
     .error-message {
@@ -129,7 +139,10 @@
 <body>
 
 <div class="login-container">
-  <div class="login-logo">🔵 NGN 대시보드</div>
+  <div class="login-logo">
+    <img src="{{ url_for('static', filename='img/x.png') }}" alt="NGN">
+    NGN 대시보드
+  </div>
 
   <!-- 에러 메시지 영역 -->
   <div id="error-message" class="error-message" {% if error %}style="display: block;"{% endif %}>

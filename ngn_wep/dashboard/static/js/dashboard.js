@@ -96,6 +96,9 @@ async function updateAllData() {
 
   isLoading = true;
 
+  // 의존성 로딩 스피너 시작 - 카페24 매출과 사이트 성과 요약 동시 표시
+  showLoading("#loadingOverlayPerformanceSummary");
+
   // 필수 데이터 요청 객체
   const salesRequest = getRequestData(1, {
     data_type: "cafe24_sales",
@@ -120,6 +123,9 @@ async function updateAllData() {
         console.error("[ERROR] fetchCafe24ProductSalesData 실패:", e);
       }),
     ]);
+
+    // 카페24 매출 완료 후 사이트 성과 요약 로딩 스피너도 함께 숨김
+    hideLoading("#loadingOverlayPerformanceSummary");
 
     // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
     const fetchMainData = [];
@@ -175,6 +181,8 @@ async function updateAllData() {
 
   } catch (e) {
     console.error("[ERROR] updateAllData() 전체 오류:", e);
+    // 에러 발생 시에도 로딩 스피너 숨김
+    hideLoading("#loadingOverlayPerformanceSummary");
   } finally {
     isLoading = false;
     // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음

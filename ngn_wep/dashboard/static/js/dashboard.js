@@ -123,35 +123,25 @@ async function updateAllData() {
   // 🔥 즉시 의존성 로딩 스피너 시작 - 필터 변경 시에도 작동
   debugLog("🔄 의존성 로딩 스피너 시작 - 필터 변경 감지");
   
-  // 성과 요약 로딩 오버레이 즉시 표시
-  const performanceOverlay = $("#loadingOverlayPerformanceSummary");
-  debugLog("🔍 성과 요약 오버레이 검색 결과:", performanceOverlay.length, "개 발견");
+  // 🔥 모든 위젯의 로딩 스피너 즉시 표시
+  const loadingOverlays = [
+    "#loadingOverlayPerformanceSummary",
+    "#loadingOverlayCafe24Sales", 
+    "#loadingOverlayCafe24Products",
+    "#loadingOverlayGa4Source",
+    "#loadingOverlayViewitemSummary",
+    "#loadingOverlayProductSalesRatio"
+  ];
   
-  if (performanceOverlay.length > 0) {
-    debugLog("✅ 성과 요약 로딩 오버레이 찾음 - 필터 변경 시 즉시 표시");
-    
-    // 즉시 모든 방법으로 표시
-    performanceOverlay.show();
-    performanceOverlay.css('display', 'flex');
-    performanceOverlay.css('visibility', 'visible');
-    performanceOverlay.css('opacity', '1');
-    performanceOverlay.css('pointer-events', 'auto');
-    
-    // 강제 스타일 속성 설정
-    performanceOverlay.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
-    
-    debugLog("✅ 성과 요약 로딩 스피너 즉시 표시 완료 - 필터 변경");
-  } else {
-    debugError("❌ 성과 요약 로딩 오버레이를 찾을 수 없음");
-    debugLog("🔍 DOM에서 loadingOverlayPerformanceSummary 검색 중...");
-    
-    // DOM에서 직접 검색
-    const allElements = document.querySelectorAll('[id*="loadingOverlay"]');
-    debugLog("🔍 모든 loadingOverlay 요소들:", allElements.length, "개");
-    allElements.forEach((el, index) => {
-      debugLog(`🔍 ${index}: ${el.id}`);
-    });
-  }
+  loadingOverlays.forEach(overlayId => {
+    const overlay = $(overlayId);
+    if (overlay.length > 0) {
+      debugLog(`✅ ${overlayId} 로딩 스피너 즉시 표시`);
+      showLoading(overlayId);
+    } else {
+      debugLog(`⚠️ ${overlayId} 로딩 오버레이를 찾을 수 없음`);
+    }
+  });
 
   // 필수 데이터 요청 객체
   const salesRequest = getRequestData(1, {

@@ -100,7 +100,8 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
         # 쿼리 파라미터 디버깅
         print(f"[DEBUG] 쿼리 파라미터 상세:")
         for i, param in enumerate(query_params):
-            print(f"  {i}: {param.name} = {param.value} (타입: {param.parameter_type})")
+            param_type = getattr(param, 'parameter_type', 'UNKNOWN')
+            print(f"  {i}: {param.name} = {param.value} (타입: {param_type})")
         
         rows = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         data = [dict(row) for row in rows]

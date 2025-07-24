@@ -175,7 +175,7 @@ def get_dashboard_data_route():
             if data_type in ["ga4_source_summary", "all"]:
                 def fetch_ga4_source_summary():
                     t1 = time.time()
-                    data_rows = get_ga4_source_summary(company_name, start_date, end_date)
+                    data_rows = get_ga4_source_summary(company_name, start_date, end_date, limit=100)
                     t2 = time.time()
                     timing_log["ga4_source_summary"] = round(t2-t1, 3)
                     return ("ga4_source_summary", data_rows[offset:offset + limit], len(data_rows))
@@ -194,7 +194,7 @@ def get_dashboard_data_route():
                 def fetch_product_sales_ratio():
                     t1 = time.time()
                     from services.product_sales_ratio import get_product_sales_ratio
-                    data_rows = get_product_sales_ratio(company_name, start_date, end_date)
+                    data_rows = get_product_sales_ratio(company_name, start_date, end_date, limit=50)
                     t2 = time.time()
                     timing_log["product_sales_ratio"] = round(t2-t1, 3)
                     return ("product_sales_ratio", data_rows)

@@ -5,7 +5,7 @@ def get_bigquery_client():
 
 def get_performance_summary(company_name, start_date: str, end_date: str, user_id: str = None):
     """
-    ✅ performance_summary_ngn 테이블에서 업체 + 기간 필터로 요약 1줄 가져오기 (최적화됨)
+    ✅ performance_summary_ngn 테이블에서 업체 + 기간 필터로 요약 1줄 가져오기
     - demo 계정: demo 업체만 조회
     - 일반 계정: demo 업체 제외
     - 항상 updated_at 포함되도록 보장
@@ -42,7 +42,7 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
 
-    # ✅ 최적화된 쿼리문 구성
+    # ✅ 쿼리문 구성
     query = f"""
         SELECT
           FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
@@ -53,10 +53,9 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
           SUM(total_purchase_value) AS total_purchase_value,
           ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(total_purchases)), 2) AS avg_order_value,
           ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(ad_spend)) * 100, 2) AS roas_percentage,
-          -- ✅ AVG 계산 최적화 (가중평균 대신 단순 평균)
-          ROUND(SUM(ad_spend * avg_cpc) / NULLIF(SUM(ad_spend), 0), 2) AS avg_cpc,
-          ROUND(SUM(total_clicks * click_through_rate) / NULLIF(SUM(total_clicks), 0), 2) AS click_through_rate,
-          ROUND(SUM(total_clicks * conversion_rate) / NULLIF(SUM(total_clicks), 0), 2) AS conversion_rate,
+          ROUND(SAFE_DIVIDE(SUM(ad_spend * avg_cpc), SUM(ad_spend)), 2) AS avg_cpc,
+          ROUND(SAFE_DIVIDE(SUM(total_clicks * click_through_rate), SUM(total_clicks)), 2) AS click_through_rate,
+          ROUND(SAFE_DIVIDE(SUM(total_clicks * conversion_rate), SUM(total_clicks)), 2) AS conversion_rate,
           SUM(site_revenue) AS site_revenue,
           SUM(total_visitors) AS total_visitors,
           SUM(product_views) AS product_views,
@@ -67,18 +66,15 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
         WHERE {company_filter}
           AND DATE(date) BETWEEN @start_date AND @end_date
         GROUP BY ad_media
-        HAVING SUM(ad_spend) > 0 OR SUM(site_revenue) > 0 OR SUM(total_visitors) > 0
-        ORDER BY SUM(ad_spend) DESC
-        LIMIT 10
     """
 
-    print("[DEBUG] performance_summary_ngn Query (최적화됨):\n", query)
+    print("[DEBUG] performance_summary_ngn Query:\n", query)
 
     try:
         client = get_bigquery_client()
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         rows = [dict(row) for row in result]
-        print(f"[DEBUG] performance_summary 결과 (최적화됨): {len(rows)}개")
+        print(f"[DEBUG] performance_summary 결과: {len(rows)}개")
         return rows
     except Exception as e:
         print("[ERROR] performance_summary 오류:", e)

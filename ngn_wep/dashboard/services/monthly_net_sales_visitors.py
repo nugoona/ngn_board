@@ -32,6 +32,8 @@ def get_monthly_net_sales_visitors(company_name):
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
         WHERE payment_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 13 MONTH)
                                AND CURRENT_DATE()
+          AND net_sales > 0
+          AND company_name IS NOT NULL
         GROUP BY company_name, month
       ),
       monthly_traffic AS (
@@ -42,6 +44,8 @@ def get_monthly_net_sales_visitors(company_name):
         FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
         WHERE event_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 13 MONTH)
                              AND CURRENT_DATE()  -- ✅ 오늘 포함되도록 수정
+          AND total_users > 0
+          AND company_name IS NOT NULL
         GROUP BY company_name, month
       )
     SELECT
@@ -54,6 +58,7 @@ def get_monthly_net_sales_visitors(company_name):
       ON s.company_name = t.company_name
       AND s.month = t.month
     WHERE {company_filter}
+      AND s.net_sales > 0
     ORDER BY s.month ASC
     """
 

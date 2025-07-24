@@ -3,24 +3,22 @@ from google.cloud import bigquery
 def get_bigquery_client():
     return bigquery.Client()
 
-def get_product_sales_ratio(company_name, start_date: str, end_date: str):
+def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit: int = 50):
     """
-    ✅ 기간: start_date ~ end_date
-    ✅ 업체명: company_name (리스트 or 문자열)
-    ✅ cleaned_product_name 기준 그룹화
-    ✅ 매출 총합 대비 비중 계산 (%)
-    ✅ 날짜는 "YYYY-MM-DD ~ YYYY-MM-DD" 형식
+    ✅ 상품별 매출 비율 조회 (최적화됨)
     """
+
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")
 
-    # ✅ 업체명 필터 분기 처리
+    # ✅ 업체 필터 처리
     if isinstance(company_name, list):
         company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
         query_params = [
             bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name),
             bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
             bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+            bigquery.ScalarQueryParameter("limit", "INT64", limit),
         ]
     else:
         company_filter = "LOWER(company_name) = LOWER(@company_name)"
@@ -28,8 +26,10 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str):
             bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
             bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
             bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+            bigquery.ScalarQueryParameter("limit", "INT64", limit),
         ]
 
+    # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
     SELECT
       FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS report_period,
@@ -40,7 +40,7 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str):
           r'_[^_]+$',                                                -- _컬러 제거
           ''
         ),
-        r'["\\'“”‘’]', ''                                            -- 따옴표 제거
+        r'["\\'""'']', ''                                            -- 따옴표 제거
       ) AS cleaned_product_name,
       SUM(item_quantity) AS item_quantity,
       SUM(item_product_sales) AS item_product_sales,
@@ -48,11 +48,15 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str):
     FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
     WHERE payment_date BETWEEN @start_date AND @end_date
       AND {company_filter}
+      AND item_product_sales > 0
+      AND product_name IS NOT NULL
     GROUP BY report_period, company_name, cleaned_product_name
+    HAVING item_product_sales > 0
     ORDER BY item_product_sales DESC
+    LIMIT @limit
     """
 
-    print("[DEBUG] product_sales_ratio 쿼리:\n", query)
+    print("[DEBUG] product_sales_ratio 쿼리 (최적화됨):\n", query)
 
     try:
         client = get_bigquery_client()

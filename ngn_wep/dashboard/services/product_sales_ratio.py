@@ -86,13 +86,13 @@ def get_product_sales_ratio(
                 REGEXP_REPLACE(
                     REGEXP_REPLACE(
                         product_name,
-                        '\\[[^\\]]+\\]\\s*',         -- [브랜드] 제거
+                        r'\[[^\]]+\]\s*',         -- [브랜드] 제거
                         ''
                     ),
-                    '_[^_]+$',                              -- _컬러 제거
+                    r'_[^_]+$',                              -- _컬러 제거
                     ''
                 ),
-                '["\'`]', '',                              -- 따옴표 / 백틱 제거
+                r'["\'`]', '',                              -- 따옴표 / 백틱 제거
             ) AS cleaned_product_name,
             SUM(item_quantity)      AS item_quantity,
             SUM(item_product_sales) AS item_product_sales

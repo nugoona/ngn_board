@@ -6,7 +6,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 
-@cached_query(func_name="product_sales_ratio", ttl=60)  # 1분 캐싱 (디버깅용)
+@cached_query(func_name="product_sales_ratio", ttl=0)  # 캐싱 비활성화 (디버깅용)
 def get_product_sales_ratio(
     company_name,
     start_date: str,

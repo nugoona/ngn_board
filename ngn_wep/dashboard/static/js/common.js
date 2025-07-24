@@ -72,8 +72,8 @@ function forceHideAllLoading() {
 
 // 페이지 로드 시 자동으로 모든 로딩 오버레이 제거 (백업용)
 $(document).ready(function() {
-  // 30초 후 강제 제거 (최후의 수단)
-  setTimeout(forceHideAllLoading, 30000);
+  // 60초 후 강제 제거 (최후의 수단)
+  setTimeout(forceHideAllLoading, 60000);
 });
 
 function getRequestData(page = 1, extra = {}) {

@@ -106,14 +106,7 @@ async function fetchPerformanceSummaryData() {
 function toggleLoading(isLoading) {
     if (isLoading) {
         showLoading("#loadingOverlayPerformanceSummary");
-        // 🔥 showLoading 함수가 설정한 스타일을 덮어써서 배경을 투명하게 만듦
-        setTimeout(() => {
-            $("#loadingOverlayPerformanceSummary").css({
-                "background": "transparent !important",
-                "background-color": "transparent !important",
-                "opacity": "1 !important"
-            });
-        }, 10);
+        // 🔥 모든 로딩 오버레이가 투명 배경이므로 JavaScript 설정 불필요
         $("#performanceSummaryWrapper").addClass("loading");
     } else {
         hideLoading("#loadingOverlayPerformanceSummary");

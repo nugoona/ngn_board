@@ -2401,7 +2401,7 @@ th.sortable.desc::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.3) !important;  /* !important 추가 */
+  background: transparent !important;  /* 모든 로딩 오버레이 배경 투명화 */
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2429,34 +2429,5 @@ th.sortable.desc::after {
   font-weight: 500;
 }
 
-/* 🔥 특정 위젯들의 로딩 오버레이 강제 적용 */
-#loadingOverlayPerformanceSummary,
-#loadingOverlayCafe24Sales,
-#loadingOverlayCafe24Products,
-#loadingOverlayGa4Source,
-#loadingOverlayViewitemSummary,
-#loadingOverlayProductSalesRatio,
-#loadingOverlayPlatformSalesSummary,
-#loadingOverlayPlatformSalesRatio,
-#loadingOverlayPlatformSalesMonthly,
-#loadingOverlayMonthlyChart {
-  background: rgba(255, 255, 255, 0.3) !important;
-  opacity: 1 !important;
-}
-
-/* 🔥 사이트 성과 요약만 투명 배경 (2중 로딩 시 겹침 방지) */
-#loadingOverlayPerformanceSummary {
-  background: transparent !important;
-  opacity: 1 !important;
-}
-
-/* 🔥 더 구체적인 선택자로 강제 덮어쓰기 */
-.performance-summary-wrapper #loadingOverlayPerformanceSummary,
-.performance-summary-wrapper.loading #loadingOverlayPerformanceSummary,
-body #loadingOverlayPerformanceSummary,
-html body #loadingOverlayPerformanceSummary {
-  background: transparent !important;
-  background-color: transparent !important;
-  opacity: 1 !important;
-}
+/* 🔥 모든 로딩 오버레이 배경 투명화 완료 - 특별한 규칙 불필요 */
 

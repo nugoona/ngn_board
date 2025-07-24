@@ -142,7 +142,8 @@ def get_product_sales_ratio(
 
         print('[DEBUG] 쿼리 파라미터:')
         for i, p in enumerate(query_params):
-            print(f'  {i}: {p.name} = {p.value}')
+            val = getattr(p, "value", getattr(p, "values", None))
+            print(f'  {i}: {p.name} = {val}')
 
         rows = client.query(
             query,

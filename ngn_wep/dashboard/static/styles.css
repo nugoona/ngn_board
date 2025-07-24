@@ -201,23 +201,13 @@ th {
   pointer-events: auto;
 }
 
-/* 추가: JavaScript로 숨겨진 경우 강제로 숨김 */
-.loading-overlay[style*="display: none"],
-.loading-overlay[style*="visibility: hidden"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  z-index: -1 !important;
-}
-
-/* 로딩 상태가 아닐 때 오버레이 완전 숨김 */
+/* 로딩 상태가 아닐 때 오버레이 숨김 (강제 규칙 제거) */
 .table-wrapper:not(.loading) .loading-overlay,
 .performance-summary-wrapper:not(.loading) .loading-overlay {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
+    display: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* 기본 로딩 오버레이 스타일 */
@@ -289,12 +279,12 @@ th {
   pointer-events: auto;
 }
 
-/* 추가: JavaScript로 숨겨진 경우 강제로 숨김 (두 번째 위치) */
+/* JavaScript로 숨겨진 경우 숨김 (강제 규칙 제거) */
 .loading-overlay[style*="display: none"],
 .loading-overlay[style*="visibility: hidden"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
+  display: none;
+  visibility: hidden;
+  opacity: 0;
 }
 .spinner {
   border: 5px solid #f3f3f3;

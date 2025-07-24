@@ -30,21 +30,29 @@ window.latestAjaxRequest = latestAjaxRequestWrapper;
 $(window).on("load", () => updateAllData());
 
 $(document).ready(function () {
+  console.log("📋 dashboard.js document.ready 시작");
+  
   $("#accountFilter, #periodFilter").change(function () {
+    console.log("🔄 필터 변경 감지:", $(this).attr('id'), "값:", $(this).val());
     const period = $("#periodFilter").val();
     if (period !== "manual") {
       $("#startDate").val("");
       $("#endDate").val("");
+      console.log("🚀 updateAllData() 호출 - 필터 변경");
       updateAllData();
     }
   });
 
   $("#endDate, #applyDateFilter").on("change click", function () {
+    console.log("🔄 날짜 필터 변경 감지:", $(this).attr('id'));
     const period = $("#periodFilter").val();
     const endDate = $("#endDate").val()?.trim();
     if (period === "manual" && !endDate) return;
+    console.log("🚀 updateAllData() 호출 - 날짜 필터 변경");
     updateAllData();
   });
+  
+  console.log("📋 dashboard.js document.ready 완료");
 });
 
 // showLoading/hideLoading 함수는 common.js에서 정의됨
@@ -88,12 +96,23 @@ function getRequestData(page = 1, extra = {}) {
 }
 
 async function updateAllData() {
-  if (isLoading) return; // 이미 데이터 요청 중이면 중지
+  console.log("🎯 updateAllData() 함수 시작");
+  
+  if (isLoading) {
+    console.log("⚠️ 이미 로딩 중이므로 중단");
+    return; // 이미 데이터 요청 중이면 중지
+  }
 
   const period = $("#periodFilter").val();
   const endDate = $("#endDate").val()?.trim();
-  if (period === "manual" && !endDate) return;
+  console.log("📊 현재 필터 값:", { period, endDate });
+  
+  if (period === "manual" && !endDate) {
+    console.log("⚠️ manual 모드에서 endDate가 없으므로 중단");
+    return;
+  }
 
+  console.log("✅ updateAllData() 실행 조건 만족 - 로딩 시작");
   isLoading = true;
 
   // 🔥 즉시 의존성 로딩 스피너 시작 - 필터 변경 시에도 작동

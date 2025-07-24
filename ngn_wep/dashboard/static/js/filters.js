@@ -269,26 +269,33 @@ async function fetchFilteredData() {
 
   try {
     if (pathname === "/" || pathname === "/dashboard") {
-      // 순차적으로 실행하여 abort 방지
-      const requests = [
-        () => fetchCafe24SalesData?.(requestData),
-        () => fetchCafe24ProductSalesData?.(requestData),
-        () => fetchPerformanceSummaryData?.(requestData),
-        () => fetchMonthlyNetSalesVisitors?.(requestData),
-        () => fetchProductSalesRatio?.(requestData),
-        () => fetchPlatformSalesSummary?.(requestData),
-        () => fetchPlatformSalesRatio?.(requestData),
-        () => fetchGa4SourceSummaryData?.(requestData),
-        () => fetchGa4ViewItemSummaryData?.(requestData),
-        () => fetchMonthlyPlatformSalesData?.(requestData)
-      ].filter(Boolean);
+      // updateAllData 함수가 정의되어 있는지 확인하고 호출
+      if (typeof updateAllData === 'function') {
+        console.log("🔄 filters.js에서 updateAllData() 호출");
+        await updateAllData();
+      } else {
+        console.warn("[WARN] updateAllData 함수가 정의되지 않음 - 개별 함수 호출로 대체");
+        // 순차적으로 실행하여 abort 방지
+        const requests = [
+          () => fetchCafe24SalesData?.(requestData),
+          () => fetchCafe24ProductSalesData?.(requestData),
+          () => fetchPerformanceSummaryData?.(requestData),
+          () => fetchMonthlyNetSalesVisitors?.(requestData),
+          () => fetchProductSalesRatio?.(requestData),
+          () => fetchPlatformSalesSummary?.(requestData),
+          () => fetchPlatformSalesRatio?.(requestData),
+          () => fetchGa4SourceSummaryData?.(requestData),
+          () => fetchGa4ViewItemSummaryData?.(requestData),
+          () => fetchMonthlyPlatformSalesData?.(requestData)
+        ].filter(Boolean);
 
-      // 순차 실행
-      for (const request of requests) {
-        try {
-          await request();
-        } catch (error) {
-          console.warn("[WARN] 요청 실패:", error);
+        // 순차 실행
+        for (const request of requests) {
+          try {
+            await request();
+          } catch (error) {
+            console.warn("[WARN] 요청 실패:", error);
+          }
         }
       }
     } else if (pathname === "/ads") {

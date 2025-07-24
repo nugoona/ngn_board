@@ -2,9 +2,10 @@ let rawViewItemRows = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// ✅ 전역 변수 사용 (dashboard.js에서 이미 선언됨)
-const debugLog = window.isProduction ? () => {} : console.log;
-const debugError = window.isProduction ? () => {} : console.error;
+// ✅ 전역 변수 사용 (안전한 방식)
+const isProduction = window.isProduction || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
+const debugLog = isProduction ? () => {} : console.log;
+const debugError = isProduction ? () => {} : console.error;
 
 // 🔥 강제 디버깅 활성화 (임시)
 console.log("[FORCE DEBUG] viewitem_summary.js 로드됨");

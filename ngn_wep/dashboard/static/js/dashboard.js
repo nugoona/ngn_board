@@ -229,6 +229,18 @@ async function updateAllData() {
 
     // 유입 데이터 요청은 각각의 JS 파일에서 자체적으로 처리됨
     // fetchViewItemSummaryData와 fetchGa4SourceSummaryData는 별도 파일에서 정의됨
+    
+    try {
+      fetchGa4ViewItemSummaryData();
+    } catch (e) {
+      console.error("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
+    }
+    
+    try {
+      fetchGa4SourceSummaryData();
+    } catch (e) {
+      console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
+    }
 
     // 빈 배열이므로 Promise.all 호출 불필요
     // await Promise.all([

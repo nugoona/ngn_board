@@ -182,57 +182,7 @@ th {
   transition: opacity 0.3s ease-in-out;
 }
 
-/* ✅ 로딩 중일 때 클릭 차단은 오버레이로만 처리 (전체 박스에 영향 X) */
-.table-wrapper .loading-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  pointer-events: none;
-}
-
-.table-wrapper.loading .loading-overlay {
-  display: flex !important;
-  pointer-events: auto;
-}
-
-/* 로딩 상태가 아닐 때 오버레이 숨김 (강제 규칙 제거) */
-.table-wrapper:not(.loading) .loading-overlay,
-.performance-summary-wrapper:not(.loading) .loading-overlay {
-    display: none;
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* 기본 로딩 오버레이 스타일 */
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(2px);
-}
-
-/* 로딩 중일 때만 오버레이 표시 */
-.table-wrapper.loading .loading-overlay,
-.performance-summary-wrapper.loading .loading-overlay {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
+/* 로딩 오버레이 관련 스타일은 파일 하단에서 통합 관리 */
 
 
 /* ================================
@@ -258,51 +208,7 @@ th {
 }
 
 
-/* ================================
- 로딩 오버레이 (스피너)
-================================ */
-.loading-overlay {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  pointer-events: none;
-  transition: opacity 0.3s ease-in-out;
-}
-.table-wrapper.loading .loading-overlay {
-  display: flex !important;
-  pointer-events: auto;
-}
-
-/* JavaScript로 숨겨진 경우 숨김 (강제 규칙 제거) */
-.loading-overlay[style*="display: none"],
-.loading-overlay[style*="visibility: hidden"] {
-  display: none;
-  visibility: hidden;
-  opacity: 0;
-}
-.spinner {
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #3498db;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-right: 10px;
-}
-.loading-text {
-  font-size: 14px;
-  color: #333;
-}
-@keyframes spin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-} 
+/* 로딩 오버레이 관련 스타일은 파일 하단에서 통합 관리 */ 
 
 
 /* ================================
@@ -2464,7 +2370,7 @@ th.sortable.desc::after {
     background: #ef4444; /* 에러 */
 }
 
-/* 로딩 오버레이 기본 스타일 */
+/* 로딩 오버레이 기본 스타일 (통합) */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -2477,11 +2383,25 @@ th.sortable.desc::after {
   align-items: center;
   flex-direction: column;
   z-index: 1000;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 }
 
 /* 로딩 상태일 때만 표시 */
-.loading .loading-overlay {
+.loading .loading-overlay,
+.table-wrapper.loading .loading-overlay,
+.performance-summary-wrapper.loading .loading-overlay {
   display: flex !important;
+  pointer-events: auto;
+}
+
+/* JavaScript로 숨겨진 경우 숨김 */
+.loading-overlay[style*="display: none"],
+.loading-overlay[style*="visibility: hidden"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* 스피너 애니메이션 */

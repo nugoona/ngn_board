@@ -53,8 +53,8 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // 🔥 로딩 스피너 제거 - dashboard.js에서 통합 관리
-    // toggleLoading(true);
+    // 🔥 사이트 성과 요약만 2중 로딩 스피너 (performance_summary.js에서 추가)
+    toggleLoading(true);
 
     const today = new Date().toISOString().split("T")[0];
     if (!startDate) startDate = today;
@@ -97,16 +97,20 @@ async function fetchPerformanceSummaryData() {
     } catch (error) {
         console.error("[ERROR] 데이터 요청 중 오류 발생:", error);
         updateUpdatedAtText(null);
+    } finally {
+        // 🔥 사이트 성과 요약만 2중 로딩 스피너 (performance_summary.js에서 추가)
+        toggleLoading(false);
     }
-    // 🔥 로딩 스피너 제거 - dashboard.js에서 통합 관리
-    // } finally {
-    //     toggleLoading(false);
-    // }
 }
 
 function toggleLoading(isLoading) {
     if (isLoading) {
         showLoading("#loadingOverlayPerformanceSummary");
+        // 🔥 사이트 성과 요약 로딩 오버레이 배경을 투명하게 설정 (겹침 방지)
+        $("#loadingOverlayPerformanceSummary").css({
+            "background": "transparent !important",
+            "opacity": "1 !important"
+        });
         $("#performanceSummaryWrapper").addClass("loading");
     } else {
         hideLoading("#loadingOverlayPerformanceSummary");

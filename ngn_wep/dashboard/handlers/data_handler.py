@@ -157,22 +157,23 @@ def get_dashboard_data_route():
         results_map = {}
         with ThreadPoolExecutor() as executor:
             # Performance Summary
-        if data_type in ["performance_summary", "all"]:
+            if data_type in ["performance_summary", "all"]:
                 def fetch_performance():
                     t1 = time.time()
-            performance_data = get_performance_summary(
-                company_name=company_name,
-                start_date=start_date,
-                end_date=end_date,
-                user_id=user_id
-            )
+                    performance_data = get_performance_summary(
+                        company_name=company_name,
+                        start_date=start_date,
+                        end_date=end_date,
+                        user_id=user_id
+                    )
                     t2 = time.time()
                     timing_log["performance_summary"] = round(t2-t1, 3)
                     return ("performance_summary", performance_data[offset:offset + limit], len(performance_data), max([
-                    str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
+                        str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
                         for row in performance_data if row.get("updated_at")
                     ], default=None))
                 fetch_tasks.append(executor.submit(fetch_performance))
+            
             # Cafe24 Sales
             if data_type in ["cafe24_sales", "all"]:
                 def fetch_cafe24_sales():
@@ -185,6 +186,7 @@ def get_dashboard_data_route():
                     timing_log["cafe24_sales"] = round(t2-t1, 3)
                     return ("cafe24_sales", result["rows"], result["total_count"])
                 fetch_tasks.append(executor.submit(fetch_cafe24_sales))
+            
             # Cafe24 Product Sales
             if data_type in ["cafe24_product_sales", "all"]:
                 def fetch_cafe24_product_sales():
@@ -197,6 +199,7 @@ def get_dashboard_data_route():
                     timing_log["cafe24_product_sales"] = round(t2-t1, 3)
                     return ("cafe24_product_sales", result["rows"], result["total_count"])
                 fetch_tasks.append(executor.submit(fetch_cafe24_product_sales))
+            
             # ViewItem Summary
             if data_type in ["viewitem_summary", "all"]:
                 def fetch_viewitem_summary():
@@ -206,6 +209,7 @@ def get_dashboard_data_route():
                     timing_log["viewitem_summary"] = round(t2-t1, 3)
                     return ("viewitem_summary", data_rows, len(data_rows))
                 fetch_tasks.append(executor.submit(fetch_viewitem_summary))
+            
             # GA4 Source Summary
             if data_type in ["ga4_source_summary", "all"]:
                 def fetch_ga4_source_summary():
@@ -215,6 +219,7 @@ def get_dashboard_data_route():
                     timing_log["ga4_source_summary"] = round(t2-t1, 3)
                     return ("ga4_source_summary", data_rows[offset:offset + limit], len(data_rows))
                 fetch_tasks.append(executor.submit(fetch_ga4_source_summary))
+            
             # Monthly Net Sales & Visitors Chart
             if data_type == "monthly_net_sales_visitors":
                 def fetch_monthly_net_sales_visitors():
@@ -224,6 +229,7 @@ def get_dashboard_data_route():
                     timing_log["monthly_net_sales_visitors"] = round(t2-t1, 3)
                     return ("monthly_net_sales_visitors", data_rows, len(data_rows))
                 fetch_tasks.append(executor.submit(fetch_monthly_net_sales_visitors))
+            
             # Product Sales Ratio
             if data_type == "product_sales_ratio":
                 def fetch_product_sales_ratio():
@@ -236,6 +242,7 @@ def get_dashboard_data_route():
                     timing_log["product_sales_ratio"] = round(t2-t1, 3)
                     return ("product_sales_ratio", data_rows)
                 fetch_tasks.append(executor.submit(fetch_product_sales_ratio))
+            
             # Platform Sales Summary
             if data_type == "platform_sales_summary":
                 def fetch_platform_sales_summary():
@@ -244,17 +251,18 @@ def get_dashboard_data_route():
                     # ⬇️ 서비스 함수는 리스트 파라미터를 기대하므로 문자열이면 리스트로 래핑
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
 
-                    data_rows                                      = get_platform_sales_by_day(
-                        company_names                              = _company_names,
-                        start_date                                 = start_date,
-                        end_date                                   = end_date,
-                        date_type                                  = date_type,
-                        date_sort                                  = date_sort
+                    data_rows = get_platform_sales_by_day(
+                        company_names=_company_names,
+                        start_date=start_date,
+                        end_date=end_date,
+                        date_type=date_type,
+                        date_sort=date_sort
                     )
                     t2 = time.time()
-                    timing_log["platform_sales_summary"]        = round(t2-t1, 3)
+                    timing_log["platform_sales_summary"] = round(t2-t1, 3)
                     return ("platform_sales_summary", data_rows, len(data_rows))
                 fetch_tasks.append(executor.submit(fetch_platform_sales_summary))
+            
             # Platform Sales Ratio (파이차트용)
             if data_type == "platform_sales_ratio":
                 def fetch_platform_sales_ratio():
@@ -262,155 +270,27 @@ def get_dashboard_data_route():
                     from ..services.platform_sales_summary import get_platform_sales_ratio
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
 
-                    data_rows                                      = get_platform_sales_ratio(
-                        company_names                              = _company_names,
-                        start_date                                 = start_date,
-                        end_date                                   = end_date
+                    data_rows = get_platform_sales_ratio(
+                        company_names=_company_names,
+                        start_date=start_date,
+                        end_date=end_date
                     )
                     t2 = time.time()
-                    timing_log["platform_sales_ratio"]          = round(t2-t1, 3)
+                    timing_log["platform_sales_ratio"] = round(t2-t1, 3)
                     return ("platform_sales_ratio", data_rows)
                 fetch_tasks.append(executor.submit(fetch_platform_sales_ratio))
+            
             # Platform Sales Monthly
             if data_type == "platform_sales_monthly":
                 def fetch_monthly_platform_sales():
                     t1 = time.time()
                     from ..services.platform_sales_summary import get_monthly_platform_sales
                     _company_names = company_name if isinstance(company_name, list) else [company_name]
-                    data_rows                                      = get_monthly_platform_sales(_company_names)
+                    data_rows = get_monthly_platform_sales(_company_names)
                     t2 = time.time()
-                    timing_log["platform_sales_monthly"]        = round(t2-t1, 3)
+                    timing_log["platform_sales_monthly"] = round(t2-t1, 3)
                     return ("platform_sales_monthly", data_rows, len(data_rows))
                 fetch_tasks.append(executor.submit(fetch_monthly_platform_sales))
-
-            # Meta 광고 관련 데이터 요청 처리
-        if data_type == "meta_ads_insight_table":
-                t1 = time.time()
-                from ..services.meta_ads_insight import get_meta_ads_insight_table
-
-            level = data.get("level", "account")
-            account_id = data.get("account_id")
-            campaign_id = data.get("campaign_id")
-            adset_id = data.get("adset_id")
-            date_type = data.get("date_type", "summary")
-
-            rows = get_meta_ads_insight_table(
-                level=level,
-                company_name=company_name,
-                start_date=start_date,
-                end_date=end_date,
-                account_id=account_id,
-                campaign_id=campaign_id,
-                adset_id=adset_id,
-                date_type=date_type
-            )
-                t2 = time.time()
-                timing_log["meta_ads_insight_table"] = round(t2-t1, 3)
-            response_data["meta_ads_insight_table"] = rows
-            if rows:
-                response_data["updated_at"] = rows[0].get("updated_at")
-
-            # Meta Ads 계정 목록 요청 처리
-        if data_type == "meta_account_list":
-            if user_id == "demo":
-                session["company_names"] = ["demo"]
-
-                from ..services.meta_ads_insight import get_meta_account_list_filtered
-            rows = get_meta_account_list_filtered(company_name)
-            response_data["meta_accounts"] = rows
-
-            # Meta Ads 캠페인 목표별 성과 요약
-        if data_type == "meta_ads_adset_summary_by_type":
-
-            account_id = data.get("account_id")
-            period = data.get("period")
-            start_date = data.get("start_date")
-            end_date = data.get("end_date")
-
-            type_summary, total_spend_sum = get_meta_ads_adset_summary_by_type(
-                account_id=account_id,
-                period=period,
-                start_date=start_date,
-                end_date=end_date
-            )
-
-            response_data["data"] = {
-                "type_summary": type_summary,
-                "total_spend_sum": total_spend_sum
-            }
-
-            # Meta Ads 광고 미리보기 - 단일
-        if data_type == "meta_ads_preview_list":
-                from ..services.meta_ads_preview import get_meta_ads_preview_list
-
-            account_id = data.get("account_id")
-            ad_list = get_meta_ads_preview_list(account_id)
-
-            response_data["meta_ads_preview_list"] = ad_list
-
-            # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
-        if data_type == "slide_collection_ads":
-                from ..services.meta_ads_slide_collection import get_slide_collection_ads
-
-            account_id = data.get("account_id")
-            ad_list = get_slide_collection_ads(account_id)
-
-            response_data["slide_collection_ads"] = ad_list
-
-            # catalog_sidebar
-            if data_type == "catalog_sidebar":
-                from ..services.catalog_sidebar_service import get_catalog_sidebar_data
-
-            account_id = data.get("account_id")
-            if not account_id:
-                return jsonify({"status": "error", "message": "account_id 누락"}), 400
-
-            result, error = get_catalog_sidebar_data(account_id)
-            if error:
-                return jsonify({"status": "error", "message": error}), 404
-
-            response_data["catalog_sidebar"] = result
-
-            # catalog_manual  ─ 자사몰 URL 수집
-            if data_type == "catalog_manual":
-                from ..services.catalog_sidebar_service import get_manual_product_list
-
-            category_url = data.get("category_url")
-            if not category_url:
-                return jsonify({"status": "error", "message": "category_url 누락"}), 400
-
-            result, error = get_manual_product_list(category_url)
-            if error:
-                return jsonify({"status": "error", "message": error}), 404
-
-            response_data["products"] = result
-
-            # catalog_manual_search  ─ 수동 세트 키워드 검색
-            if data_type == "catalog_manual_search":
-                from ..services.catalog_sidebar_service import search_products_for_manual_set
-
-            account_id  = data.get("account_id")
-            keyword     = (data.get("keyword") or "").strip()
-            search_type = data.get("search_type")   # 'product_name' | 'product_no'
-
-            # ── 파라미터 검증 ─────────────────────────────
-            if not account_id:
-                return jsonify({"status": "error", "message": "account_id 누락"}), 400
-            if not keyword:
-                return jsonify({"status": "error", "message": "keyword 누락"}), 400
-            if search_type not in ("product_name", "product_no"):
-                return jsonify({"status": "error", "message": "search_type 누락 또는 잘못됨"}), 400
-
-            # ── 서비스 호출 ─────────────────────────────
-            result, error = search_products_for_manual_set(
-                account_id=account_id,
-                keyword=keyword,
-                search_type=search_type
-            )
-            if error:
-                return jsonify({"status": "error", "message": error}), 404
-
-            response_data["results"] = result
 
         # Collect results
         for future in fetch_tasks:
@@ -444,24 +324,134 @@ def get_dashboard_data_route():
             elif result[0] == "platform_sales_monthly":
                 response_data["platform_sales_monthly"] = result[1]
                 response_data["platform_sales_monthly_total_count"] = result[2]
-            elif result[0] == "meta_ads_insight_table":
-                response_data["meta_ads_insight_table"] = result[1]
-                if result[1]:
-                    response_data["updated_at"] = result[1][0].get("updated_at")
-            elif result[0] == "meta_account_list":
-                response_data["meta_accounts"] = result[1]
-            elif result[0] == "meta_ads_adset_summary_by_type":
-                response_data["data"] = result[1]
-            elif result[0] == "meta_ads_preview_list":
-                response_data["meta_ads_preview_list"] = result[1]
-            elif result[0] == "slide_collection_ads":
-                response_data["slide_collection_ads"] = result[1]
-            elif result[0] == "catalog_sidebar":
-                response_data["catalog_sidebar"] = result[1]
-            elif result[0] == "catalog_manual":
-                response_data["products"] = result[1]
-            elif result[0] == "catalog_manual_search":
-                response_data["results"] = result[1]
+
+        # Meta 광고 관련 데이터 요청 처리
+        if data_type == "meta_ads_insight_table":
+            t1 = time.time()
+            from ..services.meta_ads_insight import get_meta_ads_insight_table
+
+            level = data.get("level", "account")
+            account_id = data.get("account_id")
+            campaign_id = data.get("campaign_id")
+            adset_id = data.get("adset_id")
+            date_type = data.get("date_type", "summary")
+
+            rows = get_meta_ads_insight_table(
+                level=level,
+                company_name=company_name,
+                start_date=start_date,
+                end_date=end_date,
+                account_id=account_id,
+                campaign_id=campaign_id,
+                adset_id=adset_id,
+                date_type=date_type
+            )
+            t2 = time.time()
+            timing_log["meta_ads_insight_table"] = round(t2-t1, 3)
+            response_data["meta_ads_insight_table"] = rows
+            if rows:
+                response_data["updated_at"] = rows[0].get("updated_at")
+
+        # Meta Ads 계정 목록 요청 처리
+        if data_type == "meta_account_list":
+            if user_id == "demo":
+                session["company_names"] = ["demo"]
+
+            from ..services.meta_ads_insight import get_meta_account_list_filtered
+            rows = get_meta_account_list_filtered(company_name)
+            response_data["meta_accounts"] = rows
+
+        # Meta Ads 캠페인 목표별 성과 요약
+        if data_type == "meta_ads_adset_summary_by_type":
+            account_id = data.get("account_id")
+            period = data.get("period")
+            start_date = data.get("start_date")
+            end_date = data.get("end_date")
+
+            type_summary, total_spend_sum = get_meta_ads_adset_summary_by_type(
+                account_id=account_id,
+                period=period,
+                start_date=start_date,
+                end_date=end_date
+            )
+
+            response_data["data"] = {
+                "type_summary": type_summary,
+                "total_spend_sum": total_spend_sum
+            }
+
+        # Meta Ads 광고 미리보기 - 단일
+        if data_type == "meta_ads_preview_list":
+            from ..services.meta_ads_preview import get_meta_ads_preview_list
+
+            account_id = data.get("account_id")
+            ad_list = get_meta_ads_preview_list(account_id)
+
+            response_data["meta_ads_preview_list"] = ad_list
+
+        # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
+        if data_type == "slide_collection_ads":
+            from ..services.meta_ads_slide_collection import get_slide_collection_ads
+
+            account_id = data.get("account_id")
+            ad_list = get_slide_collection_ads(account_id)
+
+            response_data["slide_collection_ads"] = ad_list
+
+        # catalog_sidebar
+        if data_type == "catalog_sidebar":
+            from ..services.catalog_sidebar_service import get_catalog_sidebar_data
+
+            account_id = data.get("account_id")
+            if not account_id:
+                return jsonify({"status": "error", "message": "account_id 누락"}), 400
+
+            result, error = get_catalog_sidebar_data(account_id)
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
+
+            response_data["catalog_sidebar"] = result
+
+        # catalog_manual  ─ 자사몰 URL 수집
+        if data_type == "catalog_manual":
+            from ..services.catalog_sidebar_service import get_manual_product_list
+
+            category_url = data.get("category_url")
+            if not category_url:
+                return jsonify({"status": "error", "message": "category_url 누락"}), 400
+
+            result, error = get_manual_product_list(category_url)
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
+
+            response_data["products"] = result
+
+        # catalog_manual_search  ─ 수동 세트 키워드 검색
+        if data_type == "catalog_manual_search":
+            from ..services.catalog_sidebar_service import search_products_for_manual_set
+
+            account_id = data.get("account_id")
+            keyword = (data.get("keyword") or "").strip()
+            search_type = data.get("search_type")   # 'product_name' | 'product_no'
+
+            # ── 파라미터 검증 ─────────────────────────────
+            if not account_id:
+                return jsonify({"status": "error", "message": "account_id 누락"}), 400
+            if not keyword:
+                return jsonify({"status": "error", "message": "keyword 누락"}), 400
+            if search_type not in ("product_name", "product_no"):
+                return jsonify({"status": "error", "message": "search_type 누락 또는 잘못됨"}), 400
+
+            # ── 서비스 호출 ─────────────────────────────
+            result, error = search_products_for_manual_set(
+                account_id=account_id,
+                keyword=keyword,
+                search_type=search_type
+            )
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
+
+            response_data["results"] = result
 
         t_end = time.time()
         print("[TIMING_LOG] /dashboard/get_data timing:", timing_log, "total:", round(t_end-t0, 3), "s")

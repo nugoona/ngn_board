@@ -204,24 +204,28 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             SUM(i.item_quantity) AS item_quantity,
             SUM(i.item_product_sales) AS item_product_sales,
             SUM(i.total_first_order) AS total_first_order,
-            -- ✅ SEO 친화적인 URL 생성 (안전한 버전)
+            -- ✅ SEO 친화적인 URL 생성 (올바른 테이블명과 JOIN 조건)
             CONCAT(
-                'https://', COALESCE(MAX(info.main_url), 'example.com'),
+                'https://', MAX(info.main_url),
                 '/product/',
                 REPLACE(LOWER(REGEXP_REPLACE(MAX(i.product_name), r'[^\w]+', '-')), '--', '-'),
                 '/',
                 CAST(i.product_no AS STRING),
+                '/category/',
+                CAST(MAX(prod.category_no) AS STRING),
                 '/display/1/'
             ) AS product_url,
             MAX(i.updated_at) AS updated_at
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
         LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS info
-            ON i.company_name = info.company_name
+            ON i.mall_id = info.mall_id
+        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS prod
+            ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
         WHERE i.payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
           AND i.item_product_sales > 0
         GROUP BY i.company_name, i.product_name, i.product_no
-        ORDER BY {order_by_column} DESC
+        ORDER BY {order_by_column} DESC, i.company_name, i.product_name
         LIMIT @limit OFFSET @offset
     """
 

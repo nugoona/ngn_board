@@ -1,7 +1,7 @@
 // File: static/js/meta_ads_preview.js
 
 import { metaAdsState } from "./meta_ads_state.js";
-import { showLoading, hideLoading } from "./loading_utils.js";
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 import { latestAjaxRequest } from "./request_utils.js";
 
 // ✅ 미리보기 카드 렌더링

@@ -149,11 +149,12 @@ async function updateAllData() {
       fetchGa4SourceSummaryData(1).catch(e => {
         console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
       }),
-      fetchGa4ViewItemSummaryData(getRequestData(1, {
-        data_type: "ga4_viewitem_summary", limit: 15
-      })).catch(e => {
-        console.error("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
-      }),
+      // fetchGa4ViewItemSummaryData는 Promise를 반환하지 않으므로 제거
+      // fetchGa4ViewItemSummaryData(getRequestData(1, {
+      //   data_type: "ga4_viewitem_summary", limit: 15
+      // })).catch(e => {
+      //   console.error("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
+      // }),
     ];
 
     await Promise.all([

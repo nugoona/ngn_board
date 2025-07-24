@@ -1,6 +1,7 @@
 // File: static/js/meta_ads_adset_summary_by_type.js
 
-import { showLoading, hideLoading, resolveDateRange } from "./meta_ads_utils.js";
+import { resolveDateRange } from "./meta_ads_utils.js";
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 import { metaAdsState } from "./meta_ads_state.js";
 
 const $ = window.$;

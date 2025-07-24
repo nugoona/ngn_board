@@ -37,7 +37,7 @@ function fetchGa4ViewItemSummaryData(requestData = {}, page = 1) {
       hideLoading("#loadingOverlayViewitemSummary");
 
       debugLog("[DEBUG] 🔍 ViewItem Summary 응답:", res);
-      debugLog("[DEBUG] �� res.status:", res.status);
+      debugLog("[DEBUG] 📋 res.status:", res.status);
       debugLog("[DEBUG] 📋 res.viewitem_summary:", res.viewitem_summary);
       debugLog("[DEBUG] 📈 res.viewitem_summary 길이:", res.viewitem_summary ? res.viewitem_summary.length : "undefined");
 
@@ -206,3 +206,6 @@ $("#sourceFilter, #countryFilter, #productNameSearch").on("input change", () => 
   renderViewItemSummaryTable();
   renderViewItemSummaryPagination(getGroupedFilteredData().length);
 });
+
+// ✅ 전역 함수로 노출 - dashboard.js에서 호출 가능하도록
+window.fetchGa4ViewItemSummaryData = fetchGa4ViewItemSummaryData;

@@ -10,19 +10,19 @@ from concurrent.futures import ThreadPoolExecutor
 from ..utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
 
 # 📦 서비스 함수 임포트 (기능별 정리)
-from services.cafe24_service import (
+from ..services.cafe24_service import (
     get_cafe24_sales_data,
     get_cafe24_product_sales,
 )
-from services.catalog_sidebar_service import create_or_update_product_set
-from services.ga4_source_summary import get_ga4_source_summary
-from services.meta_ads_insight import get_meta_account_list_filtered
-from services.meta_ads_service import get_meta_ads_data
-from services.performance_summary import get_performance_summary
-from services.platform_sales_summary import get_monthly_platform_sales
-from services.Fetch_Adset_Summary import get_meta_ads_adset_summary_by_type
-from services.viewitem_summary import get_viewitem_summary
-from services.monthly_net_sales_visitors import get_monthly_net_sales_visitors
+from ..services.catalog_sidebar_service import create_or_update_product_set
+from ..services.ga4_source_summary import get_ga4_source_summary
+from ..services.meta_ads_insight import get_meta_account_list_filtered
+from ..services.meta_ads_service import get_meta_ads_data
+from ..services.performance_summary import get_performance_summary
+from ..services.platform_sales_summary import get_monthly_platform_sales
+from ..services.Fetch_Adset_Summary import get_meta_ads_adset_summary_by_type
+from ..services.viewitem_summary import get_viewitem_summary
+from ..services.monthly_net_sales_visitors import get_monthly_net_sales_visitors
 
 
 

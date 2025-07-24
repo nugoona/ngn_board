@@ -121,47 +121,57 @@ async function updateAllData() {
       }),
     ]);
 
-    // 메인 성과 데이터 요청
-    const fetchMainData = [
-      fetchPerformanceSummaryData().catch(e => {
-        console.error("[ERROR] fetchPerformanceSummaryData 실패:", e);
-      }),
-      fetchMonthlyNetSalesVisitors().catch(e => {
-        console.error("[ERROR] fetchMonthlyNetSalesVisitors 실패:", e);
-      }),
-    ];
+    // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
+    const fetchMainData = [];
+    
+    try {
+      fetchPerformanceSummaryData();
+    } catch (e) {
+      console.error("[ERROR] fetchPerformanceSummaryData 실패:", e);
+    }
+    
+    try {
+      fetchMonthlyNetSalesVisitors();
+    } catch (e) {
+      console.error("[ERROR] fetchMonthlyNetSalesVisitors 실패:", e);
+    }
 
-    // 플랫폼 데이터 요청
-    const fetchPlatformData = [
-      fetchPlatformSalesSummary().catch(e => {
-        console.error("[ERROR] fetchPlatformSalesSummary 실패:", e);
-      }),
-      fetchPlatformSalesRatio().catch(e => {
-        console.error("[ERROR] fetchPlatformSalesRatio 실패:", e);
-      }),
-    ];
+    // 플랫폼 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
+    const fetchPlatformData = [];
+    
+    try {
+      fetchPlatformSalesSummary();
+    } catch (e) {
+      console.error("[ERROR] fetchPlatformSalesSummary 실패:", e);
+    }
+    
+    try {
+      fetchPlatformSalesRatio();
+    } catch (e) {
+      console.error("[ERROR] fetchPlatformSalesRatio 실패:", e);
+    }
 
-    // 유입 데이터 요청
-    const fetchViewData = [
-      fetchViewItemSummaryData(1).catch(e => {
-        console.error("[ERROR] fetchViewItemSummaryData 실패:", e);
-      }),
-      fetchGa4SourceSummaryData(1).catch(e => {
-        console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
-      }),
-      // fetchGa4ViewItemSummaryData는 Promise를 반환하지 않으므로 제거
-      // fetchGa4ViewItemSummaryData(getRequestData(1, {
-      //   data_type: "ga4_viewitem_summary", limit: 15
-      // })).catch(e => {
-      //   console.error("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
-      // }),
-    ];
+    // 유입 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
+    const fetchViewData = [];
+    
+    try {
+      fetchViewItemSummaryData(1);
+    } catch (e) {
+      console.error("[ERROR] fetchViewItemSummaryData 실패:", e);
+    }
+    
+    try {
+      fetchGa4SourceSummaryData(1);
+    } catch (e) {
+      console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
+    }
 
-    await Promise.all([
-      Promise.all(fetchMainData),
-      Promise.all(fetchPlatformData),
-      Promise.all(fetchViewData)
-    ]);
+    // 빈 배열이므로 Promise.all 호출 불필요
+    // await Promise.all([
+    //   Promise.all(fetchMainData),
+    //   Promise.all(fetchPlatformData),
+    //   Promise.all(fetchViewData)
+    // ]);
 
   } catch (e) {
     console.error("[ERROR] updateAllData() 전체 오류:", e);

@@ -336,7 +336,7 @@ class LazyLoadManager {
         const element = document.querySelector(`[data-widget-id="${widgetId}"]`);
         if (element && !this.loadedWidgets.has(widgetId)) {
             this.scheduleWidgetLoad(widgetId, element, true);
-        }
+}
     }
 
     // 성능 모니터링

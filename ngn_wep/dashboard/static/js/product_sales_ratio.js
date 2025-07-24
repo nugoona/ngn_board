@@ -208,3 +208,6 @@ $("#toggleProductSalesRatioChart").on("click", function () {
     setTimeout(() => renderProductSalesRatioChart(), 10);
   }
 });
+
+// 전역 함수로 노출
+window.fetchProductSalesRatio = fetchProductSalesRatio;

@@ -157,19 +157,19 @@ def get_dashboard_data_route():
         results_map = {}
         with ThreadPoolExecutor() as executor:
             # Performance Summary
-            if data_type in ["performance_summary", "all"]:
+        if data_type in ["performance_summary", "all"]:
                 def fetch_performance():
                     t1 = time.time()
-                    performance_data = get_performance_summary(
-                        company_name=company_name,
-                        start_date=start_date,
-                        end_date=end_date,
-                        user_id=user_id
-                    )
+            performance_data = get_performance_summary(
+                company_name=company_name,
+                start_date=start_date,
+                end_date=end_date,
+                user_id=user_id
+            )
                     t2 = time.time()
                     timing_log["performance_summary"] = round(t2-t1, 3)
                     return ("performance_summary", performance_data[offset:offset + limit], len(performance_data), max([
-                        str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
+                    str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
                         for row in performance_data if row.get("updated_at")
                     ], default=None))
                 fetch_tasks.append(executor.submit(fetch_performance))
@@ -284,133 +284,133 @@ def get_dashboard_data_route():
                 fetch_tasks.append(executor.submit(fetch_monthly_platform_sales))
 
             # Meta 광고 관련 데이터 요청 처리
-            if data_type == "meta_ads_insight_table":
+        if data_type == "meta_ads_insight_table":
                 t1 = time.time()
                 from ..services.meta_ads_insight import get_meta_ads_insight_table
 
-                level = data.get("level", "account")
-                account_id = data.get("account_id")
-                campaign_id = data.get("campaign_id")
-                adset_id = data.get("adset_id")
-                date_type = data.get("date_type", "summary")
+            level = data.get("level", "account")
+            account_id = data.get("account_id")
+            campaign_id = data.get("campaign_id")
+            adset_id = data.get("adset_id")
+            date_type = data.get("date_type", "summary")
 
-                rows = get_meta_ads_insight_table(
-                    level=level,
-                    company_name=company_name,
-                    start_date=start_date,
-                    end_date=end_date,
-                    account_id=account_id,
-                    campaign_id=campaign_id,
-                    adset_id=adset_id,
-                    date_type=date_type
-                )
+            rows = get_meta_ads_insight_table(
+                level=level,
+                company_name=company_name,
+                start_date=start_date,
+                end_date=end_date,
+                account_id=account_id,
+                campaign_id=campaign_id,
+                adset_id=adset_id,
+                date_type=date_type
+            )
                 t2 = time.time()
                 timing_log["meta_ads_insight_table"] = round(t2-t1, 3)
-                response_data["meta_ads_insight_table"] = rows
-                if rows:
-                    response_data["updated_at"] = rows[0].get("updated_at")
+            response_data["meta_ads_insight_table"] = rows
+            if rows:
+                response_data["updated_at"] = rows[0].get("updated_at")
 
             # Meta Ads 계정 목록 요청 처리
-            if data_type == "meta_account_list":
-                if user_id == "demo":
-                    session["company_names"] = ["demo"]
+        if data_type == "meta_account_list":
+            if user_id == "demo":
+                session["company_names"] = ["demo"]
 
                 from ..services.meta_ads_insight import get_meta_account_list_filtered
-                rows = get_meta_account_list_filtered(company_name)
-                response_data["meta_accounts"] = rows
+            rows = get_meta_account_list_filtered(company_name)
+            response_data["meta_accounts"] = rows
 
             # Meta Ads 캠페인 목표별 성과 요약
-            if data_type == "meta_ads_adset_summary_by_type":
+        if data_type == "meta_ads_adset_summary_by_type":
 
-                account_id = data.get("account_id")
-                period = data.get("period")
-                start_date = data.get("start_date")
-                end_date = data.get("end_date")
+            account_id = data.get("account_id")
+            period = data.get("period")
+            start_date = data.get("start_date")
+            end_date = data.get("end_date")
 
-                type_summary, total_spend_sum = get_meta_ads_adset_summary_by_type(
-                    account_id=account_id,
-                    period=period,
-                    start_date=start_date,
-                    end_date=end_date
-                )
+            type_summary, total_spend_sum = get_meta_ads_adset_summary_by_type(
+                account_id=account_id,
+                period=period,
+                start_date=start_date,
+                end_date=end_date
+            )
 
-                response_data["data"] = {
-                    "type_summary": type_summary,
-                    "total_spend_sum": total_spend_sum
-                }
+            response_data["data"] = {
+                "type_summary": type_summary,
+                "total_spend_sum": total_spend_sum
+            }
 
             # Meta Ads 광고 미리보기 - 단일
-            if data_type == "meta_ads_preview_list":
+        if data_type == "meta_ads_preview_list":
                 from ..services.meta_ads_preview import get_meta_ads_preview_list
 
-                account_id = data.get("account_id")
-                ad_list = get_meta_ads_preview_list(account_id)
+            account_id = data.get("account_id")
+            ad_list = get_meta_ads_preview_list(account_id)
 
-                response_data["meta_ads_preview_list"] = ad_list
+            response_data["meta_ads_preview_list"] = ad_list
 
             # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
-            if data_type == "slide_collection_ads":
+        if data_type == "slide_collection_ads":
                 from ..services.meta_ads_slide_collection import get_slide_collection_ads
 
-                account_id = data.get("account_id")
-                ad_list = get_slide_collection_ads(account_id)
+            account_id = data.get("account_id")
+            ad_list = get_slide_collection_ads(account_id)
 
-                response_data["slide_collection_ads"] = ad_list
+            response_data["slide_collection_ads"] = ad_list
 
             # catalog_sidebar
             if data_type == "catalog_sidebar":
                 from ..services.catalog_sidebar_service import get_catalog_sidebar_data
 
-                account_id = data.get("account_id")
-                if not account_id:
-                    return jsonify({"status": "error", "message": "account_id 누락"}), 400
+            account_id = data.get("account_id")
+            if not account_id:
+                return jsonify({"status": "error", "message": "account_id 누락"}), 400
 
-                result, error = get_catalog_sidebar_data(account_id)
-                if error:
-                    return jsonify({"status": "error", "message": error}), 404
+            result, error = get_catalog_sidebar_data(account_id)
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
 
-                response_data["catalog_sidebar"] = result
+            response_data["catalog_sidebar"] = result
 
             # catalog_manual  ─ 자사몰 URL 수집
             if data_type == "catalog_manual":
                 from ..services.catalog_sidebar_service import get_manual_product_list
 
-                category_url = data.get("category_url")
-                if not category_url:
-                    return jsonify({"status": "error", "message": "category_url 누락"}), 400
+            category_url = data.get("category_url")
+            if not category_url:
+                return jsonify({"status": "error", "message": "category_url 누락"}), 400
 
-                result, error = get_manual_product_list(category_url)
-                if error:
-                    return jsonify({"status": "error", "message": error}), 404
+            result, error = get_manual_product_list(category_url)
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
 
-                response_data["products"] = result
+            response_data["products"] = result
 
             # catalog_manual_search  ─ 수동 세트 키워드 검색
             if data_type == "catalog_manual_search":
                 from ..services.catalog_sidebar_service import search_products_for_manual_set
 
-                account_id  = data.get("account_id")
-                keyword     = (data.get("keyword") or "").strip()
-                search_type = data.get("search_type")   # 'product_name' | 'product_no'
+            account_id  = data.get("account_id")
+            keyword     = (data.get("keyword") or "").strip()
+            search_type = data.get("search_type")   # 'product_name' | 'product_no'
 
-                # ── 파라미터 검증 ─────────────────────────────
-                if not account_id:
-                    return jsonify({"status": "error", "message": "account_id 누락"}), 400
-                if not keyword:
-                    return jsonify({"status": "error", "message": "keyword 누락"}), 400
-                if search_type not in ("product_name", "product_no"):
-                    return jsonify({"status": "error", "message": "search_type 누락 또는 잘못됨"}), 400
+            # ── 파라미터 검증 ─────────────────────────────
+            if not account_id:
+                return jsonify({"status": "error", "message": "account_id 누락"}), 400
+            if not keyword:
+                return jsonify({"status": "error", "message": "keyword 누락"}), 400
+            if search_type not in ("product_name", "product_no"):
+                return jsonify({"status": "error", "message": "search_type 누락 또는 잘못됨"}), 400
 
-                # ── 서비스 호출 ─────────────────────────────
-                result, error = search_products_for_manual_set(
-                    account_id=account_id,
-                    keyword=keyword,
-                    search_type=search_type
-                )
-                if error:
-                    return jsonify({"status": "error", "message": error}), 404
+            # ── 서비스 호출 ─────────────────────────────
+            result, error = search_products_for_manual_set(
+                account_id=account_id,
+                keyword=keyword,
+                search_type=search_type
+            )
+            if error:
+                return jsonify({"status": "error", "message": error}), 404
 
-                response_data["results"] = result
+            response_data["results"] = result
 
         # Collect results
         for future in fetch_tasks:

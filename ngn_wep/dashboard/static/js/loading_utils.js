@@ -223,13 +223,46 @@ class LazyLoadManager {
 
     // UI 상태 관리
     showSkeletonLoader(element) {
-        const skeleton = this.createSkeletonLoader();
-        element.innerHTML = skeleton;
-        element.classList.add('loading');
+        // 기존 DOM을 보존하고, 오버레이 방식의 스켈레톤을 추가
+        if (!element.querySelector('.skeleton-overlay')) {
+            // 최초 호출 시, 원본 HTML을 data 속성에 저장 → 이후 복원에 사용
+            if (!element.dataset.originalHtml) {
+                element.dataset.originalHtml = element.innerHTML;
+            }
+
+            // 오버레이 컨테이너 생성
+            const overlay = document.createElement('div');
+            overlay.className = 'skeleton-overlay';
+            overlay.innerHTML = this.createSkeletonLoader();
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.zIndex = '10';
+
+            // 부모 위치 기준 배치 위해 relative 보장
+            if (getComputedStyle(element).position === 'static') {
+                element.style.position = 'relative';
+            }
+
+            element.appendChild(overlay);
+            element.classList.add('loading');
+        }
     }
 
     hideSkeletonLoader(element) {
+        const overlay = element.querySelector('.skeleton-overlay');
+        if (overlay) overlay.remove();
         element.classList.remove('loading');
+    }
+    
+    // 로딩 오버레이가 DOM을 바꾸는 구 버전에서 복원용 - 호출 시 원본 HTML 복구
+    restoreOriginalHtml(element) {
+        if (element.dataset.originalHtml) {
+            element.innerHTML = element.dataset.originalHtml;
+            delete element.dataset.originalHtml;
+        }
     }
 
     showErrorState(element, widgetId) {

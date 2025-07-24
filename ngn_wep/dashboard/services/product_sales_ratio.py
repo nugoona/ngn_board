@@ -6,7 +6,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 
-@cached_query(func_name="product_sales_ratio", ttl=900)  # 15 분 캐싱
+@cached_query(func_name="product_sales_ratio", ttl=60)  # 1분 캐싱 (디버깅용)
 def get_product_sales_ratio(
     company_name,
     start_date: str,
@@ -84,15 +84,12 @@ def get_product_sales_ratio(
             company_name,
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
-                    REGEXP_REPLACE(
-                        product_name,
-                        r'\[.*\]',         -- [브랜드] 제거
-                        ''
-                    ),
-                    r'_.*$',                              -- _컬러 제거
+                    product_name,
+                    r'\[.*\]',         -- [브랜드] 제거
                     ''
                 ),
-                r'["\'`]', '',                              -- 따옴표 / 백틱 제거
+                r'_.*$',                              -- _컬러 제거
+                ''
             ) AS cleaned_product_name,
             SUM(item_quantity)      AS item_quantity,
             SUM(item_product_sales) AS item_product_sales

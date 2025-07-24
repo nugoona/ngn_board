@@ -236,19 +236,31 @@ async function updateAllData() {
     // fetchViewItemSummaryData와 fetchGa4SourceSummaryData는 별도 파일에서 정의됨
     
     try {
-      fetchGa4ViewItemSummaryData();
+      if (typeof fetchGa4ViewItemSummaryData === 'function') {
+        fetchGa4ViewItemSummaryData();
+      } else {
+        debugLog("[WARNING] fetchGa4ViewItemSummaryData 함수가 정의되지 않음");
+      }
     } catch (e) {
       debugError("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
     }
     
     try {
-      fetchGa4SourceSummaryData();
+      if (typeof fetchGa4SourceSummaryData === 'function') {
+        fetchGa4SourceSummaryData();
+      } else {
+        debugLog("[WARNING] fetchGa4SourceSummaryData 함수가 정의되지 않음");
+      }
     } catch (e) {
       debugError("[ERROR] fetchGa4SourceSummaryData 실패:", e);
     }
     
     try {
-      fetchProductSalesRatio();
+      if (typeof fetchProductSalesRatio === 'function') {
+        fetchProductSalesRatio();
+      } else {
+        debugLog("[WARNING] fetchProductSalesRatio 함수가 정의되지 않음");
+      }
     } catch (e) {
       debugError("[ERROR] fetchProductSalesRatio 실패:", e);
     }

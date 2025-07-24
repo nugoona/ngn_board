@@ -106,11 +106,11 @@ async function fetchPerformanceSummaryData() {
 function toggleLoading(isLoading) {
     if (isLoading) {
         showLoading("#loadingOverlayPerformanceSummary");
-        // 🔥 사이트 성과 요약 로딩 오버레이 배경을 투명하게 설정 (겹침 방지)
-        $("#loadingOverlayPerformanceSummary").css({
-            "background": "transparent !important",
-            "opacity": "1 !important"
-        });
+        // 🔥 CSS에서 이미 처리됨 - JavaScript 설정 제거
+        // $("#loadingOverlayPerformanceSummary").css({
+        //     "background": "transparent !important",
+        //     "opacity": "1 !important"
+        // });
         $("#performanceSummaryWrapper").addClass("loading");
     } else {
         hideLoading("#loadingOverlayPerformanceSummary");

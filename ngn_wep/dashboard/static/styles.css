@@ -353,7 +353,7 @@ th {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.3) !important; /* transparent에서 변경 */
+  background: transparent !important; /* 투명 배경 */
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2441,6 +2441,12 @@ th.sortable.desc::after {
 #loadingOverlayPlatformSalesMonthly,
 #loadingOverlayMonthlyChart {
   background: rgba(255, 255, 255, 0.3) !important;
+  opacity: 1 !important;
+}
+
+/* 🔥 사이트 성과 요약만 투명 배경 (2중 로딩 시 겹침 방지) */
+#loadingOverlayPerformanceSummary {
+  background: transparent !important;
   opacity: 1 !important;
 }
 

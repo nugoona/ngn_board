@@ -8,6 +8,8 @@ function showLoading(target) {
 function hideLoading(target) {
   $(target).css({ display: "none" });
   $(target).closest(".table-wrapper, .performance-summary-wrapper").removeClass("loading");
+  // 추가: 스피너와 로딩 텍스트도 완전히 숨김
+  $(target).find(".spinner, .loading-text").hide();
 }
 
 function getRequestData(page = 1, extra = {}) {

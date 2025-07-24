@@ -11,6 +11,13 @@ function fetchProductSalesRatio(requestData) {
     });
   }
   
+  // 날짜 정보가 없으면 오늘 날짜로 설정
+  if (!requestData.start_date || !requestData.end_date) {
+    const today = new Date().toISOString().split("T")[0];
+    requestData.start_date = requestData.start_date || today;
+    requestData.end_date = requestData.end_date || today;
+  }
+  
   if (requestData.period === "manual" && !requestData.end_date) {
     console.warn("[SKIP] 종료일 누락 - 상품군 매출 비중 요청 생략");
     return;

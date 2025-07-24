@@ -143,10 +143,12 @@ function fetchCafe24ProductSalesData(requestData) {
         resolve(response);
       },
       error: (xhr, textStatus, errorThrown) => {
-        console.warn("[DEBUG] cafe24ProductSales xhr error:", textStatus, errorThrown);
+        hideLoading("#loadingOverlayCafe24Products");
         if (textStatus !== "abort") {
-          hideLoading("#loadingOverlayCafe24Products");
+          console.warn("[ERROR] cafe24ProductSales Ajax 오류:", textStatus, errorThrown);
           reject(errorThrown);
+        } else {
+          console.log("[DEBUG] Cafe24 상품 판매 요청 abort됨");
         }
       },
       complete: () => {

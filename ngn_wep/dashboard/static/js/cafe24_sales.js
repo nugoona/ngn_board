@@ -155,10 +155,12 @@ function fetchCafe24SalesData(requestData) {
         resolve(response);
       },
       error: (xhr, textStatus, errorThrown) => {
+        hideLoading("#loadingOverlayCafe24Sales");
         if (textStatus !== "abort") {
-          hideLoading("#loadingOverlayCafe24Sales");
           console.warn("[ERROR] Ajax 오류:", textStatus, errorThrown);
           reject(errorThrown);
+        } else {
+          console.log("[DEBUG] Cafe24 매출 요청 abort됨");
         }
       },
       complete: () => {

@@ -43,7 +43,11 @@ function fetchGa4ViewItemSummaryData(requestData = {}, page = 1) {
     },
     error: function (jqXHR, textStatus, errorThrown) {
       hideLoading("#loadingOverlayViewitemSummary");
-      console.error(`[ERROR] ViewItem Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
+      if (textStatus !== "abort") {
+        console.error(`[ERROR] ViewItem Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
+      } else {
+        console.log("[DEBUG] ViewItem Summary 요청 abort됨");
+      }
     }
   });
 }

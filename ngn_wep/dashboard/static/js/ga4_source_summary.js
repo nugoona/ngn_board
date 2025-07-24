@@ -36,7 +36,11 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
     },
     error: function (jqXHR, textStatus, errorThrown) {
       hideLoading("#loadingOverlayGa4Source");
-      console.error(`[ERROR] GA4 Source Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
+      if (textStatus !== "abort") {
+        console.error(`[ERROR] GA4 Source Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
+      } else {
+        console.log("[DEBUG] GA4 Source Summary 요청 abort됨");
+      }
     }
   });
 }

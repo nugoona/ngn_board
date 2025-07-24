@@ -201,6 +201,14 @@ th {
   pointer-events: auto;
 }
 
+/* 추가: JavaScript로 숨겨진 경우 강제로 숨김 */
+.loading-overlay[style*="display: none"],
+.loading-overlay[style*="visibility: hidden"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 
 /* ================================
  좌우 비율 
@@ -244,6 +252,14 @@ th {
 .table-wrapper.loading .loading-overlay {
   display: flex !important;
   pointer-events: auto;
+}
+
+/* 추가: JavaScript로 숨겨진 경우 강제로 숨김 (두 번째 위치) */
+.loading-overlay[style*="display: none"],
+.loading-overlay[style*="visibility: hidden"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 .spinner {
   border: 5px solid #f3f3f3;

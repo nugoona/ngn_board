@@ -32,6 +32,9 @@ function hideLoading(target) {
   // 6. 추가: 부모 컨테이너에서도 loading 클래스 제거
   $(target).parents().removeClass("loading");
   
+  // 7. 추가: 오버레이 요소를 DOM에서 완전히 제거
+  $(target).remove();
+  
   console.log("[DEBUG] hideLoading 완료:", target);
 }
 

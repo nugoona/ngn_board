@@ -1,8 +1,10 @@
 from google.cloud import bigquery
+from utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()
 
+@cached_query(func_name="performance_summary", ttl=300)  # 5분 캐싱
 def get_performance_summary(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ performance_summary_ngn 테이블에서 업체 + 기간 필터로 요약 1줄 가져오기

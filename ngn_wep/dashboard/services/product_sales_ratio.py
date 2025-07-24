@@ -1,8 +1,10 @@
 from google.cloud import bigquery
+from utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()
 
+@cached_query(func_name="product_sales_ratio", ttl=900)  # 15분 캐싱
 def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit: int = 50):
     """
     ✅ 상품별 매출 비율 조회 (최적화됨)

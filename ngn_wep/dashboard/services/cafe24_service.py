@@ -1,5 +1,6 @@
 from google.cloud import bigquery
 import time
+from utils.cache_utils import cached_query
 
 
 def get_bigquery_client():
@@ -7,6 +8,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 
+@cached_query(func_name="cafe24_sales", ttl=180)  # 3분 캐싱
 def get_cafe24_sales_data(company_name, period, start_date, end_date,
                            date_type="summary", date_sort="desc",
                            limit=1000, page=1, user_id=None):
@@ -136,6 +138,7 @@ def get_cafe24_sales_data(company_name, period, start_date, end_date,
 
 
 
+@cached_query(func_name="cafe24_product_sales", ttl=180)  # 3분 캐싱
 def get_cafe24_product_sales(company_name, period, start_date, end_date,
                               sort_by="item_product_sales", limit=1000, page=1, user_id=None):
     from google.cloud import bigquery

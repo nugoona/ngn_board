@@ -6,6 +6,8 @@ from google.cloud import bigquery
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+# 캐시 유틸리티 임포트
+from utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
 
 # 📦 서비스 함수 임포트 (기능별 정리)
 from services.cafe24_service import (
@@ -25,6 +27,39 @@ from services.monthly_net_sales_visitors import get_monthly_net_sales_visitors
 
 
 data_blueprint = Blueprint("data", __name__, url_prefix="/dashboard")
+
+# ─────────────────────────────────────────────────────────────
+# 📌 캐시 관리 엔드포인트
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/cache/stats", methods=["GET"])
+def cache_stats():
+    """캐시 상태 정보 조회"""
+    try:
+        stats = get_cache_stats()
+        return jsonify({"status": "success", "cache_stats": stats}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@data_blueprint.route("/cache/invalidate", methods=["POST"])
+def cache_invalidate():
+    """캐시 무효화 (패턴 기반)"""
+    try:
+        data = request.get_json() or {}
+        pattern = data.get("pattern", "")
+        
+        if not pattern:
+            return jsonify({"status": "error", "message": "pattern 파라미터 필요"}), 400
+        
+        deleted_count = invalidate_cache_by_pattern(pattern)
+        return jsonify({
+            "status": "success", 
+            "message": f"{pattern} 패턴으로 {deleted_count}개 캐시 삭제됨"
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ─────────────────────────────────────────────────────────────
 
 def get_start_end_dates(period, start_date=None, end_date=None):
     """ ✅ 필터링 기간을 결정하는 함수 (KST 기준 적용) """

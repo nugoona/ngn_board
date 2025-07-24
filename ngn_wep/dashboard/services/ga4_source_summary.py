@@ -1,8 +1,10 @@
 from google.cloud import bigquery
+from utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()
 
+@cached_query(func_name="ga4_source_summary", ttl=600)  # 10분 캐싱
 def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: int = 100):
     """
     ✅ GA4 트래픽 테이블(ga4_traffic_ngn) 기준 소스별 유입수 요약 (최적화됨)

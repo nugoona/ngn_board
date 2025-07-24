@@ -1,8 +1,10 @@
 from google.cloud import bigquery
+from utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()
 
+@cached_query(func_name="monthly_net_sales_visitors", ttl=3600)  # 1시간 캐싱
 def get_monthly_net_sales_visitors(company_name):
     """
     ✅ 오늘 포함 월부터 13개월 전까지 (총 14개월)

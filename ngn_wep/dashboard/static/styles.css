@@ -832,10 +832,6 @@ animation: fadeInOut 3s ease-in-out forwards;
   height: 32px;
 }
 
-/* ✅ 그림자 효과 추가 */
-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
 /* 👉 테이블 헤더 정렬 가능 컬럼 표시 */
 th.sortable {
   cursor: pointer;
@@ -1068,7 +1064,7 @@ th.sortable.desc::after {
   font-weight: bold;
   border: none;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.1)  
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
@@ -1898,7 +1894,7 @@ th.sortable.desc::after {
 }
 
 /* ────────────────────────────────
- * 2) ‘세트명 작성’ 라벨
+ * 2) '세트명 작성' 라벨
  * ────────────────────────────────*/
 .manual-create-row label{
   font-weight:600;
@@ -2128,5 +2124,302 @@ th.sortable.desc::after {
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1);   }
+}
+
+/* ========================================
+   스켈레톤 로더 및 지연 로딩 스타일
+======================================== */
+
+/* 스켈레톤 로더 기본 스타일 */
+.skeleton-loader {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+}
+
+.skeleton-header {
+    height: 24px;
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    border-radius: 4px;
+    margin-bottom: 16px;
+    animation: skeleton-shimmer 2s infinite;
+}
+
+.skeleton-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    border-radius: 4px;
+    animation: skeleton-shimmer 2s infinite;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+/* 스켈레톤 애니메이션 */
+@keyframes skeleton-pulse {
+    0% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+/* 로딩 상태 */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(1px);
+    z-index: 10;
+}
+
+/* 에러 상태 */
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.error-message {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.retry-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.retry-btn:hover {
+    background: #b91c1c;
+}
+
+/* 위젯 컨테이너 최적화 */
+[data-widget-id] {
+    min-height: 200px;
+    transition: all 0.3s ease;
+    contain: layout style paint;
+    will-change: transform;
+}
+
+[data-widget-id]:not(.loading):not(.error) {
+    transform: translateZ(0); /* GPU 가속 */
+}
+
+/* 성능 최적화 */
+.performance-optimized {
+    contain: strict;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 200px;
+}
+
+/* 테이블 가상화 지원 */
+.virtual-table {
+    height: 400px;
+    overflow-y: auto;
+    contain: strict;
+}
+
+.virtual-table-row {
+    height: 50px;
+    contain: layout style paint;
+}
+
+/* 반응형 스켈레톤 */
+@media (max-width: 768px) {
+    .skeleton-loader {
+        padding: 15px;
+    }
+    
+    .skeleton-header {
+        height: 20px;
+        margin-bottom: 12px;
+    }
+    
+    .skeleton-line {
+        height: 14px;
+    }
+    
+    [data-widget-id] {
+        min-height: 150px;
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    .skeleton-loader {
+        background: #1f2937;
+    }
+    
+    .skeleton-header,
+    .skeleton-line {
+        background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    }
+    
+    .error-state {
+        background: #2d1b1b;
+        border-color: #7f1d1d;
+        color: #f87171;
+    }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+    .skeleton-loader,
+    .skeleton-header,
+    .skeleton-line {
+        animation: none;
+    }
+    
+    [data-widget-id] {
+        transition: none;
+    }
+}
+
+/* 고해상도 디스플레이 최적화 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .skeleton-loader {
+        backface-visibility: hidden;
+        transform: translateZ(0);
+    }
+}
+
+/* 인쇄 시 스켈레톤 숨김 */
+@media print {
+    .skeleton-loader,
+    .loading,
+    .error-state {
+        display: none !important;
+    }
+}
+
+/* 위젯별 특화 스타일 */
+[data-widget-id="performance-summary"] .skeleton-loader {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+[data-widget-id="cafe24-sales"] .skeleton-loader,
+[data-widget-id="cafe24-product-sales"] .skeleton-loader {
+    min-height: 300px;
+}
+
+[data-widget-id="monthly-chart"] .skeleton-loader {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 로딩 진행률 표시 */
+.loading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #e5e7eb;
+    z-index: 9999;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    transition: width 0.3s ease;
+    border-radius: 0 3px 3px 0;
+}
+
+/* 위젯 fade-in 효과 */
+@keyframes widget-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+[data-widget-id]:not(.loading):not(.error) {
+    animation: widget-fade-in 0.5s ease-out;
+}
+
+/* 성능 모니터링 표시 */
+.performance-monitor {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: monospace;
+    z-index: 1000;
+    display: none;
+}
+
+.performance-monitor.show {
+    display: block;
+}
+
+/* 캐시 상태 표시 */
+.cache-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981; /* 캐시 히트 */
+}
+
+.cache-indicator.miss {
+    background: #f59e0b; /* 캐시 미스 */
+}
+
+.cache-indicator.error {
+    background: #ef4444; /* 에러 */
 }
 

@@ -1,10 +1,12 @@
 # File: services/viewitem_summary.py
 
 from google.cloud import bigquery
+from utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()
 
+@cached_query(func_name="viewitem_summary", ttl=600)  # 10분 캐싱
 def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: int = 500):
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")

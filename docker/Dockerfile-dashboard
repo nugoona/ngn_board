@@ -2,9 +2,11 @@
 
 FROM python:3.9-slim
 
-# 1. 시스템 패키지
+# 1. 시스템 패키지 (Redis 클라이언트 추가)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc g++ libffi-dev ca-certificates && \
+    apt-get install -y --no-install-recommends \
+        gcc g++ libffi-dev ca-certificates \
+        redis-tools && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,19 +21,31 @@ COPY ngn_wep /app/ngn_wep
 COPY config/service-account.json /app/service-account.json
 COPY config/ngn.env            /app/config/ngn.env
 
-# 4. 환경 변수
+# 4. 환경 변수 (Redis 설정 추가)
 ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV FLASK_ENV="production"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="/app:/app/ngn_wep/dashboard"
+ENV REDIS_URL="redis://localhost:6379/0"
+ENV CACHE_TYPE="redis"
+ENV CACHE_REDIS_URL="redis://localhost:6379/0"
+ENV CACHE_DEFAULT_TIMEOUT=300
+
+# 5. 정적 파일 최적화를 위한 디렉토리 생성
+RUN mkdir -p /app/ngn_wep/dashboard/static/img
 
 EXPOSE 8080
 
-# 5. Gunicorn 실행 (timeout 120s, log-level info)
+# 6. Gunicorn 실행 (성능 최적화)
 CMD exec gunicorn \
     -w 2 \
     --threads 4 \
     --timeout 120 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
     --log-level info \
+    --access-logfile - \
+    --error-logfile - \
     --bind 0.0.0.0:8080 \
     ngn_wep.dashboard.app:app

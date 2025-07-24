@@ -2367,25 +2367,6 @@ th.sortable.desc::after {
     background: #ef4444; /* 에러 */
 }
 
-/* 로딩 오버레이 기본 스타일 (통합) */
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.9);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 1000;
-  pointer-events: none;
-  transition: opacity 0.3s ease-in-out;
-}
-
-/* JavaScript 제어를 위한 스타일 규칙 (제거됨 - 인라인 스타일로 대체) */
-
 /* 스피너 애니메이션 */
 .spinner {
   width: 40px;
@@ -2420,7 +2401,7 @@ th.sortable.desc::after {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
   display: none;
   justify-content: center;
   align-items: center;

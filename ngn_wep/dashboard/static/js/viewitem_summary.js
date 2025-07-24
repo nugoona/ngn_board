@@ -2,11 +2,6 @@ let rawViewItemRows = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// ✅ 전역 변수 사용 (안전한 방식)
-const isProduction = window.isProduction || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
-const debugLog = isProduction ? () => {} : console.log;
-const debugError = isProduction ? () => {} : console.error;
-
 // 🔥 강제 디버깅 활성화 (임시)
 console.log("[FORCE DEBUG] viewitem_summary.js 로드됨");
 console.log("[FORCE DEBUG] fetchGa4ViewItemSummaryData 함수 정의됨:", typeof fetchGa4ViewItemSummaryData);
@@ -43,31 +38,31 @@ function fetchGa4ViewItemSummaryData(requestData = {}, page = 1) {
     success: function (res) {
       hideLoading("#loadingOverlayViewitemSummary");
 
-      debugLog("[DEBUG] 🔍 ViewItem Summary 응답:", res);
-      debugLog("[DEBUG] 📋 res.status:", res.status);
-      debugLog("[DEBUG] 📋 res.viewitem_summary:", res.viewitem_summary);
-      debugLog("[DEBUG] 📈 res.viewitem_summary 길이:", res.viewitem_summary ? res.viewitem_summary.length : "undefined");
+      console.log("[DEBUG] 🔍 ViewItem Summary 응답:", res);
+      console.log("[DEBUG] 📋 res.status:", res.status);
+      console.log("[DEBUG] 📋 res.viewitem_summary:", res.viewitem_summary);
+      console.log("[DEBUG] 📈 res.viewitem_summary 길이:", res.viewitem_summary ? res.viewitem_summary.length : "undefined");
 
-      if (res.status === "success" && res.viewitem_summary) {
-        rawViewItemRows = res.viewitem_summary;
-        debugLog("[DEBUG] ✅ rawViewItemRows 설정됨:", rawViewItemRows);
-        debugLog("[DEBUG] 📊 rawViewItemRows 길이:", rawViewItemRows.length);
-        renderViewItemSummaryFilters(rawViewItemRows);
-        renderViewItemSummaryTable();
-        renderViewItemSummaryPagination(getGroupedFilteredData().length);
-      } else {
-        debugError("[ERROR] ❌ 응답 이상:", res);
-        debugError("[ERROR] 🔍 status가 success가 아님 또는 viewitem_summary가 없음");
-      }
+              if (res.status === "success" && res.viewitem_summary) {
+          rawViewItemRows = res.viewitem_summary;
+          console.log("[DEBUG] ✅ rawViewItemRows 설정됨:", rawViewItemRows);
+          console.log("[DEBUG] 📊 rawViewItemRows 길이:", rawViewItemRows.length);
+          renderViewItemSummaryFilters(rawViewItemRows);
+          renderViewItemSummaryTable();
+          renderViewItemSummaryPagination(getGroupedFilteredData().length);
+        } else {
+          console.error("[ERROR] ❌ 응답 이상:", res);
+          console.error("[ERROR] 🔍 status가 success가 아님 또는 viewitem_summary가 없음");
+        }
     },
-    error: function (jqXHR, textStatus, errorThrown) {
-      hideLoading("#loadingOverlayViewitemSummary");
-      if (textStatus !== "abort") {
-      debugError(`[ERROR] ViewItem Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
-      } else {
-        debugLog("[DEBUG] ViewItem Summary 요청 abort됨");
+          error: function (jqXHR, textStatus, errorThrown) {
+        hideLoading("#loadingOverlayViewitemSummary");
+        if (textStatus !== "abort") {
+        console.error(`[ERROR] ViewItem Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
+        } else {
+          console.log("[DEBUG] ViewItem Summary 요청 abort됨");
+        }
       }
-    }
   });
 }
 
@@ -147,28 +142,28 @@ function getGroupedFilteredData() {
 }
 
 function renderViewItemSummaryTable() {
-  debugLog("[DEBUG] 🎨 renderViewItemSummaryTable 호출됨");
+  console.log("[DEBUG] 🎨 renderViewItemSummaryTable 호출됨");
   
   const tbody = $("#viewitemSummaryBody").empty();
-  debugLog("[DEBUG] 📋 tbody 선택됨:", tbody.length > 0 ? "성공" : "실패");
+  console.log("[DEBUG] 📋 tbody 선택됨:", tbody.length > 0 ? "성공" : "실패");
   
   const grouped = getGroupedFilteredData();
-  debugLog("[DEBUG] 📊 grouped 데이터:", grouped);
-  debugLog("[DEBUG] 📈 grouped 길이:", grouped.length);
+  console.log("[DEBUG] 📊 grouped 데이터:", grouped);
+  console.log("[DEBUG] 📈 grouped 길이:", grouped.length);
   
   const paginated = grouped.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  debugLog("[DEBUG] 📄 paginated 데이터:", paginated);
-  debugLog("[DEBUG] 📈 paginated 길이:", paginated.length);
+  console.log("[DEBUG] 📄 paginated 데이터:", paginated);
+  console.log("[DEBUG] 📈 paginated 길이:", paginated.length);
 
   if (paginated.length === 0) {
-    debugLog("[DEBUG] ⚠️ 데이터가 없어서 빈 메시지 표시");
+    console.log("[DEBUG] ⚠️ 데이터가 없어서 빈 메시지 표시");
     tbody.append("<tr><td colspan='5'>데이터가 없습니다.</td></tr>");
     return;
   }
 
-  debugLog("[DEBUG] 🚀 테이블 행 렌더링 시작");
+  console.log("[DEBUG] 🚀 테이블 행 렌더링 시작");
   paginated.forEach((row, index) => {
-    debugLog(`[DEBUG] 📝 행 ${index + 1}:`, row);
+    console.log(`[DEBUG] 📝 행 ${index + 1}:`, row);
     const tr = $("<tr>");
     tr.append(`<td>${row.company_name}</td>`);
     tr.append(`<td>${row.product_name_cleaned}</td>`);
@@ -177,7 +172,7 @@ function renderViewItemSummaryTable() {
     tr.append(`<td>${row.total_view_item.toLocaleString()}</td>`);
     tbody.append(tr);
   });
-  debugLog("[DEBUG] ✅ 테이블 렌더링 완료");
+  console.log("[DEBUG] ✅ 테이블 렌더링 완료");
 }
 
 function renderViewItemSummaryPagination(totalItems) {

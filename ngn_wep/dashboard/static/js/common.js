@@ -4,35 +4,44 @@
 function showLoading(target) {
   console.log("🔄 showLoading called for:", target);
   
-  // target이 이미 로딩 오버레이인 경우
-  if ($(target).hasClass('loading-overlay')) {
-    $(target).addClass('loading').attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
-  } else {
-    // target이 컨테이너인 경우, 내부의 로딩 오버레이를 찾아서 표시
-    const overlay = $(target).find('.loading-overlay');
-    if (overlay.length > 0) {
-      $(target).addClass('loading');
-      overlay.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
-    }
+  const $target = $(target);
+  console.log("Target element:", $target);
+  console.log("Target length:", $target.length);
+  
+  if ($target.length === 0) {
+    console.error("❌ Target element not found:", target);
+    return;
   }
   
+  // 직접 스타일 설정
+  $target.css({
+    'display': 'flex',
+    'visibility': 'visible',
+    'opacity': '1',
+    'pointer-events': 'auto'
+  });
+  
   console.log("✅ Loading started for:", target);
+  console.log("Final display style:", $target.css('display'));
 }
 
 function hideLoading(target) {
   console.log("✅ hideLoading called for:", target);
   
-  // target이 이미 로딩 오버레이인 경우
-  if ($(target).hasClass('loading-overlay')) {
-    $(target).removeClass('loading').attr('style', 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;');
-  } else {
-    // target이 컨테이너인 경우, 내부의 로딩 오버레이를 찾아서 숨김
-    const overlay = $(target).find('.loading-overlay');
-    if (overlay.length > 0) {
-      $(target).removeClass('loading');
-      overlay.attr('style', 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;');
-    }
+  const $target = $(target);
+  
+  if ($target.length === 0) {
+    console.error("❌ Target element not found:", target);
+    return;
   }
+  
+  // 직접 스타일 설정
+  $target.css({
+    'display': 'none',
+    'visibility': 'hidden',
+    'opacity': '0',
+    'pointer-events': 'none'
+  });
   
   console.log("✅ Loading completed for:", target);
 }
@@ -66,13 +75,40 @@ function debugLoadingOverlays() {
   });
 }
 
+// 브라우저 캐시 강제 새로고침 함수
+function forceRefreshCache() {
+  console.log("🔄 브라우저 캐시 강제 새로고침 실행");
+  
+  // 모든 로딩 오버레이 강제 숨김
+  forceHideAllLoading();
+  
+  // 페이지 새로고침 (캐시 무시)
+  if (window.location.reload) {
+    window.location.reload(true);
+  } else {
+    // fallback
+    window.location.href = window.location.href + '?t=' + new Date().getTime();
+  }
+}
+
 // 페이지 로드 시 자동으로 모든 로딩 오버레이 제거 (백업용)
 $(document).ready(function() {
   // 60초 후 강제 제거 (최후의 수단)
   setTimeout(forceHideAllLoading, 60000);
   
-  // 디버깅용 - 5초 후 로딩 오버레이 상태 확인
-  setTimeout(debugLoadingOverlays, 5000);
+  // 개발 환경에서만 디버깅 기능 활성화
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('dev')) {
+    // 디버깅용 - 5초 후 로딩 오버레이 상태 확인
+    setTimeout(debugLoadingOverlays, 5000);
+    
+    // 캐시 문제 해결을 위한 키보드 단축키 (Ctrl+Shift+R)
+    $(document).keydown(function(e) {
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 82) { // Ctrl+Shift+R
+        console.log("🔄 Ctrl+Shift+R 감지 - 캐시 강제 새로고침");
+        forceRefreshCache();
+      }
+    });
+  }
 });
 
 function getRequestData(page = 1, extra = {}) {

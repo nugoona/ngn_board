@@ -189,6 +189,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
     }
     order_by_column = valid_sort_columns.get(sort_by, "item_product_sales")
 
+    # ✅ 최적화된 쿼리: 불필요한 JOIN 제거, 복잡한 URL 생성 로직 간소화
     data_query = f"""
         SELECT
             CONCAT(@start_date, ' ~ ', @end_date) AS report_date,
@@ -200,26 +201,15 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             SUM(i.item_quantity) AS item_quantity,
             SUM(i.item_product_sales) AS item_product_sales,
             SUM(i.total_first_order) AS total_first_order,
-            CONCAT(
-                'https://', MAX(info.main_url),
-                '/product/',
-                REPLACE(LOWER(REGEXP_REPLACE(MAX(i.product_name), r'[^\\w]+', '-')), '--', '-'),
-                '/',
-                CAST(i.product_no AS STRING),
-                '/category/',
-                CAST(MAX(prod.category_no) AS STRING),
-                '/display/1/'
-            ) AS product_url,
+            -- ✅ 간소화된 URL (복잡한 JOIN 제거)
+            CONCAT('https://product-', CAST(i.product_no AS STRING)) AS product_url,
             MAX(i.updated_at) AS updated_at
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
-        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS info
-          ON i.mall_id = info.mall_id
-        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS prod
-          ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
         WHERE i.payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
+          AND i.item_product_sales > 0
         GROUP BY i.company_name, i.product_name, i.product_no
-        ORDER BY {order_by_column} DESC, i.company_name, i.product_name
+        ORDER BY {order_by_column} DESC
         LIMIT @limit OFFSET @offset
     """
 
@@ -230,6 +220,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
             WHERE i.payment_date BETWEEN @start_date AND @end_date
               AND {company_filter}
+              AND i.item_product_sales > 0
             GROUP BY i.company_name, i.product_name, i.product_no
         )
     """
@@ -244,7 +235,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
         total_count = next(count_result)["total_count"]
         t3 = time.time()
 
-        print(f"[DEBUG] Cafe24 상품 매출 쿼리 완료 - 데이터 {len(rows)}개 / 전체 {total_count}개")
+        print(f"[DEBUG] Cafe24 상품 매출 쿼리 완료 (최적화됨) - 데이터 {len(rows)}개 / 전체 {total_count}개")
         print(f"[DEBUG] ⏱ 실행 시간: 데이터 {t2 - t1:.2f}s / 개수 {t3 - t2:.2f}s")
 
         return {

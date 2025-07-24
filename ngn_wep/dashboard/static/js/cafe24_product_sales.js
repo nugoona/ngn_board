@@ -130,6 +130,7 @@ function fetchCafe24ProductSalesData(requestData) {
         hideLoading("#loadingOverlayCafe24Products");
         const elapsed = (performance.now() - startTime).toFixed(1);
         console.log(`[DEBUG] ✅ Cafe24 상품 판매 응답 도착 (${elapsed}ms)`);
+        console.log("[DEBUG] 응답 구조:", response);
 
         if (!response || response.error) {
           console.error("[ERROR] Cafe24 상품 판매 데이터 오류:", response?.error || "알 수 없는 오류");
@@ -137,8 +138,16 @@ function fetchCafe24ProductSalesData(requestData) {
           return;
         }
 
-        cafe24ProductSalesRawData = response.cafe24_product_sales || [];
-        cafe24ProductSalesTotalCount = response.cafe24_product_sales_total_count || 0;
+        // 응답 구조 확인 및 데이터 추출
+        const data = response.cafe24_product_sales || response.rows || [];
+        const totalCount = response.cafe24_product_sales_total_count || response.total_count || 0;
+        
+        console.log("[DEBUG] 추출된 데이터:", data);
+        console.log("[DEBUG] 데이터 개수:", data.length);
+        console.log("[DEBUG] 전체 개수:", totalCount);
+
+        cafe24ProductSalesRawData = data;
+        cafe24ProductSalesTotalCount = totalCount;
         renderCafe24ProductSalesTable();
         renderCafe24ProductSalesPagination();
         resolve(response);

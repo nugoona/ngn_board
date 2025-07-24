@@ -41,10 +41,14 @@ from .services.meta_demo_handler  import meta_demo_blueprint
 # ─────────────────────────────────────────────
 # 4) Flask 앱 생성 & 기본 설정
 # ─────────────────────────────────────────────
-app = Flask(__name__)
+app = Flask(__name__, 
+           static_folder='static',
+           static_url_path='/static')
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
 app.permanent_session_lifetime = timedelta(hours=8)
 app.config["SESSION_PERMANENT"] = True
+
+# 캐시 헤더 제거 - 버전 파라미터로 대체
 
 # ─────────────────────────────────────────────
 # 5) Google Cloud 인증 경로 확인
@@ -83,6 +87,17 @@ def delete_info():
 @app.route("/terms")
 def terms():
     return render_template("terms.html")
+
+# 정적 파일 테스트 라우트
+@app.route("/test-static")
+def test_static():
+    return """
+    <h1>정적 파일 테스트</h1>
+    <p>favicon.ico: <img src="/static/img/favicon.ico" width="32" height="32"></p>
+    <p>x.png: <img src="/static/img/x.png" width="32" height="32"></p>
+    <p>favicon.ico 직접 링크: <a href="/static/img/favicon.ico">favicon.ico</a></p>
+    <p>x.png 직접 링크: <a href="/static/img/x.png">x.png</a></p>
+    """
 
 # /login, /logout → auth 블루프린트로 리디렉트
 @app.route("/login")

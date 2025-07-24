@@ -2422,6 +2422,17 @@ th.sortable.desc::after {
   background-color: transparent !important;
 }
 
+/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) */
+div[id*="loadingOverlay"],
+div[class*="loading-overlay"],
+.loading-overlay,
+.loading-overlay::before,
+.loading-overlay::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 /* 스피너 스타일 */
 .spinner {
   width: 40px;
@@ -2439,6 +2450,4 @@ th.sortable.desc::after {
   color: #666;
   font-weight: 500;
 }
-
-/* 🔥 모든 로딩 오버레이 배경 투명화 완료 - 특별한 규칙 불필요 */
 

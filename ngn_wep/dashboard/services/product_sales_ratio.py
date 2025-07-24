@@ -5,7 +5,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 @cached_query(func_name="product_sales_ratio", ttl=900)  # 15분 캐싱
-def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit: int = 50):
+def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit: int = 50, user_id=None):
     """
     ✅ 상품별 매출 비율 조회 (최적화됨)
     """
@@ -15,25 +15,50 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")
 
-    # ✅ 업체 필터 처리
-    if isinstance(company_name, list):
+    # ✅ 업체 필터 처리 (cafe24_service.py와 동일한 패턴)
+    query_params_base = []
+    
+    if company_name == "all":
+        if user_id == "demo":
+            company_filter = "LOWER(company_name) = 'demo'"
+        else:
+            company_filter = "LOWER(company_name) != 'demo'"
+    elif isinstance(company_name, list):
+        filtered_companies = [name.lower() for name in company_name]
+        
+        if user_id == "demo":
+            filtered_companies = ["demo"]
+        else:
+            filtered_companies = [name for name in filtered_companies if name != "demo"]
+            
+        if not filtered_companies:
+            print("[DEBUG] 필터링된 company_name 리스트 없음 → 빈 결과 반환")
+            return []
+            
         company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
-        query_params = [
-            bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name),
-            bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-            bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
-            bigquery.ScalarQueryParameter("limit", "INT64", limit),
-        ]
-        print(f"[DEBUG] company_name이 리스트: {company_name}")
+        query_params_base.append(
+            bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies)
+        )
+        print(f"[DEBUG] company_name이 리스트: {filtered_companies}")
     else:
+        company_name = company_name.lower()
+        if company_name == "demo" and user_id != "demo":
+            print("[DEBUG] demo 계정 아님 + demo 요청 → 빈 결과 반환")
+            return []
+            
         company_filter = "LOWER(company_name) = LOWER(@company_name)"
-        query_params = [
-            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-            bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-            bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
-            bigquery.ScalarQueryParameter("limit", "INT64", limit),
-        ]
+        query_params_base.append(
+            bigquery.ScalarQueryParameter("company_name", "STRING", company_name)
+        )
         print(f"[DEBUG] company_name이 문자열: {company_name}")
+
+    # ✅ 날짜 및 페이징 파라미터
+    query_params_common = [
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+        bigquery.ScalarQueryParameter("limit", "INT64", limit),
+    ]
+    query_params = query_params_base + query_params_common
 
     print(f"[DEBUG] 최종 필터 조건: {company_filter}")
     print(f"[DEBUG] 날짜 범위: {start_date} ~ {end_date}")

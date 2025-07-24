@@ -321,3 +321,24 @@ const lazyLoader = new LazyLoadManager();
 
 // 전역 함수로 노출
 window.lazyLoader = lazyLoader;
+
+// 기존 함수들과의 호환성을 위한 전역 함수들
+window.hideLoading = function(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+};
+
+window.showLoading = function(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+    }
+};

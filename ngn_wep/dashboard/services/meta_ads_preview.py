@@ -123,6 +123,21 @@ def get_meta_ads_preview_list(account_id):
                 thumb_data = thumb_res.json()
                 image_url = thumb_data.get("thumbnails", {}).get("data", [{}])[0].get("uri", "")
 
+            # ✅ 이미지 URL이 유효하지 않으면 광고 제외
+            if not image_url or image_url.strip() == "":
+                print(f"[FILTERED] 이미지 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
+                continue
+
+            # ✅ 이미지 URL 유효성 검사 (선택적)
+            try:
+                img_check = requests.head(image_url, timeout=5)
+                if img_check.status_code != 200:
+                    print(f"[FILTERED] 이미지 URL 접근 불가로 광고 제외 (ad_id={ad_id}, status_code={img_check.status_code})")
+                    continue
+            except Exception as img_error:
+                print(f"[FILTERED] 이미지 URL 검증 실패로 광고 제외 (ad_id={ad_id}, error={img_error})")
+                continue
+
             results.append({
                 "ad_id": ad_id,
                 "ad_name": ad["ad_name"],

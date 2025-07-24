@@ -348,17 +348,17 @@ th {
 
 /* ✅ 로딩 오버레이 설정 (카드 위에만 표시, 배경 영향 X) */
 #loadingOverlayPerformanceSummary {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: transparent; /* 배경 흐림 없음 */
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 10;
-  pointer-events: none;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(255, 255, 255, 0.3) !important; /* transparent에서 변경 */
+  display: none !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
 }
 
 /* ✅ 로딩 활성화 시 스피너 표시 */
@@ -2427,5 +2427,20 @@ th.sortable.desc::after {
   font-size: 14px;
   color: #666;
   font-weight: 500;
+}
+
+/* 🔥 특정 위젯들의 로딩 오버레이 강제 적용 */
+#loadingOverlayPerformanceSummary,
+#loadingOverlayCafe24Sales,
+#loadingOverlayCafe24Products,
+#loadingOverlayGa4Source,
+#loadingOverlayViewitemSummary,
+#loadingOverlayProductSalesRatio,
+#loadingOverlayPlatformSalesSummary,
+#loadingOverlayPlatformSalesRatio,
+#loadingOverlayPlatformSalesMonthly,
+#loadingOverlayMonthlyChart {
+  background: rgba(255, 255, 255, 0.3) !important;
+  opacity: 1 !important;
 }
 

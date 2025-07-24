@@ -7,7 +7,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 # 캐시 유틸리티 임포트
-from utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
+from ..utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
 
 # 📦 서비스 함수 임포트 (기능별 정리)
 from services.cafe24_service import (

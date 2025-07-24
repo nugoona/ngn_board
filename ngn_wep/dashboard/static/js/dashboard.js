@@ -97,7 +97,11 @@ async function updateAllData() {
   isLoading = true;
 
   // 의존성 로딩 스피너 시작 - 카페24 매출과 사이트 성과 요약 동시 표시
+  console.log("🔄 의존성 로딩 스피너 시작");
   showLoading("#loadingOverlayPerformanceSummary");
+  
+  // 강제로 스타일 설정 (백업)
+  $("#loadingOverlayPerformanceSummary").attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
 
   // 필수 데이터 요청 객체
   const salesRequest = getRequestData(1, {
@@ -125,6 +129,7 @@ async function updateAllData() {
     ]);
 
     // 카페24 매출 완료 후 사이트 성과 요약 로딩 스피너도 함께 숨김
+    console.log("✅ 의존성 로딩 스피너 종료");
     hideLoading("#loadingOverlayPerformanceSummary");
 
     // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)

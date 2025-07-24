@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NGN 대시보드</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -170,10 +171,10 @@
   <!-- ✅ JS 로딩 -->
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
-  <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/cafe24_sales.js') }}"></script>
+      <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.2"></script>
+    <script src="{{ url_for('static', filename='js/cafe24_sales.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cafe24_product_sales.js') }}"></script>
   <script src="{{ url_for('static', filename='js/performance_summary.js') }}"></script>
   <script src="{{ url_for('static', filename='js/viewitem_summary.js') }}"></script>

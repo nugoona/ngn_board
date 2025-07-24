@@ -359,8 +359,11 @@ window.lazyLoader = lazyLoader;
 export function showLoading(target) {
     const element = typeof target === 'string' ? document.querySelector(target) : target;
     if (!element) return;
+    element.style.display = 'flex'; // overlay 보이기
     const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
     if (loadingIndicator) loadingIndicator.style.display = 'block';
+    const loadingText = element.querySelector('.loading-text');
+    if (loadingText) loadingText.style.display = 'block';
     element.classList.add('loading');
 }
 
@@ -369,6 +372,9 @@ export function hideLoading(target) {
     if (!element) return;
     const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
     if (loadingIndicator) loadingIndicator.style.display = 'none';
+    const loadingText = element.querySelector('.loading-text');
+    if (loadingText) loadingText.style.display = 'none';
+    element.style.display = 'none'; // overlay 숨기기
     element.classList.remove('loading');
 }
 

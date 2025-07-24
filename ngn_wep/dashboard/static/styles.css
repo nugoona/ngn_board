@@ -2384,25 +2384,7 @@ th.sortable.desc::after {
   transition: opacity 0.3s ease-in-out;
 }
 
-/* JavaScript가 제어하도록 CSS 규칙 단순화 */
-.loading-overlay[style*="display: flex"] {
-  display: flex !important;
-  pointer-events: auto;
-}
-
-/* JavaScript로 숨겨진 경우 숨김 (JavaScript 우선) */
-.loading-overlay[style*="display: none"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.loading-overlay[style*="visibility: hidden"] {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
+/* JavaScript 제어를 위한 스타일 규칙 (제거됨 - 인라인 스타일로 대체) */
 
 /* 스피너 애니메이션 */
 .spinner {
@@ -2428,7 +2410,7 @@ th.sortable.desc::after {
 }
 
 /* ================================
- 새로운 통합 로딩 스타일 (기존 스타일 덮어쓰기)
+ 통합 로딩 오버레이 스타일 (최종 버전)
 ================================ */
 
 /* 모든 로딩 오버레이 기본 스타일 */
@@ -2448,20 +2430,6 @@ th.sortable.desc::after {
   transition: opacity 0.3s ease-in-out !important;
 }
 
-/* JavaScript가 표시할 때 */
-.loading-overlay[style*="display: flex"] {
-  display: flex !important;
-  pointer-events: auto !important;
-}
-
-/* JavaScript가 숨길 때 */
-.loading-overlay[style*="display: none"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
 /* 스피너 스타일 */
 .spinner {
   width: 40px !important;
@@ -2471,11 +2439,6 @@ th.sortable.desc::after {
   border-radius: 50% !important;
   animation: spin 1s linear infinite !important;
   margin-bottom: 10px !important;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 /* 로딩 텍스트 */

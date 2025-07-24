@@ -336,9 +336,10 @@ th {
   min-height: 180px; /* ✅ 로딩 스피너를 카드 영역 중앙에 위치시키기 위해 추가 */
 }
 
-.performance-summary-wrapper.loading .summary-grid .summary-card {
+/* 🔥 카드 반투명 효과 제거 - 흰색 배경 문제 해결 */
+/* .performance-summary-wrapper.loading .summary-grid .summary-card {
   opacity: 0.4;
-}
+} */
 
 .performance-summary-wrapper.loading #loadingOverlayPerformanceSummary {
   display: flex !important;

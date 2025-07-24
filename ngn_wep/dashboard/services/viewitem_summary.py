@@ -8,7 +8,11 @@ def get_bigquery_client():
 
 @cached_query(func_name="viewitem_summary", ttl=600)  # 10분 캐싱
 def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: int = 500):
+    print(f"[DEBUG] 🔍 get_viewitem_summary 호출됨")
+    print(f"[DEBUG] 📊 파라미터: company_name={company_name}, start_date={start_date}, end_date={end_date}, limit={limit}")
+    
     if not start_date or not end_date:
+        print("[ERROR] ❌ start_date 또는 end_date가 없음")
         raise ValueError("start_date / end_date 값이 없습니다.")
 
     # ✅ 업체 필터링 분기 처리
@@ -67,11 +71,14 @@ def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: in
 
     try:
         client = get_bigquery_client()
+        print(f"[DEBUG] 🚀 BigQuery 쿼리 실행 시작")
         rows = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         data = [dict(row) for row in rows]
-        print(f"[DEBUG] ViewItem Summary 결과 {len(data)}건")
+        print(f"[DEBUG] ✅ ViewItem Summary 결과 {len(data)}건")
+        print(f"[DEBUG] 📋 첫 번째 데이터 샘플: {data[0] if data else 'None'}")
         return data
     except Exception as ex:
-        print("[ERROR] viewitem_summary 오류:", ex)
+        print(f"[ERROR] ❌ viewitem_summary 오류: {ex}")
+        print(f"[ERROR] 🔍 오류 타입: {type(ex)}")
         return []
 

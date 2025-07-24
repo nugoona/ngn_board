@@ -53,8 +53,8 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // 🔥 로딩 스피너 다시 활성화 (dashboard.js와 독립적으로 관리)
-    toggleLoading(true);
+    // 🔥 로딩 스피너 제거 - dashboard.js에서 통합 관리
+    // toggleLoading(true);
 
     const today = new Date().toISOString().split("T")[0];
     if (!startDate) startDate = today;
@@ -97,10 +97,11 @@ async function fetchPerformanceSummaryData() {
     } catch (error) {
         console.error("[ERROR] 데이터 요청 중 오류 발생:", error);
         updateUpdatedAtText(null);
-    } finally {
-        // 🔥 로딩 스피너 다시 활성화 (dashboard.js와 독립적으로 관리)
-        toggleLoading(false);
     }
+    // 🔥 로딩 스피너 제거 - dashboard.js에서 통합 관리
+    // } finally {
+    //     toggleLoading(false);
+    // }
 }
 
 function toggleLoading(isLoading) {

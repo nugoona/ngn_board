@@ -13,13 +13,16 @@ function showLoading(target) {
     return;
   }
   
-  // 직접 스타일 설정
+  // 🔥 더 강력한 스타일 설정 - 다른 코드가 덮어쓰지 못하도록
   $target.css({
-    'display': 'flex',
-    'visibility': 'visible',
-    'opacity': '1',
-    'pointer-events': 'auto'
+    'display': 'flex !important',
+    'visibility': 'visible !important',
+    'opacity': '1 !important',
+    'pointer-events': 'auto !important'
   });
+  
+  // 🔥 인라인 스타일로도 강제 설정
+  $target.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
   
   console.log("✅ Loading started for:", target);
   console.log("Final display style:", $target.css('display'));

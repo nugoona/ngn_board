@@ -2401,7 +2401,7 @@ th.sortable.desc::after {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.8);  /* 투명도를 0.005에서 0.8로 높임 */
+  background: rgba(255, 255, 255, 0.3);  /* 투명도를 0.8에서 0.3으로 낮춤 */
   display: none;
   justify-content: center;
   align-items: center;

@@ -195,6 +195,47 @@
       dropdown.style.display = (dropdown.style.display === "flex") ? "none" : "flex";
     });
   </script>
+
+    <!-- 보안 강화 스크립트 -->
+    <script>
+      // ✅ 배포 환경에서만 보안 기능 활성화
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      
+      if (isProduction) {
+        // 개발자 도구 단축키 비활성화 (완전히 막지는 못하지만 어느 정도 제한)
+        document.addEventListener('keydown', function(e) {
+          // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U 비활성화
+          if (e.key === 'F12' || 
+              (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+              (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            return false;
+          }
+        });
+        
+        // 우클릭 메뉴 제한
+        document.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          return false;
+        });
+        
+        // 개발자 도구 감지 (완전하지는 않음)
+        let devtools = { open: false, orientation: null };
+        setInterval(() => {
+          const threshold = 160;
+          if (window.outerHeight - window.innerHeight > threshold || 
+              window.outerWidth - window.innerWidth > threshold) {
+            if (!devtools.open) {
+              devtools.open = true;
+              // 개발자 도구가 열렸을 때의 처리 (선택사항)
+              // document.body.innerHTML = '개발자 도구 사용이 제한됩니다.';
+            }
+          } else {
+            devtools.open = false;
+          }
+        }, 500);
+      }
+    </script>
 </body>
 
 </html>

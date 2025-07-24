@@ -126,7 +126,14 @@ def get_product_sales_ratio(
     print("[DEBUG] ★ 파라미터 목록 ★")
     for p in query_params:
         val = getattr(p, "value", getattr(p, "values", None))
-        print(f"  - {p.name} ({p.parameter_type or getattr(p,'array_type','')}): {val}")
+        # 안전한 타입 접근
+        if hasattr(p, 'parameter_type'):
+            param_type = p.parameter_type
+        elif hasattr(p, 'array_type'):
+            param_type = p.array_type
+        else:
+            param_type = 'UNKNOWN'
+        print(f"  - {p.name} ({param_type}): {val}")
 
 
     # ---------- 실행 ----------

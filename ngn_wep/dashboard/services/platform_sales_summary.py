@@ -166,7 +166,7 @@ def get_monthly_platform_sales(company_names, months_back=6):
     client = bigquery.Client()
 
     query = """
-    WITH monthly_data AS (
+    WITH base AS (
       SELECT
         LOWER(company_name) AS company_name,
         FORMAT_DATE('%Y-%m', DATE) AS month,
@@ -177,22 +177,33 @@ def get_monthly_platform_sales(company_names, months_back=6):
           WHEN LOWER(platform) = '에이블리' THEN 'ably'
           ELSE LOWER(platform)
         END AS platform_grouped,
-        SUM(sales_amount) AS monthly_sales
+        sales_amount
       FROM `winged-precept-443218-v8.ngn_dataset.sheets_platform_sales_data`
       WHERE DATE >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL @months_back MONTH)
         AND LOWER(company_name) IN UNNEST(@company_names)
         AND sales_amount > 0
-      GROUP BY company_name, month, platform_grouped
     )
-    
-    SELECT
-      company_name,
-      month,
-      platform_grouped AS platform,
-      monthly_sales,
-      SUM(monthly_sales) OVER (PARTITION BY company_name, month) AS total_monthly_sales
-    FROM monthly_data
-    ORDER BY company_name, month DESC, monthly_sales DESC
+    , agg AS (
+      SELECT
+        company_name,
+        month,
+        SUM(sales_amount) AS total_sales,
+        IFNULL(SUM(IF(platform_grouped = 'site_official', sales_amount, 0)), 0) AS site_official,
+        IFNULL(SUM(IF(platform_grouped = 'musinsa', sales_amount, 0)), 0) AS musinsa,
+        IFNULL(SUM(IF(platform_grouped = '29cm', sales_amount, 0)), 0) AS `29cm`,
+        IFNULL(SUM(IF(platform_grouped = 'shopee', sales_amount, 0)), 0) AS shopee,
+        IFNULL(SUM(IF(platform_grouped = 'eql', sales_amount, 0)), 0) AS eql,
+        IFNULL(SUM(IF(platform_grouped = 'llud', sales_amount, 0)), 0) AS llud,
+        IFNULL(SUM(IF(platform_grouped = 'hana', sales_amount, 0)), 0) AS hana,
+        IFNULL(SUM(IF(platform_grouped = 'heights', sales_amount, 0)), 0) AS heights,
+        IFNULL(SUM(IF(platform_grouped = 'zigzag', sales_amount, 0)), 0) AS zigzag,
+        IFNULL(SUM(IF(platform_grouped = 'ably', sales_amount, 0)), 0) AS ably
+      FROM base
+      GROUP BY company_name, month
+    )
+    SELECT *
+    FROM agg
+    ORDER BY company_name, month DESC
     """
 
     job_config = bigquery.QueryJobConfig(

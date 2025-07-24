@@ -101,6 +101,8 @@ async function updateAllData() {
   
   // 성과 요약 로딩 오버레이 즉시 표시
   const performanceOverlay = $("#loadingOverlayPerformanceSummary");
+  console.log("🔍 성과 요약 오버레이 검색 결과:", performanceOverlay.length, "개 발견");
+  
   if (performanceOverlay.length > 0) {
     console.log("✅ 성과 요약 로딩 오버레이 찾음 - 필터 변경 시 즉시 표시");
     
@@ -117,6 +119,14 @@ async function updateAllData() {
     console.log("✅ 성과 요약 로딩 스피너 즉시 표시 완료 - 필터 변경");
   } else {
     console.error("❌ 성과 요약 로딩 오버레이를 찾을 수 없음");
+    console.log("🔍 DOM에서 loadingOverlayPerformanceSummary 검색 중...");
+    
+    // DOM에서 직접 검색
+    const allElements = document.querySelectorAll('[id*="loadingOverlay"]');
+    console.log("🔍 모든 loadingOverlay 요소들:", allElements.length, "개");
+    allElements.forEach((el, index) => {
+      console.log(`🔍 ${index}: ${el.id}`);
+    });
   }
 
   // 필수 데이터 요청 객체
@@ -137,14 +147,30 @@ async function updateAllData() {
     console.log("🔄 Cafe24 데이터 요청 시작 - 필터 변경");
     
     // 필수 데이터는 병렬로 실행하되 실패해도 계속 진행
-    await Promise.all([
-      fetchCafe24SalesData(salesRequest).catch(e => {
+    const promises = [];
+    
+    // fetchCafe24SalesData 함수가 정의되어 있는지 확인
+    if (typeof fetchCafe24SalesData === 'function') {
+      promises.push(fetchCafe24SalesData(salesRequest).catch(e => {
         console.error("[ERROR] fetchCafe24SalesData 실패:", e);
-      }),
-      fetchCafe24ProductSalesData(productRequest).catch(e => {
+      }));
+    } else {
+      console.warn("[WARNING] fetchCafe24SalesData 함수가 정의되지 않음");
+    }
+    
+    // fetchCafe24ProductSalesData 함수가 정의되어 있는지 확인
+    if (typeof fetchCafe24ProductSalesData === 'function') {
+      promises.push(fetchCafe24ProductSalesData(productRequest).catch(e => {
         console.error("[ERROR] fetchCafe24ProductSalesData 실패:", e);
-      }),
-    ]);
+      }));
+    } else {
+      console.warn("[WARNING] fetchCafe24ProductSalesData 함수가 정의되지 않음");
+    }
+    
+    // Promise가 있을 때만 실행
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
 
     console.log("✅ Cafe24 데이터 요청 완료 - 필터 변경");
     

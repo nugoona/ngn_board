@@ -53,8 +53,8 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // dashboard.js에서 이미 로딩 스피너를 관리하므로 여기서는 제거
-    // toggleLoading(true);
+    // 🔥 로딩 스피너 다시 활성화 (dashboard.js와 독립적으로 관리)
+    toggleLoading(true);
 
     const today = new Date().toISOString().split("T")[0];
     if (!startDate) startDate = today;
@@ -98,8 +98,8 @@ async function fetchPerformanceSummaryData() {
         console.error("[ERROR] 데이터 요청 중 오류 발생:", error);
         updateUpdatedAtText(null);
     } finally {
-        // dashboard.js에서 이미 로딩 스피너를 관리하므로 여기서는 제거
-        // toggleLoading(false);
+        // 🔥 로딩 스피너 다시 활성화 (dashboard.js와 독립적으로 관리)
+        toggleLoading(false);
     }
 }
 

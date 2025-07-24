@@ -41,12 +41,20 @@ from .services.meta_demo_handler  import meta_demo_blueprint
 # ─────────────────────────────────────────────
 # 4) Flask 앱 생성 & 기본 설정
 # ─────────────────────────────────────────────
+import os
+static_folder_path = os.path.join(os.path.dirname(__file__), 'static')
 app = Flask(__name__, 
-           static_folder='static',
+           static_folder=static_folder_path,
            static_url_path='/static')
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
 app.permanent_session_lifetime = timedelta(hours=8)
 app.config["SESSION_PERMANENT"] = True
+
+# 정적 파일 경로 디버깅
+print(f"[DEBUG] Flask static folder: {static_folder_path}")
+print(f"[DEBUG] Static folder exists: {os.path.exists(static_folder_path)}")
+print(f"[DEBUG] x.png exists: {os.path.exists(os.path.join(static_folder_path, 'img', 'x.png'))}")
+print(f"[DEBUG] favicon.ico exists: {os.path.exists(os.path.join(static_folder_path, 'img', 'favicon.ico'))}")
 
 # 캐시 헤더 제거 - 버전 파라미터로 대체
 

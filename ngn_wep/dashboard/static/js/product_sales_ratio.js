@@ -4,7 +4,13 @@ let chartInstance_ratio = null;
 let allProductSalesRatioData = [];
 
 function fetchProductSalesRatio(requestData) {
-  if (!requestData) return;
+  // requestData가 없으면 현재 필터값으로 생성
+  if (!requestData) {
+    requestData = getRequestData(1, {
+      data_type: "product_sales_ratio"
+    });
+  }
+  
   if (requestData.period === "manual" && !requestData.end_date) {
     console.warn("[SKIP] 종료일 누락 - 상품군 매출 비중 요청 생략");
     return;

@@ -1,4 +1,5 @@
 let allMonthlyPlatformSalesData = [];
+let monthlyPlatformSalesData = [];  // 누락된 변수 선언 추가
 let platformSalesChart = null;  // (차트용 전역, 현재 미사용이지만 유지)
 
 const platforms = [
@@ -74,7 +75,7 @@ function renderMonthlyPlatformSalesTable(page) {
     const tr = $("<tr></tr>");
 
     // ✅ 1. 연도/월
-    tr.append(`<td>${row.year_month}</td>`);
+    tr.append(`<td>${row.month || row.year_month || '-'}</td>`);  // 서버가 'month' 필드를 보냄
 
     // ✅ 2. 총합계
     const totalValue = platforms.reduce((sum, platform) => sum + (row[platform] || 0), 0);

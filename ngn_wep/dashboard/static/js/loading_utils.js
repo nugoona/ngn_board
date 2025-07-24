@@ -204,8 +204,8 @@ class LazyLoadManager {
     }
 
     async loadGA4Source() {
-        if (typeof fetchGA4SourceSummary === 'function') {
-            return await fetchGA4SourceSummary();
+        if (typeof fetchGa4SourceSummaryData === 'function') {
+            return await fetchGa4SourceSummaryData();
         }
     }
 

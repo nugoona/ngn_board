@@ -98,10 +98,35 @@ async function updateAllData() {
 
   // 의존성 로딩 스피너 시작 - 카페24 매출과 사이트 성과 요약 동시 표시
   console.log("🔄 의존성 로딩 스피너 시작");
-  showLoading("#loadingOverlayPerformanceSummary");
   
-  // 강제로 스타일 설정 (백업)
-  $("#loadingOverlayPerformanceSummary").attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
+  // 여러 방법으로 로딩 스피너 표시
+  const performanceOverlay = $("#loadingOverlayPerformanceSummary");
+  if (performanceOverlay.length > 0) {
+    console.log("✅ 성과 요약 로딩 오버레이 찾음");
+    
+    // 방법 1: showLoading 함수
+    showLoading("#loadingOverlayPerformanceSummary");
+    
+    // 방법 2: 직접 스타일 설정
+    performanceOverlay.css({
+      'display': 'flex',
+      'visibility': 'visible',
+      'opacity': '1',
+      'pointer-events': 'auto'
+    });
+    
+    // 방법 3: 강제 스타일 속성 설정
+    performanceOverlay.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
+    
+    // 방법 4: 지연 실행으로 확실히 표시
+    setTimeout(() => {
+      performanceOverlay.show().css('display', 'flex');
+      console.log("✅ 지연 실행으로 로딩 스피너 표시");
+    }, 100);
+    
+  } else {
+    console.error("❌ 성과 요약 로딩 오버레이를 찾을 수 없음");
+  }
 
   // 필수 데이터 요청 객체
   const salesRequest = getRequestData(1, {
@@ -162,20 +187,8 @@ async function updateAllData() {
       console.error("[ERROR] fetchPlatformSalesRatio 실패:", e);
     }
 
-    // 유입 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
-    const fetchViewData = [];
-    
-    try {
-      fetchViewItemSummaryData(1);
-    } catch (e) {
-      console.error("[ERROR] fetchViewItemSummaryData 실패:", e);
-    }
-    
-    try {
-      fetchGa4SourceSummaryData(1);
-    } catch (e) {
-      console.error("[ERROR] fetchGa4SourceSummaryData 실패:", e);
-    }
+    // 유입 데이터 요청은 각각의 JS 파일에서 자체적으로 처리됨
+    // fetchViewItemSummaryData와 fetchGa4SourceSummaryData는 별도 파일에서 정의됨
 
     // 빈 배열이므로 Promise.all 호출 불필요
     // await Promise.all([

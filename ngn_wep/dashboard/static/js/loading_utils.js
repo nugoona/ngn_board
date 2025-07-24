@@ -355,29 +355,4 @@ const lazyLoader = new LazyLoadManager();
 // 전역 함수로 노출
 window.lazyLoader = lazyLoader;
 
-// ✅ 로딩 오버레이 헬퍼 (모듈 export + 글로벌 노출)
-export function showLoading(target) {
-    const element = typeof target === 'string' ? document.querySelector(target) : target;
-    if (!element) return;
-    element.style.display = 'flex'; // overlay 보이기
-    const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
-    if (loadingIndicator) loadingIndicator.style.display = 'block';
-    const loadingText = element.querySelector('.loading-text');
-    if (loadingText) loadingText.style.display = 'block';
-    element.classList.add('loading');
-}
-
-export function hideLoading(target) {
-    const element = typeof target === 'string' ? document.querySelector(target) : target;
-    if (!element) return;
-    const loadingIndicator = element.querySelector('.loading-indicator, .spinner');
-    if (loadingIndicator) loadingIndicator.style.display = 'none';
-    const loadingText = element.querySelector('.loading-text');
-    if (loadingText) loadingText.style.display = 'none';
-    element.style.display = 'none'; // overlay 숨기기
-    element.classList.remove('loading');
-}
-
-// 과거 코드 호환성을 위해 window 객체에도 등록
-window.showLoading = showLoading;
-window.hideLoading = hideLoading;
+// showLoading/hideLoading 함수는 common.js에서 정의됨

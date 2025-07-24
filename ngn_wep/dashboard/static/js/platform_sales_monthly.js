@@ -108,9 +108,7 @@ function getHeatmapColor(value, max) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function showLoading(target) {
-  $(target).css({ display: "flex" });
-}
+// showLoading 함수는 common.js에서 정의됨
 
 function hideLoading(target) {
   $(target).css({ display: "none" });

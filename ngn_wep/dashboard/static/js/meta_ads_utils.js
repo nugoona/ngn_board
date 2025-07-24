@@ -53,16 +53,7 @@ function cleanData(value, decimalPlaces = 0) {
   return value;
 }
 
-// ✅ 로딩 오버레이
-export function showLoading(target) {
-  $(target).css({ display: "flex" });
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").addClass("loading");
-}
-
-export function hideLoading(target) {
-  $(target).css({ display: "none" });
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").removeClass("loading");
-}
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 
 export function showInlinePopup(message) {
   const popup = $(`<div class="custom-popup">${message}</div>`);

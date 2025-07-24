@@ -47,15 +47,7 @@ $(document).ready(function () {
   });
 });
 
-function showLoading(target) {
-  $(target).css({ display: "flex" });
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").addClass("loading");
-}
-
-function hideLoading(target) {
-  $(target).css({ display: "none" });
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").removeClass("loading");
-}
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 
 function cleanData(value, decimalPlaces = 0) {
   if (value === undefined || value === null || value === "-" || value === "") return "0";

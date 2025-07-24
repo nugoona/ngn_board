@@ -1,6 +1,6 @@
 // File: static/js/meta_ads_slide_collection.js
 
-import { showLoading, hideLoading } from "./loading_utils.js";
+// showLoading/hideLoading 함수는 common.js에서 정의됨
 
 const $ = window.$;
 

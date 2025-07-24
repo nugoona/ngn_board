@@ -9,6 +9,8 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
     """
     ✅ 상품별 매출 비율 조회 (최적화됨)
     """
+    
+    print(f"[DEBUG] product_sales_ratio 호출됨: company_name={company_name}, start_date={start_date}, end_date={end_date}")
 
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")

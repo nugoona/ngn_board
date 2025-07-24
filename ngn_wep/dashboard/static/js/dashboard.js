@@ -204,11 +204,12 @@ async function updateAllData() {
     // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
     const fetchMainData = [];
     
-    try {
-      fetchPerformanceSummaryData();
-    } catch (e) {
-      debugError("[ERROR] fetchPerformanceSummaryData 실패:", e);
-    }
+    // 🔥 fetchPerformanceSummaryData() 제거 - performance_summary.js에서 독립적으로 처리
+    // try {
+    //   fetchPerformanceSummaryData();
+    // } catch (e) {
+    //   debugError("[ERROR] fetchPerformanceSummaryData 실패:", e);
+    // }
     
     try {
       fetchMonthlyNetSalesVisitors();
@@ -265,13 +266,15 @@ async function updateAllData() {
     }
 
     // 🔥 모든 데이터 요청 완료 후 사이트 성과 요약 로딩 스피너 숨김
-    debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
-    hideLoading("#loadingOverlayPerformanceSummary");
+    // 🔥 제거 - performance_summary.js에서 독립적으로 관리
+    // debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
+    // hideLoading("#loadingOverlayPerformanceSummary");
 
   } catch (e) {
     debugError("[ERROR] updateAllData() 전체 오류:", e);
+    // 🔥 제거 - performance_summary.js에서 독립적으로 관리
     // 에러 발생 시에도 로딩 스피너 숨김
-    hideLoading("#loadingOverlayPerformanceSummary");
+    // hideLoading("#loadingOverlayPerformanceSummary");
   } finally {
     isLoading = false;
     // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음

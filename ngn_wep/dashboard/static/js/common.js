@@ -1,68 +1,79 @@
 // File: static/js/common.js
 
+// 로딩 상태 관리 함수들
 function showLoading(target) {
-  console.log("[DEBUG] showLoading 호출됨:", target);
-  $(target).css({ 
-    display: "flex",
-    visibility: "visible",
-    opacity: "1"
-  });
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").addClass("loading");
-  console.log("[DEBUG] showLoading 완료:", target);
+  console.log("🔄 showLoading called for:", target);
   
-  // 10초 후 자동으로 로딩 해제 (무한로딩 방지)
-  setTimeout(() => {
-    console.log("[DEBUG] 자동 로딩 해제:", target);
-    hideLoading(target);
-  }, 10000);
+  // target이 이미 로딩 오버레이인 경우
+  if ($(target).hasClass('loading-overlay')) {
+    $(target).addClass('loading').show().css({
+      display: "flex",
+      visibility: "visible",
+      opacity: "1"
+    });
+  } else {
+    // target이 컨테이너인 경우, 내부의 로딩 오버레이를 찾아서 표시
+    const overlay = $(target).find('.loading-overlay');
+    if (overlay.length > 0) {
+      $(target).addClass('loading');
+      overlay.show().css({
+        display: "flex",
+        visibility: "visible",
+        opacity: "1"
+      });
+    }
+  }
+  
+  console.log("✅ Loading started for:", target);
 }
 
 function hideLoading(target) {
-  console.log("[DEBUG] hideLoading 호출됨:", target);
+  console.log("✅ hideLoading called for:", target);
   
-  // 1. 오버레이 완전히 숨김
-  $(target).hide();
-  $(target).css({ 
-    display: "none !important",
-    visibility: "hidden !important",
-    opacity: "0 !important"
-  });
+  // target이 이미 로딩 오버레이인 경우
+  if ($(target).hasClass('loading-overlay')) {
+    $(target).removeClass('loading').hide().css({
+      display: "none",
+      visibility: "hidden",
+      opacity: "0"
+    });
+  } else {
+    // target이 컨테이너인 경우, 내부의 로딩 오버레이를 찾아서 숨김
+    const overlay = $(target).find('.loading-overlay');
+    if (overlay.length > 0) {
+      $(target).removeClass('loading');
+      overlay.hide().css({
+        display: "none",
+        visibility: "hidden",
+        opacity: "0"
+      });
+    }
+  }
   
-  // 2. 부모 컨테이너에서 loading 클래스 제거 (핵심!)
-  $(target).closest(".table-wrapper, .performance-summary-wrapper").removeClass("loading");
-  
-  // 3. 모든 부모에서도 loading 클래스 제거
-  $(target).parents().removeClass("loading");
-  
-  // 4. 강제로 모든 loading 클래스 제거
-  $(".loading").removeClass("loading");
-  
-  console.log("[DEBUG] hideLoading 완료:", target);
+  console.log("✅ Loading completed for:", target);
 }
 
-// 모든 로딩 오버레이 강제 해제
+// 긴급 상황용 강제 제거 함수
 function forceHideAllLoading() {
-  console.log("[DEBUG] 모든 로딩 강제 해제");
+  console.log("🚨 FORCE HIDING ALL LOADING OVERLAYS");
+  
+  // 모든 로딩 클래스 제거
+  $(".loading").removeClass("loading");
   
   // 모든 로딩 오버레이 숨김
   $(".loading-overlay").hide().css({
-    display: "none !important",
-    visibility: "hidden !important", 
-    opacity: "0 !important"
+    display: "none",
+    visibility: "hidden",
+    opacity: "0"
   });
   
-  // 모든 loading 클래스 제거
-  $(".loading").removeClass("loading");
-  
-  console.log("[DEBUG] 모든 로딩 강제 해제 완료");
+  console.log("✅ All loading overlays force-hidden");
 }
 
-// 페이지 로드 시 모든 로딩 해제
+// 페이지 로드 시 자동으로 모든 로딩 오버레이 제거 (백업용)
 $(document).ready(function() {
-  setTimeout(forceHideAllLoading, 1000);
-  
-  // 15초 후에도 한번 더 실행
-  setTimeout(forceHideAllLoading, 15000);
+  // 30초 후 강제 제거 (최후의 수단)
+  setTimeout(forceHideAllLoading, 30000);
 });
 
 function getRequestData(page = 1, extra = {}) {

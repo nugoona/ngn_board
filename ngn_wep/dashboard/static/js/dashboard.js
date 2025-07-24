@@ -177,8 +177,8 @@ async function updateAllData() {
     console.error("[ERROR] updateAllData() 전체 오류:", e);
   } finally {
     isLoading = false;
-    // 모든 로딩 클래스 강제 제거 (예외 잔존 방지)
-    $(".loading").removeClass("loading");
+    // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음
+    console.log("✅ updateAllData completed");
   }
 }
 

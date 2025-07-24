@@ -1,3 +1,34 @@
+// resolveDateRange 함수 정의 (meta_ads_utils.js에서 가져옴)
+function resolveDateRange(period) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+
+  let start = `${yyyy}-${mm}-${dd}`;
+  let end = start;
+
+  if (period === "yesterday") {
+    const y = new Date(today);
+    y.setDate(y.getDate() - 1);
+    start = y.toISOString().slice(0, 10);
+    end = y.toISOString().slice(0, 10);
+  } else if (period === "last7days") {
+    const s = new Date(today);
+    s.setDate(s.getDate() - 7);
+    start = s.toISOString().slice(0, 10);
+  } else if (period === "last_month") {
+    const s = new Date(today);
+    s.setMonth(s.getMonth() - 1);
+    s.setDate(1);
+    const e = new Date(s.getFullYear(), s.getMonth() + 1, 0);
+    start = s.toISOString().slice(0, 10);
+    end = e.toISOString().slice(0, 10);
+  }
+
+  return { start, end };
+}
+
 let currentPage_ratio = 1;
 const limit_ratio = 10;
 let chartInstance_ratio = null;
@@ -11,7 +42,14 @@ function fetchProductSalesRatio(requestData) {
     });
   }
   
-  // 날짜 정보가 없으면 오늘 날짜로 설정
+  // period가 manual이 아닌 경우 날짜를 resolveDateRange로 계산
+  if (requestData.period !== "manual") {
+    const resolved = resolveDateRange(requestData.period);
+    requestData.start_date = resolved.start;
+    requestData.end_date = resolved.end;
+  }
+  
+  // 날짜 정보가 없으면 오늘 날짜로 설정 (fallback)
   if (!requestData.start_date || !requestData.end_date) {
     const today = new Date().toISOString().split("T")[0];
     requestData.start_date = requestData.start_date || today;

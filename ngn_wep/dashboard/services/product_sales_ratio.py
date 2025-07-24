@@ -24,6 +24,7 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
             bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
             bigquery.ScalarQueryParameter("limit", "INT64", limit),
         ]
+        print(f"[DEBUG] company_name이 리스트: {company_name}")
     else:
         company_filter = "LOWER(company_name) = LOWER(@company_name)"
         query_params = [
@@ -32,6 +33,10 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
             bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
             bigquery.ScalarQueryParameter("limit", "INT64", limit),
         ]
+        print(f"[DEBUG] company_name이 문자열: {company_name}")
+
+    print(f"[DEBUG] 최종 필터 조건: {company_filter}")
+    print(f"[DEBUG] 날짜 범위: {start_date} ~ {end_date}")
 
     # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
@@ -71,6 +76,28 @@ def get_product_sales_ratio(company_name, start_date: str, end_date: str, limit:
         rows = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         data = [dict(row) for row in rows]
         print(f"[DEBUG] product_sales_ratio 결과: {len(data)} 건")
+        
+        # 결과가 없을 때 디버깅을 위한 추가 정보
+        if len(data) == 0:
+            print(f"[DEBUG] ⚠️ 데이터 없음 - 조건 확인:")
+            print(f"  - company_name: {company_name}")
+            print(f"  - start_date: {start_date}")
+            print(f"  - end_date: {end_date}")
+            print(f"  - company_filter: {company_filter}")
+            
+            # 데이터 존재 여부 확인 쿼리
+            check_query = f"""
+            SELECT COUNT(*) as total_count
+            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+            WHERE payment_date BETWEEN @start_date AND @end_date
+              AND {company_filter}
+              AND item_product_sales > 0
+              AND product_name IS NOT NULL
+            """
+            check_result = client.query(check_query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
+            total_count = next(check_result).total_count
+            print(f"  - 조건에 맞는 총 레코드 수: {total_count}")
+        
         return data
     except Exception as ex:
         print("[ERROR] get_product_sales_ratio 오류:", ex)

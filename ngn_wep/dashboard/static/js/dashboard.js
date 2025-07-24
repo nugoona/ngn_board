@@ -198,9 +198,8 @@ async function updateAllData() {
 
     debugLog("✅ Cafe24 데이터 요청 완료 - 필터 변경");
     
-    // 카페24 매출 완료 후 사이트 성과 요약 로딩 스피너도 함께 숨김
-    debugLog("✅ 의존성 로딩 스피너 종료 - 필터 변경");
-    hideLoading("#loadingOverlayPerformanceSummary");
+    // 🔥 사이트 성과 요약 로딩 스피너는 모든 데이터 요청 완료 후에 숨김
+    // (카페24 매출 완료 후 바로 숨기지 않음)
 
     // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
     const fetchMainData = [];
@@ -265,12 +264,9 @@ async function updateAllData() {
       debugError("[ERROR] fetchProductSalesRatio 실패:", e);
     }
 
-    // 빈 배열이므로 Promise.all 호출 불필요
-    // await Promise.all([
-    //   Promise.all(fetchMainData),
-    //   Promise.all(fetchPlatformData),
-    //   Promise.all(fetchViewData)
-    // ]);
+    // 🔥 모든 데이터 요청 완료 후 사이트 성과 요약 로딩 스피너 숨김
+    debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
+    hideLoading("#loadingOverlayPerformanceSummary");
 
   } catch (e) {
     debugError("[ERROR] updateAllData() 전체 오류:", e);

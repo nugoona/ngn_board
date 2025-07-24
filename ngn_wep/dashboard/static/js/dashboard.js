@@ -1,10 +1,10 @@
 let isLoading = false;
 const requestRegistry = {};
 
-// ✅ 배포 환경에서는 디버깅 로그 비활성화
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const debugLog = isProduction ? () => {} : console.log;
-const debugError = isProduction ? () => {} : console.error;
+// ✅ 배포 환경에서는 디버깅 로그 비활성화 (전역 변수로 선언)
+window.isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const debugLog = window.isProduction ? () => {} : console.log;
+const debugError = window.isProduction ? () => {} : console.error;
 
 function latestAjaxRequestWrapper(key, ajaxOptions, onSuccess) {
   if (!requestRegistry[key]) requestRegistry[key] = { id: 0 };

@@ -38,6 +38,21 @@
       color: #1e81ce;
     }
 
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border: 1px solid #fcc;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
     label {
       font-size: 14px;
       margin-bottom: 4px;
@@ -116,6 +131,11 @@
 <div class="login-container">
   <div class="login-logo">🔵 NGN 대시보드</div>
 
+  <!-- 에러 메시지 영역 -->
+  <div id="error-message" class="error-message" {% if error %}style="display: block;"{% endif %}>
+    {% if error %}{{ error }}{% endif %}
+  </div>
+
   <form id="login-form" method="POST">
     <label for="user_id">ID</label>
     <input type="text" name="user_id" id="user_id" required>
@@ -139,6 +159,8 @@
 <script>
   // ✅ 로그인 시 세션스토리지 초기화
   sessionStorage.clear();
+
+  // 에러 메시지가 있으면 표시 (HTML에서 직접 처리됨)
 
   function fillDemoCredentials() {
     document.getElementById('user_id').value = 'demo';

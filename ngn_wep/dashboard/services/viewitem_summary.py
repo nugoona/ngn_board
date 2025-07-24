@@ -1,7 +1,7 @@
 # File: services/viewitem_summary.py
 
 from google.cloud import bigquery
-from utils.cache_utils import cached_query
+from ..utils.cache_utils import cached_query
 
 def get_bigquery_client():
     return bigquery.Client()

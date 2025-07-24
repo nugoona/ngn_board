@@ -1,6 +1,6 @@
 from google.cloud import bigquery
 import time
-from utils.cache_utils import cached_query
+from ..utils.cache_utils import cached_query
 
 
 def get_bigquery_client():

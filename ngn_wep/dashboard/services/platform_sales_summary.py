@@ -1,5 +1,5 @@
 from google.cloud import bigquery
-from utils.cache_utils import cached_query
+from ..utils.cache_utils import cached_query
 
 # ✅ 1. 일별 또는 요약 플랫폼 매출 조회
 @cached_query(func_name="platform_sales", ttl=1800)  # 30분 캐싱

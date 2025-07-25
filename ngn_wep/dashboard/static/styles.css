@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 140px;
+  padding-top: 120px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -80,59 +80,31 @@ body {
 
 
 /* ================================
- 2) 대시보드 헤드 + 네비게이션
+ 2) 네비게이션 + 필터
 ================================ */
-.dashboard-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
-  z-index: 1200;
-  padding: var(--spacing-md) 0;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: none;
-  margin: 0;
-  padding: 0 var(--spacing-lg);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-/* 기존 네비게이션 스타일 (백업용) */
 .nav-buttons {
   position: fixed;
   top: var(--spacing-md);
-  right: var(--spacing-xl);
+  left: 0;
+  right: 0;
   z-index: 1100;
   display: flex;
-  gap: var(--spacing-sm);
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-xl);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-left {
-  position: fixed;
-  top: var(--spacing-md);
-  left: var(--spacing-xl);
-  z-index: 1100;
+  display: flex;
+  align-items: center;
 }
 
 .nav-right {
   display: flex;
-  gap: var(--spacing-sm);
+  align-items: center;
 }
 
 .nav-buttons a {
@@ -173,7 +145,7 @@ body {
   justify-content: flex-start;
   gap: var(--spacing-md);
   position: fixed;
-  top: 80px;
+  top: 60px;
   left: 0;
   width: 100%;
   z-index: 1000;
@@ -292,6 +264,27 @@ thead th {
   overflow: auto;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-light);
+}
+
+/* 테이블 내부 스크롤 시 헤더 고정 */
+.table-content-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-content-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--primary);
+}
+
+.table-content-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--primary) !important;
+  color: white !important;
 }
 
 /* 테이블 기본 스타일 */
@@ -1464,6 +1457,7 @@ th.sortable.desc::after {
 .hamburger-menu-wrapper {
   position: relative;
   z-index: 1100;
+  display: block;
 }
 
 .hamburger-icon {
@@ -1475,15 +1469,15 @@ th.sortable.desc::after {
   align-items: center;
   cursor: pointer;
   padding: 6px;
-  background-color: rgba(255, 255, 255, 0.15);   /* 투명 배경으로 버튼 효과 */
+  background-color: var(--primary);
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);         /* 입체감 */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   transition: all 0.2s ease-in-out;
 }
 
 .hamburger-icon:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);                        /* 살짝 커지는 효과 */
+  background-color: var(--primary-dark);
+  transform: scale(1.05);
 }
 
 .hamburger-icon div {
@@ -2739,7 +2733,7 @@ h2::before {
 /* 업데이트 텍스트 스타일 */
 .updated-at-text {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: var(--bg-secondary);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
@@ -2747,6 +2741,7 @@ h2::before {
   box-shadow: var(--shadow-sm);
   white-space: nowrap;
   display: block;
+  font-weight: 500;
 }
 
 /* 위젯 필터 헤더 고정 */
@@ -2765,7 +2760,7 @@ h2::before {
 .widget-filter-header .filter-row {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -2776,7 +2771,8 @@ h2::before {
 .widget-filter-header label {
   font-weight: 600;
   color: var(--text-primary);
-  min-width: 80px;
+  min-width: 60px;
+  margin-right: var(--spacing-xs);
 }
 
 .widget-filter-header .dropdown {

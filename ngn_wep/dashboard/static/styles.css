@@ -1341,11 +1341,13 @@ th.sortable.desc::after {
 .campaign-goal-chart-wrapper {
   flex: 0 0 40% !important; /* 35% → 40%로 수정, !important로 우선순위 확보 */
   max-width: 40% !important;
-  min-width: 300px;
+  min-width: 350px; /* 최소 너비 증가 */
   display: flex;
   justify-content: center;
   align-items: center;
   padding-left: 20px;
+  padding-right: 20px; /* 오른쪽 여백 추가 */
+  margin-right: 20px; /* 오른쪽 마진 추가 */
 }
 
 .campaign-goal-chart-box {

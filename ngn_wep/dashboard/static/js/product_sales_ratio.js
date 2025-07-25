@@ -69,11 +69,13 @@ function fetchProductSalesRatio(requestData) {
 
     if (res.status === "success") {
       allProductSalesRatioData = res.product_sales_ratio || [];
+      console.log("[DEBUG] 주요 상품 매출 비중 데이터 수신:", allProductSalesRatioData);
       renderProductSalesRatioTable(1);
       setupPagination_ratio();
       // 차트는 버튼 클릭 시에만 렌더링
     } else {
       console.warn("[WARN] 주요 상품 매출 비중 응답 없음", res);
+      allProductSalesRatioData = [];
     }
   });
 }
@@ -135,7 +137,10 @@ function renderProductSalesRatioChart() {
       chart: {
         type: 'pie',
         height: 400,
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        animations: {
+          enabled: false // 애니메이션 제거
+        }
       },
       labels: ['데이터 없음'],
       colors: ['#e5e7eb'],
@@ -148,7 +153,7 @@ function renderProductSalesRatioChart() {
         }
       },
       legend: {
-        position: 'right',
+        position: 'left', // 왼쪽 정렬
         fontSize: '14px',
         fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
         fontWeight: 500
@@ -164,9 +169,9 @@ function renderProductSalesRatioChart() {
   
   // 상위 5개 상품만 선택
   const top5Data = allProductSalesRatioData.slice(0, 5);
-  const labels = top5Data.map(item => item.product_name || "-");
-  const values = top5Data.map(item => item.sales_ratio || 0);
-  const actualSales = top5Data.map(item => item.total_sales || 0);
+  const labels = top5Data.map(item => item.cleaned_product_name || item.product_name || "-");
+  const values = top5Data.map(item => item.sales_ratio_percent || item.sales_ratio || 0);
+  const actualSales = top5Data.map(item => item.item_product_sales || item.total_sales || 0);
   
   console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
 
@@ -178,17 +183,7 @@ function renderProductSalesRatioChart() {
       height: 400,
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350
-        }
+        enabled: false // 애니메이션 제거
       }
     },
     labels: labels,
@@ -262,7 +257,7 @@ function renderProductSalesRatioChart() {
       }
     },
     legend: {
-      position: 'right',
+      position: 'left', // 왼쪽 정렬
       fontSize: '14px',
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       fontWeight: 500,

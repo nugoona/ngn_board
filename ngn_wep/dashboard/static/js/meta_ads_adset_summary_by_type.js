@@ -137,7 +137,10 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       chart: {
         type: 'pie',
         height: 400,
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        animations: {
+          enabled: false // 애니메이션 제거
+        }
       },
       labels: ['데이터 없음'],
       colors: ['#e5e7eb'],
@@ -150,7 +153,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         }
       },
       legend: {
-        position: 'right',
+        position: 'left', // 왼쪽 정렬
         fontSize: '14px',
         fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
         fontWeight: 500
@@ -179,17 +182,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       height: 400,
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350
-        }
+        enabled: false // 애니메이션 제거
       }
     },
     labels: labels,
@@ -263,7 +256,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       }
     },
     legend: {
-      position: 'left',
+      position: 'left', // 왼쪽 정렬
       fontSize: '14px',
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       fontWeight: 500,
@@ -276,7 +269,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       },
       formatter: function(seriesName, opts) {
         const value = opts.w.globals.series[opts.seriesIndex];
-        return `${seriesName} ${value.toFixed(1)}%`;
+        return `${seriesName} (${value.toFixed(1)}%)`;
       }
     },
     tooltip: {

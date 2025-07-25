@@ -142,14 +142,20 @@ body {
   padding: 10px 14px;
   font-size: 16px;
   font-weight: bold;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   width: 180px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
 
+.custom-dropdown:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
 
 .custom-dropdown select {
   opacity: 0;
@@ -244,6 +250,109 @@ thead th {
 /* ✅ data-table 클래스는 자동 레이아웃 유지 */
 .data-table {
   table-layout: auto; /* 자동 레이아웃 유지 */
+}
+
+/* ✅ 모던한 드롭다운 공통 CSS */
+.modern-dropdown {
+  position: relative;
+  display: inline-block;
+  min-width: 120px;
+}
+
+.modern-dropdown select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.modern-dropdown select:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.modern-dropdown select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background-color: #ffffff;
+}
+
+.modern-dropdown select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+/* ✅ 모던한 입력 필드 공통 CSS */
+.modern-input {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s ease;
+  min-width: 200px;
+}
+
+.modern-input:hover {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.modern-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background-color: #ffffff;
+}
+
+.modern-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+/* ✅ 모던한 필터 컨테이너 */
+.modern-filter-container {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.modern-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modern-filter-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .table-content-container {

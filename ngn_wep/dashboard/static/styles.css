@@ -172,7 +172,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   width: 100%;
@@ -318,13 +318,13 @@ th {
 
 .table-wrapper.left-wide,
 .left-wide {
-  flex: 1 1 62%;
+  flex: 1 1 68%;
   min-width: 0;
 }
 
 .table-wrapper.right-narrow,
 .right-narrow {
-  flex: 1 1 36%;
+  flex: 1 1 30%;
   min-width: 0;
 }
 

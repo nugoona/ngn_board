@@ -189,7 +189,8 @@ function initializeFilters() {
     }
   }
 
-  fetchFilteredData();
+  // 로딩 팝업 없이 데이터 요청
+  fetchFilteredDataWithoutPopup();
 });
 
 
@@ -297,6 +298,117 @@ function showBlockingAlert(afterPopup) {
     if (typeof afterPopup === "function") {
       setTimeout(afterPopup, 10);  // fallback
     }
+  }
+}
+
+async function fetchFilteredDataWithoutPopup() {
+  if (isLoading) {
+    console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
+    return;
+  }
+  isLoading = true;
+  console.log("[DEBUG] 로딩 시작 (팝업 없음) - isLoading = true");
+
+  const pathname = window.location.pathname;
+  const selectedPeriod = $("#periodFilter").val();
+  const selectedCompany = $("#accountFilter").val() || "all";
+  const startDate = $("#startDate").val()?.trim();
+  const endDate = $("#endDate").val()?.trim();
+
+  // ✅ company_name 가공
+  let companyName;
+  if (selectedCompany === "all") {
+    companyName = userCompanyList
+      .filter(name => name.toLowerCase() !== "demo")
+      .map(name => name.toLowerCase());
+  } else {
+    companyName = selectedCompany;
+  }
+
+  const isAllCompany = Array.isArray(companyName) && companyName.length > 1;
+  const isDateMissing = selectedPeriod === "manual" && (!startDate || !endDate);
+
+  if (isAllCompany && isDateMissing) {
+    console.warn("[BLOCKED] '모든 업체 + 날짜 없음' 조합으로 get_data 요청 차단됨");
+    isLoading = false;
+    return;
+  }
+
+  const requestData = {
+    company_name: companyName,
+    period: selectedPeriod,
+  };
+
+  if (selectedPeriod === "manual") {
+    requestData.start_date = startDate;
+    requestData.end_date = endDate;
+  }
+
+  console.log("[DEBUG] filters.js → requestData for all widgets (팝업 없음):", requestData);
+
+  try {
+    if (pathname === "/" || pathname === "/dashboard") {
+      // updateAllData 함수가 정의되어 있는지 확인하고 호출
+      if (typeof updateAllData === 'function') {
+        console.log("🔄 filters.js에서 updateAllData() 호출 (팝업 없음)");
+        await updateAllData();
+      } else {
+        console.warn("[WARN] updateAllData 함수가 정의되지 않음 - 개별 함수 호출로 대체");
+        // 순차적으로 실행하여 abort 방지
+        const requests = [
+          () => fetchCafe24SalesData?.(requestData),
+          () => fetchCafe24ProductSalesData?.(requestData),
+          () => fetchPerformanceSummaryData?.(requestData),
+          () => fetchMonthlyNetSalesVisitors?.(requestData),
+          () => fetchProductSalesRatio?.(requestData),
+          () => fetchPlatformSalesSummary?.(requestData),
+          () => fetchPlatformSalesRatio?.(requestData),
+          () => fetchGa4SourceSummaryData?.(requestData),
+          () => fetchGa4ViewItemSummaryData?.(requestData),
+          () => fetchMonthlyPlatformSalesData?.(requestData)
+        ].filter(Boolean);
+
+        // 순차 실행
+        for (const request of requests) {
+          try {
+            await request();
+          } catch (error) {
+            console.warn("[WARN] 요청 실패:", error);
+          }
+        }
+      }
+    } else if (pathname === "/ads") {
+      metaAdsState.period = selectedPeriod;
+
+      if (selectedPeriod !== "manual") {
+        const resolved = resolveDateRange(selectedPeriod);
+        metaAdsState.startDate = resolved.start;
+        metaAdsState.endDate = resolved.end;
+      } else {
+        metaAdsState.startDate = startDate || "";
+        metaAdsState.endDate = endDate || "";
+      }
+
+      const accountId = metaAdsState.accountId;
+      await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+
+      if (accountId) {
+        await fetchMetaAdsAdsetSummaryByType({
+          account_id: accountId,
+          period: metaAdsState.period,
+          start_date: metaAdsState.startDate,
+          end_date: metaAdsState.endDate
+        });
+
+        await fetchMetaAdsPreviewList();
+        await fetchSlideCollectionAds(accountId);
+      }
+    }
+  } catch (e) {
+    console.error("[ERROR] fetchFilteredDataWithoutPopup 순차 요청 중 오류 발생:", e);
+  } finally {
+    isLoading = false;
+    console.log("[DEBUG] 로딩 완료 (팝업 없음) - isLoading = false");
   }
 }
 

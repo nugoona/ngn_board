@@ -53,6 +53,8 @@ function renderPlatformSalesRatioChart() {
     .sort((a, b) => b.sales - a.sales)
     .slice(0, 5);
 
+  console.log("[DEBUG] 플랫폼 매출 비중 top5 데이터:", top5);
+
   // ✅ 플랫폼명 한글 매핑
   const labels = top5.map(item => {
     switch (item.platform) {
@@ -63,6 +65,12 @@ function renderPlatformSalesRatioChart() {
   });
   const values = top5.map(item => item.sales_ratio_percent);
   const actualSales = top5.map(item => item.sales);  // 원본 숫자 값 유지
+
+  console.log("[DEBUG] 플랫폼 매출 비중 차트 데이터:", {
+    labels,
+    values,
+    actualSales
+  });
 
   // 기존 차트 인스턴스 제거
   if (chartInstance_platform) chartInstance_platform.destroy();

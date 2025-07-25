@@ -271,41 +271,5 @@ async function updateAllData() {
   }
 }
 
-// 필터 강제 고정 JavaScript
-$(document).ready(function() {
-  // 필터 래퍼를 찾아서 강제로 고정
-  const filterWrapper = $('.filter-wrapper');
-  if (filterWrapper.length > 0) {
-    filterWrapper.css({
-      'position': 'fixed',
-      'top': '0',
-      'left': '0',
-      'right': '0',
-      'width': '100vw',
-      'z-index': '9999',
-      'background': 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-      'padding': '12px',
-      'display': 'flex',
-      'align-items': 'center',
-      'justify-content': 'space-between',
-      'box-shadow': '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-    });
-    
-    console.log('✅ 필터 강제 고정 적용됨');
-  }
-  
-  // 스크롤 이벤트에서도 필터 위치 유지
-  $(window).scroll(function() {
-    if (filterWrapper.length > 0) {
-      filterWrapper.css({
-        'position': 'fixed',
-        'top': '0',
-        'left': '0',
-        'right': '0',
-        'width': '100vw',
-        'z-index': '9999'
-      });
-    }
-  });
-});
+
 

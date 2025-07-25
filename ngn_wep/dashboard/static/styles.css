@@ -75,6 +75,7 @@ body {
   max-width: none;
   margin: 0;
   padding: 0 var(--spacing-lg);
+  padding-top: 80px; /* 고정된 필터 아래 공간 확보 */
   box-sizing: border-box;
 }
 
@@ -172,7 +173,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -216,6 +217,12 @@ body {
 /* ================================
  ✅ 테이블 컨테이너
 ================================ */
+
+/* GA4 상품별 조회수 테이블에서 업체명 컬럼 숨기기 */
+#viewitemSummaryTable th:first-child,
+#viewitemSummaryTable td:first-child {
+  display: none;
+}
 .table-wrapper {
   background: white;
   border-radius: 10px;
@@ -345,6 +352,9 @@ th {
   background: #f8fafc; /* 배경색 추가 */
   border-radius: 8px; /* 둥근 모서리 */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+  position: sticky;
+  bottom: 0;
+  z-index: 999;
 }
 .pagination-btn {
   background-color: #6366f1;

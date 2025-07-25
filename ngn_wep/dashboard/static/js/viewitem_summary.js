@@ -157,7 +157,7 @@ function renderViewItemSummaryTable() {
 
   if (paginated.length === 0) {
     console.log("[DEBUG] ⚠️ 데이터가 없어서 빈 메시지 표시");
-    tbody.append("<tr><td colspan='5'>데이터가 없습니다.</td></tr>");
+    tbody.append("<tr><td colspan='4'>데이터가 없습니다.</td></tr>");
     return;
   }
 
@@ -165,7 +165,7 @@ function renderViewItemSummaryTable() {
   paginated.forEach((row, index) => {
     console.log(`[DEBUG] 📝 행 ${index + 1}:`, row);
     const tr = $("<tr>");
-    tr.append(`<td>${row.company_name}</td>`);
+    tr.append(`<td style="display: none;">${row.company_name}</td>`);
     tr.append(`<td>${row.product_name_cleaned}</td>`);
     tr.append(`<td>${row.source_raw}</td>`);
     tr.append(`<td>${row.country}</td>`);

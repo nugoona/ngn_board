@@ -938,21 +938,31 @@ height: 360px;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-/* ✅ 캔버스 wrapper - 기존 차트용 */
+/* ✅ 파이 차트 wrapper - ApexCharts용 */
 .pie-chart-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: visible;
+  height: 400px; /* ApexCharts용 높이 설정 */
+  width: 100%;
 }
 
-/* ✅ 파이 차트 크기 - 기존 차트용 */
-.pie-chart-wrapper canvas {
+/* ✅ 파이 차트 div - ApexCharts용 (canvas 대신 div 사용) */
+.pie-chart-wrapper div {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* ✅ Chart.js 캔버스 스타일 (현재 사용 안함 - 주석 처리) */
+/* .pie-chart-wrapper canvas {
   width: 100%;
   height: 360px;
   max-width: 100%;
   max-height: 360px;
-}
+} */
 
 
 
@@ -1329,12 +1339,13 @@ th.sortable.desc::after {
    캠페인 목표별 성과 요약 차트 전용
 ================================= */
 .campaign-goal-chart-wrapper {
-  flex: 0 0 35%;
-  max-width: 35%;
+  flex: 0 0 40% !important; /* 35% → 40%로 수정, !important로 우선순위 확보 */
+  max-width: 40% !important;
   min-width: 300px;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-left: 20px;
 }
 
 .campaign-goal-chart-box {

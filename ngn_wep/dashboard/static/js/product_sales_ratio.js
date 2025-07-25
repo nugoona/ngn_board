@@ -152,14 +152,25 @@ function renderProductSalesRatioChart() {
     .sort((a, b) => b.sales_ratio_percent - a.sales_ratio_percent)
     .slice(0, 5);
 
+  console.log("[DEBUG] 상품 매출 비중 top5 데이터:", top5);
+
   const labels = top5.map(d => d.cleaned_product_name);
   const values = top5.map(d => d.sales_ratio_percent);
   const actualSales = top5.map(d => d.item_product_sales);  // 원본 숫자 값 유지
+
+  console.log("[DEBUG] 상품 매출 비중 차트 데이터:", {
+    labels,
+    values,
+    actualSales
+  });
 
   // 기존 차트 인스턴스 제거
   if (chartInstance_ratio) {
     chartInstance_ratio.destroy();
   }
+
+  // 차트 컨테이너 초기화
+  chartContainer.innerHTML = '';
 
   // ApexCharts 옵션 설정
   const options = {
@@ -319,8 +330,10 @@ function renderProductSalesRatioChart() {
   };
 
   // ApexCharts 인스턴스 생성
-  chartInstance_ratio = new ApexCharts(document.querySelector("#productSalesRatioChart"), options);
+  chartInstance_ratio = new ApexCharts(chartContainer, options);
   chartInstance_ratio.render();
+  
+  console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
 }
 
 function setupPagination_ratio() {
@@ -356,13 +369,18 @@ function setupPagination_ratio() {
   pagination.append(prevBtn, pageInfo, nextBtn);
 }
 
-// ✅ 토글 버튼 제어
-$("#toggleProductSalesRatioChart").on("click", function () {
-  const chartContainer = $("#productSalesRatioChartContainer");
-  const isVisible = chartContainer.is(":visible");
-  chartContainer.toggle();
-  $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
-  if (!isVisible) renderProductSalesRatioChart();
+// ✅ 토글 버튼 제어 - DOMContentLoaded 이벤트로 변경
+$(document).ready(function() {
+  $("#toggleProductSalesRatioChart").on("click", function () {
+    const chartContainer = $("#productSalesRatioChartContainer");
+    const isVisible = chartContainer.is(":visible");
+    chartContainer.toggle();
+    $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
+    if (!isVisible) {
+      console.log("[DEBUG] 상품 매출 비중 차트 토글 - 차트 렌더링 시작");
+      renderProductSalesRatioChart();
+    }
+  });
 });
 
 

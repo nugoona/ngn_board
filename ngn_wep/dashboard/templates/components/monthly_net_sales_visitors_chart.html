@@ -1,45 +1,53 @@
-<!-- ✅ 월별 매출 유입 테이블 + 차트 (테이블 박스 내부에서 표시됨) -->
-<div class="monthly-sales-traffic-wrapper">
-
-  <!-- 왼쪽: 월별 요약 테이블 -->
-  <div class="monthly-summary-table-wrapper">
-    <div class="monthly-summary-table">
-      <table>
-        <thead>
-          <tr>
-            <th>업체명</th>
-            <th>월</th>
-            <th>매출</th>
-            <th>유입</th>
-          </tr>
-        </thead>
-        <tbody id="monthlySummaryTableBody">
-          <!-- JS로 채워짐 -->
-        </tbody>
-      </table>
-    </div>
+<!-- ✅ 월별 매출/유입 차트 -->
+<div class="monthly-chart-container">
+  <!-- 왼쪽: 테이블 -->
+  <div class="monthly-table-section">
+    <table id="monthlyTable">
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>매출</th>
+          <th>유입</th>
+        </tr>
+      </thead>
+      <tbody id="monthlyTableBody">
+        <!-- JS에서 동적 렌더링 -->
+      </tbody>
+    </table>
   </div>
 
   <!-- 오른쪽: ApexCharts 차트 -->
-  <div class="monthly-summary-chart-wrapper">
-    <div id="monthlyNetSalesVisitorsChart"></div>
+  <div class="monthly-chart-section">
+    <div class="chart-wrapper">
+      <div id="monthlyNetSalesVisitorsChart"></div>
+    </div>
   </div>
 </div>
 
-<!-- ✅ ApexCharts CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
-
-<!-- ✅ ApexCharts JS -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
-
 <style>
-/* ✅ ApexCharts 커스텀 스타일 */
-.monthly-summary-chart-wrapper {
-  height: 400px;
-  padding: 20px;
+/* ✅ 월별 차트 레이아웃 */
+.monthly-chart-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.monthly-table-section {
+  flex: 0 0 300px;
+}
+
+.monthly-chart-section {
+  flex: 1;
+  min-height: 400px;
+}
+
+.chart-wrapper {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
+  padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: 400px;
 }
 
 #monthlyNetSalesVisitorsChart {

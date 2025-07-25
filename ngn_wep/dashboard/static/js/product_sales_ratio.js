@@ -31,7 +31,7 @@ function resolveDateRange(period) {
 
 let currentPage_ratio = 1;
 const limit_ratio = 10;
-let chartInstance_ratio = null;
+let chartInstance_product = null;
 let allProductSalesRatioData = [];
 
 function fetchProductSalesRatio(requestData) {
@@ -147,8 +147,8 @@ function renderProductSalesRatioChart() {
   }
 
   // 기존 차트 인스턴스 제거
-  if (productSalesRatioChartInstance) {
-    productSalesRatioChartInstance.destroy();
+  if (chartInstance_product) {
+    chartInstance_product.destroy();
   }
 
   // 데이터가 없거나 총 매출이 0인 경우 빈 차트 표시
@@ -156,7 +156,7 @@ function renderProductSalesRatioChart() {
     console.log("[DEBUG] 빈 차트 렌더링");
     
     const emptyCtx = chartContainer.getContext('2d');
-    productSalesRatioChartInstance = new Chart(emptyCtx, {
+    chartInstance_product = new Chart(emptyCtx, {
       type: 'doughnut',
       data: {
         labels: ['데이터 없음'],
@@ -213,7 +213,7 @@ function renderProductSalesRatioChart() {
   ];
 
   const ctx = chartContainer.getContext('2d');
-  productSalesRatioChartInstance = new Chart(ctx, {
+  chartInstance_product = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: labels,

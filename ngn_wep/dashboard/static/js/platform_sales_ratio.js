@@ -137,6 +137,10 @@ function renderPlatformSalesRatioChart() {
   ];
 
   const ctx = chartContainer.getContext('2d');
+  
+  // Chart.js datalabels 플러그인 등록
+  Chart.register(ChartDataLabels);
+  
   chartInstance_platform = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -222,8 +226,8 @@ function renderPlatformSalesRatioChart() {
       animation: {
         animateRotate: true,
         animateScale: true,
-        duration: 1200,
-        easing: 'easeOutQuart',
+        duration: 800,
+        easing: 'easeInOutQuart',
         onProgress: function(animation) {
           // 애니메이션 진행 중 추가 효과
         },
@@ -232,7 +236,22 @@ function renderPlatformSalesRatioChart() {
         }
       },
       cutout: '60%',
-      radius: '90%'
+      radius: '90%',
+      plugins: {
+        datalabels: {
+          color: '#ffffff',
+          font: {
+            weight: 'bold',
+            size: 14,
+            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+          },
+          formatter: function(value, context) {
+            return value.toFixed(1) + '%';
+          },
+          textAlign: 'center',
+          textBaseline: 'middle'
+        }
+      }
     }
   });
 

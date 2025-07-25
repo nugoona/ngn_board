@@ -45,9 +45,12 @@ function fetchProductSalesRatio(requestData) {
     return;
   }
 
-  const requestData = getRequestData(1, {
-    data_type: "product_sales_ratio"
-  });
+  // requestData가 없으면 생성
+  if (!requestData) {
+    requestData = getRequestData(1, {
+      data_type: "product_sales_ratio"
+    });
+  }
 
   console.log("[DEBUG] 주요 상품 매출 비중 요청:", requestData);
   showLoading("#loadingOverlayProductSalesRatio");

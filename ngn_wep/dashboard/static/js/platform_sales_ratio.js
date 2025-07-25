@@ -44,10 +44,10 @@ function fetchPlatformSalesRatio() {
 function renderPlatformSalesRatioChart() {
   console.log("[DEBUG] renderPlatformSalesRatioChart 호출됨");
   
-  // Chart.js가 로드되었는지 확인
-  if (typeof Chart === 'undefined') {
-    console.warn('Chart.js not loaded, retrying in 500ms...');
-    setTimeout(() => renderPlatformSalesRatioChart(), 500);
+  // ApexCharts가 로드되었는지 확인
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 100ms...');
+    setTimeout(() => renderPlatformSalesRatioChart(), 100);
     return;
   }
 
@@ -68,37 +68,32 @@ function renderPlatformSalesRatioChart() {
   if (!platformSalesRatioData || platformSalesRatioData.length === 0) {
     console.log("[DEBUG] 빈 차트 렌더링");
     
-    const emptyCtx = chartContainer.getContext('2d');
-    chartInstance_platform = new Chart(emptyCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['데이터 없음'],
-        datasets: [{
-          data: [100],
-          backgroundColor: ['#e5e7eb'],
-          borderWidth: 0
-        }]
+    chartInstance_platform = new ApexCharts(chartContainer, {
+      series: [100],
+      chart: {
+        type: 'pie',
+        height: 400,
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            enabled: false
+      labels: ['데이터 없음'],
+      colors: ['#e5e7eb'],
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%',
+            background: 'transparent'
           }
-        },
-        animation: {
-          animateRotate: true,
-          animateScale: true,
-          duration: 1000,
-          easing: 'easeOutQuart'
         }
+      },
+      legend: {
+        position: 'right',
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 500
       }
     });
     
+    chartInstance_platform.render();
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
   }
@@ -124,130 +119,166 @@ function renderPlatformSalesRatioChart() {
 
   console.log("[DEBUG] 플랫폼 매출 비중 차트 데이터:", { labels, values, actualSales });
 
-  // 모던한 색상 팔레트
-  const colors = [
-    '#3b82f6', // blue
-    '#f59e0b', // amber
-    '#10b981', // emerald
-    '#ef4444', // red
-    '#8b5cf6', // violet
-    '#06b6d4', // cyan
-    '#84cc16', // lime
-    '#f97316'  // orange
-  ];
-
-  const ctx = chartContainer.getContext('2d');
-  
-  // Chart.js datalabels 플러그인 등록
-  Chart.register(ChartDataLabels);
-  
-  chartInstance_platform = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: values,
-        backgroundColor: colors.slice(0, labels.length),
-        borderWidth: 0,
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#ffffff'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: 20
-      },
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            font: {
-              family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              size: 14,
-              weight: '500'
-            },
-            color: '#374151',
-            padding: 20,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            generateLabels: function(chart) {
-              const data = chart.data;
-              if (data.labels.length && data.datasets.length) {
-                return data.labels.map((label, i) => {
-                  const value = data.datasets[0].data[i];
-                  const color = data.datasets[0].backgroundColor[i];
-                  return {
-                    text: `${label} (${value.toFixed(1)}%)`,
-                    fillStyle: color,
-                    strokeStyle: color,
-                    pointStyle: 'circle',
-                    hidden: false,
-                    index: i
-                  };
-                });
-              }
-              return [];
-            }
-          }
+  // ApexCharts 옵션 설정
+  const options = {
+    series: values,
+    chart: {
+      type: 'pie',
+      height: 400,
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
         },
-        tooltip: {
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          titleColor: '#1e293b',
-          bodyColor: '#374151',
-          borderColor: 'rgba(226, 232, 240, 0.8)',
-          borderWidth: 1,
-          cornerRadius: 12,
-          displayColors: true,
-          titleFont: {
-            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-            size: 14,
-            weight: '600'
-          },
-          bodyFont: {
-            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-            size: 13,
-            weight: '500'
-          },
-          callbacks: {
-            label: function(context) {
-              const label = context.label || '';
-              const value = context.parsed;
-              const sales = actualSales[context.dataIndex] || 0;
-              return [
-                `${label}: ${value.toFixed(1)}%`,
-                `매출: ₩${sales.toLocaleString()}`
-              ];
-            }
-          }
-        }
-      },
-      animation: {
-        animateRotate: true,
-        animateScale: true,
-        duration: 600,
-        easing: 'easeInOutQuart'
-      },
-      cutout: '60%',
-      radius: '90%',
-      plugins: {
-        datalabels: {
-          color: '#ffffff',
-          font: {
-            weight: 'bold',
-            size: 14,
-            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
-          },
-          formatter: function(value, context) {
-            return value.toFixed(1) + '%';
-          },
-          textAlign: 'center',
-          textBaseline: 'middle'
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
         }
       }
-    }
-  });
+    },
+    labels: labels,
+    colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+    plotOptions: {
+      pie: {
+        startAngle: 0,
+        endAngle: 360,
+        expandOnClick: true,
+        offsetX: 0,
+        offsetY: 0,
+        customScale: 1,
+        dataLabels: {
+          offset: 0,
+          minAngleToShowLabel: 10
+        },
+        donut: {
+          size: '65%',
+          background: 'transparent',
+          labels: {
+            show: false,
+            name: {
+              show: true,
+              fontSize: '22px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 600,
+              color: undefined,
+              offsetY: -10
+            },
+            value: {
+              show: true,
+              fontSize: '16px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 400,
+              color: undefined,
+              offsetY: 16,
+              formatter: function (val) {
+                return typeof val === 'number' ? val.toFixed(1) + '%' : '0.0%';
+              }
+            },
+            total: {
+              show: false,
+              label: 'Total',
+              fontSize: '16px',
+              fontWeight: 600,
+              formatter: function (w) {
+                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+              }
+            }
+          }
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: {
+        enabled: true,
+        opacity: 0.3,
+        blur: 3,
+        left: 1,
+        top: 1
+      }
+    },
+    legend: {
+      position: 'right',
+      fontSize: '14px',
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      fontWeight: 500,
+      markers: {
+        radius: 6
+      },
+      itemMargin: {
+        horizontal: 10,
+        vertical: 5
+      },
+      formatter: function(seriesName, opts) {
+        const value = opts.w.globals.series[opts.seriesIndex];
+        return `${seriesName} (${value.toFixed(1)}%)`;
+      }
+    },
+    tooltip: {
+      enabled: true,
+      theme: 'light',
+      style: {
+        fontSize: '14px'
+      },
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        const sales = actualSales[seriesIndex] || 0;
+        const percentage = series[seriesIndex];
+        const label = labels[seriesIndex];
+        const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
+        return `<div class="custom-tooltip" style="
+          background: rgba(255, 255, 255, 0.98);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          border-radius: 12px;
+          padding: 12px 16px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          font-family: 'Pretendard', sans-serif;
+        ">
+          <div class="tooltip-label" style="
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 4px;
+            line-height: 1.4;
+          ">${label}</div>
+          <div class="tooltip-value" style="
+            font-weight: 500;
+            font-size: 13px;
+            color: #6366f1;
+          ">₩${formattedSales} (${percentage.toFixed(1)}%)</div>
+        </div>`;
+      }
+    },
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    ]
+  };
+
+  // ApexCharts 인스턴스 생성
+  chartInstance_platform = new ApexCharts(chartContainer, options);
+  chartInstance_platform.render();
 
   console.log("[DEBUG] 플랫폼별 매출 요약 차트 렌더링 완료");
 }

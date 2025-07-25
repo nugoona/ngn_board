@@ -50,7 +50,7 @@ function renderPlatformSalesRatioChart() {
   }
 
   const top5 = [...platformSalesRatioData]
-    .sort((a, b) => b.sales - a.sales)
+    .sort((a, b) => b.total_sales - a.total_sales)
     .slice(0, 5);
 
   console.log("[DEBUG] 플랫폼 매출 비중 top5 데이터:", top5);
@@ -64,7 +64,7 @@ function renderPlatformSalesRatioChart() {
     }
   });
   const values = top5.map(item => item.sales_ratio_percent);
-  const actualSales = top5.map(item => item.sales);  // 원본 숫자 값 유지
+  const actualSales = top5.map(item => item.total_sales);  // 원본 숫자 값 유지
 
   console.log("[DEBUG] 플랫폼 매출 비중 차트 데이터:", {
     labels,

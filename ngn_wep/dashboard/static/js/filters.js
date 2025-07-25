@@ -211,11 +211,12 @@ function initializeFilters() {
     }
 
     if (isLoading) {
-      showBlockingAlert();
+      console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
 
-    fetchFilteredData();
+    // 로딩 팝업 없이 데이터 요청
+    fetchFilteredDataWithoutPopup();
   });
 
   // ✅ 종료일
@@ -235,17 +236,18 @@ function initializeFilters() {
     }
 
     if (isLoading) {
-      showBlockingAlert();
+      console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
 
-    fetchFilteredData();
+    // 로딩 팝업 없이 데이터 요청
+    fetchFilteredDataWithoutPopup();
   });
 
   // ✅ 초기화 버튼
   $("#applyDateFilter").off("click").on("click", function () {
     if (isLoading) {
-      showBlockingAlert();
+      console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
 
@@ -268,6 +270,10 @@ function initializeFilters() {
 
 // ✅ 로딩 차단 팝업 함수
 function showBlockingAlert(afterPopup) {
+  // 로딩 상태를 즉시 해제하여 다음 요청이 가능하도록 함
+  isLoading = false;
+  console.log("[DEBUG] showBlockingAlert - isLoading = false로 설정");
+  
   if (window.Swal) {
     Swal.fire({
       title: "로딩 중입니다",

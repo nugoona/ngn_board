@@ -217,7 +217,11 @@ body {
  ✅ 테이블 컨테이너
 ================================ */
 
-
+/* GA4 상품별 조회수 테이블에서 업체명 컬럼 숨기기 */
+#viewitemSummaryTable th:first-child,
+#viewitemSummaryTable td:first-child {
+  display: none;
+}
 
 /* 테이블 래퍼에서 페이지네이션 항상 표시 */
 .table-wrapper {

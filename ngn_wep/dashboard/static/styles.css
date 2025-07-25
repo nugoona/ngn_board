@@ -231,7 +231,7 @@ thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #2A7EC6; /* 배경 필수 */
+  background-color: #6366f1; /* 배경 필수 */
 }
 
 /* 테이블 높이가 넘어가면 내부 스크롤 */
@@ -257,7 +257,7 @@ th, td {
   white-space: nowrap;
 }
 th {
-  background-color: #2A7EC6;
+  background-color: #6366f1;
   color: white;
 }
 
@@ -304,7 +304,7 @@ th {
   gap: 5px;
 }
 .pagination-btn {
-  background-color: #2A7EC6;
+  background-color: #6366f1;
   color: white;
   padding: 6px 10px;
   margin: 5px;
@@ -319,9 +319,9 @@ th {
   cursor: not-allowed;
 }
 .pagination-btn.active {
-  background-color: #186BB3;
+  background-color: #4f46e5;
   color: #fff;
-  border: 2px solid #0C4779;
+  border: 2px solid #3730a3;
 }
 .dropdown {
   padding: 8px 12px;
@@ -502,7 +502,7 @@ th {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
   padding: var(--spacing-lg) var(--spacing-xl);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   margin: var(--spacing-2xl) 0 var(--spacing-lg) 0;
   width: 100%;
   box-sizing: border-box;
@@ -553,7 +553,7 @@ width: 100%;
 }
 
 .monthly-summary-table th {
-background-color: #2A7EC6;
+background-color: #6366f1;
 color: white;
 font-weight: bold;
 padding: 6px 10px;
@@ -1329,7 +1329,7 @@ th.sortable.desc::after {
     width: 100% !important;
     min-width: unset !important;
     max-width: 100% !important;
-    table-layout: fixed;
+    table-layout: auto;
   }
 
   /* ✅ 플랫폼 월별 매출 테이블만 예외로 강제 가로 스크롤 적용 */

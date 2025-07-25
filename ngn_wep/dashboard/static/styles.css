@@ -237,15 +237,46 @@ thead th {
 /* 테이블 높이가 넘어가면 내부 스크롤 */
 .table-content-container {
   position: relative;
-  max-height: 450px; /* 필요 시 높이 조정 */
+  max-height: 400px; /* 페이지네이션과 겹치지 않도록 높이 조정 */
   overflow: auto;    /* 스크롤 활성화 */
+  margin-bottom: 20px; /* 페이지네이션과의 간격 */
+  
+  /* 모던한 스크롤바 스타일 */
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #f1f5f9;
+}
+
+/* Webkit 브라우저용 스크롤바 스타일 */
+.table-content-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-content-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.table-content-container::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.table-content-container::-webkit-scrollbar-thumb:hover {
+  background: #4f46e5;
+}
+
+.table-content-container::-webkit-scrollbar-corner {
+  background: #f1f5f9;
 }
 
 /* 테이블 기본 스타일 */
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: auto; /* 자동 레이아웃으로 되돌림 */
+  min-width: 1200px; /* 최소 너비 증가 */
 }
 
 /* 폰트·셀 간격 조금 축소 */
@@ -254,11 +285,20 @@ th, td {
   padding: 8px;
   border: 1px solid #ddd;
   text-align: center;
-  white-space: nowrap;
+  white-space: nowrap; /* 줄바꿈 방지 - 테이블 깔끔하게 유지 */
+  vertical-align: middle;
 }
 th {
   background-color: #6366f1;
   color: white;
+  font-weight: 600;
+}
+
+/* 테이블 컨테이너 가로 스크롤 최적화 */
+.table-content-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  scroll-behavior: smooth; /* 부드러운 스크롤 */
 }
 
 /* ✅ 로딩 시 테이블만 반투명 */
@@ -300,19 +340,25 @@ th {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 15px;
-  gap: 5px;
+  margin-top: 20px; /* 테이블과의 간격 증가 */
+  gap: 8px; /* 버튼 간격 증가 */
+  padding: 15px 0; /* 상하 패딩 추가 */
+  background: #f8fafc; /* 배경색 추가 */
+  border-radius: 8px; /* 둥근 모서리 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
 }
 .pagination-btn {
   background-color: #6366f1;
   color: white;
-  padding: 6px 10px;
-  margin: 5px;
+  padding: 8px 12px;
+  margin: 0; /* 마진 제거 */
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 .pagination-btn.disabled {
   background-color: #ccc;

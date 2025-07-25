@@ -129,210 +129,190 @@ function renderProductSalesRatioTable(page) {
 }
 
 function renderProductSalesRatioChart() {
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(renderProductSalesRatioChart, 100);
+  console.log("[DEBUG] renderProductSalesRatioChart 호출됨");
+  
+  // Chart.js가 로드되었는지 확인
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js not loaded, retrying in 500ms...');
+    setTimeout(() => renderProductSalesRatioChart(), 500);
     return;
   }
 
-  // 차트 컨테이너 존재 확인
-  const chartContainer = document.querySelector("#productSalesRatioChart");
+  const chartContainer = document.getElementById("productSalesRatioChart");
+  console.log("[DEBUG] 차트 컨테이너:", chartContainer);
+
   if (!chartContainer) {
-    console.error("[ERROR] 차트 컨테이너를 찾을 수 없음: #productSalesRatioChart");
+    console.error("[ERROR] productSalesRatioChart 컨테이너를 찾을 수 없습니다!");
     return;
   }
-
-  // 데이터 확인
-  if (!Array.isArray(allProductSalesRatioData) || allProductSalesRatioData.length === 0) {
-    console.warn("[WARN] 차트 데이터가 없음");
-    return;
-  }
-
-  const top5 = [...allProductSalesRatioData]
-    .sort((a, b) => b.sales_ratio_percent - a.sales_ratio_percent)
-    .slice(0, 5);
-
-  console.log("[DEBUG] 상품 매출 비중 top5 데이터:", top5);
-
-  const labels = top5.map(d => d.cleaned_product_name);
-  const values = top5.map(d => d.sales_ratio_percent);
-  const actualSales = top5.map(d => d.item_product_sales);  // 원본 숫자 값 유지
-
-  console.log("[DEBUG] 상품 매출 비중 차트 데이터:", {
-    labels,
-    values,
-    actualSales
-  });
 
   // 기존 차트 인스턴스 제거
-  if (chartInstance_ratio) {
-    chartInstance_ratio.destroy();
+  if (productSalesRatioChartInstance) {
+    productSalesRatioChartInstance.destroy();
   }
 
-  // ApexCharts 옵션 설정
-  const options = {
-    series: values,
-    chart: {
-      type: 'pie',
-      height: 400,
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150
+  // 데이터가 없거나 총 매출이 0인 경우 빈 차트 표시
+  if (!allProductSalesRatioData || allProductSalesRatioData.length === 0) {
+    console.log("[DEBUG] 빈 차트 렌더링");
+    
+    const emptyCtx = chartContainer.getContext('2d');
+    productSalesRatioChartInstance = new Chart(emptyCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['데이터 없음'],
+        datasets: [{
+          data: [100],
+          backgroundColor: ['#e5e7eb'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
+          }
         },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1000,
+          easing: 'easeOutQuart'
         }
       }
+    });
+    
+    console.log("[DEBUG] 빈 차트 렌더링 완료");
+    return;
+  }
+
+  console.log("[DEBUG] 실제 데이터로 차트 렌더링");
+  
+  // 상위 5개 상품만 선택
+  const top5Data = allProductSalesRatioData.slice(0, 5);
+  const labels = top5Data.map(item => item.product_name || "-");
+  const values = top5Data.map(item => item.sales_ratio || 0);
+  const actualSales = top5Data.map(item => item.total_sales || 0);
+  
+  console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
+
+  // 모던한 색상 팔레트
+  const colors = [
+    '#3b82f6', // blue
+    '#f59e0b', // amber
+    '#10b981', // emerald
+    '#ef4444', // red
+    '#8b5cf6', // violet
+    '#06b6d4', // cyan
+    '#84cc16', // lime
+    '#f97316'  // orange
+  ];
+
+  const ctx = chartContainer.getContext('2d');
+  productSalesRatioChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors.slice(0, labels.length),
+        borderWidth: 0,
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#ffffff'
+      }]
     },
-    labels: labels,
-    colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        expandOnClick: true,
-        offsetX: 0,
-        offsetY: 0,
-        customScale: 1,
-        dataLabels: {
-          offset: 0,
-          minAngleToShowLabel: 10
-        },
-        donut: {
-          size: '65%',
-          background: 'transparent',
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: 20
+      },
+      plugins: {
+        legend: {
+          position: 'right',
           labels: {
-            show: false,
-            name: {
-              show: true,
-              fontSize: '22px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 600,
-              color: undefined,
-              offsetY: -10
+            font: {
+              family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              size: 14,
+              weight: '500'
             },
-            value: {
-              show: true,
-              fontSize: '16px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 400,
-              color: undefined,
-              offsetY: 16,
-              formatter: function (val) {
-                return (typeof val === 'number' ? val.toFixed(1) : '0.0') + '%';
+            color: '#374151',
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            generateLabels: function(chart) {
+              const data = chart.data;
+              if (data.labels.length && data.datasets.length) {
+                return data.labels.map((label, i) => {
+                  const value = data.datasets[0].data[i];
+                  const color = data.datasets[0].backgroundColor[i];
+                  return {
+                    text: `${label} (${value.toFixed(1)}%)`,
+                    fillStyle: color,
+                    strokeStyle: color,
+                    pointStyle: 'circle',
+                    hidden: false,
+                    index: i
+                  };
+                });
               }
-            },
-            total: {
-              show: false,
-              label: 'Total',
-              fontSize: '16px',
-              fontWeight: 600,
-              formatter: function (w) {
-                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-              }
+              return [];
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#1e293b',
+          bodyColor: '#374151',
+          borderColor: 'rgba(226, 232, 240, 0.8)',
+          borderWidth: 1,
+          cornerRadius: 12,
+          displayColors: true,
+          titleFont: {
+            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+            size: 14,
+            weight: '600'
+          },
+          bodyFont: {
+            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+            size: 13,
+            weight: '500'
+          },
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed;
+              const sales = actualSales[context.dataIndex] || 0;
+              return [
+                `${label}: ${value.toFixed(1)}%`,
+                `매출: ₩${sales.toLocaleString()}`
+              ];
             }
           }
         }
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        const value = opts.w.globals.series[opts.seriesIndex];
-        return (typeof value === 'number' ? value.toFixed(1) : '0.0') + '%';
       },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: {
-        enabled: true,
-        opacity: 0.3,
-        blur: 3,
-        left: 1,
-        top: 1
-      }
-    },
-    legend: {
-      position: 'right',
-      fontSize: '14px',
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      fontWeight: 500,
-      markers: {
-        radius: 6
-      },
-      itemMargin: {
-        horizontal: 10,
-        vertical: 5
-      },
-      formatter: function(seriesName, opts) {
-        const value = opts.w.globals.series[opts.seriesIndex];
-        return `${seriesName} (${typeof value === 'number' ? value.toFixed(1) : '0.0'}%)`;
-      }
-    },
-    tooltip: {
-      enabled: true,
-      theme: 'light',
-      style: {
-        fontSize: '14px'
-      },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const sales = actualSales[seriesIndex] || 0;
-        const percentage = series[seriesIndex];
-        const label = labels[seriesIndex];
-        const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
-        return `<div class="custom-tooltip" style="
-          background: rgba(255, 255, 255, 0.98);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 12px;
-          padding: 12px 16px;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-          font-family: 'Pretendard', sans-serif;
-        ">
-          <div class="tooltip-label" style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #374151;
-            margin-bottom: 4px;
-            line-height: 1.4;
-          ">${label}</div>
-          <div class="tooltip-value" style="
-            font-weight: 500;
-            font-size: 13px;
-            color: #6366f1;
-          ">₩${formattedSales} (${percentage.toFixed(1)}%)</div>
-        </div>`;
-      }
-    },
-    responsive: [
-      {
-        breakpoint: 768,
-        options: {
-          chart: {
-            height: 300
-          },
-          legend: {
-            position: 'bottom'
-          }
+      animation: {
+        animateRotate: true,
+        animateScale: true,
+        duration: 1200,
+        easing: 'easeOutQuart',
+        onProgress: function(animation) {
+          // 애니메이션 진행 중 추가 효과
+        },
+        onComplete: function(animation) {
+          console.log("[DEBUG] 차트 애니메이션 완료");
         }
-      }
-    ]
-  };
+      },
+      cutout: '60%',
+      radius: '90%'
+    }
+  });
 
-  // ApexCharts 인스턴스 생성
-  chartInstance_ratio = new ApexCharts(chartContainer, options);
-  chartInstance_ratio.render();
-  
-  console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
+  console.log("[DEBUG] 주요 상품 매출 비중 차트 렌더링 완료");
 }
 
 function setupPagination_ratio() {

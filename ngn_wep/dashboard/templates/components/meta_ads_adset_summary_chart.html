@@ -1,79 +1,89 @@
 <!-- components/meta_ads_adset_summary_chart.html -->
-<!-- ✅ 캠페인 목표별 차트 only -->
-<!-- 주의: 이 파일은 반드시 상위 table-wrapper 내부에서 include 되어야 함 -->
-
-<!-- ✅ ApexCharts 파이차트 전체 가운데 정렬 -->
-<div class="product-sales-ratio-chart">
-  <div class="pie-chart-container">
-    <div class="pie-label">
-      목표별 지출 비중
-    </div>
-    <div class="pie-chart-wrapper">
-      <div id="metaAdsAdsetSummaryChart"></div>
-    </div>
+<!-- ✅ 캠페인 목표별 차트 - Chart.js 사용 -->
+<div class="campaign-goal-chart-modern">
+  <div class="campaign-goal-chart-header">
+    <h3 class="campaign-goal-chart-title">목표별 지출 비중</h3>
+  </div>
+  <div class="campaign-goal-chart-wrapper">
+    <canvas id="metaAdsAdsetSummaryChart"></canvas>
   </div>
 </div>
 
 <style>
-/* ✅ ApexCharts 파이 차트 커스텀 스타일 */
-.product-sales-ratio-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.pie-chart-container {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-align: center;
+/* ✅ 캠페인 목표별 차트 전용 스타일 - CSS 격리 */
+.campaign-goal-chart-modern {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  text-align: left;
   height: 400px;
+  display: flex;
+  flex-direction: column;
+  /* 기존 스타일과 격리 */
+  position: relative;
+  z-index: 1;
 }
 
-.pie-label {
+.campaign-goal-chart-header {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.campaign-goal-chart-title {
   font-size: 18px;
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 20px;
+  color: #1e293b;
+  margin: 0;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  /* 기존 스타일 오버라이드 */
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 
-.pie-chart-wrapper {
-  height: 320px;
-  width: 100%;
+.campaign-goal-chart-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  /* 차트 컨테이너 격리 */
+  overflow: hidden;
 }
 
 #metaAdsAdsetSummaryChart {
-  height: 100%;
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  /* Chart.js 캔버스 격리 */
+  display: block;
+  position: relative;
+  z-index: 2;
 }
 
-/* ApexCharts 툴팁 커스터마이징 */
-.apexcharts-tooltip {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .campaign-goal-chart-modern {
+    padding: 16px;
+    height: 350px;
+  }
+  
+  .campaign-goal-chart-title {
+    font-size: 16px;
+  }
 }
 
-.apexcharts-tooltip-title {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-  font-weight: 600 !important;
-  color: #374151 !important;
+/* 기존 ApexCharts 스타일 무효화 */
+.campaign-goal-chart-modern .apexcharts-canvas,
+.campaign-goal-chart-modern .apexcharts-svg {
+  display: none !important;
 }
 
-.apexcharts-legend {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
-}
-
-.apexcharts-legend-text {
-  font-weight: 500 !important;
-  color: #374151 !important;
+/* Chart.js 전용 스타일 강제 적용 */
+.campaign-goal-chart-modern canvas {
+  border-radius: 8px;
+  background: transparent;
 }
 </style> 

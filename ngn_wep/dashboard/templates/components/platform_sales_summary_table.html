@@ -5,20 +5,17 @@
 </div>
 
 <!-- ✅ 날짜 유형 선택 (기간합 / 일자별) -->
-<div class="widget-filter-header">
-  <div class="filter-row">
-    <label>데이터 유형:</label>
-    <label style="margin-right: 15px;">
-      <input type="radio" name="platformDateType" value="summary" checked> <b>기간합</b>
-    </label>
-    <label style="margin-right: 15px;">
-      <input type="radio" name="platformDateType" value="daily"> <b>일자별</b>
-    </label>
-    <select id="platformDateSort" class="dropdown" style="display: none;">
-      <option value="desc" selected>날짜 내림차순</option>
-      <option value="asc">날짜 오름차순</option>
-    </select>
-  </div>
+<div class="date-type-filter" style="margin-bottom: 10px; font-size: 18px;">
+  <label style="margin-right: 5px; padding: 8px;">
+    <input type="radio" name="platformDateType" value="summary" checked> <b>기간합</b>
+  </label>
+  <label style="padding: 8px;">
+    <input type="radio" name="platformDateType" value="daily"> <b>일자별</b>
+  </label>
+  <select id="platformDateSort" style="display: none; margin-left: 10px; padding: 5px; font-size: 16px;">
+    <option value="desc" selected>날짜 내림차순</option>
+    <option value="asc">날짜 오름차순</option>
+  </select>
 </div>
 
 <!-- ✅ JS용 숨겨진 날짜 값 -->

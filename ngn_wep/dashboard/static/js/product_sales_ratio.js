@@ -86,7 +86,7 @@ function fetchProductSalesRatio(requestData) {
       if (!Array.isArray(allProductSalesRatioData) || allProductSalesRatioData.length === 0) {
         console.warn("[WARN] 상품군 매출 비중 데이터 없음");
         $("#productSalesRatioTableBody").html(`<tr><td colspan="6">데이터가 없습니다.</td></tr>`);
-        $("#productSalesRatioChart").replaceWith('<canvas id="productSalesRatioChart"></canvas>');
+        $("#productSalesRatioChart").replaceWith('<div id="productSalesRatioChart"></div>');
         return;
       }
 
@@ -94,8 +94,9 @@ function fetchProductSalesRatio(requestData) {
       renderProductSalesRatioTable(currentPage_ratio);
       setupPagination_ratio();
       
-      // ✅ 초기에는 차트 숨김 상태 유지 (토글 버튼 클릭 시에만 표시)
-      console.log("[DEBUG] 📊 데이터 로딩 완료, 초기 상태는 차트 숨김");
+      // ✅ 즉시 차트 렌더링 (토글 버튼 클릭 전에도 차트 준비)
+      renderProductSalesRatioChart();
+      console.log("[DEBUG] 📊 데이터 로딩 완료, 차트 즉시 렌더링");
     } else {
       console.warn("[WARN] 상품군 매출 비중 응답 실패", res);
     }
@@ -373,15 +374,9 @@ $(document).ready(function() {
     const isVisible = chartContainer.is(":visible");
     chartContainer.toggle();
     $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
-    if (!isVisible) {
-      console.log("[DEBUG] 상품 매출 비중 차트 토글 - 데이터 가져오기 시작");
-      // 데이터가 없으면 다시 가져오기
-      if (!allProductSalesRatioData || allProductSalesRatioData.length === 0) {
-        fetchProductSalesRatio();
-      } else {
-        renderProductSalesRatioChart();
-      }
-    }
+    
+    // 차트가 이미 렌더링되어 있으므로 추가 렌더링 불필요
+    console.log("[DEBUG] 상품 매출 비중 차트 토글 - 차트 컨테이너 표시/숨김");
   });
 });
 

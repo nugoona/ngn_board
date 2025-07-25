@@ -275,8 +275,7 @@ thead th {
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto; /* 자동 레이아웃으로 되돌림 */
-  min-width: 1200px; /* 최소 너비 증가 */
+  table-layout: auto;
 }
 
 /* 폰트·셀 간격 조금 축소 */
@@ -424,32 +423,32 @@ th {
   border-radius: var(--radius-sm);
 }
 
-/* ✅ 카드 줄: 한 줄 유지, 카드 자동 확장 */
+/* ✅ 카드 줄: 여러 줄 허용, 카드 크기 조정 */
 .summary-grid {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
-/* ✅ 사이트 성과 요약 - 한 줄 유지 */
+/* ✅ 사이트 성과 요약 - 여러 줄 허용 */
 .site-summary {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
-/* ✅ 총 광고 성과 - 한 줄 유지 */
+/* ✅ 총 광고 성과 - 여러 줄 허용 */
 .ad-summary {
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 /* ✅ 카드 공통 스타일 */
 .summary-card {
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-xl);
-  flex: 1 1 0;
-  min-width: 140px;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  flex: 0 1 calc(20% - var(--spacing-sm));
+  min-width: 120px;
+  max-width: 180px;
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   display: flex;
@@ -477,17 +476,17 @@ th {
 
 /* ✅ 카드 내부 라벨 */
 .summary-card .label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 /* ✅ 카드 내부 값 */
 .summary-card .value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;

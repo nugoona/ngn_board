@@ -51,10 +51,16 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
           success: function (res) {
             hideLoading("#loadingOverlayTypeSummary");
 
+            console.log("[DEBUG] Ajax 응답 전체:", res);
+            console.log("[DEBUG] res.data:", res?.data);
+            console.log("[DEBUG] res.status:", res?.status);
+
             const typeSummary = res?.data?.type_summary || [];
             const totalSpendSum = res?.data?.total_spend_sum || 0;
 
             console.log("[DEBUG] 캠페인 목표별 요약 응답:", typeSummary, totalSpendSum);
+            console.log("[DEBUG] typeSummary 길이:", typeSummary.length);
+            console.log("[DEBUG] totalSpendSum 값:", totalSpendSum);
 
             renderMetaAdsAdsetSummaryTable(typeSummary);
             renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
@@ -99,14 +105,22 @@ function renderMetaAdsAdsetSummaryTable(data) {
 
 
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 100);
+  console.log("[DEBUG] renderMetaAdsAdsetSummaryChart 호출됨", { data, totalSpendSum });
+  
+  // ApexCharts가 로드되었는지 확인 (더 안정적인 방법)
+  if (typeof ApexCharts === 'undefined' || typeof window.ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 200ms...');
+    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 200);
     return;
   }
 
   const chartContainer = document.getElementById("metaAdsAdsetSummaryChart");
+  console.log("[DEBUG] 차트 컨테이너:", chartContainer);
+
+  if (!chartContainer) {
+    console.error("[ERROR] metaAdsAdsetSummaryChart 컨테이너를 찾을 수 없습니다!");
+    return;
+  }
 
   if (typePieChartInstance) {
     typePieChartInstance.destroy();
@@ -114,9 +128,11 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
 
   // 차트를 항상 표시하도록 수정
   chartContainer.style.display = "block";
+  console.log("[DEBUG] 차트 컨테이너 표시됨");
 
   // 데이터가 없거나 총 지출이 0인 경우 빈 차트 표시
   if (!data || data.length === 0 || totalSpendSum === 0) {
+    console.log("[DEBUG] 빈 차트 렌더링");
     const emptyOptions = {
       series: [100],
       chart: {
@@ -141,13 +157,20 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       }
     };
     
-    typePieChartInstance = new ApexCharts(document.querySelector("#metaAdsAdsetSummaryChart"), emptyOptions);
-    typePieChartInstance.render();
+    try {
+      typePieChartInstance = new ApexCharts(chartContainer, emptyOptions);
+      typePieChartInstance.render();
+      console.log("[DEBUG] 빈 차트 렌더링 완료");
+    } catch (error) {
+      console.error("[ERROR] 빈 차트 렌더링 실패:", error);
+    }
     return;
   }
 
+  console.log("[DEBUG] 실제 데이터로 차트 렌더링");
   const labels = data.map(row => row.type || "-");
   const values = data.map(row => totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0);
+  console.log("[DEBUG] 차트 데이터:", { labels, values });
 
   // ApexCharts 옵션 설정
   const options = {
@@ -205,7 +228,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
               color: undefined,
               offsetY: 16,
               formatter: function (val) {
-                return val.toFixed(1) + '%';
+                return (typeof val === 'number' ? val.toFixed(1) : '0.0') + '%';
               }
             },
             total: {
@@ -238,7 +261,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       },
       formatter: function(seriesName, opts) {
         const value = opts.w.globals.series[opts.seriesIndex];
-        return `${seriesName} ${Math.round(value)}%`;
+        return `${seriesName} ${typeof value === 'number' ? Math.round(value) : 0}%`;
       }
     },
     tooltip: {
@@ -269,7 +292,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
             font-weight: 500;
             font-size: 13px;
             color: #6366f1;
-          ">${percentage.toFixed(1)}%</div>
+          ">${(typeof percentage === 'number' ? percentage.toFixed(1) : '0.0')}%</div>
         </div>`;
       }
     },
@@ -289,6 +312,11 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   };
 
   // ApexCharts 인스턴스 생성
-  typePieChartInstance = new ApexCharts(document.querySelector("#metaAdsAdsetSummaryChart"), options);
-  typePieChartInstance.render();
+  try {
+    typePieChartInstance = new ApexCharts(chartContainer, options);
+    typePieChartInstance.render();
+    console.log("[DEBUG] 캠페인 목표별 차트 렌더링 완료");
+  } catch (error) {
+    console.error("[ERROR] 캠페인 목표별 차트 렌더링 실패:", error);
+  }
 }

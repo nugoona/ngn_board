@@ -226,7 +226,7 @@ function renderProductSalesRatioChart() {
               color: undefined,
               offsetY: 16,
               formatter: function (val) {
-                return val.toFixed(1) + '%';
+                return (typeof val === 'number' ? val.toFixed(1) : '0.0') + '%';
               }
             },
             total: {
@@ -245,7 +245,8 @@ function renderProductSalesRatioChart() {
     dataLabels: {
       enabled: true,
       formatter: function (val, opts) {
-        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+        const value = opts.w.globals.series[opts.seriesIndex];
+        return (typeof value === 'number' ? value.toFixed(1) : '0.0') + '%';
       },
       style: {
         fontSize: '14px',
@@ -275,7 +276,7 @@ function renderProductSalesRatioChart() {
       },
       formatter: function(seriesName, opts) {
         const value = opts.w.globals.series[opts.seriesIndex];
-        return `${seriesName} (${value.toFixed(1)}%)`;
+        return `${seriesName} (${typeof value === 'number' ? value.toFixed(1) : '0.0'}%)`;
       }
     },
     tooltip: {

@@ -101,7 +101,12 @@ $(document).ready(function() {
   
   // 햄버거 메뉴 토글
   $('#hamburgerIcon').on('click', function() {
-    $('#hamburgerDropdown').toggle();
+    const $dropdown = $('#hamburgerDropdown');
+    if ($dropdown.is(':visible')) {
+      $dropdown.hide();
+    } else {
+      $dropdown.css('display', 'flex').show();
+    }
   });
   
   // 햄버거 메뉴 외부 클릭 시 닫기
@@ -109,6 +114,11 @@ $(document).ready(function() {
     if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
       $('#hamburgerDropdown').hide();
     }
+  });
+  
+  // 햄버거 메뉴 링크 클릭 시 닫기
+  $('.hamburger-dropdown a').on('click', function() {
+    $('#hamburgerDropdown').hide();
   });
   
   // 개발 환경에서만 디버깅 기능 활성화

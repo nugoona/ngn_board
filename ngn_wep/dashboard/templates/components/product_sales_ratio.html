@@ -25,13 +25,66 @@
   <button id="toggleProductSalesRatioChart" class="toggle-btn">상위 TOP5 차트 보기</button>
 </div>
 
-<!-- 📌 파이 차트 영역 -->
+<!-- 📌 ApexCharts 파이 차트 영역 -->
 <div id="productSalesRatioChartContainer" style="display: none; margin-top: 20px;">
   <div class="pie-chart-container">
     <div class="pie-label">매출 상위 TOP5</div>
     <div class="pie-chart-wrapper">
-      <canvas id="productSalesRatioChart"></canvas>
+      <div id="productSalesRatioChart"></div>
     </div>
   </div>
 </div>
+
+<!-- ✅ ApexCharts CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
+
+<!-- ✅ ApexCharts JS -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+
+<style>
+/* ✅ ApexCharts 파이 차트 커스텀 스타일 */
+.pie-chart-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pie-chart-wrapper {
+  height: 400px;
+  width: 100%;
+}
+
+#productSalesRatioChart {
+  height: 100%;
+  width: 100%;
+}
+
+/* ApexCharts 툴팁 커스터마이징 */
+.apexcharts-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.apexcharts-legend {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-legend-text {
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+</style>
 

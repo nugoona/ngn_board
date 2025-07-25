@@ -99,6 +99,13 @@ function renderMetaAdsAdsetSummaryTable(data) {
 
 
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
+  // ApexCharts가 로드되었는지 확인
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 100ms...');
+    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 100);
+    return;
+  }
+
   const chartContainer = document.getElementById("metaAdsAdsetSummaryChart");
 
   if (typePieChartInstance) {
@@ -112,63 +119,129 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     chartContainer.style.display = "block";
   }
 
-  const ctx = chartContainer.getContext("2d");
   const labels = data.map(row => row.type || "-");
   const values = data.map(row => totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0);
 
-  typePieChartInstance = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: [
-          "#4e73df", // 파랑
-          "#f6c23e", // 노랑
-          "#36b9cc", // 민트
-          "#e74a3b", // 빨강
-          "#6f42c1"  // 보라
-        ]
-      }]
-    },
-    options: {
-      responsive: true,             // ✅ 원래대로
-      maintainAspectRatio: true,    // ✅ 찌그러짐 방지
-      plugins: {
-        legend: {
-          position: "left",
-          labels: {
-            boxWidth: 18,
-            font: { size: 16, weight: "bold" },
-            padding: 20,
-            generateLabels: (chart) => {
-              const data = chart.data;
-              return data.labels.map((label, i) => {
-                const value = data.datasets[0].data[i];
-                return {
-                  text: `${label} ${Math.round(value)}%`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  strokeStyle: data.datasets[0].backgroundColor[i],
-                  lineWidth: 1,
-                  index: i
-                };
-              });
-            }
-          }
+  // ApexCharts 옵션 설정
+  const options = {
+    series: values,
+    chart: {
+      type: 'pie',
+      height: 400,
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
         },
-        datalabels: {
-          display: false // ✅ 내부 숫자 제거
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `${ctx.label}: ${ctx.raw.toFixed(1)}%`
-          }
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
         }
-      },
-      layout: {
-        padding: { top: 20, bottom: 20, left: 20, right: 20 }
       }
     },
-    plugins: [ChartDataLabels]
-  });
+    labels: labels,
+    colors: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
+    plotOptions: {
+      pie: {
+        startAngle: 0,
+        endAngle: 360,
+        expandOnClick: true,
+        offsetX: 0,
+        offsetY: 0,
+        customScale: 1,
+        dataLabels: {
+          offset: 0,
+          minAngleToShowLabel: 10
+        },
+        donut: {
+          size: '65%',
+          background: 'transparent',
+          labels: {
+            show: false,
+            name: {
+              show: true,
+              fontSize: '22px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 600,
+              color: undefined,
+              offsetY: -10
+            },
+            value: {
+              show: true,
+              fontSize: '16px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 400,
+              color: undefined,
+              offsetY: 16,
+              formatter: function (val) {
+                return val.toFixed(1) + '%';
+              }
+            },
+            total: {
+              show: false,
+              label: 'Total',
+              fontSize: '16px',
+              fontWeight: 600,
+              formatter: function (w) {
+                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+              }
+            }
+          }
+        }
+      }
+    },
+    dataLabels: {
+      enabled: false // 내부 숫자 제거
+    },
+    legend: {
+      position: 'left',
+      fontSize: '14px',
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      fontWeight: 600,
+      markers: {
+        radius: 6
+      },
+      itemMargin: {
+        horizontal: 10,
+        vertical: 5
+      },
+      formatter: function(seriesName, opts) {
+        const value = opts.w.globals.series[opts.seriesIndex];
+        return `${seriesName} ${Math.round(value)}%`;
+      }
+    },
+    tooltip: {
+      enabled: true,
+      theme: 'light',
+      style: {
+        fontSize: '14px'
+      },
+      y: {
+        formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+          return `${labels[seriesIndex]}: ${value.toFixed(1)}%`;
+        }
+      }
+    },
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    ]
+  };
+
+  // ApexCharts 인스턴스 생성
+  typePieChartInstance = new ApexCharts(document.querySelector("#metaAdsAdsetSummaryChart"), options);
+  typePieChartInstance.render();
 }

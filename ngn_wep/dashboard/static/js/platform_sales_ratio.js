@@ -42,6 +42,13 @@ function fetchPlatformSalesRatio() {
 }
 
 function renderPlatformSalesRatioChart() {
+  // ApexCharts가 로드되었는지 확인
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 100ms...');
+    setTimeout(renderPlatformSalesRatioChart, 100);
+    return;
+  }
+
   const top5 = [...platformSalesRatioData]
     .sort((a, b) => b.sales - a.sales)
     .slice(0, 5);
@@ -57,57 +64,142 @@ function renderPlatformSalesRatioChart() {
   const values = top5.map(item => item.sales_ratio_percent);
   const actualSales = top5.map(item => item.sales);  // ✅ 실제 매출
 
-  const canvas = document.getElementById("platformSalesRatioChart");
-  const ctx = canvas.getContext("2d");
-
+  // 기존 차트 인스턴스 제거
   if (chartInstance_platform) chartInstance_platform.destroy();
 
-  chartInstance_platform = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "플랫폼 매출 비중",
-        data: values,
-        backgroundColor: ["#36A2EB", "#FF6384", "#FFB347", "#FFD700", "#20B2AA"]
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: { top: 30, bottom: 30, left: 0, right: 0 }  // ✅ 오른쪽 여유 공간 확보
-      },
-      plugins: {
-        legend: {
-          position: "right",
-          labels: {
-            boxWidth: 20,
-            font: { size: 20 },
-            padding: 15
-          }
+  // ApexCharts 옵션 설정
+  const options = {
+    series: values,
+    chart: {
+      type: 'pie',
+      height: 400,
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
         },
-        tooltip: {
-          bodyFont: { size: 16 },
-          callbacks: {
-            label: function (ctx) {
-              const idx = ctx.dataIndex;
-              const sales = actualSales[idx] || 0;
-              return `${labels[idx]}: ₩${sales.toLocaleString()}`;  // ✅ 실제 매출 출력
-            }
-          }
-        },
-        datalabels: {
-          formatter: (value) => `${value.toFixed(1)}%`,
-          color: "#000",
-          font: { weight: "bold", size: 16 },
-          anchor: "end",
-          align: "end",
-          offset: 0,
-          clamp: true
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
         }
       }
     },
-    plugins: [ChartDataLabels]
-  });
+    labels: labels,
+    colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+    plotOptions: {
+      pie: {
+        startAngle: 0,
+        endAngle: 360,
+        expandOnClick: true,
+        offsetX: 0,
+        offsetY: 0,
+        customScale: 1,
+        dataLabels: {
+          offset: 0,
+          minAngleToShowLabel: 10
+        },
+        donut: {
+          size: '65%',
+          background: 'transparent',
+          labels: {
+            show: false,
+            name: {
+              show: true,
+              fontSize: '22px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 600,
+              color: undefined,
+              offsetY: -10
+            },
+            value: {
+              show: true,
+              fontSize: '16px',
+              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+              fontWeight: 400,
+              color: undefined,
+              offsetY: 16,
+              formatter: function (val) {
+                return val.toFixed(1) + '%';
+              }
+            },
+            total: {
+              show: false,
+              label: 'Total',
+              fontSize: '16px',
+              fontWeight: 600,
+              formatter: function (w) {
+                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+              }
+            }
+          }
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: {
+        enabled: true,
+        opacity: 0.3,
+        blur: 3,
+        left: 1,
+        top: 1
+      }
+    },
+    legend: {
+      position: 'right',
+      fontSize: '14px',
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      fontWeight: 500,
+      markers: {
+        radius: 6
+      },
+      itemMargin: {
+        horizontal: 10,
+        vertical: 5
+      }
+    },
+    tooltip: {
+      enabled: true,
+      theme: 'light',
+      style: {
+        fontSize: '14px'
+      },
+      y: {
+        formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+          const sales = actualSales[seriesIndex] || 0;
+          return `${labels[seriesIndex]}: ₩${sales.toLocaleString()} (${value.toFixed(1)}%)`;
+        }
+      }
+    },
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    ]
+  };
+
+  // ApexCharts 인스턴스 생성
+  chartInstance_platform = new ApexCharts(document.querySelector("#platformSalesRatioChart"), options);
+  chartInstance_platform.render();
 }

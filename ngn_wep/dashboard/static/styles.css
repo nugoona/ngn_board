@@ -366,8 +366,9 @@ th {
   background: transparent;
   border-radius: 8px;
   box-shadow: none;
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 .pagination-btn {
   background-color: #6366f1;
@@ -461,9 +462,22 @@ th {
   flex-wrap: nowrap;
 }
 
+/* ✅ 사이트 성과 요약 카드 - 넓게 */
+.site-summary .summary-card {
+  min-width: 200px; /* 사이트 성과는 더 넓게 */
+  max-width: 250px; /* 최대 너비 제한 */
+}
+
 /* ✅ 총 광고 성과 - 한 줄 고정 */
 .ad-summary {
   flex-wrap: nowrap;
+}
+
+/* ✅ 총 광고 성과 카드 - 좁게 */
+.ad-summary .summary-card {
+  min-width: 100px; /* 광고 성과는 더 좁게 */
+  max-width: 150px; /* 최대 너비 제한 */
+  padding: var(--spacing-lg); /* 패딩도 줄임 */
 }
 
 /* ✅ 성과 요약 섹션 스크롤바 스타일 */
@@ -504,8 +518,7 @@ th {
   padding: var(--spacing-xl);
   border-radius: var(--radius-xl);
   flex: 1 1 0;
-  min-width: 120px; /* 축소: 140px에서 120px로 */
-  max-width: 200px; /* 추가: 최대 너비 제한 */
+  min-width: 140px; /* 기본 최소 너비 */
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   display: flex;

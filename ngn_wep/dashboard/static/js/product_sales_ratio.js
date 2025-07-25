@@ -169,9 +169,6 @@ function renderProductSalesRatioChart() {
     chartInstance_ratio.destroy();
   }
 
-  // 차트 컨테이너 초기화
-  chartContainer.innerHTML = '';
-
   // ApexCharts 옵션 설정
   const options = {
     series: values,

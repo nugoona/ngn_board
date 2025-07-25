@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 80px; /* 고정된 필터 아래 공간 확보 */
+  padding-top: 100px; /* 고정된 필터 아래 공간 확보 */
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -175,9 +175,24 @@ body {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  width: 100% !important;
-  z-index: 1000 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  z-index: 9999 !important;
   box-shadow: var(--shadow-lg);
+  transform: none !important;
+  transition: none !important;
+}
+
+/* 필터 래퍼 강제 고정 */
+section.filter-wrapper,
+div.filter-wrapper,
+.filter-wrapper {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  z-index: 9999 !important;
 }
 
 /* 날짜 직접입력 영역 */
@@ -351,9 +366,11 @@ th {
   background: transparent; /* 배경색 제거 */
   border-radius: 8px; /* 둥근 모서리 */
   box-shadow: none; /* 그림자 제거 */
-  position: sticky;
-  bottom: 0;
-  z-index: 999;
+}
+
+/* 개별 테이블의 페이지네이션 숨기기 */
+.table-wrapper .pagination {
+  display: none;
 }
 .pagination-btn {
   background-color: #6366f1;

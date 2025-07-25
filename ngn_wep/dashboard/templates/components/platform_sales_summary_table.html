@@ -1,62 +1,41 @@
-<!-- ✅ 로딩 오버레이 -->
-<div id="loadingOverlayPlatformSalesSummary" class="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-text">데이터를 불러오는 중입니다...</div>
+<!-- 🔧 필터 영역 (고정) -->
+<div class="table-filter-section">
+  <div class="filter-controls">
+    <div class="filter-group">
+      <label>보기:</label>
+      <input type="radio" name="platformDateType" value="summary" checked> <b>기간합</b>
+      <input type="radio" name="platformDateType" value="daily" style="margin-left: 10px;"> <b>일자별</b>
+    </div>
+  </div>
 </div>
 
-<!-- ✅ 날짜 유형 선택 (기간합 / 일자별) -->
-<div class="date-type-filter" style="margin-bottom: 10px; font-size: 18px;">
-  <label style="margin-right: 5px; padding: 8px;">
-    <input type="radio" name="platformDateType" value="summary" checked> <b>기간합</b>
-  </label>
-  <label style="padding: 8px;">
-    <input type="radio" name="platformDateType" value="daily"> <b>일자별</b>
-  </label>
-  <select id="platformDateSort" style="display: none; margin-left: 10px; padding: 5px; font-size: 16px;">
-    <option value="desc" selected>날짜 내림차순</option>
-    <option value="asc">날짜 오름차순</option>
-  </select>
+<!-- 📊 테이블 영역 (스크롤 없음) -->
+<div class="table-main-section">
+  <div class="table-header-fixed">
+    <table id="platformSalesSummaryTable">
+      <thead>
+        <tr>
+          <th>업체명</th>
+          <th>날짜</th>
+          <th>주문수</th>
+          <th>매출</th>
+          <th>환불</th>
+          <th>순매출</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  
+  <div class="table-body-scrollable">
+    <table id="platformSalesSummaryTableBody">
+      <tbody id="platformSalesSummaryBody">
+        <!-- 데이터가 여기에 추가됨 -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- ✅ JS용 숨겨진 날짜 값 -->
-<input type="hidden" id="platformStartDateValue" value="{{ start_date }}">
-<input type="hidden" id="platformEndDateValue" value="{{ end_date }}">
-
-<!-- ✅ 테이블 본문 -->
-<div class="table-content-container">
-  <table id="platformSalesTable">
-    <thead>
-      <tr>
-        <th>업체명</th>
-        <th>날짜</th>
-        <th>합계</th>
-        <th>자사몰</th>
-        <th>무신사</th>
-        <th>29cm</th>
-        <th>SHOPEE</th>
-        <th>EQL</th>
-        <th>LLUD</th>
-        <th>HANA</th>
-        <th>HEIGHTS</th>
-        <th>지그재그</th>
-        <th>에이블리</th>
-      </tr>
-    </thead>
-    <tbody id="platformSalesSummaryBody">
-      <!-- JS에서 동적 렌더링 -->
-    </tbody>
-  </table>
-</div>
-
-<!-- ✅ 페이지네이션 -->
-<div id="pagination_platform_sales_summary" class="pagination"></div>
-
-<!-- ✅ 토글 버튼 -->
-<div class="platform-sales-toggle-bar no-border" style="margin-top: -8px;">
-  <button id="togglePlatformSalesRatio" class="toggle-btn">매출 비중 차트 보기</button>
-</div>
-
-<!-- ✅ 비중 차트 포함 영역 -->
-<div id="platformSalesRatioContainer" style="display: none; margin-top: 20px;">
-  {% include 'components/platform_sales_ratio.html' %}
+<!-- 📄 페이지네이션 영역 (고정) -->
+<div class="table-pagination-section">
+  <div id="pagination_platform_sales_summary" class="pagination"></div>
 </div>

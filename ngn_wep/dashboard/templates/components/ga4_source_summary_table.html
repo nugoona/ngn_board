@@ -1,13 +1,45 @@
-<table class="data-table" id="ga4SourceSummaryTable">
-  <thead>
-    <tr>
-      <th>업체명</th>
-      <th>소스</th>
-      <th>유입수</th>
-    </tr>
-  </thead>
-  <tbody id="ga4SourceSummaryBody">
-    <!-- ✅ JS로 데이터 렌더링 -->
-  </tbody>
-</table>
+<!-- 🔧 필터 영역 (고정) -->
+<div class="table-filter-section">
+  <div class="filter-controls">
+    <div class="filter-group">
+      <label>정렬:</label>
+      <select id="ga4SourceSort" class="custom-dropdown">
+        <option value="sessions">세션순</option>
+        <option value="users" selected>사용자순</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- 📊 테이블 영역 (스크롤 없음) -->
+<div class="table-main-section">
+  <div class="table-header-fixed">
+    <table id="ga4SourceSummaryTable">
+      <thead>
+        <tr>
+          <th>소스</th>
+          <th>세션</th>
+          <th>사용자</th>
+          <th>신규 사용자</th>
+          <th>페이지뷰</th>
+          <th>평균 세션 시간</th>
+          <th>이탈률</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  
+  <div class="table-body-scrollable">
+    <table id="ga4SourceSummaryTableBody">
+      <tbody id="ga4SourceSummaryBody">
+        <!-- 데이터가 여기에 추가됨 -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 📄 페이지네이션 영역 (고정) -->
+<div class="table-pagination-section">
+  <div id="pagination_ga4_source_summary" class="pagination"></div>
+</div>
 

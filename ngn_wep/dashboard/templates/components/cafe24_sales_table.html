@@ -1,20 +1,47 @@
-<!-- ✅ 카페24 매출 테이블 -->
-<table id="cafe24SalesTable" class="data-table">
-  <thead>
-    <tr>
-      <th>업체명</th>
-      <th>날짜</th>
-      <th>총주문</th>
-      <th>상품매출</th>
-      <th>배송비</th>
-      <th>할인금액</th>
-      <th>쿠폰할인</th>
-      <th>총결제금액</th>
-      <th>환불합계</th>
-      <th>순매출</th>
-    </tr>
-  </thead>
-  <tbody id="cafe24SalesBody">
-    <!-- ✅ JS로 데이터 렌더링 -->
-  </tbody>
-</table>
+<!-- 🔧 필터 영역 (고정) -->
+<div class="table-filter-section">
+  <div class="filter-controls">
+    <div class="filter-group">
+      <label>정렬:</label>
+      <select id="cafe24SalesSort" class="custom-dropdown">
+        <option value="item_quantity">판매순</option>
+        <option value="item_product_sales" selected>매출순</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- 📊 테이블 영역 (스크롤 없음) -->
+<div class="table-main-section">
+  <div class="table-header-fixed">
+    <table id="cafe24SalesTable">
+      <thead>
+        <tr>
+          <th>업체명</th>
+          <th>날짜</th>
+          <th>상품명</th>
+          <th>가격</th>
+          <th>총 판매량</th>
+          <th>취소된 주문</th>
+          <th>순 판매량</th>
+          <th>총 매출</th>
+          <th>첫 구매</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  
+  <div class="table-body-scrollable">
+    <table id="cafe24SalesTableBody">
+      <tbody id="cafe24SalesBody">
+        <!-- 데이터가 여기에 추가됨 -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 📄 페이지네이션 영역 (고정) -->
+<div class="table-pagination-section">
+  <div id="pagination_cafe24_sales" class="pagination"></div>
+</div>

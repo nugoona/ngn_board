@@ -1,40 +1,51 @@
-<!-- GA4 상품별 조회수 필터 UI -->
-<div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
-  <!-- 1️⃣ 소스 / 국가 필터 (윗줄) -->
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <label for="sourceFilter" style="margin-right: 5px;">소스:</label>
-    <select id="sourceFilter" class="dropdown" style="width: 180px;"></select>
-
-    <label for="countryFilter" style="margin-right: 5px;">국가:</label>
-    <select id="countryFilter" class="dropdown" style="width: 180px;"></select>
-  </div>
-
-  <!-- 2️⃣ 상품명 검색 필터 (아랫줄) -->
-  <div style="display: flex; align-items: center; gap: 15px;">
-    <label for="productNameSearch" style="width: 100px;">상품명 검색:</label>
-    <input
-      type="text"
-      id="productNameSearch"
-      class="dropdown"
-      placeholder="상품명을 입력하세요"
-      style="width: 250px;"
-    />
+<!-- 🔧 필터 영역 (고정) -->
+<div class="table-filter-section">
+  <div class="filter-controls">
+    <div class="filter-group">
+      <label>소스:</label>
+      <select id="sourceFilter" class="custom-dropdown">
+        <option value="">소스 전체</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>국가:</label>
+      <select id="countryFilter" class="custom-dropdown">
+        <option value="">국가 전체</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>상품명 검색:</label>
+      <input type="text" id="productSearchFilter" placeholder="상품명을 입력하세요" class="search-input">
+    </div>
   </div>
 </div>
 
-<!--  테이블 -->
-<table id="viewitemSummaryTable">
-  <thead>
-    <tr>
-      <th style="display: none;">업체명</th>
-      <th>상품명</th>
-      <th>소스</th>
-      <th>국가</th>
-      <th>조회</th>
-    </tr>
-  </thead>
-  <tbody id="viewitemSummaryBody"></tbody>
-</table>
+<!-- 📊 테이블 영역 (스크롤 없음) -->
+<div class="table-main-section">
+  <div class="table-header-fixed">
+    <table id="viewitemSummaryTable">
+      <thead>
+        <tr>
+          <th style="display: none;">업체명</th>
+          <th>상품명</th>
+          <th>소스</th>
+          <th>국가</th>
+          <th>조회</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+  
+  <div class="table-body-scrollable">
+    <table id="viewitemSummaryTableBody">
+      <tbody id="viewitemSummaryBody">
+        <!-- 데이터가 여기에 추가됨 -->
+      </tbody>
+    </table>
+  </div>
+</div>
 
-<!-- 페이지네이션 -->
-<div id="pagination_viewitem_summary" class="pagination"></div>
+<!-- 📄 페이지네이션 영역 (고정) -->
+<div class="table-pagination-section">
+  <div id="pagination_viewitem_summary" class="pagination"></div>
+</div>

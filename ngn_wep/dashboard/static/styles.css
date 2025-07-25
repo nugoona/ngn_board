@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 0;
+  padding-top: 80px; /* 고정된 필터 아래 공간 확보 */
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -172,7 +172,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -221,6 +221,12 @@ body {
 #viewitemSummaryTable th:first-child,
 #viewitemSummaryTable td:first-child {
   display: none;
+}
+
+/* 테이블 래퍼에서 페이지네이션 항상 표시 */
+.table-wrapper {
+  position: relative;
+  overflow: visible;
 }
 .table-wrapper {
   background: white;
@@ -355,7 +361,7 @@ th {
 
 /* 개별 테이블의 페이지네이션 표시 */
 .table-wrapper .pagination {
-  display: flex;
+  display: flex !important;
   justify-content: center;
   align-items: center;
   margin-top: 20px;
@@ -364,6 +370,8 @@ th {
   background: transparent;
   border-radius: 8px;
   box-shadow: none;
+  position: relative;
+  z-index: 1;
 }
 .pagination-btn {
   background-color: #6366f1;

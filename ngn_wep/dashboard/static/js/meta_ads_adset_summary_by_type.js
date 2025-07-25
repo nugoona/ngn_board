@@ -6,103 +6,104 @@ import { metaAdsState } from "./meta_ads_state.js";
 
 const $ = window.$;
 let typePieChartInstance = null;
-let adsetSummaryRequest = null;
 
-// ✅ 파라미터 기본값 추가: {} → undefined 방지
 export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
-  // 순차 실행이므로 abort 제거
-  // if (adsetSummaryRequest) {
-  //   adsetSummaryRequest.abort();
-  // }
+  console.log("[DEBUG] fetchMetaAdsAdsetSummaryByType 호출됨");
 
-  // ✅ 기간 보정 로직 추가 (manual 외엔 자동 계산)
-  if ((!start_date || !end_date) && period !== "manual") {
-    const resolved = resolveDateRange(period);
-    start_date = resolved.start;
-    end_date = resolved.end;
-  }
-
-  console.log("[DEBUG] fetchMetaAdsAdsetSummaryByType 호출됨", {
-    accountId: account_id, period, startDate: start_date, endDate: end_date
+  const requestData = getRequestData(1, {
+    data_type: "meta_ads_adset_summary_by_type",
+    period: period,
+    start_date: start_date,
+    end_date: end_date,
+    account_id: account_id
   });
 
-  if (!account_id) {
-    console.warn("[SKIP] accountId 없음 - 빈 테이블/차트 렌더링");
-    renderMetaAdsAdsetSummaryTable([]);
-    renderMetaAdsAdsetSummaryChart([], 0);
-    return;
-  }
-
+  console.log("[DEBUG] 캠페인 목표별 성과 요약 요청:", requestData);
   showLoading("#loadingOverlayTypeSummary");
 
-        const payload = {
-          data_type: "meta_ads_adset_summary_by_type",
-          account_id,
-          period,
-          start_date: start_date || null,
-          end_date: end_date || null
-        };
+  latestAjaxRequest("meta_ads_adset_summary_by_type", {
+    url: "/dashboard/get_data",
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify(requestData),
+    error: function (xhr, status, error) {
+      hideLoading("#loadingOverlayTypeSummary");
+      console.error("[ERROR] 캠페인 목표별 성과 요약 오류:", status, error);
+    }
+  }, function (res) {
+    hideLoading("#loadingOverlayTypeSummary");
 
-        adsetSummaryRequest = $.ajax({
-          url: "/dashboard/get_data",
-          method: "POST",
-          contentType: "application/json",
-          data: JSON.stringify(payload),
-          success: function (res) {
-            hideLoading("#loadingOverlayTypeSummary");
-
-            console.log("[DEBUG] Ajax 응답 전체:", res);
-            console.log("[DEBUG] res.data:", res?.data);
-            console.log("[DEBUG] res.status:", res?.status);
-
-            const typeSummary = res?.data?.type_summary || [];
-            const totalSpendSum = res?.data?.total_spend_sum || 0;
-
-            console.log("[DEBUG] 캠페인 목표별 요약 응답:", typeSummary, totalSpendSum);
-            console.log("[DEBUG] typeSummary 길이:", typeSummary.length);
-            console.log("[DEBUG] totalSpendSum 값:", totalSpendSum);
-
-            renderMetaAdsAdsetSummaryTable(typeSummary);
-            renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
-          },
-          error: function (err) {
-            hideLoading("#loadingOverlayTypeSummary");
-            console.error("[ERROR] 캠페인 목표별 요약 로드 실패", err);
-            $("#metaAdsAdsetSummaryTableBody").html('<tr><td colspan="6">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>');
-          }
-        });
+    if (res.status === "success") {
+      const data = res.meta_ads_adset_summary_by_type || [];
+      console.log("[DEBUG] 캠페인 목표별 성과 요약 데이터:", data);
+      renderMetaAdsAdsetSummaryTable(data);
+      renderMetaAdsAdsetSummaryChart(data);
+    } else {
+      console.warn("[WARN] 캠페인 목표별 성과 요약 응답 없음", res);
+    }
+  });
 }
 
 function renderMetaAdsAdsetSummaryTable(data) {
-  const $tbody = $("#metaAdsAdsetSummaryTable tbody");
-  $tbody.empty();
+  console.log("[DEBUG] renderMetaAdsAdsetSummaryTable 호출됨");
+  
+  const tbody = $("#metaAdsAdsetSummaryTable tbody");
+  tbody.empty();
 
   if (!data || data.length === 0) {
-    $tbody.append("<tr><td colspan='6'>데이터가 없습니다.</td></tr>");
+    tbody.append("<tr><td colspan='6'>데이터가 없습니다.</td></tr>");
     return;
   }
 
+  let totalSpend = 0;
+  let totalImpressions = 0;
+  let totalClicks = 0;
+  let totalPurchases = 0;
+  let totalPurchaseValue = 0;
+
   data.forEach(row => {
-    const CPM       = row.CPM ? Math.round(row.CPM).toLocaleString() : "0";
-    const CPC       = row.CPC ? Math.round(row.CPC).toLocaleString() : "0";
-    const spend     = row.total_spend ? row.total_spend.toLocaleString() : "0";
+    const spend = row.total_spend || 0;
+    const impressions = row.total_impressions || 0;
+    const clicks = row.total_clicks || 0;
     const purchases = row.total_purchases || 0;
-    const ROAS      = row.ROAS ? Math.round(row.ROAS * 100).toLocaleString() + "%" : "0%";
+    const purchaseValue = row.total_purchase_value || 0;
+    
+    const cpm = impressions > 0 ? (spend / impressions) * 1000 : 0;
+    const cpc = clicks > 0 ? spend / clicks : 0;
+    const roas = spend > 0 ? (purchaseValue / spend) * 100 : 0;
 
-    const html = `
-      <tr>
-        <td>${row.type || "-"}</td>
-        <td>${spend}</td>
-        <td>${CPM}</td>
-        <td>${CPC}</td>
-        <td>${purchases}</td>
-        <td>${ROAS}</td>
-      </tr>
-    `;
-    $tbody.append(html);
+    totalSpend += spend;
+    totalImpressions += impressions;
+    totalClicks += clicks;
+    totalPurchases += purchases;
+    totalPurchaseValue += purchaseValue;
+
+    const tr = $("<tr></tr>");
+    tr.append(`<td>${row.type || "-"}</td>`);
+    tr.append(`<td>${spend.toLocaleString()}</td>`);
+    tr.append(`<td>${cpm.toFixed(0)}</td>`);
+    tr.append(`<td>${cpc.toFixed(0)}</td>`);
+    tr.append(`<td>${purchases.toLocaleString()}</td>`);
+    tr.append(`<td>${roas.toFixed(1)}%</td>`);
+    
+    tbody.append(tr);
   });
-}
 
+  // 합계 행 추가
+  const totalCpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
+  const totalCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const totalRoas = totalSpend > 0 ? (totalPurchaseValue / totalSpend) * 100 : 0;
+
+  const totalTr = $("<tr style='font-weight: bold; background-color: #f3f4f6;'></tr>");
+  totalTr.append(`<td>총합</td>`);
+  totalTr.append(`<td>${totalSpend.toLocaleString()}</td>`);
+  totalTr.append(`<td>${totalCpm.toFixed(0)}</td>`);
+  totalTr.append(`<td>${totalCpc.toFixed(0)}</td>`);
+  totalTr.append(`<td>${totalPurchases.toLocaleString()}</td>`);
+  totalTr.append(`<td>${totalRoas.toFixed(1)}%</td>`);
+  
+  tbody.append(totalTr);
+}
 
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   console.log("[DEBUG] renderMetaAdsAdsetSummaryChart 호출됨");
@@ -115,6 +116,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   }
 
   const chartContainer = document.getElementById("metaAdsAdsetSummaryChart");
+  const legendContainer = document.getElementById("campaignLegendItems");
+  
   console.log("[DEBUG] 차트 컨테이너:", chartContainer);
 
   if (!chartContainer) {
@@ -127,19 +130,26 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     typePieChartInstance.destroy();
   }
 
+  // 총 지출 계산
+  totalSpendSum = totalSpendSum || data.reduce((sum, row) => sum + (row.total_spend || 0), 0);
+
   // 데이터가 없거나 총 지출이 0인 경우 빈 차트 표시
   if (!data || data.length === 0 || totalSpendSum === 0) {
     console.log("[DEBUG] 빈 차트 렌더링");
-    chartContainer.style.display = "block";
+    
+    // 빈 범례 표시
+    if (legendContainer) {
+      legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
+    }
     
     typePieChartInstance = new ApexCharts(chartContainer, {
       series: [100],
       chart: {
         type: 'pie',
-        height: 400,
+        height: 350,
         fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
         animations: {
-          enabled: false // 애니메이션 제거
+          enabled: false
         }
       },
       labels: ['데이터 없음'],
@@ -153,10 +163,10 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         }
       },
       legend: {
-        position: 'left', // 왼쪽 정렬
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 500
+        show: false
+      },
+      dataLabels: {
+        enabled: false
       }
     });
     
@@ -166,27 +176,42 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   }
 
   console.log("[DEBUG] 실제 데이터로 차트 렌더링");
-  chartContainer.style.display = "block";
   
   const labels = data.map(row => row.type || "-");
   const values = data.map(row => totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0);
   const actualSpend = data.map(row => row.total_spend || 0);
+  const colors = ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'];
 
   console.log("[DEBUG] 차트 데이터:", { labels, values, actualSpend });
+
+  // 커스텀 범례 생성
+  if (legendContainer) {
+    legendContainer.innerHTML = '';
+    labels.forEach((label, index) => {
+      const legendItem = document.createElement('div');
+      legendItem.className = 'legend-item';
+      legendItem.innerHTML = `
+        <div class="legend-marker" style="background-color: ${colors[index]}"></div>
+        <div class="legend-text">${label}</div>
+        <div class="legend-percentage">${values[index].toFixed(1)}%</div>
+      `;
+      legendContainer.appendChild(legendItem);
+    });
+  }
 
   // ApexCharts 옵션 설정
   const options = {
     series: values,
     chart: {
       type: 'pie',
-      height: 450, // 높이 증가
+      height: 350,
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       animations: {
-        enabled: false // 애니메이션 제거
+        enabled: false
       }
     },
     labels: labels,
-    colors: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
+    colors: colors,
     plotOptions: {
       pie: {
         startAngle: 0,
@@ -203,96 +228,70 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
           size: '65%',
           background: 'transparent',
           labels: {
-            show: false,
+            show: true,
             name: {
-              show: true,
-              fontSize: '22px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 600,
-              color: undefined,
-              offsetY: -10
+              show: false
             },
             value: {
               show: true,
               fontSize: '16px',
               fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 400,
-              color: undefined,
-              offsetY: 16,
+              fontWeight: 700,
+              color: '#1e293b',
+              offsetY: 0,
               formatter: function (val) {
                 return typeof val === 'number' ? val.toFixed(1) + '%' : '0.0%';
               }
             },
             total: {
-              show: false,
-              label: 'Total',
-              fontSize: '16px',
-              fontWeight: 600,
-              formatter: function (w) {
-                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-              }
+              show: false
             }
           }
         }
       }
     },
     dataLabels: {
-      enabled: false // 내부 퍼센트 제거
+      enabled: false
     },
     legend: {
-      position: 'left', // 왼쪽 정렬
-      fontSize: '14px',
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      fontWeight: 500,
-      markers: {
-        radius: 6,
-        width: 12,
-        height: 12
-      },
-      itemMargin: {
-        horizontal: 15,
-        vertical: 8
-      },
-      formatter: function(seriesName, opts) {
-        const value = opts.w.globals.series[opts.seriesIndex];
-        return `${seriesName} (${value.toFixed(1)}%)`;
-      },
-      onItemClick: {
-        toggleDataSeries: false
-      }
+      show: false
     },
     tooltip: {
       enabled: true,
       theme: 'light',
-      style: {
-        fontSize: '12px'
-      },
       custom: function({ series, seriesIndex, dataPointIndex, w }) {
         const spend = actualSpend[seriesIndex] || 0;
         const percentage = series[seriesIndex];
         const label = labels[seriesIndex];
         const formattedSpend = typeof spend === 'number' ? spend.toLocaleString() : spend;
-        return `<div class="custom-tooltip" style="
-          background: rgba(255, 255, 255, 0.98);
-          border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 8px;
-          padding: 8px 12px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        return `<div style="
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 12px 16px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
           font-family: 'Pretendard', sans-serif;
-          max-width: 200px;
+          max-width: 280px;
         ">
-          <div class="tooltip-label" style="
+          <div style="
             font-weight: 600;
-            font-size: 12px;
-            color: #374151;
-            margin-bottom: 2px;
-            line-height: 1.3;
+            font-size: 14px;
+            color: #1e293b;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
           ">${label}</div>
-          <div class="tooltip-value" style="
-            font-weight: 500;
-            font-size: 11px;
+          <div style="
+            font-weight: 600;
+            font-size: 14px;
             color: #6366f1;
-          ">₩${formattedSpend} (${percentage.toFixed(1)}%)</div>
+          ">₩${formattedSpend}</div>
+          <div style="
+            font-weight: 500;
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+          ">${percentage.toFixed(1)}%</div>
         </div>`;
       }
     },
@@ -301,10 +300,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         breakpoint: 768,
         options: {
           chart: {
-            height: 350
-          },
-          legend: {
-            position: 'bottom'
+            height: 300
           }
         }
       }

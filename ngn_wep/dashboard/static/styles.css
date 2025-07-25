@@ -3149,91 +3149,183 @@ h2::before {
   }
 }
 
+
+
 /* ========================
- ApexCharts 전역 스타일
+ 로딩 오버레이 관련 스타일
 ======================== */
 
-/* 차트 중앙 정렬 */
+
+/* ========================
+ ApexCharts 모던 파이 차트 스타일 (v1.3)
+======================== */
+
+/* 파이 차트 컨테이너 */
+.pie-chart-modern {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pie-chart-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 24px;
+  text-align: center;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+.pie-chart-content {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-height: 400px;
+}
+
+.pie-chart-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 350px;
+}
+
+.pie-chart-legend {
+  flex: 0 0 280px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.legend-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 16px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+  background: #f1f5f9;
+  transform: translateX(4px);
+}
+
+.legend-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legend-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+.legend-percentage {
+  font-size: 14px;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* ApexCharts 커스터마이징 */
 .apexcharts-canvas {
   margin: 0 auto !important;
 }
 
-/* 범례 스타일 개선 */
 .apexcharts-legend {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+  display: none !important; /* 기본 범례 숨김 */
 }
 
-.apexcharts-legend-text {
-  font-weight: 500 !important;
-  color: #374151 !important;
-}
-
-.apexcharts-legend-series {
-  margin: 8px 0 !important;
-}
-
-.apexcharts-legend-marker {
-  border-radius: 4px !important;
-}
-
-/* 툴팁 크기 조정 및 디자인 개선 */
+/* 툴팁 커스터마이징 */
 .apexcharts-tooltip {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
-  max-width: 250px !important;
+  padding: 12px 16px !important;
+  max-width: 280px !important;
 }
 
 .apexcharts-tooltip-title {
   background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-bottom: 1px solid #f1f5f9 !important;
   font-weight: 600 !important;
-  color: #374151 !important;
+  color: #1e293b !important;
+  margin-bottom: 8px !important;
+  padding-bottom: 8px !important;
 }
 
-/* 파이 차트 컨테이너 스타일 */
-.product-sales-ratio-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  width: 100%;
+.apexcharts-tooltip-y-group {
+  padding: 0 !important;
 }
 
-.pie-chart-container {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-align: center;
-  width: 100%;
-  max-width: 800px;
+.apexcharts-tooltip-y-label {
+  font-weight: 600 !important;
+  color: #6366f1 !important;
+  font-size: 14px !important;
 }
 
-.pie-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 20px;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+.apexcharts-tooltip-y-value {
+  font-weight: 500 !important;
+  color: #475569 !important;
+  font-size: 13px !important;
 }
 
-.pie-chart-wrapper {
-  height: 400px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .pie-chart-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .pie-chart-legend {
+    flex: none;
+    width: 100%;
+  }
+  
+  .pie-chart-area {
+    min-height: 300px;
+  }
 }
 
 /* 테이블과 차트를 나란히 배치 */
 .product-sales-ratio-wrapper {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   align-items: flex-start;
   width: 100%;
 }
@@ -3247,9 +3339,6 @@ h2::before {
   flex: 0 0 45% !important;
   max-width: 45% !important;
   min-width: 400px !important;
-  padding-left: 20px;
-  padding-right: 20px;
-  margin-right: 20px;
 }
 
 /* 반응형 디자인 */

@@ -217,7 +217,7 @@ body {
  ✅ 테이블 컨테이너
 ================================ */
 
-/* 🏗️ 새로운 테이블 구조 스타일 */
+/* 🏗️ 새로운 테이블 구조 스타일 (카페24 상품 판매용) */
 .table-filter-section {
   position: sticky;
   top: 0;
@@ -291,7 +291,7 @@ body {
 .table-header-fixed table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto; /* 자동 레이아웃으로 변경 */
+  table-layout: auto;
 }
 
 .table-header-fixed th {
@@ -303,13 +303,13 @@ body {
 }
 
 .table-body-scrollable {
-  overflow: visible; /* 스크롤 제거 */
+  overflow: visible; /* 세로 스크롤 제거 */
 }
 
 .table-body-scrollable table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto; /* 자동 레이아웃으로 변경 */
+  table-layout: auto;
 }
 
 .table-body-scrollable td {
@@ -356,13 +356,8 @@ thead th {
 
 .table-content-container {
   position: relative;
-  max-height: 400px;
-  overflow: auto;
-  margin-bottom: 60px;
-  
-  /* 모던한 스크롤바 스타일 */
-  scrollbar-width: thin;
-  scrollbar-color: #6366f1 #f1f5f9;
+  overflow: visible; /* 세로 스크롤 제거 */
+  margin-bottom: 20px; /* 여백 줄임 */
 }
 
 /* Webkit 브라우저용 스크롤바 스타일 */

@@ -258,6 +258,7 @@ thead th {
 .table-content-container table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 .table-content-container thead {
@@ -285,13 +286,13 @@ thead th {
 .table-content-container tbody tr {
   display: table;
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .table-content-container thead tr {
   display: table;
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 /* 테이블 기본 스타일 */
@@ -310,7 +311,8 @@ th, td {
   padding: var(--spacing-md);
   border: 1px solid var(--border-light);
   text-align: center;
-  white-space: nowrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 th {

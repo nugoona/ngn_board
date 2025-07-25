@@ -220,10 +220,13 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       style: {
         fontSize: '14px'
       },
-      y: {
-        formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
-          return `${labels[seriesIndex]}: ${value.toFixed(1)}%`;
-        }
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        const percentage = series[seriesIndex];
+        const label = labels[seriesIndex];
+        return `<div class="custom-tooltip">
+          <div class="tooltip-label">${label}</div>
+          <div class="tooltip-value">${percentage.toFixed(1)}%</div>
+        </div>`;
       }
     },
     responsive: [

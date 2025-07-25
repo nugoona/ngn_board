@@ -248,6 +248,10 @@ function renderProductSalesRatioChart() {
       itemMargin: {
         horizontal: 10,
         vertical: 5
+      },
+      formatter: function(seriesName, opts) {
+        const value = opts.w.globals.series[opts.seriesIndex];
+        return `${seriesName} (${value.toFixed(1)}%)`;
       }
     },
     tooltip: {
@@ -256,11 +260,14 @@ function renderProductSalesRatioChart() {
       style: {
         fontSize: '14px'
       },
-      y: {
-        formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
-          const sales = actualSales[seriesIndex] || 0;
-          return `${labels[seriesIndex]}: ₩${sales.toLocaleString()} (${value.toFixed(1)}%)`;
-        }
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        const sales = actualSales[seriesIndex] || 0;
+        const percentage = series[seriesIndex];
+        const label = labels[seriesIndex];
+        return `<div class="custom-tooltip">
+          <div class="tooltip-label">${label}</div>
+          <div class="tooltip-value">₩${sales.toLocaleString()} (${percentage.toFixed(1)}%)</div>
+        </div>`;
       }
     },
     responsive: [

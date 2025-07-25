@@ -226,14 +226,8 @@ function renderPlatformSalesRatioChart() {
       animation: {
         animateRotate: true,
         animateScale: true,
-        duration: 800,
-        easing: 'easeInOutQuart',
-        onProgress: function(animation) {
-          // 애니메이션 진행 중 추가 효과
-        },
-        onComplete: function(animation) {
-          console.log("[DEBUG] 차트 애니메이션 완료");
-        }
+        duration: 600,
+        easing: 'easeInOutQuart'
       },
       cutout: '60%',
       radius: '90%',

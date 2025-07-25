@@ -35,70 +35,42 @@ let chartInstance_product = null;
 let allProductSalesRatioData = [];
 
 function fetchProductSalesRatio(requestData) {
-  // requestData가 없으면 현재 필터값으로 생성
-  if (!requestData) {
-    requestData = getRequestData(1, {
-      data_type: "product_sales_ratio"
-    });
-  }
-  
-  // period가 manual이 아닌 경우 날짜를 resolveDateRange로 계산
-  if (requestData.period !== "manual") {
-    const resolved = resolveDateRange(requestData.period);
-    requestData.start_date = resolved.start;
-    requestData.end_date = resolved.end;
-  }
-  
-  // 날짜 정보가 없으면 오늘 날짜로 설정 (fallback)
-  if (!requestData.start_date || !requestData.end_date) {
-    const today = new Date().toISOString().split("T")[0];
-    requestData.start_date = requestData.start_date || today;
-    requestData.end_date = requestData.end_date || today;
-  }
-  
-  if (requestData.period === "manual" && !requestData.end_date) {
-    console.warn("[SKIP] 종료일 누락 - 상품군 매출 비중 요청 생략");
+  const company = $("#accountFilter").val(); 
+  const period = $("#periodSelector").val();
+  const startDate = $("#startDate").val();
+  const endDate = $("#endDate").val();
+
+  if (period === "manual" && !endDate) {
+    console.warn("[SKIP] 종료일 누락 - 주요 상품 매출 비중 차트 실행 중단");
     return;
   }
 
-  console.log("[DEBUG] 상품군 매출 비중 요청 데이터:", requestData);
+  const requestData = getRequestData(1, {
+    data_type: "product_sales_ratio"
+  });
+
+  console.log("[DEBUG] 주요 상품 매출 비중 요청:", requestData);
   showLoading("#loadingOverlayProductSalesRatio");
 
   latestAjaxRequest("product_sales_ratio", {
     url: "/dashboard/get_data",
     method: "POST",
     contentType: "application/json",
-    data: JSON.stringify({
-      ...requestData,
-      data_type: "product_sales_ratio"
-    }),
+    data: JSON.stringify(requestData),
     error: function (xhr, status, error) {
       hideLoading("#loadingOverlayProductSalesRatio");
-      console.error("[ERROR] 상품군 매출 비중 오류:", status, error);
+      console.error("[ERROR] 주요 상품 매출 비중 오류:", status, error);
     }
   }, function (res) {
     hideLoading("#loadingOverlayProductSalesRatio");
 
-    console.log("[DEBUG] 상품군 매출 비중 응답 결과:", res);
     if (res.status === "success") {
       allProductSalesRatioData = res.product_sales_ratio || [];
-
-      if (!Array.isArray(allProductSalesRatioData) || allProductSalesRatioData.length === 0) {
-        console.warn("[WARN] 상품군 매출 비중 데이터 없음");
-        $("#productSalesRatioTableBody").html(`<tr><td colspan="6">데이터가 없습니다.</td></tr>`);
-        $("#productSalesRatioChart").replaceWith('<div id="productSalesRatioChart"></div>');
-        return;
-      }
-
-      currentPage_ratio = 1;
-      renderProductSalesRatioTable(currentPage_ratio);
+      renderProductSalesRatioTable(1);
       setupPagination_ratio();
-      
-      // ✅ 즉시 차트 렌더링 (토글 버튼 클릭 전에도 차트 준비)
-      renderProductSalesRatioChart();
-      console.log("[DEBUG] 📊 데이터 로딩 완료, 차트 즉시 렌더링");
+      // 차트는 버튼 클릭 시에만 렌더링
     } else {
-      console.warn("[WARN] 상품군 매출 비중 응답 실패", res);
+      console.warn("[WARN] 주요 상품 매출 비중 응답 없음", res);
     }
   });
 }
@@ -213,6 +185,10 @@ function renderProductSalesRatioChart() {
   ];
 
   const ctx = chartContainer.getContext('2d');
+  
+  // Chart.js datalabels 플러그인 등록
+  Chart.register(ChartDataLabels);
+  
   chartInstance_product = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -298,17 +274,26 @@ function renderProductSalesRatioChart() {
       animation: {
         animateRotate: true,
         animateScale: true,
-        duration: 1200,
-        easing: 'easeOutQuart',
-        onProgress: function(animation) {
-          // 애니메이션 진행 중 추가 효과
-        },
-        onComplete: function(animation) {
-          console.log("[DEBUG] 차트 애니메이션 완료");
-        }
+        duration: 600,
+        easing: 'easeInOutQuart'
       },
       cutout: '60%',
-      radius: '90%'
+      radius: '90%',
+      plugins: {
+        datalabels: {
+          color: '#ffffff',
+          font: {
+            weight: 'bold',
+            size: 14,
+            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+          },
+          formatter: function(value, context) {
+            return value.toFixed(1) + '%';
+          },
+          textAlign: 'center',
+          textBaseline: 'middle'
+        }
+      }
     }
   });
 
@@ -348,16 +333,26 @@ function setupPagination_ratio() {
   pagination.append(prevBtn, pageInfo, nextBtn);
 }
 
-// ✅ 토글 버튼 제어 - DOMContentLoaded 이벤트로 변경
+// ✅ 토글 버튼 이벤트 핸들러
 $(document).ready(function() {
-  $("#toggleProductSalesRatioChart").on("click", function () {
-    const chartContainer = $("#productSalesRatioChartContainer");
-    const isVisible = chartContainer.is(":visible");
-    chartContainer.toggle();
-    $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
+  $("#toggleProductSalesRatioChart").on("click", function() {
+    const container = $("#productSalesRatioChartContainer");
+    const button = $(this);
     
-    // 차트가 이미 렌더링되어 있으므로 추가 렌더링 불필요
-    console.log("[DEBUG] 상품 매출 비중 차트 토글 - 차트 컨테이너 표시/숨김");
+    if (container.is(":visible")) {
+      // 차트 숨기기
+      container.hide();
+      button.text("상위 TOP5 차트 보기");
+    } else {
+      // 차트 보이기 및 렌더링
+      container.show();
+      button.text("상위 TOP5 차트 숨기기");
+      
+      // 차트가 처음 렌더링되는 경우에만 실행
+      if (!chartInstance_product) {
+        renderProductSalesRatioChart();
+      }
+    }
   });
 });
 

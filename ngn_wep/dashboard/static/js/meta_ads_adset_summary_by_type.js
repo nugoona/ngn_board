@@ -186,6 +186,10 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   ];
 
   const ctx = chartContainer.getContext('2d');
+  
+  // Chart.js datalabels 플러그인 등록
+  Chart.register(ChartDataLabels);
+  
   typePieChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -267,17 +271,26 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       animation: {
         animateRotate: true,
         animateScale: true,
-        duration: 1200,
-        easing: 'easeOutQuart',
-        onProgress: function(animation) {
-          // 애니메이션 진행 중 추가 효과
-        },
-        onComplete: function(animation) {
-          console.log("[DEBUG] 차트 애니메이션 완료");
-        }
+        duration: 600,
+        easing: 'easeInOutQuart'
       },
       cutout: '60%',
-      radius: '90%'
+      radius: '90%',
+      plugins: {
+        datalabels: {
+          color: '#ffffff',
+          font: {
+            weight: 'bold',
+            size: 14,
+            family: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+          },
+          formatter: function(value, context) {
+            return value.toFixed(1) + '%';
+          },
+          textAlign: 'center',
+          textBaseline: 'middle'
+        }
+      }
     }
   });
 

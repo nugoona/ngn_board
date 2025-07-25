@@ -374,8 +374,13 @@ $(document).ready(function() {
     chartContainer.toggle();
     $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
     if (!isVisible) {
-      console.log("[DEBUG] 상품 매출 비중 차트 토글 - 차트 렌더링 시작");
-      renderProductSalesRatioChart();
+      console.log("[DEBUG] 상품 매출 비중 차트 토글 - 데이터 가져오기 시작");
+      // 데이터가 없으면 다시 가져오기
+      if (!allProductSalesRatioData || allProductSalesRatioData.length === 0) {
+        fetchProductSalesRatio();
+      } else {
+        renderProductSalesRatioChart();
+      }
     }
   });
 });

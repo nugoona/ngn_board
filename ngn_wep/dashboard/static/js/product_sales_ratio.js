@@ -95,11 +95,24 @@ function fetchProductSalesRatio(requestData) {
       setupPagination_ratio();
       
       // ✅ 데이터 로딩 완료 후 차트 자동 표시
-      setTimeout(() => {
-        $("#productSalesRatioChartContainer").show();
-        $("#toggleProductSalesRatioChart").text("상위 TOP5 차트 숨기기");
-        renderProductSalesRatioChart();
-      }, 100);
+      console.log("[DEBUG] 📊 데이터 로딩 완료, 차트 렌더링 시작");
+      
+      // 차트 컨테이너를 먼저 표시하고 충분한 시간을 두고 차트 렌더링
+      $("#productSalesRatioChartContainer").show();
+      $("#toggleProductSalesRatioChart").text("상위 TOP5 차트 숨기기");
+      
+      // ApexCharts 로드 확인 후 차트 렌더링
+      const checkApexChartsAndRender = () => {
+        if (typeof ApexCharts !== 'undefined') {
+          console.log("[DEBUG] 🎯 ApexCharts 로드됨, 차트 렌더링 호출");
+          renderProductSalesRatioChart();
+        } else {
+          console.log("[DEBUG] ⏳ ApexCharts 로딩 대기 중...");
+          setTimeout(checkApexChartsAndRender, 100);
+        }
+      };
+      
+      setTimeout(checkApexChartsAndRender, 200);
     } else {
       console.warn("[WARN] 상품군 매출 비중 응답 실패", res);
     }
@@ -132,6 +145,8 @@ function renderProductSalesRatioTable(page) {
 }
 
 function renderProductSalesRatioChart() {
+  console.log("[DEBUG] 🎯 차트 렌더링 시작");
+  
   // ApexCharts가 로드되었는지 확인
   if (typeof ApexCharts === 'undefined') {
     console.warn('ApexCharts not loaded, retrying in 100ms...');
@@ -139,13 +154,32 @@ function renderProductSalesRatioChart() {
     return;
   }
 
+  // 차트 컨테이너 존재 확인
+  const chartContainer = document.querySelector("#productSalesRatioChart");
+  if (!chartContainer) {
+    console.error("[ERROR] 차트 컨테이너를 찾을 수 없음: #productSalesRatioChart");
+    return;
+  }
+
+  // 데이터 확인
+  console.log("[DEBUG] 📊 전체 데이터:", allProductSalesRatioData);
+  
+  if (!Array.isArray(allProductSalesRatioData) || allProductSalesRatioData.length === 0) {
+    console.warn("[WARN] 차트 데이터가 없음");
+    return;
+  }
+
   const top5 = [...allProductSalesRatioData]
     .sort((a, b) => b.sales_ratio_percent - a.sales_ratio_percent)
     .slice(0, 5);
 
+  console.log("[DEBUG] 🏆 TOP5 데이터:", top5);
+
   const labels = top5.map(d => d.cleaned_product_name);
   const values = top5.map(d => d.sales_ratio_percent);
   const actualSales = top5.map(d => d.item_product_sales);  // 원본 숫자 값 유지
+
+  console.log("[DEBUG] 📈 차트 데이터:", { labels, values, actualSales });
 
   // 기존 차트 인스턴스 제거
   if (chartInstance_ratio) {
@@ -310,8 +344,15 @@ function renderProductSalesRatioChart() {
   };
 
   // ApexCharts 인스턴스 생성
+  console.log("[DEBUG] 🎨 차트 인스턴스 생성 시작");
   chartInstance_ratio = new ApexCharts(document.querySelector("#productSalesRatioChart"), options);
-  chartInstance_ratio.render();
+  
+  console.log("[DEBUG] 🚀 차트 렌더링 시작");
+  chartInstance_ratio.render().then(() => {
+    console.log("[DEBUG] ✅ 차트 렌더링 완료");
+  }).catch((error) => {
+    console.error("[ERROR] 차트 렌더링 실패:", error);
+  });
 }
 
 function setupPagination_ratio() {
@@ -356,7 +397,19 @@ $("#toggleProductSalesRatioChart").on("click", function () {
   $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
 
   if (!isVisible) {
-    setTimeout(() => renderProductSalesRatioChart(), 10);
+    console.log("[DEBUG] 🎯 토글 버튼으로 차트 표시");
+    // ApexCharts 로드 확인 후 차트 렌더링
+    const checkApexChartsAndRender = () => {
+      if (typeof ApexCharts !== 'undefined') {
+        console.log("[DEBUG] 🎯 ApexCharts 로드됨, 차트 렌더링 호출");
+        renderProductSalesRatioChart();
+      } else {
+        console.log("[DEBUG] ⏳ ApexCharts 로딩 대기 중...");
+        setTimeout(checkApexChartsAndRender, 100);
+      }
+    };
+    
+    setTimeout(checkApexChartsAndRender, 100);
   }
 });
 

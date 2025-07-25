@@ -11,7 +11,7 @@
   <div class="product-sales-ratio-wrapper">
 
     <!-- ✅ 왼쪽: 테이블 영역 -->
-    <div class="product-sales-ratio-table" style="flex: 0 0 60%; max-width: 60%;">
+    <div class="product-sales-ratio-table" style="flex: 0 0 50%; max-width: 50%;">
       <table id="metaAdsAdsetSummaryTable" class="data-table">
         <thead>
           <tr>
@@ -29,7 +29,7 @@
       </table>
     </div>
 
-    <!-- ✅ 오른쪽: ApexCharts 차트 영역 -->
+    <!-- ✅ 오른쪽: Chart.js 차트 영역 -->
     <div class="campaign-goal-chart-wrapper">
       {% include 'components/meta_ads_adset_summary_chart.html' %}
     </div>
@@ -38,10 +38,17 @@
 </section>
 
 <style>
-/* ✅ ApexCharts 파이 차트 커스텀 스타일 */
+/* ✅ Chart.js 파이 차트 커스텀 스타일 */
 .campaign-goal-chart-wrapper {
-  flex: 0 0 40%;
-  max-width: 40%;
+  flex: 0 0 50%;
+  max-width: 50%;
   padding-left: 20px;
+  height: 400px;
+}
+
+/* 새로운 차트 컨테이너가 전체 공간을 사용하도록 */
+.campaign-goal-chart-modern {
+  height: 100% !important;
+  min-height: 400px;
 }
 </style>

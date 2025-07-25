@@ -266,7 +266,7 @@ function renderProductSalesRatioChart() {
       enabled: true,
       theme: 'light',
       style: {
-        fontSize: '14px'
+        fontSize: '12px'
       },
       custom: function({ series, seriesIndex, dataPointIndex, w }) {
         const sales = actualSales[seriesIndex] || 0;
@@ -276,21 +276,22 @@ function renderProductSalesRatioChart() {
         return `<div class="custom-tooltip" style="
           background: rgba(255, 255, 255, 0.98);
           border: 1px solid rgba(99, 102, 241, 0.2);
-          border-radius: 12px;
-          padding: 12px 16px;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          border-radius: 8px;
+          padding: 8px 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           font-family: 'Pretendard', sans-serif;
+          max-width: 200px;
         ">
           <div class="tooltip-label" style="
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12px;
             color: #374151;
-            margin-bottom: 4px;
-            line-height: 1.4;
+            margin-bottom: 2px;
+            line-height: 1.3;
           ">${label}</div>
           <div class="tooltip-value" style="
             font-weight: 500;
-            font-size: 13px;
+            font-size: 11px;
             color: #6366f1;
           ">₩${formattedSales} (${percentage.toFixed(1)}%)</div>
         </div>`;

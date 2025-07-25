@@ -1,48 +1,36 @@
-<!-- 🔧 필터 영역 (고정) -->
-<div class="table-filter-section">
-  <div class="filter-controls">
-    <label class="radio-label">
-      <input type="radio" name="cafe24_product_sort" value="sales" checked>
-      <span>판매순</span>
+<!-- ✅ 카페24 상품 판매 테이블 -->
+<div class="table-content-container">
+  <!-- ✅ 정렬 필터 -->
+  <div style="margin-bottom: 10px; font-size: 18px;">
+    <label style="margin-right: 5px; padding: 6px;">
+      <input type="radio" name="cafe24_product_sort" value="sales" checked> <b>판매순</b>
     </label>
-    <label class="radio-label">
-      <input type="radio" name="cafe24_product_sort" value="revenue">
-      <span>매출순</span>
+    <label style="padding: 6px;">
+      <input type="radio" name="cafe24_product_sort" value="revenue"> <b>매출순</b>
     </label>
   </div>
+
+  <!-- ✅ 테이블 본문 -->
+  <table id="cafe24ProductSalesTable" class="data-table">
+    <thead>
+      <tr>
+        <th>업체명</th>  
+        <th>날짜</th>
+        <th>상품명</th>
+        <th>가격</th>
+        <th>총 판매량</th>
+        <th>취소된 주문</th>
+        <th>순 판매량</th>
+        <th>총 매출</th>
+        <th>첫 구매</th>
+        <th>URL</th>
+      </tr>
+    </thead>
+    <tbody id="cafe24ProductSalesBody">
+      <!-- JS에서 데이터 렌더링 -->
+    </tbody>
+  </table>
 </div>
 
-<!-- 📊 테이블 영역 (스크롤) -->
-<div class="table-main-section">
-  <div class="table-header-fixed">
-    <table id="cafe24ProductSalesTable">
-      <thead>
-        <tr>
-          <th>업체명</th>  
-          <th>날짜</th>
-          <th>상품명</th>
-          <th>가격</th>
-          <th>총 판매량</th>
-          <th>취소된 주문</th>
-          <th>순 판매량</th>
-          <th>총 매출</th>
-          <th>첫 구매</th>
-          <th>URL</th>
-        </tr>
-      </thead>
-    </table>
-  </div>
-  
-  <div class="table-body-scrollable">
-    <table id="cafe24ProductSalesTableBody">
-      <tbody id="cafe24ProductSalesBody">
-        <!-- 데이터가 여기에 추가됨 -->
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 📄 페이지네이션 영역 (고정) -->
-<div class="table-pagination-section">
-  <div id="pagination_cafe24_product_sales" class="pagination"></div>
-</div>
+<!-- ✅ 페이지네이션 -->
+<div id="pagination_cafe24_product_sales" class="pagination"></div>

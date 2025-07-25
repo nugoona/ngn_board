@@ -354,5 +354,17 @@ $("#toggleProductSalesRatioChart").on("click", function () {
   }
 });
 
+// ✅ 페이지 로드 시 자동으로 차트 표시
+$(document).ready(function() {
+  // 초기 데이터 로딩 후 차트 자동 표시
+  setTimeout(() => {
+    if (allProductSalesRatioData && allProductSalesRatioData.length > 0) {
+      $("#productSalesRatioChartContainer").show();
+      $("#toggleProductSalesRatioChart").text("상위 TOP5 차트 숨기기");
+      renderProductSalesRatioChart();
+    }
+  }, 1000); // 1초 후 자동 표시
+});
+
 // 전역 함수로 노출
 window.fetchProductSalesRatio = fetchProductSalesRatio;

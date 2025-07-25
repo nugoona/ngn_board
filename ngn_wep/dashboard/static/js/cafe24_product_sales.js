@@ -1,6 +1,6 @@
 let cafe24ProductSalesRawData = [];
 let cafe24ProductSalesCurrentPage = 1;
-const cafe24ProductSalesItemsPerPage = 15;
+const cafe24ProductSalesItemsPerPage = 10; /* 15개에서 10개로 변경 */
 let cafe24ProductSalesTotalCount = 0;
 let lastXhrProductSales = null;
 

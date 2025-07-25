@@ -217,83 +217,28 @@ body {
  ✅ 테이블 컨테이너
 ================================ */
 .table-wrapper {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-xl);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
   position: relative;
-  border: 1px solid var(--border-light);
-  transition: var(--transition-normal);
-}
-
-.table-wrapper:hover {
-  box-shadow: var(--shadow-xl);
-  transform: translateY(-2px);
+  /* 폭 자체는 .left-wide / .right-narrow에서 결정 */
 }
 
 /* ✅ 모든 테이블 헤더 고정 */
 thead th {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 10 !important;
-  background-color: var(--primary) !important;
-  color: white !important;
-  font-weight: 600;
-  font-size: 14px;
-  padding: var(--spacing-md);
-  border: 1px solid var(--primary-dark);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #2A7EC6; /* 배경 필수 */
 }
 
 /* 테이블 높이가 넘어가면 내부 스크롤 */
 .table-content-container {
   position: relative;
-  max-height: 450px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-light);
-}
-
-/* 테이블 내부 스크롤 시 헤더 고정 */
-.table-content-container table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: auto;
-}
-
-.table-content-container thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--primary);
-}
-
-.table-content-container thead th {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--primary) !important;
-  color: white !important;
-}
-
-/* 테이블 본문만 스크롤 */
-.table-content-container tbody {
-  max-height: 400px;
-  overflow-y: auto;
-  display: block;
-}
-
-.table-content-container tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: auto;
-}
-
-.table-content-container thead tr {
-  display: table;
-  width: 100%;
-  table-layout: auto;
+  max-height: 450px; /* 필요 시 높이 조정 */
+  overflow: auto;    /* 스크롤 활성화 */
 }
 
 /* 테이블 기본 스타일 */
@@ -301,33 +246,19 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: auto;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
 }
 
 /* 폰트·셀 간격 조금 축소 */
 th, td {
-  font-size: 14px;
-  padding: var(--spacing-md);
-  border: 1px solid var(--border-light);
+  font-size: 15px;
+  padding: 8px;
+  border: 1px solid #ddd;
   text-align: center;
   white-space: nowrap;
 }
-
 th {
-  background-color: var(--primary);
+  background-color: #2A7EC6;
   color: white;
-  font-weight: 600;
-}
-
-td {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-tr:hover td {
-  background-color: var(--bg-tertiary);
 }
 
 /* ✅ 로딩 시 테이블만 반투명 */
@@ -369,42 +300,28 @@ tr:hover td {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: var(--spacing-lg);
-  gap: var(--spacing-xs);
+  margin-top: 15px;
+  gap: 5px;
 }
-
 .pagination-btn {
-  background: var(--primary);
+  background-color: #2A7EC6;
   color: white;
-  padding: var(--spacing-sm) var(--spacing-md);
-  margin: var(--spacing-xs);
+  padding: 6px 10px;
+  margin: 5px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 5px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: bold;
   font-size: 14px;
-  transition: var(--transition-normal);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--primary-dark);
 }
-
-.pagination-btn:hover:not(.disabled) {
-  background: var(--primary-dark);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
 .pagination-btn.disabled {
-  background: var(--text-muted);
+  background-color: #ccc;
   cursor: not-allowed;
-  opacity: 0.6;
 }
-
 .pagination-btn.active {
-  background: var(--primary-dark);
-  color: white;
-  border: 2px solid var(--primary);
-  box-shadow: var(--shadow-md);
+  background-color: #186BB3;
+  color: #fff;
+  border: 2px solid #0C4779;
 }
 .dropdown {
   padding: 8px 12px;

@@ -27,6 +27,7 @@
   <div class="nav-buttons">
     <div class="nav-left">
       <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
+      {% include 'components/filters.html' %}
     </div>
     <div class="nav-right">
       <div class="hamburger-menu-wrapper">
@@ -49,9 +50,6 @@
   <div class="loading-progress">
     <div class="loading-progress-bar" style="width: 0%"></div>
   </div>
-
-  <!-- ✅ 필터 영역 -->
-  {% include 'components/filters.html' %}
 
   <!-- ✅ 성과 요약 -->
   <section class="performance-summary-full-width">

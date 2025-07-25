@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 140px;
+  padding-top: 80px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -100,6 +100,7 @@ body {
 .nav-left {
   display: flex;
   align-items: center;
+  gap: var(--spacing-lg);
 }
 
 .nav-right {
@@ -177,24 +178,7 @@ body {
 
 
 
-/* 필터 영역 (상단 고정) */
-.filter-wrapper {
-  background: var(--bg-secondary);
-  padding: var(--spacing-md);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--spacing-md);
-  position: fixed;
-  top: 60px;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  box-shadow: var(--shadow-md);
-  border-bottom: 1px solid var(--border-light);
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.95);
-}
+
 
 /* 날짜 직접입력 영역 */
 .date-range-container {

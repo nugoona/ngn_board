@@ -301,8 +301,12 @@ function showBlockingAlert(afterPopup) {
 }
 
 async function fetchFilteredData() {
-  if (isLoading) return;
+  if (isLoading) {
+    console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
+    return;
+  }
   isLoading = true;
+  console.log("[DEBUG] 로딩 시작 - isLoading = true");
 
   const pathname = window.location.pathname;
   const selectedPeriod = $("#periodFilter").val();
@@ -403,6 +407,7 @@ async function fetchFilteredData() {
     console.error("[ERROR] fetchFilteredData 순차 요청 중 오류 발생:", e);
   } finally {
     isLoading = false;
+    console.log("[DEBUG] 로딩 완료 - isLoading = false");
   }
 }
 

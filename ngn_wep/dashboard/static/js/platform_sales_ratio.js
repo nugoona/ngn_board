@@ -62,7 +62,7 @@ function renderPlatformSalesRatioChart() {
     }
   });
   const values = top5.map(item => item.sales_ratio_percent);
-  const actualSales = top5.map(item => cleanData(item.sales));  // ✅ 실제 매출
+  const actualSales = top5.map(item => item.sales);  // 원본 숫자 값 유지
 
   // 기존 차트 인스턴스 제거
   if (chartInstance_platform) chartInstance_platform.destroy();
@@ -182,9 +182,10 @@ function renderPlatformSalesRatioChart() {
         fontSize: '14px'
       },
       custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const sales = actualSales[seriesIndex] || '0';
+        const sales = actualSales[seriesIndex] || 0;
         const percentage = series[seriesIndex];
         const label = labels[seriesIndex];
+        const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
         return `<div class="custom-tooltip" style="
           background: rgba(255, 255, 255, 0.98);
           border: 1px solid rgba(99, 102, 241, 0.2);
@@ -204,7 +205,7 @@ function renderPlatformSalesRatioChart() {
             font-weight: 500;
             font-size: 13px;
             color: #6366f1;
-          ">₩${sales} (${percentage.toFixed(1)}%)</div>
+          ">₩${formattedSales} (${percentage.toFixed(1)}%)</div>
         </div>`;
       }
     },

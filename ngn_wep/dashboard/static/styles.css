@@ -453,6 +453,7 @@ th {
   width: 100%;
   gap: var(--spacing-md);
   overflow-x: auto;
+  min-width: 0; /* 추가: flex 아이템 축소 허용 */
 }
 
 /* ✅ 사이트 성과 요약 - 한 줄 고정 */
@@ -503,7 +504,8 @@ th {
   padding: var(--spacing-xl);
   border-radius: var(--radius-xl);
   flex: 1 1 0;
-  min-width: 140px;
+  min-width: 120px; /* 축소: 140px에서 120px로 */
+  max-width: 200px; /* 추가: 최대 너비 제한 */
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   display: flex;

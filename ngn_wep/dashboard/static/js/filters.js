@@ -24,6 +24,7 @@ window.onload = async function () {
 };
 
 let isRestoringFilter = false;  // 🔹 전역 플래그
+let startDatePicker, endDatePicker;  // 🔹 Flatpickr 인스턴스
 
 function safelyRestoreSelect($select, prevValue) {
   isRestoringFilter = true;
@@ -34,9 +35,73 @@ function safelyRestoreSelect($select, prevValue) {
   }, 10);
 }
 
+// ✅ Flatpickr 초기화 함수
+function initializeFlatpickr() {
+  // Flatpickr가 로드되었는지 확인
+  if (typeof flatpickr === 'undefined') {
+    console.warn('Flatpickr not loaded, retrying in 100ms...');
+    setTimeout(initializeFlatpickr, 100);
+    return;
+  }
+
+  const commonConfig = {
+    locale: 'ko',
+    dateFormat: 'Y-m-d',
+    allowInput: false,
+    clickOpens: true,
+    theme: 'material_blue',
+    disableMobile: false,
+    onChange: function(selectedDates, dateStr, instance) {
+      // 날짜 변경 시 기존 로직 실행
+      if (instance.element.id === 'startDate') {
+        $("#startDate").trigger('change');
+      } else if (instance.element.id === 'endDate') {
+        $("#endDate").trigger('change');
+      }
+    }
+  };
+
+  // 기존 인스턴스가 있으면 제거
+  if (startDatePicker) {
+    startDatePicker.destroy();
+  }
+  if (endDatePicker) {
+    endDatePicker.destroy();
+  }
+
+  // 시작일 Flatpickr
+  startDatePicker = flatpickr("#startDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 종료일이 선택되어 있으면 최대 날짜 제한
+      const endDate = endDatePicker?.selectedDates[0];
+      if (endDate) {
+        instance.set('maxDate', endDate);
+      }
+    }
+  });
+
+  // 종료일 Flatpickr
+  endDatePicker = flatpickr("#endDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 시작일이 선택되어 있으면 최소 날짜 제한
+      const startDate = startDatePicker?.selectedDates[0];
+      if (startDate) {
+        instance.set('minDate', startDate);
+      }
+    }
+  });
+}
+
 function initializeFilters() {
   const savedCompany = sessionStorage.getItem("selectedCompany") || "all";
   const savedPeriod = sessionStorage.getItem("selectedPeriod") || "today";
+
+  // ✅ Flatpickr 초기화
+  initializeFlatpickr();
 
   const $accountFilter = $("#accountFilter").empty();
   const isDemoUser = currentUserId === "demo";
@@ -108,8 +173,13 @@ function initializeFilters() {
 
   if (selectedValue === "manual") {
     $("#dateRangeContainer").fadeIn().css("display", "flex");
+    // Flatpickr 인스턴스 재활성화
+    startDatePicker?.enable();
+    endDatePicker?.enable();
   } else {
     $("#dateRangeContainer").fadeOut();
+    startDatePicker?.clear();
+    endDatePicker?.clear();
     $("#startDate").val("");
     $("#endDate").val("");
 
@@ -178,6 +248,10 @@ function initializeFilters() {
       return;
     }
 
+    // Flatpickr 인스턴스 초기화
+    startDatePicker?.clear();
+    endDatePicker?.clear();
+    
     $("#startDate").val("");
     $("#endDate").val("");
     $("#periodFilter").val("manual").trigger("change");

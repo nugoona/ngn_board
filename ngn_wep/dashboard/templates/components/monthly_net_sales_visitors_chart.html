@@ -20,8 +20,56 @@
     </div>
   </div>
 
-  <!-- 오른쪽: 차트 -->
+  <!-- 오른쪽: ApexCharts 차트 -->
   <div class="monthly-summary-chart-wrapper">
-    <canvas id="monthlyNetSalesVisitorsChart"></canvas>
+    <div id="monthlyNetSalesVisitorsChart"></div>
   </div>
 </div>
+
+<!-- ✅ ApexCharts CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
+
+<!-- ✅ ApexCharts JS -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+
+<style>
+/* ✅ ApexCharts 커스텀 스타일 */
+.monthly-summary-chart-wrapper {
+  height: 400px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#monthlyNetSalesVisitorsChart {
+  height: 100%;
+  width: 100%;
+}
+
+/* ApexCharts 툴팁 커스터마이징 */
+.apexcharts-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.apexcharts-legend {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-legend-text {
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+</style>

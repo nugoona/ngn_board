@@ -31,6 +31,13 @@ function fetchMonthlyNetSalesVisitors() {
 }
 
 function renderMonthlyNetSalesVisitorsChart(rawData) {
+  // ApexCharts가 로드되었는지 확인
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 100ms...');
+    setTimeout(() => renderMonthlyNetSalesVisitorsChart(rawData), 100);
+    return;
+  }
+
   const uniqueDataMap = {};
   rawData.forEach(item => {
     uniqueDataMap[item.date] = item;
@@ -41,88 +48,189 @@ function renderMonthlyNetSalesVisitorsChart(rawData) {
   const netSales = data.map(d => d.net_sales);
   const totalVisitors = data.map(d => d.total_visitors);
 
-  const ctx = document.getElementById("monthlyNetSalesVisitorsChart").getContext("2d");
-
+  // 기존 차트 인스턴스 제거
   if (chartInstance) {
     chartInstance.destroy();
   }
 
-  chartInstance = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "매출",
-          data: netSales,
-          backgroundColor: "rgba(54, 162, 235, 0.6)",
-          yAxisID: "y",
-          barPercentage: 0.8
-        },
-        {
-          label: "유입",
-          data: totalVisitors,
-          backgroundColor: "rgba(255, 206, 86, 0.6)",
-          yAxisID: "y1",
-          barPercentage: 0.8
+  // ApexCharts 옵션 설정
+  const options = {
+    series: [
+      {
+        name: '매출',
+        type: 'column',
+        data: netSales,
+        color: '#6366f1'
+      },
+      {
+        name: '유입',
+        type: 'line',
+        data: totalVisitors,
+        color: '#f59e0b'
+      }
+    ],
+    chart: {
+      height: 350,
+      type: 'line',
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      toolbar: {
+        show: true,
+        tools: {
+          download: true,
+          selection: false,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true
         }
-      ]
+      },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350
+        }
+      }
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-          labels: {
-            font: { size: 14 }
-          },
-          onClick: (e, legendItem, legend) => {
-            const index = legendItem.datasetIndex;
-            const ci = legend.chart;
-            const clicked = ci.data.datasets[index];
-            const isOnlyVisible = ci.data.datasets.filter(ds => !ds.hidden).length === 1;
-
-            if (!clicked.hidden && isOnlyVisible) {
-              // 모두 보이게
-              ci.data.datasets.forEach(ds => ds.hidden = false);
-            } else {
-              // 클릭한 것만 보이게
-              ci.data.datasets.forEach((ds, i) => {
-                ds.hidden = i !== index;
-              });
-            }
-            ci.update();
+    stroke: {
+      width: [0, 4],
+      curve: 'smooth'
+    },
+    plotOptions: {
+      bar: {
+        columnWidth: '60%',
+        borderRadius: 8,
+        dataLabels: {
+          position: 'top'
+        }
+      }
+    },
+    fill: {
+      opacity: [0.85, 1],
+      gradient: {
+        inverseColors: false,
+        shade: 'light',
+        type: "vertical",
+        opacityFrom: 0.85,
+        opacityTo: 0.55,
+        stops: [0, 100, 100, 100]
+      }
+    },
+    labels: labels,
+    markers: {
+      size: 6,
+      colors: ['#f59e0b'],
+      strokeColors: '#ffffff',
+      strokeWidth: 2,
+      hover: {
+        size: 8
+      }
+    },
+    yaxis: [
+      {
+        title: {
+          text: '매출 (원)',
+          style: {
+            color: '#6366f1',
+            fontSize: '14px',
+            fontWeight: 600
           }
         },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const value = context.raw || 0;
-              return `${context.dataset.label}: ${value.toLocaleString()}`;
-            }
+        labels: {
+          formatter: function(val) {
+            return val.toLocaleString();
+          },
+          style: {
+            colors: '#6366f1',
+            fontSize: '12px'
           }
         }
       },
-      scales: {
-        y: {
-          title: { display: false },
-          position: "left",
-          ticks: {
-            callback: (value) => value.toLocaleString()
+      {
+        opposite: true,
+        title: {
+          text: '유입 (명)',
+          style: {
+            color: '#f59e0b',
+            fontSize: '14px',
+            fontWeight: 600
           }
         },
-        y1: {
-          title: { display: false },
-          position: "right",
-          grid: { drawOnChartArea: false },
-          ticks: {
-            callback: (value) => value.toLocaleString()
+        labels: {
+          formatter: function(val) {
+            return val.toLocaleString();
+          },
+          style: {
+            colors: '#f59e0b',
+            fontSize: '12px'
           }
         }
       }
-    }
-  });
+    ],
+    tooltip: {
+      shared: true,
+      intersect: false,
+      theme: 'light',
+      style: {
+        fontSize: '14px'
+      },
+      y: {
+        formatter: function(val) {
+          return val.toLocaleString();
+        }
+      }
+    },
+    legend: {
+      position: 'top',
+      horizontalAlign: 'center',
+      fontSize: '14px',
+      fontWeight: 600,
+      markers: {
+        radius: 6
+      },
+      itemMargin: {
+        horizontal: 20
+      }
+    },
+    grid: {
+      borderColor: '#e5e7eb',
+      strokeDashArray: 5,
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
+      }
+    },
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: {
+            height: 300
+          },
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    ]
+  };
+
+  // ApexCharts 인스턴스 생성
+  chartInstance = new ApexCharts(document.querySelector("#monthlyNetSalesVisitorsChart"), options);
+  chartInstance.render();
 }
 
 function renderMonthlySummaryTable(rawData) {
@@ -145,3 +253,6 @@ function renderMonthlySummaryTable(rawData) {
     tbody.append(tr);
   });
 }
+
+// 전역 함수로 노출
+window.fetchMonthlyNetSalesVisitors = fetchMonthlyNetSalesVisitors;

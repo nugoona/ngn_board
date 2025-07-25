@@ -250,7 +250,7 @@ body {
 
 .table-main-section {
   position: relative;
-  height: 400px;
+  height: 500px; /* 높이 증가 */
   overflow: hidden;
 }
 
@@ -265,6 +265,7 @@ body {
 .table-header-fixed table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* 고정 레이아웃 */
 }
 
 .table-header-fixed th {
@@ -273,23 +274,30 @@ body {
   font-weight: 600;
   font-size: 14px;
   border: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-body-scrollable {
   height: calc(100% - 50px); /* 헤더 높이 제외 */
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden; /* 가로 스크롤 제거 */
 }
 
 .table-body-scrollable table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* 고정 레이아웃 */
 }
 
 .table-body-scrollable td {
   padding: 12px 8px;
   border-bottom: 1px solid #e5e7eb;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-body-scrollable tr:hover {

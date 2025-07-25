@@ -7,23 +7,12 @@ let lastXhrProductSales = null;
 $(document).ready(function () {
   console.log("[DEBUG] Cafe24 상품 판매 데이터 JS 로드됨");
 
-  // ✅ 정렬 필터 UI 삽입
-  $("#cafe24ProductSalesTable").before(`
-    <div class="sort-filter" style="float: right; margin-bottom: 10px; font-size: 18px;">
-      <label style="margin-right: 5px; padding: 6px;">
-        <input type="radio" name="productSortType" value="item_quantity"> <b>판매순</b>
-      </label>
-      <label style="padding: 6px;">
-        <input type="radio" name="productSortType" value="item_product_sales" checked> <b>매출순</b>
-      </label>
-    </div>
-  `);
-
-  $("input[name='productSortType']").change(() => {
+  // ✅ HTML의 라디오 버튼과 연동
+  $("input[name='cafe24_product_sort']").change(() => {
     cafe24ProductSalesCurrentPage = 1;
     const req = getRequestData(1, {
       data_type: "cafe24_product_sales",
-      sort_by: $("input[name='productSortType']:checked").val()
+      sort_by: $("input[name='cafe24_product_sort']:checked").val()
     });
     fetchCafe24ProductSalesData(req);
   });
@@ -69,7 +58,7 @@ function renderCafe24ProductSalesPagination() {
 
   if (totalPages <= 1) return;
 
-  const sort_by = $("input[name='productSortType']:checked").val();
+  const sort_by = $("input[name='cafe24_product_sort']:checked").val();
 
   const $prev = $("<button class='pagination-btn'>이전</button>");
   const $next = $("<button class='pagination-btn'>다음</button>");

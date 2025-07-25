@@ -271,5 +271,86 @@ async function updateAllData() {
   }
 }
 
+// CSS 강제 적용을 위한 JavaScript
+$(document).ready(function() {
+  // 필터 강제 고정
+  function forceFilterFixed() {
+    const filterWrapper = $('.filter-wrapper');
+    if (filterWrapper.length > 0) {
+      filterWrapper.css({
+        'position': 'fixed',
+        'top': '0',
+        'left': '0',
+        'width': '100%',
+        'z-index': '9999',
+        'background': 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+        'padding': '12px',
+        'display': 'flex',
+        'align-items': 'center',
+        'justify-content': 'space-between',
+        'box-shadow': '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      });
+      
+      // body 패딩 조정
+      $('body').css('padding-top', '80px');
+      
+      console.log('✅ 필터 강제 고정 적용됨');
+    }
+  }
+  
+  // 페이지네이션 강제 표시
+  function forcePaginationVisible() {
+    const paginations = $('.pagination, .table-wrapper .pagination');
+    paginations.each(function() {
+      $(this).css({
+        'display': 'flex',
+        'justify-content': 'center',
+        'align-items': 'center',
+        'margin-top': '20px',
+        'gap': '8px',
+        'padding': '15px 0',
+        'background': 'transparent',
+        'border-radius': '8px',
+        'box-shadow': 'none',
+        'position': 'relative',
+        'z-index': '1'
+      });
+    });
+    
+    console.log('✅ 페이지네이션 강제 표시 적용됨');
+  }
+  
+  // 초기 적용
+  forceFilterFixed();
+  forcePaginationVisible();
+  
+  // 스크롤 이벤트에서도 유지
+  $(window).scroll(function() {
+    forceFilterFixed();
+  });
+  
+  // DOM 변경 감지 (동적 콘텐츠 로드 시)
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.type === 'childList') {
+        forceFilterFixed();
+        forcePaginationVisible();
+      }
+    });
+  });
+  
+  // body 전체 감시
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  // 1초마다 한 번씩 체크 (안전장치)
+  setInterval(function() {
+    forceFilterFixed();
+    forcePaginationVisible();
+  }, 1000);
+});
+
 
 

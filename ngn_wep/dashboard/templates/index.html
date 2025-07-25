@@ -23,13 +23,10 @@
 
 <body>
 
-  <!-- ✅ 통합 헤더 (업데이트 시간 + 필터 + 햄버거 메뉴) -->
+  <!-- ✅ 햄버거 메뉴와 최종 업데이트를 분리해서 정렬 -->
   <div class="nav-buttons">
     <div class="nav-left">
       <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
-      <div class="header-filters">
-        {% include 'components/filters.html' %}
-      </div>
     </div>
     <div class="nav-right">
       <div class="hamburger-menu-wrapper">
@@ -52,6 +49,13 @@
   <div class="loading-progress">
     <div class="loading-progress-bar" style="width: 0%"></div>
   </div>
+
+  <!-- ✅ 필터 영역 -->
+  <section class="filter-wrapper">
+    <div class="filter-section">
+      {% include 'components/filters.html' %}
+    </div>
+  </section>
 
   <!-- ✅ 성과 요약 -->
   <section class="performance-summary-full-width">

@@ -238,23 +238,7 @@ function renderProductSalesRatioChart() {
       }
     },
     dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
-      },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: {
-        enabled: true,
-        opacity: 0.3,
-        blur: 3,
-        left: 1,
-        top: 1
-      }
+      enabled: false // 내부 퍼센트 제거
     },
     legend: {
       position: 'left', // 왼쪽 정렬
@@ -262,15 +246,20 @@ function renderProductSalesRatioChart() {
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       fontWeight: 500,
       markers: {
-        radius: 6
+        radius: 6,
+        width: 12,
+        height: 12
       },
       itemMargin: {
-        horizontal: 10,
-        vertical: 5
+        horizontal: 15,
+        vertical: 8
       },
       formatter: function(seriesName, opts) {
         const value = opts.w.globals.series[opts.seriesIndex];
         return `${seriesName} (${value.toFixed(1)}%)`;
+      },
+      onItemClick: {
+        toggleDataSeries: false
       }
     },
     tooltip: {

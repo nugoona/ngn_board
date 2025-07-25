@@ -745,9 +745,9 @@ scrollbar-width: thin;
 
 /* ✅ 탭 활성화 스타일 */
 .tab-btn.active {
-  background-color: #2A7EC6;
+  background-color: #6366f1;
   color: white;
-  border-color: #2A7EC6;
+  border-color: #6366f1;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2); /* ✅ 그림자 조금 강하게 */
 }
 
@@ -810,7 +810,7 @@ white-space: nowrap;
 }
 
 .meta-ads-table th {
-background-color: #2A7EC6;
+background-color: #6366f1;
 color: white;
 font-weight: 600;
 font-size: 13.5px;
@@ -820,13 +820,13 @@ cursor: pointer;
 
 /* ✅ 정렬된 컬럼 강조 */
 .meta-ads-table th.sorted {
-background-color: #1f65a3 !important;
+background-color: #4f46e5 !important;
 color: white;
 }
 
 /* ✅ 마우스 오버 효과 */
 .meta-ads-table th:hover {
-background-color: #3b90d6 !important;
+background-color: #7c3aed !important;
 }
 
 /* ✅ 짝수 행 배경 */
@@ -846,18 +846,18 @@ display: table-row-group; /* 일부 브라우저 대응 */
 }
 
 .meta-ads-table tfoot tr {
-background-color: #e0f1ff;
+background-color: #f3f4f6;
 font-weight: bold;
-color: #003366;
+color: #374151;
 }
 
 .meta-ads-table tfoot td {
-border-top: 2px solid #a0c4ff;
+border-top: 2px solid #d1d5db;
 }
 
 /* ✅ 광고 바로가기 링크 */
 .meta-ads-table a {
-color: #2a7ec6;
+color: #6366f1;
 font-weight: 600;
 text-decoration: none;
 }
@@ -871,10 +871,10 @@ text-decoration: underline;
 font-size: 16px;
 font-weight: 600;
 padding: 10px 18px;
-background-color: #eef5ff;
-border: 1px solid #c6dfff;
+background-color: #f3f4f6;
+border: 1px solid #e5e7eb;
 border-radius: 8px;
-color: #2A7EC6;
+color: #6366f1;
 display: inline-block;
 box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -885,7 +885,7 @@ position: fixed;
 top: 25%;
 left: 50%;
 transform: translate(-50%, -50%);
-background-color: #2a7ec6;
+background-color: #6366f1;
 color: #fff;
 padding: 16px 24px;
 border-radius: 8px;

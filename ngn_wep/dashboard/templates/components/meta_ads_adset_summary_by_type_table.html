@@ -30,7 +30,7 @@
     </div>
 
     <!-- ✅ 오른쪽: ApexCharts 차트 영역 -->
-    <div class="campaign-goal-chart-wrapper">
+    <div class="campaign-goal-chart-wrapper" style="flex: 0 0 40% !important; max-width: 40% !important; min-width: 350px !important; padding-left: 20px; padding-right: 20px; margin-right: 20px;">
       {% include 'components/meta_ads_adset_summary_chart.html' %}
     </div>
 
@@ -40,8 +40,14 @@
 <style>
 /* ✅ ApexCharts 파이 차트 커스텀 스타일 */
 .campaign-goal-chart-wrapper {
-  flex: 0 0 40%;
-  max-width: 40%;
+  flex: 0 0 40% !important;
+  max-width: 40% !important;
+  min-width: 350px !important;
   padding-left: 20px;
+  padding-right: 20px;
+  margin-right: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

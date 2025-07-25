@@ -31,16 +31,7 @@
 
     <!-- ✅ 오른쪽: ApexCharts 차트 영역 -->
     <div class="campaign-goal-chart-wrapper">
-      <div class="product-sales-ratio-chart">
-        <div class="pie-chart-container">
-          <div class="pie-label">
-            목표별 지출 비중
-          </div>
-          <div class="pie-chart-wrapper">
-            <div id="metaAdsAdsetSummaryChart"></div>
-          </div>
-        </div>
-      </div>
+      {% include 'components/meta_ads_adset_summary_chart.html' %}
     </div>
 
   </div>
@@ -52,66 +43,5 @@
   flex: 0 0 40%;
   max-width: 40%;
   padding-left: 20px;
-}
-
-.product-sales-ratio-chart {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-}
-
-.pie-chart-container {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  text-align: center;
-  height: 400px;
-}
-
-.pie-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 20px;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-}
-
-.pie-chart-wrapper {
-  height: 320px;
-  width: 100%;
-}
-
-#metaAdsAdsetSummaryChart {
-  height: 100%;
-  width: 100%;
-}
-
-/* ApexCharts 툴팁 커스터마이징 */
-.apexcharts-tooltip {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
-}
-
-.apexcharts-tooltip-title {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-  font-weight: 600 !important;
-  color: #374151 !important;
-}
-
-.apexcharts-legend {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
-}
-
-.apexcharts-legend-text {
-  font-weight: 500 !important;
-  color: #374151 !important;
 }
 </style>

@@ -1,33 +1,17 @@
-<!-- ✅ 테이블 + 차트 (토글 구조) -->
+<!-- components/meta_ads_adset_summary_chart.html -->
+<!-- ✅ 캠페인 목표별 차트 only -->
+<!-- 주의: 이 파일은 반드시 상위 table-wrapper 내부에서 include 되어야 함 -->
 
-<!-- 📌 테이블 본문 -->
-<div class="table-content-container">
-  <table>
-    <thead>
-      <tr>
-        <th>날짜</th>
-        <th>업체명</th>
-        <th>상품명</th>
-        <th>총 판매량</th>
-        <th>총 매출</th>
-        <th>매출비중(%)</th>
-      </tr>
-    </thead>
-    <tbody id="productSalesRatioTableBody">
-      <!-- JS에서 채워짐 -->
-    </tbody>
-  </table>
-  <div id="pagination_product_sales_ratio" class="pagination"></div>
-</div>
-
-<!-- 📌 토글 버튼 -->
-<div class="platform-sales-toggle-bar no-border" style="margin-top: -8px;">
-  <button id="toggleProductSalesRatioChart" class="toggle-btn">상위 TOP5 차트 보기</button>
-</div>
-
-<!-- 📌 비중 차트 포함 영역 -->
-<div id="productSalesRatioChartContainer" style="display: none; margin-top: 20px;">
-  {% include 'components/product_sales_ratio_chart.html' %}
+<!-- ✅ ApexCharts 파이차트 전체 가운데 정렬 -->
+<div class="product-sales-ratio-chart">
+  <div class="pie-chart-container">
+    <div class="pie-label">
+      목표별 지출 비중
+    </div>
+    <div class="pie-chart-wrapper">
+      <div id="metaAdsAdsetSummaryChart"></div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -46,6 +30,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
+  height: 400px;
 }
 
 .pie-label {
@@ -57,11 +42,11 @@
 }
 
 .pie-chart-wrapper {
-  height: 400px;
+  height: 320px;
   width: 100%;
 }
 
-#productSalesRatioChart {
+#metaAdsAdsetSummaryChart {
   height: 100%;
   width: 100%;
 }
@@ -91,5 +76,4 @@
   font-weight: 500 !important;
   color: #374151 !important;
 }
-</style>
-
+</style> 

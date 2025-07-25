@@ -125,7 +125,7 @@ async function updateAllData() {
   
   // 🔥 모든 위젯의 로딩 스피너 즉시 표시
   const loadingOverlays = [
-    "#loadingOverlayPerformanceSummary",
+    "#loadingOverlayPerformanceSummary",  // 🔥 복구 - 연계성 유지
     "#loadingOverlayCafe24Sales", 
     "#loadingOverlayCafe24Products",
     "#loadingOverlayGa4Source",
@@ -254,14 +254,16 @@ async function updateAllData() {
       debugError("[ERROR] fetchProductSalesRatio 실패:", e);
     }
 
-    // 🔥 모든 데이터 요청 완료 후 사이트 성과 요약 로딩 스피너 숨김
-    debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
-    hideLoading("#loadingOverlayPerformanceSummary");
+    // 🔥 모든 데이터 요청 완료 후 사이트 성과 요약 로딩 스피너 숨김 - 제거
+    // 🔥 performance_summary.js에서 독립적으로 관리하므로 dashboard.js에서 숨기지 않음
+    // debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
+    // hideLoading("#loadingOverlayPerformanceSummary");
 
   } catch (e) {
     debugError("[ERROR] updateAllData() 전체 오류:", e);
-    // 에러 발생 시에도 로딩 스피너 숨김
-    hideLoading("#loadingOverlayPerformanceSummary");
+    // 🔥 에러 발생 시에도 로딩 스피너 숨김 - 제거
+    // 🔥 performance_summary.js에서 독립적으로 관리
+    // hideLoading("#loadingOverlayPerformanceSummary");
   } finally {
     isLoading = false;
     // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음

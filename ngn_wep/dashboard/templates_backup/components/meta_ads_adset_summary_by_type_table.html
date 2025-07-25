@@ -1,0 +1,43 @@
+<section class="table-wrapper full-wide loading-check-wrapper">
+  <h2 class="summary-section-title">캠페인 목표별 성과 요약</h2>
+
+  <!-- ✅ 로딩 스피너 -->
+  <div id="loadingOverlayTypeSummary" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">데이터를 불러오는 중입니다...</div>
+  </div>
+
+  <!-- ✅ 테이블 + 차트 통합 wrapper -->
+  <div class="product-sales-ratio-wrapper">
+
+    <!-- ✅ 왼쪽: 테이블 영역 -->
+    <div class="product-sales-ratio-table" style="flex: 0 0 60%; max-width: 60%;">
+      <table id="metaAdsAdsetSummaryTable" class="data-table">
+        <thead>
+          <tr>
+            <th>캠페인 목표</th>
+            <th>지출</th>
+            <th>노출당비용</th>
+            <th>클릭당비용</th>
+            <th>구매</th>
+            <th>ROAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JS로 데이터 렌더링됨 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ✅ 오른쪽: 차트 영역 -->
+    <div class="campaign-goal-chart-wrapper">
+      <div class="campaign-goal-chart-box">
+        <div class="campaign-goal-label">목표별 지출 비중</div>
+        <div class="campaign-goal-chart-canvas-wrapper">
+          <canvas id="metaAdsAdsetSummaryChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

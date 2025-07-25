@@ -100,6 +100,8 @@ async function fetchPerformanceSummaryData() {
     } finally {
         // 🔥 사이트 성과 요약만 2중 로딩 스피너 (performance_summary.js에서 추가)
         toggleLoading(false);
+        // 🔥 dashboard.js의 로딩 스피너도 함께 숨김 (연계성 유지)
+        hideLoading("#loadingOverlayPerformanceSummary");
     }
 }
 

@@ -112,11 +112,38 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     typePieChartInstance.destroy();
   }
 
-  if (totalSpendSum === 0) {
-    chartContainer.style.display = "none";
+  // 차트를 항상 표시하도록 수정
+  chartContainer.style.display = "block";
+
+  // 데이터가 없거나 총 지출이 0인 경우 빈 차트 표시
+  if (!data || data.length === 0 || totalSpendSum === 0) {
+    const emptyOptions = {
+      series: [100],
+      chart: {
+        type: 'pie',
+        height: 400,
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif'
+      },
+      labels: ['데이터 없음'],
+      colors: ['#e5e7eb'],
+      plotOptions: {
+        pie: {
+          dataLabels: {
+            enabled: false
+          }
+        }
+      },
+      legend: {
+        show: false
+      },
+      tooltip: {
+        enabled: false
+      }
+    };
+    
+    typePieChartInstance = new ApexCharts(document.querySelector("#metaAdsAdsetSummaryChart"), emptyOptions);
+    typePieChartInstance.render();
     return;
-  } else {
-    chartContainer.style.display = "block";
   }
 
   const labels = data.map(row => row.type || "-");

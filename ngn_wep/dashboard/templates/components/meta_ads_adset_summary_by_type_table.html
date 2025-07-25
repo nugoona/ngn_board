@@ -31,10 +31,14 @@
 
     <!-- ✅ 오른쪽: ApexCharts 차트 영역 -->
     <div class="campaign-goal-chart-wrapper">
-      <div class="campaign-goal-chart-box">
-        <div class="campaign-goal-label">목표별 지출 비중</div>
-        <div class="campaign-goal-chart-canvas-wrapper">
-          <div id="metaAdsAdsetSummaryChart"></div>
+      <div class="product-sales-ratio-chart">
+        <div class="pie-chart-container">
+          <div class="pie-label">
+            목표별 지출 비중
+          </div>
+          <div class="pie-chart-wrapper">
+            <div id="metaAdsAdsetSummaryChart"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -50,25 +54,32 @@
   padding-left: 20px;
 }
 
-.campaign-goal-chart-box {
+.product-sales-ratio-chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.pie-chart-container {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
   height: 400px;
 }
 
-.campaign-goal-label {
+.pie-label {
   font-size: 18px;
   font-weight: 600;
   color: #374151;
   margin-bottom: 20px;
-  text-align: center;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-.campaign-goal-chart-canvas-wrapper {
+.pie-chart-wrapper {
   height: 320px;
   width: 100%;
 }

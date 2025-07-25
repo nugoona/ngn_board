@@ -27,22 +27,42 @@
 
 <!-- 📌 ApexCharts 파이 차트 영역 -->
 <div id="productSalesRatioChartContainer" style="display: none; margin-top: 20px;">
-  <div class="pie-chart-container">
-    <div class="pie-label">매출 상위 TOP5</div>
-    <div class="pie-chart-wrapper">
-      <div id="productSalesRatioChart"></div>
+  <div class="product-sales-ratio-chart">
+    <div class="pie-chart-container">
+      <div class="pie-label">
+        매출 상위 TOP5
+      </div>
+      <div class="pie-chart-wrapper">
+        <div id="productSalesRatioChart"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <style>
 /* ✅ ApexCharts 파이 차트 커스텀 스타일 */
+.product-sales-ratio-chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
 .pie-chart-container {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.pie-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 20px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
 .pie-chart-wrapper {
@@ -53,15 +73,6 @@
 #productSalesRatioChart {
   height: 100%;
   width: 100%;
-}
-
-.pie-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 20px;
-  text-align: center;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
 /* ApexCharts 툴팁 커스터마이징 */

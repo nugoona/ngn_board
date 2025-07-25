@@ -217,37 +217,122 @@ body {
  ✅ 테이블 컨테이너
 ================================ */
 
+/* 🏗️ 새로운 테이블 구조 스타일 */
+.table-filter-section {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 100;
+  padding: 15px 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 10px;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+}
+
+.radio-label input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.table-main-section {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.table-header-fixed {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #6366f1;
+  color: white;
+}
+
+.table-header-fixed table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-header-fixed th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+}
+
+.table-body-scrollable {
+  height: calc(100% - 50px); /* 헤더 높이 제외 */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table-body-scrollable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-body-scrollable td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.table-body-scrollable tr:hover {
+  background-color: #f9fafb;
+}
+
+.table-pagination-section {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  z-index: 100;
+  padding: 15px 0;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 10px;
+}
+
 
 
 /* 테이블 래퍼에서 페이지네이션 항상 표시 */
 .table-wrapper {
   position: relative;
   overflow: visible;
-}
-.table-wrapper {
   background: white;
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
-  position: relative;
   /* 폭 자체는 .left-wide / .right-narrow에서 결정 */
 }
 
-/* ✅ 모든 테이블 헤더 고정 */
+/* ✅ 기존 테이블 스타일 (호환성 유지) */
 thead th {
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #6366f1; /* 배경 필수 */
+  background-color: #6366f1;
 }
 
-/* 테이블 높이가 넘어가면 내부 스크롤 */
 .table-content-container {
   position: relative;
-  max-height: 400px; /* 페이지네이션과 겹치지 않도록 높이 조정 */
-  overflow: auto;    /* 스크롤 활성화 */
-  margin-bottom: 60px; /* 페이지네이션과의 간격 증가 */
+  max-height: 400px;
+  overflow: auto;
+  margin-bottom: 60px;
   
   /* 모던한 스크롤바 스타일 */
   scrollbar-width: thin;

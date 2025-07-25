@@ -126,6 +126,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
   backdrop-filter: blur(10px);
+  position: relative;
+  cursor: pointer;
 }
 
 .header-filters .custom-dropdown:hover {
@@ -135,11 +137,38 @@ body {
 
 .header-filters .custom-dropdown select {
   color: white;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  opacity: 1;
+  position: relative;
+  z-index: 2;
 }
 
 .header-filters .custom-dropdown select option {
   background: var(--primary);
   color: white;
+}
+
+.header-filters .custom-dropdown .selected-text {
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.header-filters .custom-dropdown .dropdown-icon {
+  color: white;
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .nav-buttons a {
@@ -208,6 +237,15 @@ body {
   width: 100%;
   height: 100%;
   cursor: pointer;
+}
+
+/* 헤더 필터에서는 select를 보이게 */
+.header-filters .custom-dropdown select {
+  opacity: 1;
+  position: relative;
+  width: auto;
+  height: auto;
+  padding: var(--spacing-sm) 30px var(--spacing-sm) 10px;
 }
 
 /* 날짜 직접입력 영역 */
@@ -2873,6 +2911,12 @@ h2::before {
   .header-filters .custom-dropdown {
     width: 100%;
     min-width: 120px;
+  }
+  
+  .header-filters .custom-dropdown select {
+    width: 100%;
+    padding: var(--spacing-xs) 25px var(--spacing-xs) 8px;
+    font-size: 12px;
   }
   
   .nav-buttons a {

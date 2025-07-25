@@ -92,8 +92,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-xl);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  border-bottom: 1px solid var(--primary-dark);
+  background: #6b46c1;
+  border-bottom: 1px solid #553c9a;
   box-shadow: var(--shadow-lg);
 }
 

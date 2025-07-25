@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 140px;
+  padding-top: 80px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -100,11 +100,46 @@ body {
 .nav-left {
   display: flex;
   align-items: center;
+  gap: var(--spacing-lg);
 }
 
 .nav-right {
   display: flex;
   align-items: center;
+}
+
+/* 헤더 내 필터 스타일 */
+.header-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header-filters .filter-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header-filters .custom-dropdown {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.header-filters .custom-dropdown:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.header-filters .custom-dropdown select {
+  color: white;
+}
+
+.header-filters .custom-dropdown select option {
+  background: var(--primary);
+  color: white;
 }
 
 .nav-buttons a {
@@ -136,24 +171,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* 필터 영역 (상단 고정) */
-.filter-wrapper {
-  background: var(--bg-secondary);
-  padding: var(--spacing-md);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--spacing-md);
-  position: fixed;
-  top: 60px;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  box-shadow: var(--shadow-md);
-  border-bottom: 1px solid var(--border-light);
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.95);
-}
+
 .filter-section {
   display: flex;
   align-items: center;
@@ -2838,6 +2856,23 @@ h2::before {
   .nav-left {
     top: var(--spacing-sm);
     left: var(--spacing-sm);
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .header-filters {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .header-filters .filter-section {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .header-filters .custom-dropdown {
+    width: 100%;
+    min-width: 120px;
   }
   
   .nav-buttons a {

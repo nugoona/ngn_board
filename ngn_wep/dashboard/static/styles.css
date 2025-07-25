@@ -423,32 +423,64 @@ th {
   border-radius: var(--radius-sm);
 }
 
-/* ✅ 카드 줄: 여러 줄 허용, 카드 크기 조정 */
+/* ✅ 카드 줄: 한 줄 고정, 카드 자동 크기 조정 */
 .summary-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
+  overflow-x: auto;
 }
 
-/* ✅ 사이트 성과 요약 - 여러 줄 허용 */
+/* ✅ 사이트 성과 요약 - 한 줄 고정 */
 .site-summary {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
-/* ✅ 총 광고 성과 - 여러 줄 허용 */
+/* ✅ 총 광고 성과 - 한 줄 고정 */
 .ad-summary {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+/* ✅ 성과 요약 섹션 스크롤바 스타일 */
+.performance-summary-section .summary-grid {
+  /* 모던한 스크롤바 스타일 */
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #f1f5f9;
+}
+
+/* Webkit 브라우저용 스크롤바 스타일 */
+.performance-summary-section .summary-grid::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.performance-summary-section .summary-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.performance-summary-section .summary-grid::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.performance-summary-section .summary-grid::-webkit-scrollbar-thumb:hover {
+  background: #4f46e5;
+}
+
+.performance-summary-section .summary-grid::-webkit-scrollbar-corner {
+  background: #f1f5f9;
 }
 
 /* ✅ 카드 공통 스타일 */
 .summary-card {
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  flex: 0 1 calc(20% - var(--spacing-sm));
-  min-width: 120px;
-  max-width: 180px;
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-xl);
+  flex: 1 1 0;
+  min-width: 140px;
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   display: flex;
@@ -476,17 +508,17 @@ th {
 
 /* ✅ 카드 내부 라벨 */
 .summary-card .label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 /* ✅ 카드 내부 값 */
 .summary-card .value {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   text-align: right;
@@ -2636,14 +2668,17 @@ div[class*="loading-overlay"],
 
 /* 로딩 텍스트 */
 .loading-text {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  background: var(--bg-secondary);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
+  font-size: 16px;
+  color: #374151;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
 /* ================================

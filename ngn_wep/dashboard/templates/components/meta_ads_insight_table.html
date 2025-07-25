@@ -2,19 +2,18 @@
   <h2 class="summary-section-title">META 광고 성과</h2>
 
   <!-- ✅ 계정 선택 + 날짜 필터 + 일자/기간 토글 -->
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-    <div style="display: flex; align-items: center;">
-
-      <!-- ✅ 계정 선택 드롭다운 -->
-      <select id="metaAccountSelector" style="padding: 6px 10px; font-size: 14px; margin-right: 20px;">
+  <div class="widget-filter-header">
+    <div class="filter-row">
+      <label>계정:</label>
+      <select id="metaAccountSelector" class="dropdown">
         <option value="">모든 계정</option>
         <!-- ✅ JavaScript로 계정 목록 채워짐 -->
       </select>
 
-      <!-- ✅ 일자별 / 기간합 토글 -->
-      <div id="metaDateTypeToggle" style="display: flex; align-items: center;">
+      <label style="margin-left: 20px;">데이터 유형:</label>
+      <div id="metaDateTypeToggle" style="display: flex; align-items: center; gap: 15px;">
         <label><input type="radio" name="metaDateType" value="summary" checked> 기간합</label>
-        <label style="margin-left: 10px;"><input type="radio" name="metaDateType" value="daily"> 일자별</label>
+        <label><input type="radio" name="metaDateType" value="daily"> 일자별</label>
       </div>
     </div>
   </div>

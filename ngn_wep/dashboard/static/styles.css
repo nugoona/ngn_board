@@ -64,7 +64,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   margin: 0;
-  padding-top: 80px;
+  padding-top: 140px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -80,8 +80,40 @@ body {
 
 
 /* ================================
- 2) 네비게이션 + 필터
+ 2) 대시보드 헤드 + 네비게이션
 ================================ */
+.dashboard-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  z-index: 1200;
+  padding: var(--spacing-md) 0;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: none;
+  margin: 0;
+  padding: 0 var(--spacing-lg);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* 기존 네비게이션 스타일 (백업용) */
 .nav-buttons {
   position: fixed;
   top: var(--spacing-md);
@@ -141,7 +173,7 @@ body {
   justify-content: flex-start;
   gap: var(--spacing-md);
   position: fixed;
-  top: 0;
+  top: 80px;
   left: 0;
   width: 100%;
   z-index: 1000;
@@ -2717,6 +2749,41 @@ h2::before {
   display: block;
 }
 
+/* 위젯 필터 헤더 고정 */
+.widget-filter-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+  margin: calc(-1 * var(--spacing-xl)) calc(-1 * var(--spacing-xl)) var(--spacing-md) calc(-1 * var(--spacing-xl));
+}
+
+.widget-filter-header .filter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.widget-filter-header .filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.widget-filter-header label {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 80px;
+}
+
+.widget-filter-header .dropdown {
+  flex: 1;
+  max-width: 200px;
+}
+
 /* 반응형 개선 */
 @media screen and (max-width: 768px) {
   body {
@@ -2863,6 +2930,37 @@ h2::before {
   .hamburger-dropdown a {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: 13px;
+  }
+  
+  /* 모바일 대시보드 헤드 */
+  .dashboard-header {
+    padding: var(--spacing-sm) 0;
+  }
+  
+  .header-content {
+    padding: 0 var(--spacing-sm);
+  }
+  
+  /* 모바일 위젯 필터 헤더 */
+  .widget-filter-header {
+    padding: var(--spacing-sm);
+    margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg)) var(--spacing-sm) calc(-1 * var(--spacing-lg));
+  }
+  
+  .widget-filter-header .filter-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .widget-filter-header label {
+    min-width: auto;
+    font-size: 14px;
+  }
+  
+  .widget-filter-header .dropdown {
+    max-width: none;
+    width: 100%;
   }
 }
 

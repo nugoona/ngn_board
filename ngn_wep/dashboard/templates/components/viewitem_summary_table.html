@@ -1,23 +1,22 @@
 <!-- GA4 상품별 조회수 필터 UI -->
-<div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+<div class="widget-filter-header">
   <!-- 1️⃣ 소스 / 국가 필터 (윗줄) -->
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <label for="sourceFilter" style="margin-right: 5px;">소스:</label>
-    <select id="sourceFilter" class="dropdown" style="width: 180px;"></select>
+  <div class="filter-row">
+    <label for="sourceFilter">소스:</label>
+    <select id="sourceFilter" class="dropdown"></select>
 
-    <label for="countryFilter" style="margin-right: 5px;">국가:</label>
-    <select id="countryFilter" class="dropdown" style="width: 180px;"></select>
+    <label for="countryFilter">국가:</label>
+    <select id="countryFilter" class="dropdown"></select>
   </div>
 
   <!-- 2️⃣ 상품명 검색 필터 (아랫줄) -->
-  <div style="display: flex; align-items: center; gap: 15px;">
-    <label for="productNameSearch" style="width: 100px;">상품명 검색:</label>
+  <div class="filter-row">
+    <label for="productNameSearch">상품명 검색:</label>
     <input
       type="text"
       id="productNameSearch"
       class="dropdown"
       placeholder="상품명을 입력하세요"
-      style="width: 250px;"
     />
   </div>
 </div>

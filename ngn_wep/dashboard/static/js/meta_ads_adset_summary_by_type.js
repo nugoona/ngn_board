@@ -107,10 +107,10 @@ function renderMetaAdsAdsetSummaryTable(data) {
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   console.log("[DEBUG] renderMetaAdsAdsetSummaryChart 호출됨", { data, totalSpendSum });
   
-  // ApexCharts가 로드되었는지 확인 (더 안정적인 방법)
-  if (typeof ApexCharts === 'undefined' || typeof window.ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 200ms...');
-    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 200);
+  // ApexCharts가 로드되었는지 확인 (간단한 방법)
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 500ms...');
+    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 500);
     return;
   }
 

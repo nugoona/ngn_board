@@ -1,10 +1,10 @@
 <!-- components/product_sales_ratio_chart.html -->
-<!-- ✅ 주요 상품 매출 비중 차트 - ApexCharts 사용 -->
+<!-- ✅ 상품 매출 비중 차트 - ApexCharts 사용 -->
 
 <div class="product-sales-ratio-chart">
   <div class="pie-chart-container">
     <div class="pie-label">
-      주요 상품 매출 비중
+      상품 상위 TOP5
     </div>
     <div class="pie-chart-wrapper">
       <div id="productSalesRatioChart"></div>
@@ -19,6 +19,7 @@
   justify-content: center;
   align-items: center;
   padding: 20px;
+  width: 100%;
 }
 
 .pie-chart-container {
@@ -28,6 +29,8 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   text-align: center;
+  width: 100%;
+  max-width: 800px;
 }
 
 .pie-label {
@@ -41,11 +44,15 @@
 .pie-chart-wrapper {
   height: 400px;
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #productSalesRatioChart {
   height: 100%;
   width: 100%;
+  max-width: 600px;
 }
 
 /* ApexCharts 툴팁 커스터마이징 */
@@ -56,6 +63,7 @@
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+  max-width: 250px !important;
 }
 
 .apexcharts-tooltip-title {
@@ -72,5 +80,19 @@
 .apexcharts-legend-text {
   font-weight: 500 !important;
   color: #374151 !important;
+}
+
+/* 차트 중앙 정렬을 위한 추가 스타일 */
+.apexcharts-canvas {
+  margin: 0 auto !important;
+}
+
+/* 범례 스타일 개선 */
+.apexcharts-legend-series {
+  margin: 8px 0 !important;
+}
+
+.apexcharts-legend-marker {
+  border-radius: 4px !important;
 }
 </style> 

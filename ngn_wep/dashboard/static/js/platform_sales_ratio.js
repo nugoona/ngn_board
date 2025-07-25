@@ -110,17 +110,24 @@ function renderPlatformSalesRatioChart() {
   console.log("[DEBUG] 플랫폼 매출 비중 top5 데이터:", top5);
 
   // ✅ 플랫폼명 한글 매핑
-  const labels = top5.map(item => {
-    switch (item.platform) {
-      case "site_official": return "자사몰";
-      case "musinsa": return "무신사";
-      default: return item.platform;
-    }
-  });
-  const values = top5.map(item => item.sales_ratio_percent);
-  const actualSales = top5.map(item => item.total_sales);
+  const platformNameMap = {
+    'site_official': '자사몰',
+    'musinsa': '무신사',
+    '29cm': '29cm',
+    'shopee': 'SHOPEE',
+    'eql': 'EQL',
+    'llud': 'LLUD',
+    'hana': 'HANA',
+    'heights': 'HEIGHTS',
+    'zigzag': '지그재그',
+    'ably': '에이블리'
+  };
 
-  console.log("[DEBUG] 플랫폼 매출 비중 차트 데이터:", { labels, values, actualSales });
+  const labels = top5.map(item => platformNameMap[item.platform] || item.platform);
+  const values = top5.map(item => item.sales_ratio_percent || 0);
+  const actualSales = top5.map(item => item.total_sales || 0);
+
+  console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
 
   // ApexCharts 옵션 설정
   const options = {
@@ -249,7 +256,7 @@ function renderPlatformSalesRatioChart() {
         breakpoint: 768,
         options: {
           chart: {
-            height: 300
+            height: 350
           },
           legend: {
             position: 'bottom'
@@ -263,5 +270,5 @@ function renderPlatformSalesRatioChart() {
   chartInstance_platform = new ApexCharts(chartContainer, options);
   chartInstance_platform.render();
 
-  console.log("[DEBUG] 플랫폼별 매출 요약 차트 렌더링 완료");
+  console.log("[DEBUG] 플랫폼 매출 비중 차트 렌더링 완료");
 }

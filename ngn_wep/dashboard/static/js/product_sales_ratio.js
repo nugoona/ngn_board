@@ -302,7 +302,7 @@ function renderProductSalesRatioChart() {
         breakpoint: 768,
         options: {
           chart: {
-            height: 300
+            height: 350
           },
           legend: {
             position: 'bottom'
@@ -316,7 +316,7 @@ function renderProductSalesRatioChart() {
   chartInstance_product = new ApexCharts(chartContainer, options);
   chartInstance_product.render();
 
-  console.log("[DEBUG] 주요 상품 매출 비중 차트 렌더링 완료");
+  console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
 }
 
 function setupPagination_ratio() {

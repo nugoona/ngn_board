@@ -247,7 +247,7 @@ thead th {
   position: relative;
   max-height: 400px; /* 페이지네이션과 겹치지 않도록 높이 조정 */
   overflow: auto;    /* 스크롤 활성화 */
-  margin-bottom: 20px; /* 페이지네이션과의 간격 */
+  margin-bottom: 60px; /* 페이지네이션과의 간격 증가 */
   
   /* 모던한 스크롤바 스타일 */
   scrollbar-width: thin;
@@ -462,10 +462,11 @@ th {
   flex-wrap: nowrap;
 }
 
-/* ✅ 사이트 성과 요약 카드 - 넓게 */
+/* ✅ 사이트 성과 요약 카드 - 자동 너비 */
 .site-summary .summary-card {
-  min-width: 200px; /* 사이트 성과는 더 넓게 */
-  max-width: 250px; /* 최대 너비 제한 */
+  min-width: 0; /* 최소 너비 제거 */
+  max-width: none; /* 최대 너비 제한 제거 */
+  flex: 1 1 auto; /* 자동 크기 조정 */
 }
 
 /* ✅ 총 광고 성과 - 한 줄 고정 */
@@ -473,11 +474,12 @@ th {
   flex-wrap: nowrap;
 }
 
-/* ✅ 총 광고 성과 카드 - 좁게 */
+/* ✅ 총 광고 성과 카드 - 자동 너비 */
 .ad-summary .summary-card {
-  min-width: 100px; /* 광고 성과는 더 좁게 */
-  max-width: 150px; /* 최대 너비 제한 */
-  padding: var(--spacing-lg); /* 패딩도 줄임 */
+  min-width: 0; /* 최소 너비 제거 */
+  max-width: none; /* 최대 너비 제한 제거 */
+  flex: 1 1 auto; /* 자동 크기 조정 */
+  padding: var(--spacing-lg); /* 패딩은 유지 */
 }
 
 /* ✅ 성과 요약 섹션 스크롤바 스타일 */
@@ -517,8 +519,8 @@ th {
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   padding: var(--spacing-xl);
   border-radius: var(--radius-xl);
-  flex: 1 1 0;
-  min-width: 140px; /* 기본 최소 너비 */
+  flex: 1 1 auto; /* 자동 크기 조정 */
+  min-width: 0; /* 최소 너비 제거 */
   box-shadow: var(--shadow-md);
   transition: var(--transition-normal);
   display: flex;

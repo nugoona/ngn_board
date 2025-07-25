@@ -24,14 +24,32 @@
 <body>
 
   <!-- ✅ 필터 영역 -->
-  {% include 'components/filters.html' %}
-
-  <!-- ✅ 햄버거 메뉴와 최종 업데이트를 분리해서 정렬 -->
-  <div class="nav-buttons">
-    <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
-    <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
-    <a href="{{ url_for('auth.logout') }}">로그아웃</a>
-  </div>
+  <section class="filter-wrapper">
+    <div class="filter-section">
+      {% include 'components/filters.html' %}
+    </div>
+    
+    <!-- ✅ 햄버거 메뉴와 최종 업데이트를 분리해서 정렬 -->
+    <div class="nav-buttons">
+      <div class="nav-left">
+        <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
+      </div>
+      <div class="nav-right">
+        <div class="hamburger-menu-wrapper">
+          <div class="hamburger-icon" id="hamburgerIcon">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+          <div class="hamburger-dropdown" id="hamburgerDropdown">
+            <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+            <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+            <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
 
   <!-- 로딩 진행률 표시 -->

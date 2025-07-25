@@ -83,18 +83,20 @@ body {
  2) 네비게이션 + 필터
 ================================ */
 .nav-buttons {
-  position: fixed;
-  top: 10px;
-  right: 20px;
-  z-index: 1100;
   display: flex;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: auto;
 }
 
 .nav-left {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
 }
 
 .nav-right {
@@ -130,6 +132,7 @@ body {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex: 1;
 }
 
 /* 커스텀 드롭다운 */
@@ -168,8 +171,7 @@ body {
   padding: 12px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 15px;
+  justify-content: space-between;
   position: fixed;
   top: 0;
   left: 0;

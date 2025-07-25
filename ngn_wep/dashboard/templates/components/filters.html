@@ -1,37 +1,35 @@
 <!-- ✅ 필터 UI 구조 -->
-<div class="filter-wrapper">
-  <div class="filter-section">
+<div class="filter-section">
 
-    <!-- ✅ 업체 선택 -->
-    <div class="custom-dropdown" id="accountDropdown">
-      <select id="accountFilter">
-        <option value="all" selected>모든 업체</option>
-      </select>
-      <span class="selected-text">모든 업체</span>
-      <i class="fas fa-chevron-down dropdown-icon"></i>
-    </div>
+  <!-- ✅ 업체 선택 -->
+  <div class="custom-dropdown" id="accountDropdown">
+    <select id="accountFilter">
+      <option value="all" selected>모든 업체</option>
+    </select>
+    <span class="selected-text">모든 업체</span>
+    <i class="fas fa-chevron-down dropdown-icon"></i>
+  </div>
 
-    <!-- ✅ 기간 선택 -->
-    <div class="custom-dropdown" id="periodDropdown">
-      <select id="periodFilter">
-        <option value="today" selected>오늘</option>
-        <option value="yesterday">어제</option>
-        <option value="last7days">최근 7일</option>
-        <option value="current_month">이번 달</option>
-        <option value="last_month">지난 달</option>
-        <option value="manual">직접 선택</option>
-      </select>
-      <span class="selected-text">오늘</span>
-      <i class="fas fa-chevron-down dropdown-icon"></i>
-    </div>
+  <!-- ✅ 기간 선택 -->
+  <div class="custom-dropdown" id="periodDropdown">
+    <select id="periodFilter">
+      <option value="today" selected>오늘</option>
+      <option value="yesterday">어제</option>
+      <option value="last7days">최근 7일</option>
+      <option value="current_month">이번 달</option>
+      <option value="last_month">지난 달</option>
+      <option value="manual">직접 선택</option>
+    </select>
+    <span class="selected-text">오늘</span>
+    <i class="fas fa-chevron-down dropdown-icon"></i>
+  </div>
 
-    <!-- ✅ 직접 선택 시 날짜 입력 -->
-    <div id="dateRangeContainer" class="date-range-container" style="display: none;">
-      <input type="date" id="startDate">
-      <span class="date-separator">~</span>
-      <input type="date" id="endDate">
-      <button id="applyDateFilter">초기화</button>
-    </div>
+  <!-- ✅ 직접 선택 시 날짜 입력 -->
+  <div id="dateRangeContainer" class="date-range-container" style="display: none;">
+    <input type="date" id="startDate">
+    <span class="date-separator">~</span>
+    <input type="date" id="endDate">
+    <button id="applyDateFilter">초기화</button>
   </div>
 </div>
 

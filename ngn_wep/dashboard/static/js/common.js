@@ -99,6 +99,18 @@ $(document).ready(function() {
   // 60초 후 강제 제거 (최후의 수단)
   setTimeout(forceHideAllLoading, 60000);
   
+  // 햄버거 메뉴 토글
+  $('#hamburgerIcon').on('click', function() {
+    $('#hamburgerDropdown').toggle();
+  });
+  
+  // 햄버거 메뉴 외부 클릭 시 닫기
+  $(document).on('click', function(e) {
+    if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
+      $('#hamburgerDropdown').hide();
+    }
+  });
+  
   // 개발 환경에서만 디버깅 기능 활성화
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('dev')) {
     // 디버깅용 - 5초 후 로딩 오버레이 상태 확인

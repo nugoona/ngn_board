@@ -113,6 +113,20 @@ function toggleLoading(isLoading) {
         // 🔥 로딩 클래스 먼저 추가 (배경 효과 방지)
         $("#performanceSummaryWrapper").addClass("loading");
         showLoading("#loadingOverlayPerformanceSummary");
+        
+        // 🔥 진짜 로딩 시 CSS 강제 적용
+        $("#loadingOverlayPerformanceSummary").css({
+            'background': 'transparent !important',
+            'backdrop-filter': 'none !important',
+            'opacity': '0.3 !important'
+        });
+        
+        // 🔥 로딩 텍스트도 강제 적용
+        $("#loadingOverlayPerformanceSummary .loading-text").css({
+            'background': 'rgba(255, 255, 255, 0.98) !important',
+            'backdrop-filter': 'none !important',
+            'opacity': '1 !important'
+        });
     } else {
         // 🔥 로딩 오버레이 먼저 숨기고 클래스 제거
         hideLoading("#loadingOverlayPerformanceSummary");

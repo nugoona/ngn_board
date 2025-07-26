@@ -158,7 +158,7 @@ def get_platform_sales_ratio(company_names, start_date, end_date):
 
 # ✅ 3. 월별 플랫폼 매출 조회
 @cached_query(func_name="monthly_platform_sales", ttl=3600)  # 1시간 캐싱
-def get_monthly_platform_sales(company_names, months_back=6):
+def get_monthly_platform_sales(company_names, months_back=12):
     if not company_names:
         print("[WARN] company_names is empty → 빈 결과 반환")
         return []

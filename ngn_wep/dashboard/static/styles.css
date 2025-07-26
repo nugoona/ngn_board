@@ -3385,46 +3385,43 @@ h2::before {
 /* 🔥 캠페인 목표별 요약 레이아웃 */
 .campaign-summary-layout {
   display: flex;
-  gap: 32px;
+  gap: 2rem;
   align-items: flex-start;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .campaign-summary-table {
-  flex: 0 0 55%;
-  min-width: 0; /* flex item 축소 허용 */
-  max-width: 55%;
+  flex: 0 0 auto; /* 테이블은 내용에 맞게 자동 크기 */
+  min-width: 0; /* flex 아이템 축소 허용 */
 }
 
 .campaign-summary-chart {
-  flex: 0 0 45%;
-  min-width: 0; /* flex item 축소 허용 */
-  max-width: 45%;
+  flex: 1; /* 차트가 남은 공간을 모두 차지 */
+  min-width: 400px; /* 최소 차트 크기 */
 }
 
-/* 테이블 폭 제한 */
 .campaign-summary-table .table-content-container {
-  max-width: 100%;
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .campaign-summary-table table {
-  width: 100%;
-  min-width: 600px; /* 최소 폭 설정 */
-  font-size: 14px;
+  width: auto; /* 테이블 내용에 맞게 자동 크기 */
+  min-width: 100%;
+  white-space: nowrap;
 }
 
 .campaign-summary-table th,
 .campaign-summary-table td {
-  padding: 8px 12px;
+  padding: 0.75rem 1rem;
+  text-align: right;
   white-space: nowrap;
 }
 
-/* 차트 영역 스타일 */
 .campaign-summary-chart .chart-container {
   width: 100%;
   height: 100%;
+  min-height: 400px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3432,10 +3429,13 @@ h2::before {
 
 .campaign-summary-chart .pie-chart-modern {
   width: 100%;
-  max-width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* 반응형 디자인 */
 @media (max-width: 1200px) {
   .campaign-summary-layout {
     flex-direction: column;

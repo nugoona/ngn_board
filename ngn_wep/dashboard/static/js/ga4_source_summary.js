@@ -6,31 +6,19 @@ const ga4SourceItemsPerPage = 10;
 function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
   currentGa4SourcePage = page;
 
-  // 캐시 무효화를 위한 타임스탬프 추가
-  const cacheBuster = Date.now();
-  
-  // 기본 날짜 설정 (오늘)
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  
-  const mergedRequest = {
-    period: requestData.period || 'today',
-    start_date: requestData.start_date || todayStr,
-    end_date: requestData.end_date || todayStr,
-    company_name: requestData.company_name || 'all',
-    page,
-    data_type: "ga4_source_summary",
-    _cache_buster: cacheBuster // 캐시 무효화용
-  };
-
-  console.log("[DEBUG] GA4 소스 요약 요청:", mergedRequest);
-  console.log("[DEBUG] GA4 소스 요약 요청 파라미터 상세:", {
-    period: mergedRequest.period,
-    start_date: mergedRequest.start_date,
-    end_date: mergedRequest.end_date,
-    company_name: mergedRequest.company_name
+  // getRequestData 함수 사용하여 올바른 파라미터 생성
+  const finalRequestData = getRequestData(page, {
+    data_type: "ga4_source_summary"
   });
-  console.log("[DEBUG] GA4 소스 요약 전체 payload:", JSON.stringify(mergedRequest, null, 2));
+
+  console.log("[DEBUG] GA4 소스 요약 요청:", finalRequestData);
+  console.log("[DEBUG] GA4 소스 요약 요청 파라미터 상세:", {
+    period: finalRequestData.period,
+    start_date: finalRequestData.start_date,
+    end_date: finalRequestData.end_date,
+    company_name: finalRequestData.company_name
+  });
+  console.log("[DEBUG] GA4 소스 요약 전체 payload:", JSON.stringify(finalRequestData, null, 2));
 
   showLoading("#loadingOverlayGa4Source");
 
@@ -38,7 +26,7 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
     url: "/dashboard/get_data",
     method: "POST",
     contentType: "application/json",
-    data: JSON.stringify(mergedRequest),
+    data: JSON.stringify(finalRequestData),
     success: function (res) {
       hideLoading("#loadingOverlayGa4Source");
 

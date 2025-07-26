@@ -287,7 +287,7 @@ function renderProductSalesRatioChart() {
   }
 
   // 기존 차트 인스턴스 제거
-  if (chartInstance_product) {
+  if (chartInstance_product && typeof chartInstance_product.destroy === 'function') {
     chartInstance_product.destroy();
   }
 

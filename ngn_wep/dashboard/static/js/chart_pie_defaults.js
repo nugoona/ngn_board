@@ -21,6 +21,11 @@ export const pieDefaults = {
   tooltip: { 
     theme: 'light', 
     custom: pieTooltip 
+  },
+  // 차트 크기 증가
+  chart: {
+    height: 450,
+    width: '100%'
   }
 };
 

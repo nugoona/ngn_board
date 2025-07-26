@@ -307,6 +307,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountId = window.metaAdsState?.accountId;
     if (!accountId) return showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
 
+    // 전체 페이지 로딩 오버레이 표시
+    if (typeof showFullPageLoading === 'function') {
+      showFullPageLoading();
+    }
+
     toggleCatalogSidebarLoading(true);
     try {
       if (!catalogAuthOk) {
@@ -321,6 +326,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showInlinePopup(err.message || "카탈로그 열기 실패");
     } finally {
       toggleCatalogSidebarLoading(false);
+      // 전체 페이지 로딩 오버레이 숨김
+      if (typeof hideFullPageLoading === 'function') {
+        hideFullPageLoading();
+      }
     }
   });
 

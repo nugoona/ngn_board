@@ -62,6 +62,23 @@ function forceHideAllLoading() {
   console.log("✅ All loading overlays force-hidden");
 }
 
+// 전체 페이지 로딩 오버레이 제어 함수
+function showFullPageLoading() {
+  console.log("🔄 전체 페이지 로딩 시작");
+  const overlay = document.getElementById("fullPageLoadingOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+  }
+}
+
+function hideFullPageLoading() {
+  console.log("✅ 전체 페이지 로딩 완료");
+  const overlay = document.getElementById("fullPageLoadingOverlay");
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+}
+
 // 디버깅용 함수 - 로딩 오버레이 상태 확인
 function debugLoadingOverlays() {
   console.log("🔍 현재 로딩 오버레이 상태:");

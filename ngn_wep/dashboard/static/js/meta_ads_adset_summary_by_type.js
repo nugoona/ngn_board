@@ -74,12 +74,24 @@ function renderMetaAdsAdsetSummaryTable(data) {
     return;
   }
 
+  let totalSpend = 0;
+  let totalImpressions = 0;
+  let totalClicks = 0;
+  let totalPurchases = 0;
+  let totalPurchaseValue = 0;
+
   data.forEach(row => {
     const CPM       = row.CPM ? Math.round(row.CPM).toLocaleString() : "0";
     const CPC       = row.CPC ? Math.round(row.CPC).toLocaleString() : "0";
     const spend     = row.total_spend ? row.total_spend.toLocaleString() : "0";
     const purchases = row.total_purchases || 0;
     const ROAS      = row.ROAS ? Math.round(row.ROAS * 100).toLocaleString() + "%" : "0%";
+
+    totalSpend += row.total_spend || 0;
+    totalImpressions += row.total_impressions || 0;
+    totalClicks += row.total_clicks || 0;
+    totalPurchases += row.total_purchases || 0;
+    totalPurchaseValue += row.total_purchase_value || 0;
 
     const html = `
       <tr>
@@ -93,6 +105,23 @@ function renderMetaAdsAdsetSummaryTable(data) {
     `;
     $tbody.append(html);
   });
+
+  // 총합 로우 추가
+  const totalCPM = totalImpressions > 0 ? Math.round((totalSpend / totalImpressions) * 1000).toLocaleString() : "0";
+  const totalCPC = totalClicks > 0 ? Math.round(totalSpend / totalClicks).toLocaleString() : "0";
+  const totalROAS = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100).toLocaleString() + "%" : "0%";
+
+  const totalHtml = `
+    <tr style="font-weight: bold; background-color: #f3f4f6;">
+      <td>총합</td>
+      <td>${totalSpend.toLocaleString()}</td>
+      <td>${totalCPM}</td>
+      <td>${totalCPC}</td>
+      <td>${totalPurchases}</td>
+      <td>${totalROAS}</td>
+    </tr>
+  `;
+  $tbody.append(totalHtml);
 }
 
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {

@@ -182,147 +182,60 @@ function changePage_ratio(page) {
   setupPagination_ratio();
 }
 
+// ECharts 파이 차트 렌더링
 function renderProductSalesRatioChart() {
-  console.log("[DEBUG] renderProductSalesRatioChart 호출됨");
-  
-  // DOM이 준비되었는지 확인
-  const chartContainer = document.getElementById("productSalesRatioChart");
-  const legendContainer = document.getElementById("productLegendItems");
-  
-  console.log("[DEBUG] 차트 컨테이너:", chartContainer);
-  console.log("[DEBUG] 차트 컨테이너 스타일:", chartContainer ? {
-    display: chartContainer.style.display,
-    height: chartContainer.style.height,
-    width: chartContainer.style.width,
-    visibility: chartContainer.style.visibility
-  } : "컨테이너 없음");
-
-  if (!chartContainer) {
-    console.error("[ERROR] productSalesRatioChart 컨테이너를 찾을 수 없습니다!");
-    // DOM이 아직 준비되지 않았을 수 있으므로 재시도
-    setTimeout(() => renderProductSalesRatioChart(), 100);
-    return;
-  }
-
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(() => renderProductSalesRatioChart(), 100);
-    return;
-  }
-
+  const chartDom = document.getElementById('productSalesRatioChart');
+  if (!chartDom) return;
   // 기존 차트 인스턴스 제거
-  if (chartInstance_product && typeof chartInstance_product.destroy === 'function') {
-    chartInstance_product.destroy();
+  if (window.echartsProductSalesRatio) {
+    window.echartsProductSalesRatio.dispose();
   }
 
-  // 데이터가 없거나 총 매출이 0인 경우 빈 차트 표시
-  if (!allProductSalesRatioData || allProductSalesRatioData.length === 0) {
-    console.log("[DEBUG] 빈 차트 렌더링");
-    
-    // 빈 범례 표시
-    if (legendContainer) {
-      legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
-    }
-    
-    // 빈 파이 차트 생성
-    chartInstance_product = new ApexCharts(document.getElementById("productSalesRatioChart"), {
-      chart: {
-        type: 'pie',
-        height: 350
-      },
-      series: [100],
-      labels: ['데이터 없음'],
-      colors: ['#e2e8f0'],
-      dataLabels: {
-        enabled: false
-      },
-      tooltip: {
-        enabled: false
-      }
-    });
-    chartInstance_product.render();
-    console.log("[DEBUG] 빈 차트 렌더링 완료");
-    return;
-  }
+  // 데이터 준비 (상위 5개, 0 매출 제외)
+  const sortedData = [...allProductSalesRatioData]
+    .filter(item => (item.item_product_sales || item.total_sales || 0) > 0)
+    .sort((a, b) => (b.item_product_sales || b.total_sales || 0) - (a.item_product_sales || a.total_sales || 0));
+  const top5 = sortedData.slice(0, 5);
+  const data = top5.map(item => ({
+    value: item.item_product_sales || item.total_sales || 0,
+    name: item.cleaned_product_name || item.product_name || '-'
+  }));
 
-  console.log("[DEBUG] 실제 데이터로 차트 렌더링");
-  console.log("[DEBUG] 전체 데이터 개수:", allProductSalesRatioData.length);
-  
-  // 🔥 상위 5개 상품만 선택 (매출 비중 기준으로 정렬)
-  const sortedData = [...allProductSalesRatioData].sort((a, b) => {
-    const ratioA = a.sales_ratio_percent || a.sales_ratio || 0;
-    const ratioB = b.sales_ratio_percent || b.sales_ratio || 0;
-    return ratioB - ratioA; // 내림차순 정렬
-  });
-  
-  const top5Data = sortedData.slice(0, 5);
-  const labels = top5Data.map(item => item.cleaned_product_name || item.product_name || "-");
-  const actualSales = top5Data.map(item => item.item_product_sales || item.total_sales || 0);
-  const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-  
-  // 실제 매출 금액을 series로 사용 (퍼센트가 아닌 금액)
-  const values = actualSales;
-  
-  console.log("[DEBUG] 상위 5개 데이터:", top5Data);
-  console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
+  // ECharts 인스턴스 생성
+  const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
+  window.echartsProductSalesRatio = myChart;
 
-  // 파이 차트 생성
-  console.log("[DEBUG] createPieChart 호출 전 - series:", values, "labels:", labels);
-  
-  chartInstance_product = new ApexCharts(document.getElementById("productSalesRatioChart"), {
-    chart: {
+  const option = {
+    color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+    series: [{
       type: 'pie',
-      height: 350,
-      background: 'transparent'
-    },
-    series: values,
-    labels: labels,
-    colors: colors,
-    legend: {
-      show: false
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function(val, opts) {
-        const percentage = ((val / opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
-        return percentage + '%';
+      radius: ['55%', '80%'],
+      avoidLabelOverlap: false,
+      label: {
+        show: true,
+        position: 'outside',
+        formatter: function(params) {
+          // {b}: 상품명, {d}: 퍼센트, {c}: 매출액
+          return `${params.name}\n${params.percent}%`;
+        },
+        fontSize: 15,
+        fontFamily: 'Pretendard, sans-serif',
+        color: '#222',
+        alignTo: 'edge',
+        bleedMargin: 10
       },
-      style: {
-        fontSize: '14px',
-        fontWeight: '600',
-        fontFamily: 'Pretendard, sans-serif'
-      }
-    },
-    tooltip: {
-      theme: 'light',
-      custom: function({ series, seriesIndex, w }) {
-        const label = w.globals.labels[seriesIndex];
-        const value = series[seriesIndex];
-        const percentage = ((value / w.globals.seriesTotals.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
-        const formattedSales = typeof value === 'number' ? value.toLocaleString() : value;
-        
-        return `<div style="background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.10);font-family:'Pretendard',sans-serif;max-width:300px;font-size:14px;">
-          <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;line-height:1.4;">${label}</div>
-          <div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSales}</div>
-          <div style="font-weight:500;font-size:13px;color:#64748b;">${percentage}%</div>
-        </div>`;
-      }
-    },
-    plotOptions: {
-      pie: {
-        donut: {
-          labels: {
-            show: false
-          }
-        }
-      }
-    }
-  });
-  chartInstance_product.render();
-
-  console.log("[DEBUG] createPieChart 호출 후 - chartInstance:", chartInstance_product);
-  console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
+      labelLine: {
+        show: true,
+        length: 20,
+        length2: 30,
+        smooth: true
+      },
+      data: data
+    }],
+    tooltip: { show: false },
+    animation: true
+  };
+  myChart.setOption(option);
 }
 
 // 토글 버튼 이벤트

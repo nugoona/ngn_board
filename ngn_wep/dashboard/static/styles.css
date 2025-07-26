@@ -3199,7 +3199,6 @@ h2::before {
   width: 100%;
 }
 
-/* 차트 컨테이너 명시적 높이 설정 */
 #productSalesRatioChart {
   min-height: 350px;
   height: 350px;

@@ -1,4 +1,3 @@
-let chartInstance_platform = null;
 let platformSalesRatioData = [];
 
 function fetchPlatformSalesRatio() {
@@ -50,81 +49,63 @@ function fetchPlatformSalesRatio() {
 }
 
 function renderPlatformSalesRatioChart() {
-  console.log("[DEBUG] renderPlatformSalesRatioChart 호출됨");
+  const chartDom = document.getElementById('platformSalesRatioChart');
+  if (!chartDom) return;
   
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(() => renderPlatformSalesRatioChart(), 100);
-    return;
-  }
-
-  const chartContainer = document.getElementById("platformSalesRatioChart");
-  const legendContainer = document.getElementById("platformLegendItems");
-  
-  console.log("[DEBUG] 차트 컨테이너:", chartContainer);
-
-  if (!chartContainer) {
-    console.error("[ERROR] platformSalesRatioChart 컨테이너를 찾을 수 없습니다!");
-    return;
-  }
-
   // 기존 차트 인스턴스 제거
-  if (chartInstance_platform) {
-    chartInstance_platform.destroy();
+  if (window.echartsPlatformSalesRatio) {
+    window.echartsPlatformSalesRatio.dispose();
   }
 
-  // 데이터가 없거나 총 매출이 0인 경우 빈 차트 표시
+  // 데이터가 없는 경우 빈 차트 표시
   if (!platformSalesRatioData || platformSalesRatioData.length === 0) {
     console.log("[DEBUG] 빈 차트 렌더링");
+    const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
+    window.echartsPlatformSalesRatio = myChart;
     
-    // 빈 범례 표시
-    if (legendContainer) {
-      legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
-    }
-    
-    chartInstance_platform = new ApexCharts(chartContainer, {
-      series: [100],
-      chart: {
+    const option = {
+      title: {
+        text: '플랫폼 상위 TOP5',
+        left: 'center',
+        top: 20,
+        textStyle: {
+          fontSize: 22,
+          fontWeight: '700',
+          fontFamily: 'Pretendard, sans-serif',
+          color: '#ffffff'
+        },
+        backgroundColor: '#1e293b',
+        borderRadius: 6,
+        padding: [12, 24],
+        shadowBlur: 8,
+        shadowColor: 'rgba(0, 0, 0, 0.15)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2
+      },
+      series: [{
         type: 'pie',
-        height: 350,
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        animations: {
-          enabled: false
+        radius: ['30%', '55%'],
+        center: ['50%', '60%'],
+        data: [{ value: 100, name: '데이터 없음' }],
+        color: ['#e5e7eb'],
+        label: {
+          show: false
         }
-      },
-      labels: ['데이터 없음'],
-      colors: ['#e5e7eb'],
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-            background: 'transparent'
-          }
-        }
-      },
-      legend: {
-        show: false
-      },
-      dataLabels: {
-        enabled: false
-      }
-    });
-    
-    chartInstance_platform.render();
-    console.log("[DEBUG] 빈 차트 렌더링 완료");
+      }]
+    };
+    myChart.setOption(option);
     return;
   }
 
   console.log("[DEBUG] 실제 데이터로 차트 렌더링");
   
-  const top5 = [...platformSalesRatioData]
-    .sort((a, b) => b.total_sales - a.total_sales)
-    .slice(0, 5);
-
-  console.log("[DEBUG] 플랫폼 매출 비중 top5 데이터:", top5);
-
-  // ✅ 플랫폼명 한글 매핑
+  // 데이터 준비 (상위 5개, 0 매출 제외)
+  const sortedData = [...platformSalesRatioData]
+    .filter(item => (item.total_sales || 0) > 0)
+    .sort((a, b) => (b.sales_ratio_percent || b.sales_ratio || 0) - (a.sales_ratio_percent || a.sales_ratio || 0));
+  const top5 = sortedData.slice(0, 5);
+  
+  // 플랫폼명 한글 매핑
   const platformNameMap = {
     'site_official': '자사몰',
     'musinsa': '무신사',
@@ -137,156 +118,133 @@ function renderPlatformSalesRatioChart() {
     'zigzag': '지그재그',
     'ably': '에이블리'
   };
+  
+  // 테이블 데이터에서 실제 퍼센트를 가져와서 사용
+  const data = top5.map(item => ({
+    value: item.sales_ratio_percent || item.sales_ratio || 0, // 실제 퍼센트 값 사용
+    name: platformNameMap[item.platform] || item.platform,
+    actualSales: item.total_sales || 0 // 실제 매출액은 별도 저장
+  }));
 
-  const labels = top5.map(item => platformNameMap[item.platform] || item.platform);
-  const values = top5.map(item => item.sales_ratio_percent || 0);
-  const actualSales = top5.map(item => item.total_sales || 0);
-  const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+  // ECharts 인스턴스 생성
+  const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
+  window.echartsPlatformSalesRatio = myChart;
 
-  console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
-
-  // 커스텀 범례 생성
-  if (legendContainer) {
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-      const legendItem = document.createElement('div');
-      legendItem.className = 'legend-item';
-      legendItem.innerHTML = `
-        <div class="legend-marker" style="background-color: ${colors[index]}"></div>
-        <div class="legend-text">${label}</div>
-        <div class="legend-percentage">${values[index].toFixed(1)}%</div>
-      `;
-      legendContainer.appendChild(legendItem);
-    });
-  }
-
-  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
-  const options = {
-    series: values,
-    chart: {
-      type: 'pie',
-      height: 350,
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      animations: {
-        enabled: false
-      }
-    },
-    labels: labels,
-    colors: colors,
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        expandOnClick: true,
-        offsetX: 0,
-        offsetY: 0,
-        customScale: 1,
-        dataLabels: {
-          offset: 0,
-          minAngleToShowLabel: 10
-        },
-        donut: {
-          size: '65%',
-          background: 'transparent',
-          labels: {
-            show: true,
-            name: {
-              show: false
-            },
-            value: {
-              show: true,
-              fontSize: '16px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 700,
-              color: '#1e293b',
-              offsetY: 0,
-              formatter: function (val) {
-                return typeof val === 'number' ? val.toFixed(1) + '%' : '0.0%';
-              }
-            },
-            total: {
-              show: false
-            }
-          }
-        }
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+  const option = {
+    title: {
+      text: '플랫폼 상위 TOP5',
+      left: 'center',
+      top: 20,
+      textStyle: {
+        fontSize: 22,
+        fontWeight: '700',
+        fontFamily: 'Pretendard, sans-serif',
+        color: '#ffffff'
       },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: {
-        enabled: true,
-        opacity: 0.3,
-        blur: 3,
-        left: 1,
-        top: 1
-      }
-    },
-    legend: {
-      show: false
+      backgroundColor: '#1e293b',
+      borderRadius: 6,
+      padding: [12, 24],
+      shadowBlur: 8,
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
+      shadowOffsetX: 2,
+      shadowOffsetY: 2
     },
     tooltip: {
-      enabled: true,
-      theme: 'light',
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const sales = actualSales[seriesIndex] || 0;
-        const percentage = series[seriesIndex];
-        const label = labels[seriesIndex];
-        const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
-        return `<div style="
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 12px 16px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-          font-family: 'Pretendard', sans-serif;
-          max-width: 280px;
-        ">
-          <div style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #1e293b;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 8px;
-          ">${label}</div>
-          <div style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #6366f1;
-          ">₩${formattedSales}</div>
-          <div style="
-            font-weight: 500;
-            font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
-          ">${percentage.toFixed(1)}%</div>
-        </div>`;
+      trigger: 'item',
+      formatter: function(params) {
+        const actualSales = params.data.actualSales || 0;
+        const formattedSales = actualSales.toLocaleString();
+        return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
       }
     },
-    responsive: [
-      {
-        breakpoint: 768,
-        options: {
-          chart: {
-            height: 300
+    graphic: [{
+      type: 'line',
+      left: 'center',
+      top: 70,
+      shape: {
+        x1: -80,
+        y1: 0,
+        x2: 80,
+        y2: 0
+      },
+      style: {
+        stroke: '#e2e8f0',
+        lineWidth: 2,
+        shadowBlur: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      }
+    }],
+    series: [{
+      name: '매출 비중',
+      type: 'pie',
+      radius: ['30%', '55%'],
+      center: ['50%', '60%'],
+      data: data,
+      color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+      label: {
+        show: true,
+        position: 'outside',
+        formatter: function(params) {
+          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+          const color = colors[params.dataIndex];
+          return `{percentage|${params.value}%}\n{platformName|${params.name}}`;
+        },
+        fontSize: 14,
+        fontFamily: 'Pretendard, sans-serif',
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        padding: [8, 12],
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        shadowBlur: 10,
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        rich: {
+          percentage: {
+            fontSize: 24,
+            fontWeight: '800',
+            color: function(params) {
+              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+              return colors[params.dataIndex];
+            },
+            padding: [0, 0, 4, 0]
+          },
+          platformName: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: '#64748b',
+            lineHeight: 16
           }
         }
+      },
+      labelLine: {
+        show: true,
+        length: 15,
+        length2: 25,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#cbd5e1',
+          shadowBlur: 3,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      itemStyle: {
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 15,
+          shadowOffsetX: 4,
+          shadowOffsetY: 4,
+          shadowColor: 'rgba(0, 0, 0, 0.2)'
+        }
       }
-    ]
+    }]
   };
-
-  // ApexCharts 인스턴스 생성
-  chartInstance_platform = new ApexCharts(chartContainer, options);
-  chartInstance_platform.render();
-
-  console.log("[DEBUG] 플랫폼 매출 비중 차트 렌더링 완료");
+  myChart.setOption(option);
 }

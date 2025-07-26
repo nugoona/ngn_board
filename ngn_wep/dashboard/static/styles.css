@@ -3206,6 +3206,13 @@ h2::before {
   background: transparent;
 }
 
+#platformSalesRatioChart {
+  min-height: 550px;
+  height: 550px;
+  width: 100%;
+  background: transparent;
+}
+
 /* 범례 영역 - 단일 배경 */
 .pie-chart-legend {
   flex: 0 0 280px;

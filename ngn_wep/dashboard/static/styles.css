@@ -1423,6 +1423,20 @@ th.sortable.desc::after {
   transform: translateY(-1px);
 }
 
+.toggle-btn.disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+.toggle-btn.disabled:hover {
+  background-color: #9ca3af;
+  box-shadow: none;
+  transform: none;
+}
+
 /* ✅ wrapper 전체 여백 조정 */
 .meta-ads-wrapper {
   margin-bottom: -6px;  /* 광고 미리보기 container와 간격 최소화 */
@@ -1949,6 +1963,22 @@ th.sortable.desc::after {
 
   /* ✅ hover 시 그림자 강화로 더 깊은 입체감 */
   box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.catalog-toggle-btn.disabled {
+  background-color: #9ca3af;
+  color: #6b7280;
+  border: 1px solid #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.catalog-toggle-btn.disabled:hover {
+  background-color: #9ca3af;
+  color: #6b7280;
+  border: 1px solid #9ca3af;
+  box-shadow: none;
 }
 
 /* ✅ 로딩 오버레이 */

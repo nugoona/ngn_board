@@ -16,6 +16,10 @@ $(document).ready(function () {
   const savedLevel = metaAdsState.tabLevel || "account";
   $(".tab-btn[data-level='" + savedLevel + "']").addClass("active");
 
+  // 초기 버튼 상태 설정 (계정이 선택되지 않은 상태)
+  $("#toggleTypeSummary").addClass("disabled").prop("disabled", true);
+  $("#openCatalogSidebarBtn").addClass("disabled").prop("disabled", true);
+
   fetchMetaAccountList();
 
   // ✅ 탭 클릭 이벤트
@@ -39,13 +43,13 @@ $(document).ready(function () {
 
   // ✅ 캠페인 목표별 성과 보기 버튼 클릭
   $("#toggleTypeSummary").on("click", function () {
-    // 🔥 임시로 계정 선택 체크 제거 (디버깅용)
-    // if (!metaAdsState.accountId) {
-    //   $("#typeSummaryContainer").hide();
-    //   $(this).text("캠페인 목표별 성과 보기");
-    //   showInlinePopup("계정을 먼저 선택해 주세요.");
-    //   return;
-    // }
+    // 계정 선택 체크
+    if (!metaAdsState.accountId) {
+      $("#typeSummaryContainer").hide();
+      $(this).text("캠페인 목표별 성과 보기");
+      showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
+      return;
+    }
 
     const $container = $("#typeSummaryContainer");
     const isVisible = $container.is(":visible");
@@ -55,7 +59,7 @@ $(document).ready(function () {
 
     if (!isVisible) {
       fetchMetaAdsAdsetSummaryByType({
-        account_id: metaAdsState.accountId || "all", // 계정이 없으면 "all" 사용
+        account_id: metaAdsState.accountId,
         period: metaAdsState.period,
         start_date: metaAdsState.startDate,
         end_date: metaAdsState.endDate
@@ -162,6 +166,10 @@ export function fetchMetaAccountList() {
       } catch (e) {
         console.error(e);
       }
+      
+      // 계정이 선택되었을 때 버튼 활성화
+      $("#toggleTypeSummary").removeClass("disabled").prop("disabled", false);
+      $("#openCatalogSidebarBtn").removeClass("disabled").prop("disabled", false);
     } else {
       $("#previewCardContainer").html(
         '<p style="text-align:center; color:#999;">계정을 선택하면 광고 미리보기를 볼 수 있습니다.</p>'
@@ -169,6 +177,14 @@ export function fetchMetaAccountList() {
       $("#slideCollectionTableBody").html(
         '<tr><td colspan="2">계정을 선택하면 슬라이드 광고를 확인할 수 있습니다.</td></tr>'
       );
+      
+      // 계정이 선택되지 않았을 때 버튼 비활성화
+      $("#toggleTypeSummary").addClass("disabled").prop("disabled", true);
+      $("#openCatalogSidebarBtn").addClass("disabled").prop("disabled", true);
+      
+      // 캠페인 목표별 성과 컨테이너 숨기기
+      $("#typeSummaryContainer").hide();
+      $("#toggleTypeSummary").text("캠페인 목표별 성과 보기");
     }
 
     // 태그·필터 상태 초기화

@@ -21,12 +21,13 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     if not end_date:
         end_date = today
 
-    # ✅ 1. 캠페인 목표별 요약 (type_summary)
+    # ✅ 1. 캠페인 목표별 요약 (type_summary) - campaign_id + adset_id 수준으로 중복 제거
     type_summary_query = f"""
     WITH deduplicated_data AS (
       SELECT
         account_id,
         account_name,
+        campaign_id,
         adset_id,
         adset_name,
         SUM(spend) AS spend,
@@ -39,7 +40,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_id, adset_name
+      GROUP BY account_id, account_name, campaign_id, adset_id, adset_name
     ),
     filtered_data AS (
       SELECT * FROM deduplicated_data
@@ -81,7 +82,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     ORDER BY account_name, type
     """
 
-    # ✅ 2. 총 지출 합산 (total_spend_sum)
+    # ✅ 2. 총 지출 합산 (total_spend_sum) - campaign_id + adset_id 수준으로 중복 제거
     total_spend_query = f"""
     SELECT
       SUM(spend) AS total_spend
@@ -89,6 +90,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SELECT
         account_id,
         account_name,
+        campaign_id,
         adset_id,
         adset_name,
         SUM(spend) AS spend
@@ -97,7 +99,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_id, adset_name
+      GROUP BY account_id, account_name, campaign_id, adset_id, adset_name
     )
     """
 

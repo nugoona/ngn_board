@@ -61,7 +61,7 @@ async function fetchPerformanceSummaryData() {
     if (!endDate) endDate = today;
 
     const requestData = {
-        service: "performance_summary",
+        data_type: "performance_summary",
         company_name: companyName,
         period: period,
         start_date: startDate,
@@ -78,14 +78,17 @@ async function fetchPerformanceSummaryData() {
         });
 
         const data = await response.json();
-        console.log("[DEBUG] 서버 응답:", data);
+            console.log("[DEBUG] 서버 응답:", data);
+    console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
 
-        if (!data || data.status !== "success" || !data.performance_summary) {
-            console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
-            updatePerformanceSummaryCards([]);
-            updateUpdatedAtText(null);
-            return;
-        }
+    if (!data || data.status !== "success" || !data.performance_summary) {
+        console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
+        console.error("[ERROR] 응답 상태:", data.status);
+        console.error("[ERROR] performance_summary 필드 존재:", !!data.performance_summary);
+        updatePerformanceSummaryCards([]);
+        updateUpdatedAtText(null);
+        return;
+    }
 
         updatePerformanceSummaryCards(data.performance_summary);
 

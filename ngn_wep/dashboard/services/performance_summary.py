@@ -12,6 +12,8 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
     - 일반 계정: demo 업체 제외
     - 항상 updated_at 포함되도록 보장
     """
+    print(f"[DEBUG] get_performance_summary 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
+    
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
 

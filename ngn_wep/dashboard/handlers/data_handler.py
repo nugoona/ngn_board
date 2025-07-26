@@ -171,6 +171,7 @@ def get_dashboard_data_route():
               f"start_date={start_date}, end_date={end_date}, page={page}, limit={limit}, data_type={data_type}")
         print(f"[DEBUG] date_type={date_type}, date_sort={date_sort}, sort_by={sort_by}")
         print(f"[DEBUG] 정규화된 data_type: '{data_type}'")
+        print(f"[DEBUG] performance_summary 조건 확인: data_type in ['performance_summary', 'all'] = {data_type in ['performance_summary', 'all']}")
 
         response_data = {"status": "success"}
         timing_log = {}

@@ -3185,7 +3185,7 @@ h2::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  min-height: 600px;
 }
 
 .pie-chart-area {
@@ -3193,15 +3193,15 @@ h2::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 350px;
-  height: 350px;
+  min-height: 600px;
+  height: 600px;
   background: transparent;
   width: 100%;
 }
 
 #productSalesRatioChart {
-  min-height: 350px;
-  height: 350px;
+  min-height: 600px;
+  height: 600px;
   width: 100%;
   background: transparent;
 }

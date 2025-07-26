@@ -214,10 +214,10 @@ function renderProductSalesRatioChart() {
       left: 'center',
       top: 'center',
       textStyle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         fontFamily: 'Pretendard, sans-serif',
-        color: '#64748b'
+        color: '#1e293b'
       }
     },
     tooltip: {
@@ -241,10 +241,14 @@ function renderProductSalesRatioChart() {
         formatter: function(params) {
           return `${params.name}\n${params.value}%`;
         },
-        fontSize: 14,
+        fontSize: 16,
         fontFamily: 'Pretendard, sans-serif',
-        color: '#1e293b',
-        fontWeight: '600'
+        color: function(params) {
+          // 파이 색상과 동일하게 설정
+          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+          return colors[params.dataIndex];
+        },
+        fontWeight: '700'
       },
       labelLine: {
         show: true,

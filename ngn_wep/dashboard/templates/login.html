@@ -204,7 +204,7 @@
       right: 0;
       transform: translateY(-50%);
       width: 420px;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.75);
       backdrop-filter: blur(15px);
       border-radius: 16px 0 0 16px;
       padding: 24px;
@@ -213,7 +213,8 @@
       border-right: none;
       font-size: 18px;
       line-height: 1.5;
-      color: #374151;
+      color: #1a1a1a;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       z-index: 9999;
       transition: all 0.3s ease;
     }
@@ -265,8 +266,8 @@
 
     .update-section-title {
       font-size: 18px;
-      font-weight: 600;
-      color: #6366f1;
+      font-weight: 700;
+      color: #1a1a1a;
       margin-bottom: 12px;
       padding-bottom: 8px;
       border-bottom: 2px solid rgba(99, 102, 241, 0.3);
@@ -312,7 +313,7 @@
         transform: translateY(-50%);
         width: 90%;
         max-width: 400px;
-        background: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.75);
         border-radius: 16px 0 0 16px;
         border-right: none;
       }
@@ -347,9 +348,6 @@
     <button type="submit" class="login-btn">로그인</button>
   </form>
 
-  <div class="divider">
-    <span>데모 계정으로 접속</span>
-  </div>
   <button class="demo-btn" onclick="fillDemoCredentials()">데모 계정 접속</button>
 
   <div class="footer-link">

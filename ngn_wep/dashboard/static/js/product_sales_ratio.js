@@ -106,8 +106,8 @@ function renderProductSalesRatioTable(page) {
     return;
   }
 
-  // 🔥 10개씩 표시로 변경
-  const itemsPerPage = 10;
+  // 🔥 5개씩 표시로 변경
+  const itemsPerPage = 5;
   const start = (page - 1) * itemsPerPage;
   const end = start + itemsPerPage;
   const pageData = allProductSalesRatioData.slice(start, end);

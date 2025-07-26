@@ -153,8 +153,8 @@ async function updateAllData() {
 
   const productRequest = getRequestData(1, {
     data_type: "cafe24_product_sales",
-    sort_by: $("input[name='productSortType']:checked").val(),
-    limit: 15,
+    sort_by: $("input[name='cafe24_product_sort']:checked").val(),
+    limit: 10,
   });
 
   try {
@@ -247,8 +247,7 @@ async function updateAllData() {
     
     try {
       if (typeof fetchProductSalesRatio === 'function') {
-        const requestData = getRequestData(1, {});
-        fetchProductSalesRatio(requestData);
+        fetchProductSalesRatio();
       } else {
         debugLog("[WARNING] fetchProductSalesRatio 함수가 정의되지 않음");
       }

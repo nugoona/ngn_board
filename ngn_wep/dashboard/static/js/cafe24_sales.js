@@ -30,7 +30,7 @@ $(document).ready(function () {
 
   $("input[name='dateType']").change(function () {
     const type = $(this).val();
-    $("#dateSort").toggle(type === "daily");
+    $("#dateSort").closest('.modern-dropdown').toggle(type === "daily");
 
     currentPage_sales = 1;
     const request = getRequestData(currentPage_sales, {

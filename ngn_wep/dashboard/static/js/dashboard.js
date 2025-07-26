@@ -237,8 +237,7 @@ async function updateAllData() {
     
     try {
       if (typeof fetchGa4SourceSummaryData === 'function') {
-        const requestData = getRequestData(1, {});
-        fetchGa4SourceSummaryData(requestData);
+        fetchGa4SourceSummaryData(1);
       } else {
         debugLog("[WARNING] fetchGa4SourceSummaryData 함수가 정의되지 않음");
       }

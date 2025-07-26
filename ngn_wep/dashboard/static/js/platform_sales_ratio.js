@@ -210,7 +210,8 @@ function renderPlatformSalesRatioChart() {
             textAlign: 'center',
             borderColor: '#e2e8f0',
             borderWidth: 1,
-            width: 120
+            width: 120,
+            lineHeight: 40
           },
           platformName: {
             fontSize: 24,
@@ -222,7 +223,8 @@ function renderPlatformSalesRatioChart() {
             textAlign: 'center',
             borderColor: '#4a5568',
             borderWidth: 1,
-            width: 120
+            width: 120,
+            lineHeight: 32
           }
         }
       },

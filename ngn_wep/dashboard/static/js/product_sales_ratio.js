@@ -257,42 +257,50 @@ function renderProductSalesRatioChart() {
       type: 'pie',
       radius: ['30%', '55%'], // 파이 크기 축소
       center: ['50%', '60%'], // 중앙 정렬 개선
+      roseType: 'area',
       data: data,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
         show: true,
         position: 'outside',
         formatter: function(params) {
-          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-          const color = colors[params.dataIndex];
-          return `{percentage|${params.value}%}\n{productName|${params.name}}`;
+          return `{percentage|${params.value.toFixed(1)}%}\n{productName|${params.name}}`;
         },
         fontSize: 14,
         fontFamily: 'Pretendard, sans-serif',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'transparent',
         borderRadius: 8,
-        padding: [8, 12],
-        borderColor: '#e2e8f0',
-        borderWidth: 1,
-        shadowBlur: 10,
-        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        padding: [0, 0],
+        borderColor: 'transparent',
+        borderWidth: 0,
+        shadowBlur: 4,
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
         shadowOffsetX: 2,
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 24,
-            fontWeight: '800',
-            color: function(params) {
-              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-              return colors[params.dataIndex];
-            },
-            padding: [0, 0, 4, 0]
+            fontSize: 32,
+            fontWeight: 'bold',
+            color: '#000',
+            backgroundColor: '#ffffff',
+            borderRadius: [8, 8, 0, 0],
+            padding: [8, 16, 4, 16],
+            textAlign: 'center',
+            borderColor: '#e2e8f0',
+            borderWidth: 1,
+            width: 120
           },
           productName: {
-            fontSize: 13,
+            fontSize: 24,
             fontWeight: '600',
-            color: '#64748b',
-            lineHeight: 16
+            color: '#ffffff',
+            backgroundColor: '#4a5568',
+            borderRadius: [0, 0, 8, 8],
+            padding: [4, 16, 8, 16],
+            textAlign: 'center',
+            borderColor: '#4a5568',
+            borderWidth: 1,
+            width: 120
           }
         }
       },

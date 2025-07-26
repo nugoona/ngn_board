@@ -6,7 +6,12 @@ export const pieDefaults = {
         labels: { 
           value: { show: false } 
         } 
-      } 
+      },
+      // 파이 차트가 컨테이너를 꽉 채우도록 설정
+      size: '100%',
+      expandOnClick: true,
+      offsetX: 0,
+      offsetY: 0
     }
   },
   dataLabels: {

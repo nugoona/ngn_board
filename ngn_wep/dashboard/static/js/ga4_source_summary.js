@@ -9,8 +9,15 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
   // 캐시 무효화를 위한 타임스탬프 추가
   const cacheBuster = Date.now();
   
+  // 기본 날짜 설정 (오늘)
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  
   const mergedRequest = {
-    ...requestData,
+    period: requestData.period || 'today',
+    start_date: requestData.start_date || todayStr,
+    end_date: requestData.end_date || todayStr,
+    company_name: requestData.company_name || 'all',
     page,
     data_type: "ga4_source_summary",
     _cache_buster: cacheBuster // 캐시 무효화용

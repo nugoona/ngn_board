@@ -16,6 +16,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     print(f"[DEBUG] GA4 소스 요약 파라미터 타입 - company: {type(company_name)}, start: {type(start_date)}, end: {type(end_date)}")
 
     if not start_date or not end_date:
+        print(f"[ERROR] start_date 또는 end_date가 없습니다. start_date: {start_date}, end_date: {end_date}")
         raise ValueError("start_date / end_date 값이 없습니다.")
 
     # ✅ 업체명 필터 처리 ("all" 처리 포함)
@@ -32,10 +33,16 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         if "all" not in [str(c).lower() for c in company_name]:
             company_filter = "AND LOWER(company_name) IN UNNEST(@company_name_list)"
             query_params.insert(0, bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name))
+            print(f"[DEBUG] 리스트 필터 적용: {company_name}")
+        else:
+            print(f"[DEBUG] 리스트에 'all' 포함되어 필터 제외: {company_name}")
     else:
         if str(company_name).lower() != "all":
             company_filter = "AND LOWER(company_name) = LOWER(@company_name)"
             query_params.insert(0, bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
+            print(f"[DEBUG] 단일 필터 적용: {company_name}")
+        else:
+            print(f"[DEBUG] 'all'이므로 필터 제외: {company_name}")
 
     # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
@@ -63,12 +70,17 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     """
 
     print("[DEBUG] GA4 소스 요약 쿼리 (최적화됨):\n", query)
+    print(f"[DEBUG] 쿼리 파라미터: {query_params}")
 
     try:
         client = get_bigquery_client()
         rows = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         data = [dict(row) for row in rows]
         print(f"[DEBUG] GA4 소스 요약 결과 {len(data)}건")
+        if len(data) > 0:
+            print(f"[DEBUG] 첫 번째 결과: {data[0]}")
+        else:
+            print("[DEBUG] 결과가 없습니다. 날짜 범위를 확인해주세요.")
         return data
     except Exception as ex:
         print("[ERROR] ga4_source_summary 오류:", ex)

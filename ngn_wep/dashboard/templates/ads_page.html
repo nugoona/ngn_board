@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.css">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+  <script src="{{ url_for('static', filename='js/chart_globals.js') }}?v=1.0" defer></script>
 </head>
 <body>
 
@@ -96,7 +97,6 @@
 <script src="{{ url_for('static', filename='js/common.js') }}?v=1.1"></script>
 <script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}?v=1.1"></script>
 <script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}?v=1.1"></script>
-<script src="{{ url_for('static', filename='js/chart_globals.js') }}?v=1.0"></script>
 
 <!-- ✅ JS 모듈 -->
 <script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.1"></script>

@@ -376,3 +376,9 @@ window.createBarChart = function(containerId, data, options = {}) {
 };
 
 console.log('[DEBUG] 차트 전역 모듈 로드 완료'); 
+
+// ✅ 차트 유틸 로드 완료 이벤트 디스패치
+if (typeof window.createPieChart === 'function') {
+  document.dispatchEvent(new Event('charts_ready'));
+  console.log('[DEBUG] chart_globals.js charts_ready 이벤트 디스패치 완료');
+} 

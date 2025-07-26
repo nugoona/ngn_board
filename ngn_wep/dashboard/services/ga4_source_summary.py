@@ -18,23 +18,24 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")
 
-    # ✅ 업체명 필터 처리
+    # ✅ 업체명 필터 처리 ("all" 처리 포함)
+    company_filter = ""
+    query_params = [
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+        bigquery.ScalarQueryParameter("limit", "INT64", limit),
+    ]
+
+    # company_name이 "all"이 아닌 경우에만 필터 추가
     if isinstance(company_name, list):
-        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
-        query_params = [
-            bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name),
-            bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-            bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
-            bigquery.ScalarQueryParameter("limit", "INT64", limit),
-        ]
+        # 리스트에 "all"이 포함되어 있으면 필터를 적용하지 않음
+        if "all" not in [str(c).lower() for c in company_name]:
+            company_filter = "AND LOWER(company_name) IN UNNEST(@company_name_list)"
+            query_params.insert(0, bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name))
     else:
-        company_filter = "LOWER(company_name) = LOWER(@company_name)"
-        query_params = [
-            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-            bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-            bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
-            bigquery.ScalarQueryParameter("limit", "INT64", limit),
-        ]
+        if str(company_name).lower() != "all":
+            company_filter = "AND LOWER(company_name) = LOWER(@company_name)"
+            query_params.insert(0, bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
 
     # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
     query = f"""
@@ -51,7 +52,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
     WHERE
       event_date BETWEEN @start_date AND @end_date
-      AND {company_filter}
+      {company_filter}
       AND first_user_source IS NOT NULL
       AND first_user_source != ''
       AND total_users > 0

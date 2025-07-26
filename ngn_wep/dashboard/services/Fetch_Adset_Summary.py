@@ -59,7 +59,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     SELECT
       '{start_date} ~ {end_date}' AS period,
       '{account_id}' AS account_id,
-      COALESCE(type, '기타') AS type,
+      type,
       SUM(spend) AS total_spend,
       SUM(impressions) AS total_impressions,
       SAFE_MULTIPLY(SAFE_DIVIDE(SUM(spend), SUM(impressions)), 1000) AS CPM,
@@ -71,6 +71,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
     FROM tagged
+    WHERE type IS NOT NULL
     GROUP BY type
     ORDER BY type
     """

@@ -1,33 +1,13 @@
-<section class="table-wrapper full-wide loading-check-wrapper">
-  <h2 class="summary-section-title">GA4 소스별 유입수 요약</h2>
-  
-  <!-- ✅ 로딩 스피너 -->
-  <div id="loadingOverlayGa4Source" class="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text">데이터를 불러오는 중입니다...</div>
-  </div>
-
-  <!-- ✅ 캐시 무효화 버튼 -->
-  <div style="margin-bottom: 16px;">
-    <button id="invalidateGa4SourceCache" class="primary-btn" style="font-size: 12px; padding: 8px 16px;">
-      🔄 캐시 새로고침
-    </button>
-  </div>
-
-  <table class="data-table" id="ga4SourceSummaryTable">
-    <thead>
-      <tr>
-        <th>업체명</th>
-        <th>소스</th>
-        <th>유입수</th>
-      </tr>
-    </thead>
-    <tbody id="ga4SourceSummaryBody">
-      <!-- ✅ JS로 데이터 렌더링 -->
-    </tbody>
-  </table>
-  
-  <!-- ✅ 페이지네이션 -->
-  <div id="pagination_ga4_source_summary" class="pagination"></div>
-</section>
+<table class="data-table" id="ga4SourceSummaryTable">
+  <thead>
+    <tr>
+      <th>업체명</th>
+      <th>소스</th>
+      <th>유입수</th>
+    </tr>
+  </thead>
+  <tbody id="ga4SourceSummaryBody">
+    <!-- ✅ JS로 데이터 렌더링 -->
+  </tbody>
+</table>
 

@@ -48,24 +48,7 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
   });
 }
 
-// 🔥 GA4 소스 요약 캐시 무효화 함수
-function invalidateGa4SourceCache() {
-  $.ajax({
-    url: "/dashboard/cache/invalidate/ga4_source",
-    method: "POST",
-    contentType: "application/json",
-    success: function (res) {
-      if (res.status === "success") {
-        console.log("[DEBUG] GA4 소스 요약 캐시 무효화 완료:", res.message);
-      } else {
-        console.error("[ERROR] GA4 소스 요약 캐시 무효화 실패:", res.message);
-      }
-    },
-    error: function (jqXHR, textStatus, errorThrown) {
-      console.error("[ERROR] GA4 소스 요약 캐시 무효화 요청 실패:", textStatus, errorThrown);
-    }
-  });
-}
+
 
 function renderGa4SourceSummaryFilters(data) {
   const sourceMap = {};
@@ -185,33 +168,4 @@ $("#ga4SourceFilter, #countryFilter").on("change", () => {
   renderGa4SourceSummaryPagination(getFilteredGa4SourceData().length);
 });
 
-// 🔥 캐시 무효화 버튼 클릭 이벤트
-$("#invalidateGa4SourceCache").on("click", function() {
-  console.log("[DEBUG] GA4 소스 요약 캐시 무효화 버튼 클릭");
-  
-  // 버튼 비활성화
-  $(this).prop("disabled", true).text("🔄 캐시 삭제 중...");
-  
-  // 캐시 무효화 후 데이터 새로고침
-  invalidateGa4SourceCache();
-  
-  // 1초 후 데이터 새로고침
-  setTimeout(() => {
-    // 현재 필터 상태로 데이터 다시 요청
-    const currentFilters = getCurrentFilters();
-    fetchGa4SourceSummaryData(currentFilters, 1);
-    
-    // 버튼 복원
-    $(this).prop("disabled", false).text("🔄 캐시 새로고침");
-  }, 1000);
-});
 
-// 현재 필터 상태 가져오기 함수
-function getCurrentFilters() {
-  return {
-    company_name: window.currentCompanyName || "all",
-    period: window.currentPeriod || "today",
-    start_date: window.currentStartDate || "",
-    end_date: window.currentEndDate || ""
-  };
-}

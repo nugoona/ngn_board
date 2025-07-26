@@ -79,6 +79,7 @@ $(document).ready(function () {
  * Meta Ads – 광고 계정 셀렉터 + 상태 동기화
  * ----------------------------------------------------------------*/
 export function fetchMetaAccountList() {
+  console.log("[DEBUG] 🔥 fetchMetaAccountList 함수 호출됨");
   $.ajax({
     url: "/dashboard/get_data",
     method: "POST",
@@ -124,10 +125,15 @@ export function fetchMetaAccountList() {
       $selector.val("");
 
       /* ---------- 4) 계정 change 이벤트 ---------- */
+      console.log("[DEBUG] 계정 선택 이벤트 바인딩 시작");
       $selector
         .off("change.metaInsight")
         .on("change.metaInsight", function () {
+          console.log("[DEBUG] 🔥 계정 change 이벤트 발생!");
           const selId = $(this).val() || null;
+          console.log("[DEBUG] 선택된 계정 ID:", selId);
+          console.log("[DEBUG] 선택된 계정 이름:", $(this).find("option:selected").text());
+          
           metaAdsState.accountId = selId;
 
           // catalogId & company 동기화 (없으면 null / "all")
@@ -135,8 +141,17 @@ export function fetchMetaAccountList() {
           metaAdsState.company   = selId ? (metaAdsState.companyMap[selId] || "-")
                                          : "all";
 
+          console.log("[DEBUG] metaAdsState 업데이트:", {
+            accountId: metaAdsState.accountId,
+            catalogId: metaAdsState.catalogId,
+            company: metaAdsState.company
+          });
+
+          console.log("[DEBUG] updateAfterAccountChange 호출 직전");
           updateAfterAccountChange();
+          console.log("[DEBUG] updateAfterAccountChange 호출 완료");
         });
+      console.log("[DEBUG] 계정 선택 이벤트 바인딩 완료");
 
       /* ---------- 5) 계정 1개면 자동 선택 ---------- */
       if (list.length === 1) {
@@ -157,7 +172,10 @@ export function fetchMetaAccountList() {
    * 내부 헬퍼 : 계정 변경 이후 후처리
    * ----------------------------------------------------------------*/
   function updateAfterAccountChange() {
+    console.log("[DEBUG] updateAfterAccountChange 호출됨, accountId:", metaAdsState.accountId);
+    
     if (metaAdsState.accountId) {
+      console.log("[DEBUG] 계정이 선택됨 - 버튼 활성화");
       try { fetchMetaAdsPreviewList(); } catch {}
       try {
         if (typeof fetchSlideCollectionAds === "function") {
@@ -168,8 +186,17 @@ export function fetchMetaAccountList() {
       }
       
       // 계정이 선택되었을 때 버튼 활성화
+      console.log("[DEBUG] 🔥 버튼 활성화 시작");
+      console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $("#toggleTypeSummary").length);
+      console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $("#openCatalogSidebarBtn").length);
+      
       $("#toggleTypeSummary").removeClass("disabled").prop("disabled", false);
       $("#openCatalogSidebarBtn").removeClass("disabled").prop("disabled", false);
+      
+      console.log("[DEBUG] 버튼 활성화 후 상태:");
+      console.log("[DEBUG] toggleTypeSummary disabled:", $("#toggleTypeSummary").prop("disabled"));
+      console.log("[DEBUG] openCatalogSidebarBtn disabled:", $("#openCatalogSidebarBtn").prop("disabled"));
+      console.log("[DEBUG] ✅ 버튼 활성화 완료");
     } else {
       $("#previewCardContainer").html(
         '<p style="text-align:center; color:#999;">계정을 선택하면 광고 미리보기를 볼 수 있습니다.</p>'

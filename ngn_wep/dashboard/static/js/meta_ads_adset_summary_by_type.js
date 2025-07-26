@@ -249,7 +249,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       name: '지출 비중',
       type: 'pie',
       radius: '55%',
-      center: ['50%', '45%'],
+      center: ['50%', '40%'],
       data: chartData,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {

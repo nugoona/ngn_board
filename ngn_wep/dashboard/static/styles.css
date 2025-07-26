@@ -725,9 +725,9 @@ th {
   min-height: 180px; /* ✅ 로딩 스피너를 카드 영역 중앙에 위치시키기 위해 추가 */
 }
 
-/* 🔥 카드 반투명 효과 복원 - 로딩 시 시각적 피드백 */
+/* 🔥 카드 완전 불투명 - 로딩 시에도 선명하게 표시 */
 .performance-summary-wrapper.loading .summary-grid .summary-card {
-  opacity: 0.9; /* 🔥 투명도 증가로 카드가 더 선명하게 보이도록 수정 */
+  opacity: 1; /* 🔥 완전 불투명으로 선명하게 표시 */
   transform: scale(0.98);
   transition: var(--transition-normal);
 }

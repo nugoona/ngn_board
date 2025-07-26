@@ -70,7 +70,7 @@ function renderMonthlyNetSalesVisitorsChart(rawData) {
       }
     ],
     chart: {
-      height: 350,
+      height: 500,
       type: 'line',
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       toolbar: {

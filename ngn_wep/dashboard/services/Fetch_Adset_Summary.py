@@ -110,20 +110,19 @@ def get_meta_ads_adset_summary_by_type(
 ):
     """광고 계정(account_id)‑기간(start~end) 기준 / 캠페인 목표별(도달·유입·전환) 성과 요약 반환.
 
-    ‑ 원본 데이터(meta_ads_ad_level)에서 직접 집계하여 이중 집계 방지
-    ‑ adset_id + date 단위로 중복 제거
-    ‑ adset_id 당 *최신* adset_name 하나만 사용 → type 중복 완전 차단
+    ‑ 광고세트별 데이터로 목표 분류
+    ‑ adset_name → type 매핑(CASE)
     """
 
     today = datetime.today().strftime("%Y-%m-%d")
     start_date = (start_date or today).strip()
     end_date   = (end_date   or today).strip()
 
-    # 디버깅: 데이터 소스 비교
+    # 디버깅: 데이터 소스 비교 (실제 사용되는 날짜 범위로)
+    print(f"[DEBUG] 실제 요청 날짜 범위: {start_date} ~ {end_date}")
     debug_data_source(account_id, start_date, end_date)
     
     # 디버깅: 누락된 데이터 확인 (실제 사용되는 날짜 범위로)
-    print(f"[DEBUG] 실제 집계 날짜 범위: {start_date} ~ {end_date}")
     debug_missing_data(account_id, start_date, end_date)
 
     # ─────────────────────────────────────────────────────────────

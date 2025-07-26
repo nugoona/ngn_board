@@ -139,8 +139,43 @@ $(document).ready(function() {
 function getRequestData(page = 1, extra = {}) {
   const companyName = $("#accountFilter").val() || "all";
   const period = $("#periodFilter").val();
-  const startDate = $("#startDate").val()?.trim() || "";
-  const endDate = $("#endDate").val()?.trim() || "";
+  
+  // 기간에 따라 날짜 계산
+  let startDate = "";
+  let endDate = "";
+  
+  if (period && period !== "manual") {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    
+    if (period === "today") {
+      startDate = `${yyyy}-${mm}-${dd}`;
+      endDate = startDate;
+    } else if (period === "yesterday") {
+      const y = new Date(today);
+      y.setDate(y.getDate() - 1);
+      startDate = y.toISOString().slice(0, 10);
+      endDate = startDate;
+    } else if (period === "last7days") {
+      const s = new Date(today);
+      s.setDate(s.getDate() - 7);
+      startDate = s.toISOString().slice(0, 10);
+      endDate = `${yyyy}-${mm}-${dd}`;
+    } else if (period === "last_month") {
+      const s = new Date(today);
+      s.setMonth(s.getMonth() - 1);
+      s.setDate(1);
+      const e = new Date(s.getFullYear(), s.getMonth() + 1, 0);
+      startDate = s.toISOString().slice(0, 10);
+      endDate = e.toISOString().slice(0, 10);
+    }
+  } else {
+    // 수동 날짜 선택인 경우 DOM에서 가져오기
+    startDate = $("#startDate").val()?.trim() || "";
+    endDate = $("#endDate").val()?.trim() || "";
+  }
 
   return {
     company_name: companyName,

@@ -235,7 +235,9 @@ def get_dashboard_data_route():
             if data_type in ["ga4_source_summary", "all"]:
                 def fetch_ga4_source_summary():
                     t1 = time.time()
-                    data_rows = get_ga4_source_summary(company_name, start_date, end_date, limit=100)
+                    # 캐시 무효화 파라미터 추출
+                    cache_buster = request_data.get('_cache_buster')
+                    data_rows = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
                     t2 = time.time()
                     timing_log["ga4_source_summary"] = round(t2-t1, 3)
                     return ("ga4_source_summary", data_rows[offset:offset + limit], len(data_rows))

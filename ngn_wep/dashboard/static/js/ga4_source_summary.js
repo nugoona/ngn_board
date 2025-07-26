@@ -6,13 +6,23 @@ const ga4SourceItemsPerPage = 10;
 function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
   currentGa4SourcePage = page;
 
+  // 캐시 무효화를 위한 타임스탬프 추가
+  const cacheBuster = Date.now();
+  
   const mergedRequest = {
     ...requestData,
     page,
-    data_type: "ga4_source_summary"
+    data_type: "ga4_source_summary",
+    _cache_buster: cacheBuster // 캐시 무효화용
   };
 
   console.log("[DEBUG] GA4 소스 요약 요청:", mergedRequest);
+  console.log("[DEBUG] GA4 소스 요약 요청 파라미터 상세:", {
+    period: mergedRequest.period,
+    start_date: mergedRequest.start_date,
+    end_date: mergedRequest.end_date,
+    company_name: mergedRequest.company_name
+  });
 
   showLoading("#loadingOverlayGa4Source");
 
@@ -27,6 +37,8 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
       if (res.status === "success" && res.ga4_source_summary) {
         rawGa4SourceRows = res.ga4_source_summary;
         console.log("[DEBUG] GA4 소스 요약 응답:", res.ga4_source_summary);
+        console.log("[DEBUG] GA4 소스 요약 응답 개수:", res.ga4_source_summary.length);
+        console.log("[DEBUG] GA4 소스 요약 첫 번째 데이터:", res.ga4_source_summary[0]);
 
         renderGa4SourceSummaryFilters(rawGa4SourceRows);
         renderGa4CountrySummaryFilters(rawGa4SourceRows);

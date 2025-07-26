@@ -5,14 +5,15 @@ def get_bigquery_client():
     return bigquery.Client()
 
 @cached_query(func_name="ga4_source_summary", ttl=600)  # 10분 캐싱
-def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: int = 100):
+def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: int = 100, _cache_buster: int = None):
     """
     ✅ GA4 트래픽 테이블(ga4_traffic_ngn) 기준 소스별 유입수 요약 (최적화됨)
     - company_name: 문자열 또는 리스트
     - 기준 컬럼: first_user_source → source, total_users → 유입수
     """
 
-    print(f"[DEBUG] GA4 소스 요약 호출 - company: {company_name}, start: {start_date}, end: {end_date}, limit: {limit}")
+    print(f"[DEBUG] GA4 소스 요약 호출 - company: {company_name}, start: {start_date}, end: {end_date}, limit: {limit}, cache_buster: {_cache_buster}")
+    print(f"[DEBUG] GA4 소스 요약 파라미터 타입 - company: {type(company_name)}, start: {type(start_date)}, end: {type(end_date)}")
 
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")

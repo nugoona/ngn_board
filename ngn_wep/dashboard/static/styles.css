@@ -727,7 +727,7 @@ th {
 
 /* 🔥 카드 반투명 효과 복원 - 로딩 시 시각적 피드백 */
 .performance-summary-wrapper.loading .summary-grid .summary-card {
-  opacity: 0.6;
+  opacity: 0.9; /* 🔥 투명도 증가로 카드가 더 선명하게 보이도록 수정 */
   transform: scale(0.98);
   transition: var(--transition-normal);
 }
@@ -2893,8 +2893,8 @@ th.sortable.desc::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: none !important; /* 🔥 모든 backdrop-filter 제거 */
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(4px) !important;
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2905,13 +2905,25 @@ th.sortable.desc::after {
   border-radius: var(--radius-lg) !important;
 }
 
-/* 🔥 사이트 성과 요약 전용 로딩 오버레이 최적화 */
-#loadingOverlayPerformanceSummary {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: none !important; /* 성과 요약도 backdrop-filter 제거 */
+/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) */
+.loading-overlay,
+.loading-overlay *,
+[class*="loading-overlay"],
+[id*="loadingOverlay"] {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
-/* 🔥 강제 투명화 규칙 제거 - backdrop-filter 제거로 해결됨 */
+/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) */
+div[id*="loadingOverlay"],
+div[class*="loading-overlay"],
+.loading-overlay,
+.loading-overlay::before,
+.loading-overlay::after {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
 
 /* 스피너 스타일 */
 .spinner {
@@ -2930,19 +2942,14 @@ th.sortable.desc::after {
   font-size: 16px;
   color: #374151;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.95);
   padding: 12px 20px;
   border-radius: 8px;
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: none; /* 🔥 모든 backdrop-filter 제거 */
+  backdrop-filter: blur(4px);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-}
-
-/* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */
-#loadingOverlayPerformanceSummary .loading-text {
-  background: rgba(255, 255, 255, 0.95); /* 성과 요약만 배경 투명도 조정 */
 }
 
 /* ================================

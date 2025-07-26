@@ -1,7 +1,7 @@
 // 🔥 ApexCharts 파이 차트 공통 모듈
 // 모든 파이 차트에서 일관된 디자인과 기능 제공
 
-// 전역 차트 기본 설정
+// 전역 차트 기본 설정 (모든 차트 공통)
 Apex.chart = {
   fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
   toolbar: { 
@@ -16,91 +16,9 @@ Apex.chart = {
   }
 };
 
-// 전역 툴팁 설정 - 심플하고 깔끔한 디자인
-Apex.tooltip = {
-  theme: 'light',
-  style: {
-    fontSize: '14px',
-    fontFamily: 'Pretendard, sans-serif'
-  },
-  custom: function({ series, seriesIndex, w }) {
-    const label = w.globals.labels[seriesIndex];
-    const value = series[seriesIndex];
-    
-    // 매출 데이터가 있는 경우 (product_sales_ratio 차트용)
-    let salesInfo = '';
-    if (w.globals.actualSales && w.globals.actualSales[seriesIndex]) {
-      const sales = w.globals.actualSales[seriesIndex];
-      const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
-      salesInfo = `
-        <div style="
-          font-weight: 600;
-          font-size: 15px;
-          color: #6366f1;
-          margin-bottom: 4px;
-        ">₩${formattedSales}</div>
-      `;
-    }
-    
-    return `
-      <div style="
-        background: #ffffff;
-        border: none;
-        border-radius: 12px;
-        padding: 16px 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        font-family: 'Pretendard', sans-serif;
-        max-width: 300px;
-        font-size: 14px;
-      ">
-        <div style="
-          font-weight: 600;
-          font-size: 14px;
-          color: #1e293b;
-          margin-bottom: 8px;
-          line-height: 1.4;
-        ">${label}</div>
-        ${salesInfo}
-        <div style="
-          font-weight: 500;
-          font-size: 13px;
-          color: #64748b;
-        ">${typeof value === 'number' ? value.toFixed(1) : '0.0'}%</div>
-      </div>
-    `;
-  }
-};
-
-// 전역 플롯 옵션 설정 - 파이 차트 공통
-Apex.plotOptions = {
-  pie: {
-    startAngle: 0,
-    endAngle: 360,
-    expandOnClick: true,
-    offsetX: 0,
-    offsetY: 0,
-    customScale: 1,
-    dataLabels: {
-      offset: 0,
-      minAngleToShowLabel: 10
-    },
-    donut: {
-      size: '65%',
-      background: 'transparent',
-      labels: {
-        show: false  // 🔥 중심 value 완전히 숨김
-      }
-    }
-  }
-};
-
-// 전역 데이터 라벨 설정
+// 전역 데이터 라벨 설정 (모든 차트 공통)
 Apex.dataLabels = {
   enabled: true,
-  formatter: function (val, opts) {
-    const value = opts.w.globals.series[opts.seriesIndex];
-    return typeof value === 'number' ? value.toFixed(1) + '%' : '0.0%';
-  },
   style: {
     fontSize: '14px',
     fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
@@ -112,12 +30,7 @@ Apex.dataLabels = {
   }
 };
 
-// 전역 범례 설정
-Apex.legend = {
-  show: false
-};
-
-// 전역 반응형 설정
+// 전역 반응형 설정 (모든 차트 공통)
 Apex.responsive = [
   {
     breakpoint: 768,
@@ -131,6 +44,129 @@ Apex.responsive = [
     }
   }
 ];
+
+// 🔥 차트 종류별 옵션 분리 함수
+export function getChartOptions(type = 'default') {
+  // 공통 옵션 (모든 차트)
+  const common = {
+    chart: {
+      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+      toolbar: { show: false },
+      animations: { enabled: false },
+      background: 'transparent',
+      dropShadow: { enabled: false }
+    },
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: { enabled: false }
+    },
+    responsive: [
+      {
+        breakpoint: 768,
+        options: {
+          chart: { height: 300 },
+          dataLabels: { fontSize: '12px' }
+        }
+      }
+    ]
+  };
+
+  // 파이/도넛 차트 전용 옵션
+  const pieOnly = (type === 'pie' || type === 'donut') ? {
+    plotOptions: {
+      pie: {
+        startAngle: 0,
+        endAngle: 360,
+        expandOnClick: true,
+        offsetX: 0,
+        offsetY: 0,
+        customScale: 1,
+        dataLabels: {
+          offset: 0,
+          minAngleToShowLabel: 10,
+          formatter: function (val, opts) {
+            const value = opts.w.globals.series[opts.seriesIndex];
+            return typeof value === 'number' ? value.toFixed(1) + '%' : '0.0%';
+          }
+        },
+        donut: {
+          size: '65%',
+          background: 'transparent',
+          labels: {
+            show: true,
+            value: { show: false } // 🔥 중심 value 완전 제거
+          }
+        }
+      }
+    },
+    legend: {
+      show: true,
+      fontSize: '14px',
+      itemMargin: { vertical: 6 },
+      markers: { radius: 6 },
+      labels: { colors: '#111' },
+      formatter: function (label, opts) {
+        const val = opts.w.globals.series[opts.seriesIndex];
+        return `${label} ${typeof val === 'number' ? val.toFixed(1) : val}%`;
+      }
+    },
+    tooltip: {
+      enabled: true,
+      theme: 'light',
+      custom: function({ series, seriesIndex, w }) {
+        const label = w.globals.labels[seriesIndex];
+        const value = series[seriesIndex];
+        let salesInfo = '';
+        if (w.globals.actualSales && w.globals.actualSales[seriesIndex]) {
+          const sales = w.globals.actualSales[seriesIndex];
+          const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
+          salesInfo = `<div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSales}</div>`;
+        }
+        return `<div style="background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.10);font-family:'Pretendard',sans-serif;max-width:300px;font-size:14px;">
+          <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;line-height:1.4;">${label}</div>
+          ${salesInfo}
+          <div style="font-weight:500;font-size:13px;color:#64748b;">${typeof value === 'number' ? value.toFixed(1) : '0.0'}%</div>
+        </div>`;
+      }
+    }
+  } : {};
+
+  // 막대/선 차트 전용 옵션
+  const barLineOnly = (type === 'bar' || type === 'line') ? {
+    plotOptions: {
+      bar: {
+        dataLabels: {
+          formatter: function (val, opts) {
+            return typeof val === 'number' ? val.toLocaleString() : val;
+          }
+        }
+      }
+    },
+    legend: {
+      show: true,
+      fontSize: '14px',
+      itemMargin: { vertical: 6 },
+      markers: { radius: 6 },
+      labels: { colors: '#111' }
+    },
+    tooltip: {
+      enabled: true,
+      theme: 'light',
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, sans-serif'
+      }
+    }
+  } : {};
+
+  return { ...common, ...pieOnly, ...barLineOnly };
+}
 
 // 🔥 CSS 스타일 주입
 const chartStyles = `
@@ -165,6 +201,17 @@ const chartStyles = `
     gap: 8px;
     font-family: 'Pretendard', sans-serif;
     font-size: 14px;
+    background: transparent;
+    border-radius: 6px;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    transition: background 0.15s;
+  }
+  
+  .legend-item:hover {
+    background: #f3f4f6;
+    box-shadow: none;
   }
   
   .legend-marker {
@@ -186,28 +233,20 @@ const chartStyles = `
     font-size: 13px;
   }
   
-  /* ApexCharts 툴팁 스타일 통일 */
-  .apexcharts-tooltip {
-    background: #ffffff !important;
+  /* ApexCharts 툴팁 스타일 통일 (파이/도넛 차트만) */
+  .apexcharts-pie-chart .apexcharts-tooltip {
+    background: #fff !important;
     border-radius: 12px !important;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important;
     border: none !important;
-    padding: 0 !important;
+    padding: 12px 16px !important;
+    filter: none !important;
   }
   
-  .apexcharts-tooltip-title {
-    display: none !important;
-  }
-  
-  .apexcharts-tooltip-y-group {
-    display: none !important;
-  }
-  
-  .apexcharts-tooltip-goals-group {
-    display: none !important;
-  }
-  
-  .apexcharts-tooltip-text {
+  .apexcharts-pie-chart .apexcharts-tooltip-title,
+  .apexcharts-pie-chart .apexcharts-tooltip-y-group,
+  .apexcharts-pie-chart .apexcharts-tooltip-goals-group,
+  .apexcharts-pie-chart .apexcharts-tooltip-text {
     display: none !important;
   }
 `;
@@ -238,84 +277,24 @@ window.createPieChart = function(containerId, data, options = {}) {
     return null;
   }
 
+  // 파이 차트 전용 옵션 가져오기
+  const pieOptions = getChartOptions('pie');
+  
   // 기본 옵션
   const defaultOptions = {
     chart: {
       type: 'pie',
       height: 350,
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      animations: {
-        enabled: false
-      },
-      background: 'transparent',
-      dropShadow: {
-        enabled: false
-      }
+      ...pieOptions.chart
     },
     colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
     series: data.series || [],
     labels: data.labels || [],
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        expandOnClick: true,
-        offsetX: 0,
-        offsetY: 0,
-        customScale: 1,
-        dataLabels: {
-          offset: 0,
-          minAngleToShowLabel: 10
-        },
-        donut: {
-          size: '65%',
-          background: 'transparent',
-          labels: {
-            show: false  // 🔥 중심 value 완전히 숨김
-          }
-        }
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        const value = opts.w.globals.series[opts.seriesIndex];
-        return typeof value === 'number' ? value.toFixed(1) + '%' : '0.0%';
-      },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: {
-        enabled: false
-      }
-    },
-    legend: {
-      show: false
-    },
-    tooltip: {
-      enabled: true,
-      theme: 'light',
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, sans-serif'
-      }
-    },
-    responsive: [
-      {
-        breakpoint: 768,
-        options: {
-          chart: {
-            height: 300
-          },
-          dataLabels: {
-            fontSize: '12px'
-          }
-        }
-      }
-    ]
+    ...pieOptions.plotOptions,
+    ...pieOptions.dataLabels,
+    ...pieOptions.legend,
+    ...pieOptions.tooltip,
+    ...pieOptions.responsive
   };
 
   // 사용자 옵션과 병합
@@ -323,9 +302,7 @@ window.createPieChart = function(containerId, data, options = {}) {
   
   // 매출 데이터가 있는 경우 전역 변수에 저장
   if (data.actualSales) {
-    finalOptions.globals = {
-      actualSales: data.actualSales
-    };
+    finalOptions.globals = { actualSales: data.actualSales };
   }
 
   // 차트 인스턴스 생성
@@ -350,6 +327,40 @@ window.createEmptyPieChart = function(containerId) {
       enabled: false
     }
   });
+};
+
+// 🔥 막대 차트 생성 함수 (추가)
+window.createBarChart = function(containerId, data, options = {}) {
+  const chartContainer = document.getElementById(containerId);
+  if (!chartContainer) {
+    console.error(`[ERROR] 차트 컨테이너를 찾을 수 없습니다: ${containerId}`);
+    return null;
+  }
+
+  const barOptions = getChartOptions('bar');
+  
+  const defaultOptions = {
+    chart: {
+      type: 'bar',
+      height: 350,
+      ...barOptions.chart
+    },
+    colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+    series: data.series || [],
+    xaxis: data.xaxis || { categories: [] },
+    ...barOptions.plotOptions,
+    ...barOptions.dataLabels,
+    ...barOptions.legend,
+    ...barOptions.tooltip,
+    ...barOptions.responsive
+  };
+
+  const finalOptions = { ...defaultOptions, ...options };
+  const chartInstance = new ApexCharts(chartContainer, finalOptions);
+  chartInstance.render();
+  
+  console.log(`[DEBUG] 막대 차트 생성 완료: ${containerId}`);
+  return chartInstance;
 };
 
 console.log('[DEBUG] 차트 전역 모듈 로드 완료'); 

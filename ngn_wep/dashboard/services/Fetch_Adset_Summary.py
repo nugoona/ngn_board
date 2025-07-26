@@ -53,6 +53,55 @@ def debug_data_source(account_id: str, start_date: str, end_date: str):
         return []
 
 
+def debug_missing_data(account_id: str, start_date: str, end_date: str):
+    """누락된 데이터 디버깅 함수"""
+    debug_query = f"""
+    WITH all_adsets AS (
+      SELECT DISTINCT
+        adset_id,
+        adset_name,
+        SUM(spend) as total_spend
+      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level`
+      WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+        AND account_id = '{account_id}'
+        AND adset_id IS NOT NULL
+      GROUP BY adset_id, adset_name
+    ),
+    classified_adsets AS (
+      SELECT *,
+        CASE
+          WHEN adset_name LIKE '%도달%' OR adset_name LIKE '%reach%' OR adset_name LIKE '%브랜드%' THEN '도달'
+          WHEN adset_name LIKE '%유입%' OR adset_name LIKE '%traffic%' OR adset_name LIKE '%engagement%' OR adset_name LIKE '%참여%' OR adset_name LIKE '%유입목적%' THEN '유입'
+          WHEN adset_name LIKE '%전환%' OR adset_name LIKE '%conversion%' OR adset_name LIKE '%구매%' OR adset_name LIKE '%sales%' OR adset_name LIKE '%전환목적%' THEN '전환'
+          WHEN adset_name LIKE '%앱설치%' OR adset_name LIKE '%app%' THEN '앱설치'
+          WHEN adset_name LIKE '%리드%' OR adset_name LIKE '%lead%' THEN '리드'
+          ELSE '기타'
+        END AS type
+      FROM all_adsets
+    )
+    SELECT 
+      type,
+      COUNT(*) as adset_count,
+      SUM(total_spend) as type_total_spend,
+      STRING_AGG(adset_name, ', ') as adset_names
+    FROM classified_adsets
+    GROUP BY type
+    ORDER BY type_total_spend DESC
+    """
+    
+    try:
+        results = client.query(debug_query).result()
+        debug_data = dictify_rows(results)
+        print(f"[DEBUG] 광고세트별 분류 결과:")
+        for row in debug_data:
+            print(f"  {row['type']}: {row['adset_count']}개 광고세트, 총 지출: {row['type_total_spend']}")
+            print(f"    광고세트명: {row['adset_names']}")
+        return debug_data
+    except Exception as e:
+        print(f"[ERROR] 누락 데이터 디버깅 쿼리 실패: {e}")
+        return []
+
+
 def get_meta_ads_adset_summary_by_type(
     account_id: str,
     period: str,
@@ -72,6 +121,9 @@ def get_meta_ads_adset_summary_by_type(
 
     # 디버깅: 데이터 소스 비교
     debug_data_source(account_id, start_date, end_date)
+    
+    # 디버깅: 누락된 데이터 확인
+    debug_missing_data(account_id, start_date, end_date)
 
     # ─────────────────────────────────────────────────────────────
     # 1) 목표별 요약 쿼리 - 원본 데이터 직접 집계
@@ -129,9 +181,11 @@ def get_meta_ads_adset_summary_by_type(
     typed AS (
       SELECT *,
         CASE
-          WHEN adset_name LIKE '%도달%'  THEN '도달'
-          WHEN adset_name LIKE '%유입%'  THEN '유입'
-          WHEN adset_name LIKE '%전환%' THEN '전환'
+          WHEN adset_name LIKE '%도달%' OR adset_name LIKE '%reach%' OR adset_name LIKE '%브랜드%' THEN '도달'
+          WHEN adset_name LIKE '%유입%' OR adset_name LIKE '%traffic%' OR adset_name LIKE '%engagement%' OR adset_name LIKE '%참여%' OR adset_name LIKE '%유입목적%' THEN '유입'
+          WHEN adset_name LIKE '%전환%' OR adset_name LIKE '%conversion%' OR adset_name LIKE '%구매%' OR adset_name LIKE '%sales%' OR adset_name LIKE '%전환목적%' THEN '전환'
+          WHEN adset_name LIKE '%앱설치%' OR adset_name LIKE '%app%' THEN '앱설치'
+          WHEN adset_name LIKE '%리드%' OR adset_name LIKE '%lead%' THEN '리드'
           ELSE '기타'
         END AS type
       FROM latest
@@ -152,7 +206,6 @@ def get_meta_ads_adset_summary_by_type(
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend))                 AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases))                      AS CPA
     FROM typed
-    WHERE type <> '기타'
     GROUP BY account_id, account_name, type
     ORDER BY total_spend DESC;
     """

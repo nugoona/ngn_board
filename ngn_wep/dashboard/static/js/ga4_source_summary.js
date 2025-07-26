@@ -7,10 +7,12 @@ function fetchGa4SourceSummaryData(page = 1) {
   currentGa4SourcePage = page;
 
   const requestData = getRequestData(page, {
-    data_type: "ga4_source_summary"
+    data_type: "ga4_source_summary",
+    _cache_buster: Date.now() // 캐시 무효화
   });
 
   console.log("[DEBUG] GA4 소스별 유입수 요청:", requestData);
+  console.log("[DEBUG] GA4 소스별 유입수 요청 - 기간:", requestData.start_date, "~", requestData.end_date);
 
   showLoading("#loadingOverlayGa4Source");
 

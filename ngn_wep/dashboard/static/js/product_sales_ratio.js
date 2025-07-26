@@ -258,27 +258,14 @@ function renderProductSalesRatioChart() {
   
   const top5Data = sortedData.slice(0, 5);
   const labels = top5Data.map(item => item.cleaned_product_name || item.product_name || "-");
-  const values = top5Data.map(item => item.sales_ratio_percent || item.sales_ratio || 0);
   const actualSales = top5Data.map(item => item.item_product_sales || item.total_sales || 0);
   const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
   
+  // 실제 매출 금액을 series로 사용 (퍼센트가 아닌 금액)
+  const values = actualSales;
+  
   console.log("[DEBUG] 상위 5개 데이터:", top5Data);
   console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
-
-  // 커스텀 범례 생성
-  if (legendContainer) {
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-      const legendItem = document.createElement('div');
-      legendItem.className = 'legend-item';
-      legendItem.innerHTML = `
-        <div class="legend-marker" style="background-color: ${colors[index]}"></div>
-        <div class="legend-text">${label}</div>
-        <div class="legend-percentage">${values[index].toFixed(1)}%</div>
-      `;
-      legendContainer.appendChild(legendItem);
-    });
-  }
 
   // 파이 차트 생성
   console.log("[DEBUG] createPieChart 호출 전 - series:", values, "labels:", labels);
@@ -286,15 +273,25 @@ function renderProductSalesRatioChart() {
   chartInstance_product = new ApexCharts(document.getElementById("productSalesRatioChart"), {
     chart: {
       type: 'pie',
-      height: 350
+      height: 350,
+      background: 'transparent'
     },
     series: values,
     labels: labels,
     colors: colors,
+    legend: {
+      show: false
+    },
     dataLabels: {
       enabled: true,
-      formatter: function(val) {
-        return val.toFixed(1) + '%';
+      formatter: function(val, opts) {
+        const percentage = ((val / opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+        return percentage + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontWeight: '600',
+        fontFamily: 'Pretendard, sans-serif'
       }
     },
     tooltip: {
@@ -302,17 +299,23 @@ function renderProductSalesRatioChart() {
       custom: function({ series, seriesIndex, w }) {
         const label = w.globals.labels[seriesIndex];
         const value = series[seriesIndex];
-        let salesInfo = '';
-        if (actualSales && actualSales[seriesIndex]) {
-          const sales = actualSales[seriesIndex];
-          const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
-          salesInfo = `<div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSales}</div>`;
-        }
+        const percentage = ((value / w.globals.seriesTotals.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+        const formattedSales = typeof value === 'number' ? value.toLocaleString() : value;
+        
         return `<div style="background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.10);font-family:'Pretendard',sans-serif;max-width:300px;font-size:14px;">
           <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;line-height:1.4;">${label}</div>
-          ${salesInfo}
-          <div style="font-weight:500;font-size:13px;color:#64748b;">${typeof value === 'number' ? value.toFixed(1) : '0.0'}%</div>
+          <div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSales}</div>
+          <div style="font-weight:500;font-size:13px;color:#64748b;">${percentage}%</div>
         </div>`;
+      }
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          labels: {
+            show: false
+          }
+        }
       }
     }
   });

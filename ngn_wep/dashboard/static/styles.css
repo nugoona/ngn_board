@@ -3160,13 +3160,13 @@ h2::before {
  ApexCharts 모던 파이 차트 스타일 (v1.4)
 ======================== */
 
-/* 파이 차트 컨테이너 - 단일 배경 */
+/* 파이 차트 컨테이너 - 투명 배경 */
 .pie-chart-modern {
-  background: #ffffff;
+  background: transparent;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f1f5f9;
+  box-shadow: none;
+  border: none;
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
@@ -3184,7 +3184,7 @@ h2::before {
 .pie-chart-content {
   display: flex;
   align-items: center;
-  gap: 32px;
+  justify-content: center;
   min-height: 400px;
 }
 
@@ -3196,6 +3196,7 @@ h2::before {
   min-height: 350px;
   height: 350px;
   background: transparent;
+  width: 100%;
 }
 
 /* 차트 컨테이너 명시적 높이 설정 */
@@ -3203,6 +3204,7 @@ h2::before {
   min-height: 350px;
   height: 350px;
   width: 100%;
+  background: transparent;
 }
 
 /* 범례 영역 - 단일 배경 */

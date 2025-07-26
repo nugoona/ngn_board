@@ -758,6 +758,12 @@ th {
   display: flex !important;
 }
 
+/* 🔥 로딩 전환 시 하얀 배경 방지 - 성과 요약 전용 */
+#loadingOverlayPerformanceSummary {
+  background: transparent !important; /* 항상 투명 배경 유지 */
+  backdrop-filter: none !important; /* backdrop-filter 제거 */
+}
+
 
 
 /* ================================

@@ -110,12 +110,12 @@ async function fetchPerformanceSummaryData() {
 
 function toggleLoading(isLoading) {
     if (isLoading) {
-        showLoading("#loadingOverlayPerformanceSummary");
-        // 🔥 로딩 클래스 추가 시 블러 효과 최소화
+        // 🔥 로딩 클래스 먼저 추가 (배경 효과 방지)
         $("#performanceSummaryWrapper").addClass("loading");
+        showLoading("#loadingOverlayPerformanceSummary");
     } else {
+        // 🔥 로딩 오버레이 먼저 숨기고 클래스 제거
         hideLoading("#loadingOverlayPerformanceSummary");
-        // 🔥 로딩 완료 시 즉시 클래스 제거하여 블러 효과 해제
         $("#performanceSummaryWrapper").removeClass("loading");
     }
 }

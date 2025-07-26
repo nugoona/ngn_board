@@ -61,19 +61,19 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
     FROM (
-      SELECT DISTINCT adset_id, account_id, account_name, '유입' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT account_id, account_name, '유입' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%유입%'
 
       UNION ALL
 
-      SELECT DISTINCT adset_id, account_id, account_name, '전환' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT account_id, account_name, '전환' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%전환%'
 
       UNION ALL
 
-      SELECT DISTINCT adset_id, account_id, account_name, '도달' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT account_id, account_name, '도달' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%도달%'
     )

@@ -27,6 +27,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SELECT
         account_id,
         account_name,
+        adset_id,
         adset_name,
         SUM(spend) AS spend,
         SUM(impressions) AS impressions,
@@ -38,7 +39,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_name
+      GROUP BY account_id, account_name, adset_id, adset_name
     ),
     filtered_data AS (
       SELECT * FROM deduplicated_data
@@ -60,19 +61,19 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
     FROM (
-      SELECT account_id, account_name, '유입' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT DISTINCT adset_id, account_id, account_name, '유입' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%유입%'
 
       UNION ALL
 
-      SELECT account_id, account_name, '전환' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT DISTINCT adset_id, account_id, account_name, '전환' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%전환%'
 
       UNION ALL
 
-      SELECT account_id, account_name, '도달' AS type, spend, impressions, clicks, purchases, purchase_value
+      SELECT DISTINCT adset_id, account_id, account_name, '도달' AS type, spend, impressions, clicks, purchases, purchase_value
       FROM filtered_data
       WHERE adset_name LIKE '%도달%'
     )
@@ -88,6 +89,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SELECT
         account_id,
         account_name,
+        adset_id,
         adset_name,
         SUM(spend) AS spend
       FROM
@@ -95,7 +97,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_name
+      GROUP BY account_id, account_name, adset_id, adset_name
     )
     """
 

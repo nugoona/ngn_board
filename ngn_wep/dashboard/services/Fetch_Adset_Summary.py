@@ -43,10 +43,14 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SELECT
         d.*,
         CASE
-          WHEN REGEXP_CONTAINS(n.latest_name, r'유입') THEN '유입'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'전환') THEN '전환'
+          WHEN REGEXP_CONTAINS(n.latest_name, r'유입') OR REGEXP_CONTAINS(n.latest_name, r'유입목적') THEN '유입'
+          WHEN REGEXP_CONTAINS(n.latest_name, r'전환') OR REGEXP_CONTAINS(n.latest_name, r'전환목적') THEN '전환'
           WHEN REGEXP_CONTAINS(n.latest_name, r'도달') THEN '도달'
-          ELSE NULL
+          WHEN REGEXP_CONTAINS(n.latest_name, r'카탈로그') OR REGEXP_CONTAINS(n.latest_name, r'자동세트') THEN '전환'
+          WHEN REGEXP_CONTAINS(n.latest_name, r'논타겟') THEN '유입'
+          WHEN REGEXP_CONTAINS(n.latest_name, r'파트너쉽') THEN '전환'
+          WHEN REGEXP_CONTAINS(n.latest_name, r'자사몰') THEN '전환'
+          ELSE '기타'
         END AS type
       FROM deduped d
       LEFT JOIN (
@@ -71,7 +75,6 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
     FROM tagged
-    WHERE type IS NOT NULL
     GROUP BY type
     ORDER BY type
     """

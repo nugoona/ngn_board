@@ -7,62 +7,43 @@ def dictify_rows(rows):
     return [dict(row) for row in rows]
 
 def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date: str, end_date: str):
-    today = datetime.today().strftime("%Y-%m-%d")
-    start_date = start_date.strip() if start_date else today
-    end_date = end_date.strip() if end_date else today
+    """
+    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회
+    """
 
-    query = f"""
-    WITH latest_names_by_day AS (
+    # ✅ start_date, end_date가 None 또는 빈 문자열이면 오늘로 설정
+    today = datetime.today().strftime("%Y-%m-%d")
+    start_date = start_date.strip() if start_date else ""
+    end_date = end_date.strip() if end_date else ""
+
+    if not start_date:
+        start_date = today
+    if not end_date:
+        end_date = today
+
+    # ✅ 1. 캠페인 목표별 요약 (type_summary)
+    type_summary_query = f"""
+    WITH filtered_data AS (
       SELECT
-        adset_id,
-        DATE(date) AS dt,
-        LOWER(adset_name) AS latest_name,
-        ROW_NUMBER() OVER (PARTITION BY adset_id, DATE(date) ORDER BY updated_at DESC) AS rn
-      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-    ),
-    deduped AS (
-      SELECT *
-      FROM (
-        SELECT
-          adset_id,
-          DATE(date) AS dt,
-          account_id,
-          spend,
-          impressions,
-          clicks,
-          purchases,
-          purchase_value,
-          ROW_NUMBER() OVER (PARTITION BY adset_id, DATE(date) ORDER BY updated_at DESC) AS rn
-        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-        WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-          AND account_id = '{account_id}'
-      )
-      WHERE rn = 1
-    ),
-    tagged AS (
-      SELECT
-        d.*,
-        CASE
-          WHEN REGEXP_CONTAINS(n.latest_name, r'유입') OR REGEXP_CONTAINS(n.latest_name, r'유입목적') THEN '유입'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'전환') OR REGEXP_CONTAINS(n.latest_name, r'전환목적') THEN '전환'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'도달') THEN '도달'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'카탈로그') OR REGEXP_CONTAINS(n.latest_name, r'자동세트') THEN '전환'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'논타겟') THEN '유입'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'파트너쉽') THEN '전환'
-          WHEN REGEXP_CONTAINS(n.latest_name, r'자사몰') THEN '전환'
-          ELSE '기타'
-        END AS type
-      FROM deduped d
-      LEFT JOIN (
-        SELECT adset_id, dt, latest_name
-        FROM latest_names_by_day
-        WHERE rn = 1
-      ) n
-      ON d.adset_id = n.adset_id AND d.dt = n.dt
+        account_id,
+        account_name,
+        adset_name,
+        spend,
+        impressions,
+        clicks,
+        purchases,
+        purchase_value
+      FROM
+        `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+      WHERE
+        DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+        AND account_id = '{account_id}'
     )
+
     SELECT
       '{start_date} ~ {end_date}' AS period,
-      '{account_id}' AS account_id,
+      account_id,
+      account_name,
       type,
       SUM(spend) AS total_spend,
       SUM(impressions) AS total_impressions,
@@ -74,11 +55,28 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SUM(purchase_value) AS total_purchase_value,
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
-    FROM tagged
-    GROUP BY type
-    ORDER BY type
+    FROM (
+      SELECT account_id, account_name, '유입' AS type, spend, impressions, clicks, purchases, purchase_value
+      FROM filtered_data
+      WHERE adset_name LIKE '%유입%'
+
+      UNION ALL
+
+      SELECT account_id, account_name, '전환' AS type, spend, impressions, clicks, purchases, purchase_value
+      FROM filtered_data
+      WHERE adset_name LIKE '%전환%'
+
+      UNION ALL
+
+      SELECT account_id, account_name, '도달' AS type, spend, impressions, clicks, purchases, purchase_value
+      FROM filtered_data
+      WHERE adset_name LIKE '%도달%'
+    )
+    GROUP BY account_id, account_name, type
+    ORDER BY account_name, type
     """
 
+    # ✅ 2. 총 지출 합산 (total_spend_sum)
     total_spend_query = f"""
     SELECT
       SUM(spend) AS total_spend
@@ -90,7 +88,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     """
 
     try:
-        type_summary_rows = client.query(query).result()
+        type_summary_rows = client.query(type_summary_query).result()
         type_summary_list = dictify_rows(type_summary_rows)
 
         total_spend_rows = client.query(total_spend_query).result()

@@ -172,7 +172,7 @@ def get_dashboard_data_route():
         offset = (page - 1) * limit
 
         # ✅ 기간 필터 필요 없는 테이블 예외 처리
-        if data_type not in ["monthly_net_sales_visitors", "platform_sales_monthly"]:
+        if data_type not in ["monthly_net_sales_visitors", "platform_sales_monthly", "meta_ads_adset_summary_by_type"]:
             start_date, end_date = get_start_end_dates(period, start_date, end_date)
 
         print(f"[DEBUG] 요청 필터 - company_name={company_name}, period={period}, "

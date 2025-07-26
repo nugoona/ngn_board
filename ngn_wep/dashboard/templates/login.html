@@ -424,7 +424,8 @@
     localStorage.setItem('updateNotificationHidden', Date.now());
   }
 
-  // 페이지 로드 시 업데이트 알림 카드 상태 확인
+  // 페이지 로드 시 업데이트 알림 카드 상태 확인 (임시 비활성화)
+  /*
   document.addEventListener('DOMContentLoaded', function() {
     const hiddenTime = localStorage.getItem('updateNotificationHidden');
     const notification = document.getElementById('updateNotification');
@@ -434,6 +435,7 @@
       notification.classList.add('hidden');
     }
   });
+  */
 
 </script>
 

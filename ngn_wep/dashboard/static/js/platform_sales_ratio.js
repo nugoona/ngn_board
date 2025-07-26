@@ -202,28 +202,18 @@ function renderPlatformSalesRatioChart() {
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 32,
-            fontWeight: 'bold',
+            fontSize: 16,
+            fontWeight: '600',
             color: '#000',
-            backgroundColor: '#ffffff',
-            borderRadius: [8, 8, 0, 0],
-            padding: [8, 12, 4, 12],
-            textAlign: 'center',
-            borderColor: '#e2e8f0',
-            borderWidth: 1,
-            width: 200
+            padding: [0, 0, 2, 0],
+            textAlign: 'center'
           },
           platformName: {
-            fontSize: 24,
-            fontWeight: '600',
-            color: '#ffffff',
-            backgroundColor: '#4a5568',
-            borderRadius: [0, 0, 8, 8],
-            padding: [4, 12, 8, 12],
-            textAlign: 'center',
-            borderColor: '#4a5568',
-            borderWidth: 1,
-            width: 200
+            fontSize: 12,
+            fontWeight: 'normal',
+            color: '#666',
+            lineHeight: 14,
+            textAlign: 'center'
           }
         }
       },

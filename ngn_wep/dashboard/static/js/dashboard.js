@@ -226,7 +226,8 @@ async function updateAllData() {
     
     try {
       if (typeof fetchGa4ViewItemSummaryData === 'function') {
-        fetchGa4ViewItemSummaryData();
+        const requestData = getRequestData(1, {});
+        fetchGa4ViewItemSummaryData(requestData);
       } else {
         debugLog("[WARNING] fetchGa4ViewItemSummaryData 함수가 정의되지 않음");
       }
@@ -236,7 +237,8 @@ async function updateAllData() {
     
     try {
       if (typeof fetchGa4SourceSummaryData === 'function') {
-        fetchGa4SourceSummaryData();
+        const requestData = getRequestData(1, {});
+        fetchGa4SourceSummaryData(requestData);
       } else {
         debugLog("[WARNING] fetchGa4SourceSummaryData 함수가 정의되지 않음");
       }
@@ -246,7 +248,8 @@ async function updateAllData() {
     
     try {
       if (typeof fetchProductSalesRatio === 'function') {
-        fetchProductSalesRatio();
+        const requestData = getRequestData(1, {});
+        fetchProductSalesRatio(requestData);
       } else {
         debugLog("[WARNING] fetchProductSalesRatio 함수가 정의되지 않음");
       }

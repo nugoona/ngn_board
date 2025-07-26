@@ -1,12 +1,13 @@
 // File: static/js/meta_ads_adset_summary_by_type.js
 
+import { resolveDateRange } from "./meta_ads_utils.js";
 // showLoading/hideLoading 함수는 common.js에서 정의됨
-// metaAdsState는 전역에서 접근 가능
+import { metaAdsState } from "./meta_ads_state.js";
 
 const $ = window.$;
 let typePieChartInstance = null;
 
-function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
+export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
   console.log("[DEBUG] fetchMetaAdsAdsetSummaryByType 호출됨");
 
   const requestData = getRequestData(1, {
@@ -150,7 +151,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     
       // 🔥 공통 함수 사용
   if (typeof window.createEmptyPieChart !== 'function') {
-    console.error("[ERROR] createEmptyPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
+    console.warn("[WARN] createEmptyPieChart 함수가 아직 로드되지 않았습니다. 100ms 후 재시도합니다.");
+    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 100);
     return;
   }
   typePieChartInstance = window.createEmptyPieChart("metaAdsAdsetSummaryChart");
@@ -184,7 +186,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
 
   // 🔥 공통 함수 사용
   if (typeof window.createPieChart !== 'function') {
-    console.error("[ERROR] createPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
+    console.warn("[WARN] createPieChart 함수가 아직 로드되지 않았습니다. 100ms 후 재시도합니다.");
+    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 100);
     return;
   }
   typePieChartInstance = window.createPieChart("metaAdsAdsetSummaryChart", {
@@ -197,6 +200,3 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
 
   console.log("[DEBUG] 캠페인 목표별 지출 비중 차트 렌더링 완료");
 }
-
-// 전역 함수로 노출
-window.fetchMetaAdsAdsetSummaryByType = fetchMetaAdsAdsetSummaryByType;

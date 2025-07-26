@@ -291,7 +291,9 @@ function renderProductSalesRatioChart() {
       legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
     }
     
+    const baseOptions = window.ApexChartsGlobalStyles.getDefaultPieChartOptions();
     chartInstance_product = new ApexCharts(chartContainer, {
+      ...baseOptions,
       series: [100],
       labels: ['데이터 없음'],
       colors: ['#e5e7eb'],
@@ -344,8 +346,10 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // 🔥 전역 스타일을 사용한 간소화된 옵션
+  // 🔥 전역 스타일을 사용한 파이 차트 옵션
+  const baseOptions = window.ApexChartsGlobalStyles.getDefaultPieChartOptions();
   const options = {
+    ...baseOptions,
     series: values,
     labels: labels,
     colors: colors,

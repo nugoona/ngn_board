@@ -114,13 +114,13 @@ function renderMetaAdsAdsetSummaryTable(data) {
     totalPurchaseValue += row.total_purchase_value || 0;
 
     const html = `
-      <tr>
-        <td>${row.type || "-"}</td>
-        <td>${spend}</td>
-        <td>${CPM}</td>
-        <td>${CPC}</td>
-        <td>${purchases}</td>
-        <td>${ROAS}</td>
+      <tr style="text-align: center;">
+        <td style="text-align: center;">${row.type || "-"}</td>
+        <td style="text-align: center;">${spend}</td>
+        <td style="text-align: center;">${CPM}</td>
+        <td style="text-align: center;">${CPC}</td>
+        <td style="text-align: center;">${purchases}</td>
+        <td style="text-align: center;">${ROAS}</td>
       </tr>
     `;
     $tbody.append(html);
@@ -132,13 +132,13 @@ function renderMetaAdsAdsetSummaryTable(data) {
   const totalROAS = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100).toLocaleString() + "%" : "0%";
 
   const totalHtml = `
-    <tr style="font-weight: bold; background-color: #f3f4f6;">
-      <td>총합</td>
-      <td>${totalSpend.toLocaleString()}</td>
-      <td>${totalCPM}</td>
-      <td>${totalCPC}</td>
-      <td>${totalPurchases}</td>
-      <td>${totalROAS}</td>
+    <tr style="font-weight: bold; background-color: #f3f4f6; text-align: center;">
+      <td style="text-align: center;">총합</td>
+      <td style="text-align: center;">${totalSpend.toLocaleString()}</td>
+      <td style="text-align: center;">${totalCPM}</td>
+      <td style="text-align: center;">${totalCPC}</td>
+      <td style="text-align: center;">${totalPurchases}</td>
+      <td style="text-align: center;">${totalROAS}</td>
     </tr>
   `;
   $tbody.append(totalHtml);
@@ -205,28 +205,119 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       left: 'center',
       top: 20,
       textStyle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333'
-      }
+        fontSize: 22,
+        fontWeight: '700',
+        fontFamily: 'Pretendard, sans-serif',
+        color: '#ffffff'
+      },
+      backgroundColor: '#1e293b',
+      borderRadius: 6,
+      padding: [12, 24],
+      shadowBlur: 8,
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
+      shadowOffsetX: 2,
+      shadowOffsetY: 2
     },
     tooltip: {
       trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
+      formatter: function(params) {
+        const spend = (params.value / 100 * totalSpendSum).toLocaleString();
+        return `${params.name}<br/>₩${spend} (${params.value.toFixed(1)}%)`;
+      }
     },
+    graphic: [{
+      type: 'line',
+      left: 'center',
+      top: 70,
+      shape: {
+        x1: -80,
+        y1: 0,
+        x2: 80,
+        y2: 0
+      },
+      style: {
+        stroke: '#e2e8f0',
+        lineWidth: 2,
+        shadowBlur: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      }
+    }],
     series: [{
       name: '지출 비중',
       type: 'pie',
-      radius: ['30%', '70%'],
+      radius: ['30%', '55%'],
       center: ['50%', '60%'],
+      roseType: 'area',
       data: chartData,
-      color: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
+      color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
         show: true,
-        formatter: '{b}: {d}%'
+        position: 'outside',
+        align: 'center',
+        formatter: function(params) {
+          return `{percentage|${params.value.toFixed(1)}%}\n{objectiveName|${params.name}}`;
+        },
+        fontSize: 14,
+        fontFamily: 'Pretendard, sans-serif',
+        backgroundColor: 'transparent',
+        borderRadius: 8,
+        padding: [0, 0],
+        borderColor: 'transparent',
+        borderWidth: 0,
+        shadowBlur: 4,
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        rich: {
+          percentage: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: '#000',
+            backgroundColor: '#ffffff',
+            borderRadius: [8, 8, 0, 0],
+            padding: [8, 12, 4, 12],
+            textAlign: 'center',
+            borderColor: '#e2e8f0',
+            borderWidth: 1
+          },
+          objectiveName: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#ffffff',
+            backgroundColor: '#4a5568',
+            borderRadius: [0, 0, 8, 8],
+            padding: [4, 12, 8, 12],
+            textAlign: 'center',
+            borderColor: '#4a5568',
+            borderWidth: 1
+          }
+        }
       },
       labelLine: {
-        show: true
+        show: true,
+        length: 10,
+        length2: 15,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#cbd5e1',
+          shadowBlur: 3,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      itemStyle: {
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 15,
+          shadowOffsetX: 4,
+          shadowOffsetY: 4,
+          shadowColor: 'rgba(0, 0, 0, 0.2)'
+        }
       }
     }]
   };

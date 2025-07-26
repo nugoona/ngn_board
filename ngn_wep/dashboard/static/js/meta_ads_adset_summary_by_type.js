@@ -104,6 +104,9 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     window.echartsMetaAdsAdsetSummary.dispose();
   }
 
+  // 총 지출 계산
+  totalSpendSum = totalSpendSum || data.reduce((sum, row) => sum + (row.total_spend || 0), 0);
+
   // 데이터가 없는 경우 빈 차트 표시
   if (!data || data.length === 0 || totalSpendSum === 0) {
     console.log("[DEBUG] 빈 차트 렌더링");
@@ -116,22 +119,14 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         left: 'center',
         top: 20,
         textStyle: {
-          fontSize: 22,
-          fontWeight: '700',
-          fontFamily: 'Pretendard, sans-serif',
-          color: '#ffffff'
-        },
-        backgroundColor: '#1e293b',
-        borderRadius: 6,
-        padding: [12, 24],
-        shadowBlur: 8,
-        shadowColor: 'rgba(0, 0, 0, 0.15)',
-        shadowOffsetX: 2,
-        shadowOffsetY: 2
+          fontSize: 16,
+          fontWeight: 'bold',
+          color: '#333'
+        }
       },
       series: [{
         type: 'pie',
-        radius: ['25%', '65%'],
+        radius: ['30%', '70%'],
         center: ['50%', '60%'],
         data: [{ value: 100, name: '데이터 없음' }],
         color: ['#e5e7eb'],
@@ -148,8 +143,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   
   const chartData = data.map(row => ({
     value: totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0,
-    name: row.type || "-",
-    actualSpend: row.total_spend || 0
+    name: row.type || "-"
   }));
 
   // ECharts 인스턴스 생성
@@ -162,119 +156,28 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       left: 'center',
       top: 20,
       textStyle: {
-        fontSize: 22,
-        fontWeight: '700',
-        fontFamily: 'Pretendard, sans-serif',
-        color: '#ffffff'
-      },
-      backgroundColor: '#1e293b',
-      borderRadius: 6,
-      padding: [12, 24],
-      shadowBlur: 8,
-      shadowColor: 'rgba(0, 0, 0, 0.15)',
-      shadowOffsetX: 2,
-      shadowOffsetY: 2
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333'
+      }
     },
     tooltip: {
       trigger: 'item',
-      formatter: function(params) {
-        const actualSpend = params.data.actualSpend || 0;
-        const formattedSpend = actualSpend.toLocaleString();
-        return `${params.name}<br/>₩${formattedSpend} (${params.value}%)`;
-      }
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
     },
-    graphic: [{
-      type: 'line',
-      left: 'center',
-      top: 70,
-      shape: {
-        x1: -80,
-        y1: 0,
-        x2: 80,
-        y2: 0
-      },
-      style: {
-        stroke: '#e2e8f0',
-        lineWidth: 2,
-        shadowBlur: 2,
-        shadowColor: 'rgba(0, 0, 0, 0.1)'
-      }
-    }],
     series: [{
       name: '지출 비중',
       type: 'pie',
-      radius: ['25%', '65%'],
+      radius: ['30%', '70%'],
       center: ['50%', '60%'],
       data: chartData,
       color: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
       label: {
         show: true,
-        position: 'outside',
-        align: 'center',
-        formatter: function(params) {
-          return `{percentage|${params.value.toFixed(1)}%}\n{goalName|${params.name}}`;
-        },
-        fontSize: 14,
-        fontFamily: 'Pretendard, sans-serif',
-        backgroundColor: 'transparent',
-        borderRadius: 8,
-        padding: [0, 0],
-        borderColor: 'transparent',
-        borderWidth: 0,
-        shadowBlur: 4,
-        shadowColor: 'rgba(0, 0, 0, 0.3)',
-        shadowOffsetX: 2,
-        shadowOffsetY: 2,
-        rich: {
-          percentage: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: '#000',
-            backgroundColor: '#ffffff',
-            borderRadius: [8, 8, 0, 0],
-            padding: [8, 12, 4, 12],
-            textAlign: 'center',
-            borderColor: '#e2e8f0',
-            borderWidth: 1
-          },
-          goalName: {
-            fontSize: 18,
-            fontWeight: '600',
-            color: '#ffffff',
-            backgroundColor: '#4a5568',
-            borderRadius: [0, 0, 8, 8],
-            padding: [4, 12, 8, 12],
-            textAlign: 'center',
-            borderColor: '#4a5568',
-            borderWidth: 1
-          }
-        }
+        formatter: '{b}: {d}%'
       },
       labelLine: {
-        show: true,
-        length: 10,
-        length2: 15,
-        smooth: true,
-        lineStyle: {
-          width: 2,
-          color: '#cbd5e1',
-          shadowBlur: 3,
-          shadowColor: 'rgba(0, 0, 0, 0.1)'
-        }
-      },
-      itemStyle: {
-        shadowBlur: 8,
-        shadowOffsetX: 2,
-        shadowOffsetY: 2,
-        shadowColor: 'rgba(0, 0, 0, 0.1)'
-      },
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 15,
-          shadowOffsetX: 4,
-          shadowOffsetY: 4,
-          shadowColor: 'rgba(0, 0, 0, 0.2)'
-        }
+        show: true
       }
     }]
   };

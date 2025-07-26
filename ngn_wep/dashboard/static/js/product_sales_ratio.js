@@ -239,50 +239,63 @@ function renderProductSalesRatioChart() {
         show: true,
         position: 'outside',
         formatter: function(params) {
-          return `${params.name}\n${params.value}%`;
+          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+          const color = colors[params.dataIndex];
+          return `{percentage|${params.value}%}\n{productName|${params.name}}`;
         },
         fontSize: 14,
         fontFamily: 'Pretendard, sans-serif',
-        color: function(params) {
-          // 파이 색상과 동일하게 설정
-          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-          return colors[params.dataIndex];
-        },
-        fontWeight: '600',
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        padding: [8, 12],
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        shadowBlur: 10,
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
         rich: {
-          productName: {
-            fontSize: 15,
-            fontWeight: '600',
-            color: function(params) {
-              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-              return colors[params.dataIndex];
-            }
-          },
           percentage: {
-            fontSize: 18,
-            fontWeight: '700',
+            fontSize: 24,
+            fontWeight: '800',
             color: function(params) {
               const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
               return colors[params.dataIndex];
-            }
+            },
+            padding: [0, 0, 4, 0]
+          },
+          productName: {
+            fontSize: 13,
+            fontWeight: '600',
+            color: '#64748b',
+            lineHeight: 16
           }
         }
       },
       labelLine: {
         show: true,
-        length: 20,
-        length2: 30,
+        length: 15,
+        length2: 25,
         smooth: true,
         lineStyle: {
-          width: 1.5,
-          color: '#94a3b8'
+          width: 2,
+          color: '#cbd5e1',
+          shadowBlur: 3,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
         }
+      },
+      itemStyle: {
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
       },
       emphasis: {
         itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
+          shadowBlur: 15,
+          shadowOffsetX: 4,
+          shadowOffsetY: 4,
+          shadowColor: 'rgba(0, 0, 0, 0.2)'
         }
       }
     }]

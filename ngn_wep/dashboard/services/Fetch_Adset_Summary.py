@@ -41,7 +41,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
         CASE
           WHEN adset_name LIKE '%도달%' THEN '도달'
           WHEN adset_name LIKE '%유입%' THEN '유입'
-          WHEN adset_name LIKE '%uc804ud658%' THEN '전환'
+          WHEN adset_name LIKE '%전환%' THEN '전환'
           ELSE '기타'
         END AS type
       FROM deduplicated_adsets

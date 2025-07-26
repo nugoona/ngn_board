@@ -186,36 +186,31 @@ function renderPlatformSalesRatioChart() {
         show: true,
         position: 'outside',
         formatter: function(params) {
-          const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-          const color = colors[params.dataIndex];
           return `{percentage|${params.value}%}\n{platformName|${params.name}}`;
         },
-        fontSize: 14,
+        fontSize: 16,
         fontFamily: 'Pretendard, sans-serif',
         backgroundColor: '#ffffff',
-        borderRadius: 8,
-        padding: [8, 12],
+        borderRadius: 6,
+        padding: [6, 10],
         borderColor: '#e2e8f0',
         borderWidth: 1,
-        shadowBlur: 10,
-        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowBlur: 8,
+        shadowColor: 'rgba(0, 0, 0, 0.15)',
         shadowOffsetX: 2,
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 26,
-            fontWeight: '800',
-            color: function(params) {
-              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
-              return colors[params.dataIndex];
-            },
-            padding: [0, 0, 4, 0]
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#333',
+            padding: [0, 0, 2, 0]
           },
           platformName: {
-            fontSize: 20,
-            fontWeight: '800',
-            color: '#1e293b',
-            lineHeight: 20
+            fontSize: 12,
+            fontWeight: 'normal',
+            color: '#666',
+            lineHeight: 14
           }
         }
       },

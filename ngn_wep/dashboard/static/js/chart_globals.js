@@ -47,7 +47,7 @@ Apex.responsive = [
 
 // 🔥 차트 종류별 옵션 분리 함수
 export function getChartOptions(type = 'default') {
-  // 공통 옵션 (모든 차트)
+  // 공통 옵션 (모든 차트) - 최소화
   const common = {
     chart: {
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
@@ -57,7 +57,7 @@ export function getChartOptions(type = 'default') {
       dropShadow: { enabled: false }
     },
     dataLabels: {
-      enabled: true,
+      enabled: false, // 기본적으로 비활성화
       style: {
         fontSize: '14px',
         fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
@@ -88,12 +88,20 @@ export function getChartOptions(type = 'default') {
         offsetY: 0,
         customScale: 1,
         dataLabels: {
+          enabled: true, // 파이 차트에서만 활성화
           offset: 0,
           minAngleToShowLabel: 10,
           formatter: function (val, opts) {
             const value = opts.w.globals.series[opts.seriesIndex];
             return typeof value === 'number' ? value.toFixed(1) + '%' : '0.0%';
-          }
+          },
+          style: {
+            fontSize: '14px',
+            fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+            fontWeight: 600,
+            colors: ['#ffffff']
+          },
+          dropShadow: { enabled: false }
         },
         donut: {
           size: '65%',
@@ -285,6 +293,7 @@ window.createPieChart = function(containerId, data, options = {}) {
     chart: {
       type: 'pie',
       height: 350,
+      width: '100%',
       ...pieOptions.chart
     },
     colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
@@ -310,6 +319,14 @@ window.createPieChart = function(containerId, data, options = {}) {
   chartInstance.render();
   
   console.log(`[DEBUG] 파이 차트 생성 완료: ${containerId}`);
+  console.log(`[DEBUG] 차트 컨테이너 렌더링 후:`, {
+    container: chartContainer,
+    height: chartContainer.style.height,
+    width: chartContainer.style.width,
+    display: chartContainer.style.display,
+    innerHTML: chartContainer.innerHTML.substring(0, 200) + '...'
+  });
+  
   return chartInstance;
 };
 

@@ -260,20 +260,29 @@ function changePage_ratio(page) {
 function renderProductSalesRatioChart() {
   console.log("[DEBUG] renderProductSalesRatioChart 호출됨");
   
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(() => renderProductSalesRatioChart(), 100);
-    return;
-  }
-
+  // DOM이 준비되었는지 확인
   const chartContainer = document.getElementById("productSalesRatioChart");
   const legendContainer = document.getElementById("productLegendItems");
   
   console.log("[DEBUG] 차트 컨테이너:", chartContainer);
+  console.log("[DEBUG] 차트 컨테이너 스타일:", chartContainer ? {
+    display: chartContainer.style.display,
+    height: chartContainer.style.height,
+    width: chartContainer.style.width,
+    visibility: chartContainer.style.visibility
+  } : "컨테이너 없음");
 
   if (!chartContainer) {
     console.error("[ERROR] productSalesRatioChart 컨테이너를 찾을 수 없습니다!");
+    // DOM이 아직 준비되지 않았을 수 있으므로 재시도
+    setTimeout(() => renderProductSalesRatioChart(), 100);
+    return;
+  }
+
+  // ApexCharts가 로드되었는지 확인
+  if (typeof ApexCharts === 'undefined') {
+    console.warn('ApexCharts not loaded, retrying in 100ms...');
+    setTimeout(() => renderProductSalesRatioChart(), 100);
     return;
   }
 
@@ -332,6 +341,8 @@ function renderProductSalesRatioChart() {
   }
 
   // 🔥 공통 함수 사용
+  console.log("[DEBUG] createPieChart 호출 전 - series:", values, "labels:", labels);
+  
   chartInstance_product = window.createPieChart("productSalesRatioChart", {
     series: values,
     labels: labels,
@@ -340,6 +351,7 @@ function renderProductSalesRatioChart() {
     colors: colors
   });
 
+  console.log("[DEBUG] createPieChart 호출 후 - chartInstance:", chartInstance_product);
   console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
 }
 
@@ -348,10 +360,17 @@ $(document).ready(function() {
   $("#toggleProductSalesRatioChart").on("click", function() {
     const $container = $("#productSalesRatioChartContainer");
     const isVisible = $container.is(":visible");
+    console.log("[DEBUG] 토글 버튼 클릭 - 현재 상태:", isVisible);
+    
     $container.toggle();
     $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
+    
     if (!isVisible) {
-      renderProductSalesRatioChart();
+      console.log("[DEBUG] 차트 표시 - 렌더링 시작");
+      // DOM이 완전히 표시된 후 차트 렌더링
+      setTimeout(() => {
+        renderProductSalesRatioChart();
+      }, 100);
     }
   });
 });

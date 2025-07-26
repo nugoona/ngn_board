@@ -3194,7 +3194,15 @@ h2::before {
   justify-content: center;
   align-items: center;
   min-height: 350px;
+  height: 350px;
   background: transparent;
+}
+
+/* 차트 컨테이너 명시적 높이 설정 */
+#productSalesRatioChart {
+  min-height: 350px;
+  height: 350px;
+  width: 100%;
 }
 
 /* 범례 영역 - 단일 배경 */

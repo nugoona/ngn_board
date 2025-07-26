@@ -347,6 +347,11 @@ thead th {
   display: flex;
   gap: 16px;
   align-items: center;
+  margin-bottom: 8px;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
 }
 
 .modern-filter-item {

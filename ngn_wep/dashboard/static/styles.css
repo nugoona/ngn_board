@@ -2894,7 +2894,7 @@ th.sortable.desc::after {
   width: 100% !important;
   height: 100% !important;
   background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important; /* 원래 값으로 복원 */
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2903,6 +2903,12 @@ th.sortable.desc::after {
   pointer-events: auto !important;
   transition: var(--transition-normal) !important;
   border-radius: var(--radius-lg) !important;
+}
+
+/* 🔥 사이트 성과 요약 전용 로딩 오버레이 최적화 */
+#loadingOverlayPerformanceSummary {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(2px) !important; /* 성과 요약만 블러 효과 감소 */
 }
 
 /* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) */
@@ -2948,8 +2954,13 @@ div[class*="loading-overlay"],
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px); /* 원래 값으로 복원 */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+/* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */
+#loadingOverlayPerformanceSummary .loading-text {
+  backdrop-filter: none; /* 성과 요약만 backdrop-filter 제거 */
 }
 
 /* ================================

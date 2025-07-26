@@ -206,12 +206,13 @@ function renderPlatformSalesRatioChart() {
             color: '#000',
             backgroundColor: '#ffffff',
             borderRadius: [8, 8, 0, 0],
-            padding: [8, 16, 4, 16],
+            padding: [12, 16, 12, 16],
             textAlign: 'center',
             borderColor: '#e2e8f0',
             borderWidth: 1,
             width: 120,
-            lineHeight: 40
+            lineHeight: 32,
+            height: 56
           },
           platformName: {
             fontSize: 24,
@@ -219,12 +220,13 @@ function renderPlatformSalesRatioChart() {
             color: '#ffffff',
             backgroundColor: '#4a5568',
             borderRadius: [0, 0, 8, 8],
-            padding: [4, 16, 8, 16],
+            padding: [8, 16, 8, 16],
             textAlign: 'center',
             borderColor: '#4a5568',
             borderWidth: 1,
             width: 120,
-            lineHeight: 32
+            lineHeight: 24,
+            height: 40
           }
         }
       },

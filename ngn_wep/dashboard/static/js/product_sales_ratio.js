@@ -217,17 +217,41 @@ function renderProductSalesRatioChart() {
         fontSize: 22,
         fontWeight: '700',
         fontFamily: 'Pretendard, sans-serif',
-        color: '#1e293b'
-      }
+        color: '#ffffff'
+      },
+      backgroundColor: '#1e293b',
+      borderRadius: 6,
+      padding: [12, 24],
+      shadowBlur: 8,
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
+      shadowOffsetX: 2,
+      shadowOffsetY: 2
     },
-    tooltip: {
-      trigger: 'item',
-      formatter: function(params) {
-        const actualSales = params.data.actualSales || 0;
-        const formattedSales = actualSales.toLocaleString();
-        return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
-      }
-    },
+          tooltip: {
+        trigger: 'item',
+        formatter: function(params) {
+          const actualSales = params.data.actualSales || 0;
+          const formattedSales = actualSales.toLocaleString();
+          return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
+        }
+      },
+      graphic: [{
+        type: 'line',
+        left: 'center',
+        top: 70,
+        shape: {
+          x1: -80,
+          y1: 0,
+          x2: 80,
+          y2: 0
+        },
+        style: {
+          stroke: '#e2e8f0',
+          lineWidth: 2,
+          shadowBlur: 2,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      }],
     series: [{
       name: '매출 비중',
       type: 'pie',

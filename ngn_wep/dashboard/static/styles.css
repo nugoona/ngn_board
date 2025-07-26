@@ -3457,7 +3457,7 @@ h2::before {
 .radio-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -3524,7 +3524,7 @@ input[type="radio"] {
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
-  margin-right: 8px;
+  margin-right: 6px;
   vertical-align: middle;
 }
 
@@ -3561,7 +3561,7 @@ label input[type="radio"] + b {
   font-size: 14px;
   font-weight: 500;
   color: #374151;
-  margin-left: 4px;
+  margin-left: 2px;
   vertical-align: middle;
 }
 

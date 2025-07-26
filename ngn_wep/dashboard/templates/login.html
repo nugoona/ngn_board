@@ -201,16 +201,17 @@
     .update-notification {
       position: fixed;
       top: 50%;
-      right: 30px;
+      right: 0;
       transform: translateY(-50%);
       width: 420px;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.5);
       backdrop-filter: blur(15px);
-      border-radius: 16px;
+      border-radius: 16px 0 0 16px;
       padding: 24px;
       box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
       border: 1px solid rgba(255, 255, 255, 0.3);
-      font-size: 13px;
+      border-right: none;
+      font-size: 18px;
       line-height: 1.5;
       color: #374151;
       z-index: 9999;
@@ -224,64 +225,64 @@
     }
 
     .update-title {
-      font-size: 16px;
+      font-size: 22px;
       font-weight: 700;
       color: #1a1a1a;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid rgba(99, 102, 241, 0.3);
     }
 
     .update-version {
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 600;
       color: #6366f1;
-      background: rgba(99, 102, 241, 0.1);
-      padding: 3px 6px;
-      border-radius: 4px;
-      margin-left: 8px;
+      background: rgba(99, 102, 241, 0.15);
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-left: 10px;
     }
 
     .update-item {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-size: 12px;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 17px;
     }
 
     .update-item svg {
-      width: 14px;
-      height: 14px;
+      width: 18px;
+      height: 18px;
       flex-shrink: 0;
-      margin-top: 1px;
+      margin-top: 2px;
       color: #6366f1;
     }
 
     .update-section {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .update-section-title {
-      font-size: 13px;
+      font-size: 18px;
       font-weight: 600;
       color: #6366f1;
-      margin-bottom: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid rgba(99, 102, 241, 0.3);
     }
 
     .update-close {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      top: 10px;
+      right: 10px;
       background: none;
       border: none;
       color: #6b7280;
       cursor: pointer;
-      padding: 3px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 4px;
+      border-radius: 5px;
+      font-size: 16px;
     }
 
     .update-close:hover {
@@ -307,11 +308,13 @@
       .update-notification {
         position: fixed;
         top: 50%;
-        right: 20px;
+        right: 0;
         transform: translateY(-50%);
         width: 90%;
         max-width: 400px;
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 16px 0 0 16px;
+        border-right: none;
       }
     }
   </style>

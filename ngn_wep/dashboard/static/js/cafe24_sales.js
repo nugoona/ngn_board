@@ -10,17 +10,21 @@ $(document).ready(function () {
   console.log("[DEBUG] Cafe24 매출 데이터 JS 로드됨");
 
   $("#cafe24SalesTable").before(`
-    <div class="date-type-filter" style="margin-bottom: 10px; font-size: 18px;">
-      <label style="margin-right: 5px; padding: 8px;">
-        <input type="radio" name="dateType" value="summary" checked> <b>기간합</b>
+    <div class="date-type-filter radio-group" style="margin-bottom: 16px;">
+      <label class="radio-item">
+        <input type="radio" name="dateType" value="summary" checked>
+        <span>기간합</span>
       </label>
-      <label style="padding: 8px;">
-        <input type="radio" name="dateType" value="daily"> <b>일자별</b>
+      <label class="radio-item">
+        <input type="radio" name="dateType" value="daily">
+        <span>일자별</span>
       </label>
-      <select id="dateSort" style="display: none; margin-left: 10px; padding: 5px; font-size: 16px;">
-        <option value="desc" selected>날짜 내림차순</option>
-        <option value="asc">날짜 오름차순</option>
-      </select>
+      <div class="modern-dropdown" style="display: none; margin-left: 16px;">
+        <select id="dateSort">
+          <option value="desc" selected>날짜 내림차순</option>
+          <option value="asc">날짜 오름차순</option>
+        </select>
+      </div>
     </div>
   `);
 

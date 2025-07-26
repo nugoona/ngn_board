@@ -362,8 +362,13 @@ thead th {
 }
 
 /* 두 번째 줄: 상품명 검색 */
-.modern-filter-item:last-child {
+.filter-row:last-child .modern-filter-item {
   width: 100%;
+}
+
+.filter-row:last-child .modern-input {
+  flex: 1;
+  min-width: 0;
 }
 
 /* 아이콘 스타일 */

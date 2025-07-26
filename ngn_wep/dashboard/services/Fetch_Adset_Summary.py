@@ -22,7 +22,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     if not end_date:
         end_date = today
 
-    # ✅ 1. 캠페인 목표별 요약
+    # ✅ 1. 캠페인 목표별 요약 - CASE 문 사용
     type_summary_query = f"""
     WITH filtered_data AS (
       SELECT
@@ -33,7 +33,13 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
         impressions,
         clicks,
         purchases,
-        purchase_value
+        purchase_value,
+        CASE
+          WHEN adset_name LIKE '%도달%' THEN '도달'
+          WHEN adset_name LIKE '%유입%' THEN '유입'
+          WHEN adset_name LIKE '%전환%' THEN '전환'
+          ELSE '기타'
+        END AS type
       FROM
         `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
       WHERE
@@ -56,13 +62,8 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       SUM(purchase_value) AS total_purchase_value,
       SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
       SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
-    FROM (
-      SELECT *, '유입' AS type FROM filtered_data WHERE adset_name LIKE '%유입%'
-      UNION ALL
-      SELECT *, '전환' AS type FROM filtered_data WHERE adset_name LIKE '%전환%'
-      UNION ALL
-      SELECT *, '도달' AS type FROM filtered_data WHERE adset_name LIKE '%도달%'
-    )
+    FROM filtered_data
+    WHERE type != '기타'
     GROUP BY account_id, account_name, type
     ORDER BY account_name, type
     """

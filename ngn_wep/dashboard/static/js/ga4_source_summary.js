@@ -3,22 +3,12 @@ let currentGa4SourcePage = 1;
 const ga4SourceItemsPerPage = 10;
 
 // ✅ requestData + page 인자 받도록 수정
-function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
+function fetchGa4SourceSummaryData(page = 1) {
   currentGa4SourcePage = page;
 
-  // getRequestData 함수 사용하여 올바른 파라미터 생성
-  const finalRequestData = getRequestData(page, {
+  const requestData = getRequestData(page, {
     data_type: "ga4_source_summary"
   });
-
-  console.log("[DEBUG] GA4 소스 요약 요청:", finalRequestData);
-  console.log("[DEBUG] GA4 소스 요약 요청 파라미터 상세:", {
-    period: finalRequestData.period,
-    start_date: finalRequestData.start_date,
-    end_date: finalRequestData.end_date,
-    company_name: finalRequestData.company_name
-  });
-  console.log("[DEBUG] GA4 소스 요약 전체 payload:", JSON.stringify(finalRequestData, null, 2));
 
   showLoading("#loadingOverlayGa4Source");
 
@@ -26,18 +16,15 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
     url: "/dashboard/get_data",
     method: "POST",
     contentType: "application/json",
-    data: JSON.stringify(finalRequestData),
+    data: JSON.stringify(requestData),
     success: function (res) {
       hideLoading("#loadingOverlayGa4Source");
 
       if (res.status === "success" && res.ga4_source_summary) {
         rawGa4SourceRows = res.ga4_source_summary;
-        console.log("[DEBUG] GA4 소스 요약 응답:", res.ga4_source_summary);
-        console.log("[DEBUG] GA4 소스 요약 응답 개수:", res.ga4_source_summary.length);
-        console.log("[DEBUG] GA4 소스 요약 첫 번째 데이터:", res.ga4_source_summary[0]);
 
-        renderGa4SourceSummaryFilters(rawGa4SourceRows);
-        renderGa4CountrySummaryFilters(rawGa4SourceRows);
+        renderGa4SourceSummaryFilters(rawGa4SourceRows);  // 소스 드롭다운
+        renderGa4CountrySummaryFilters(rawGa4SourceRows); // 국가 드롭다운
 
         renderGa4SourceSummaryTable();
         renderGa4SourceSummaryPagination(getFilteredGa4SourceData().length);
@@ -47,11 +34,7 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
     },
     error: function (jqXHR, textStatus, errorThrown) {
       hideLoading("#loadingOverlayGa4Source");
-      if (textStatus !== "abort") {
       console.error(`[ERROR] GA4 Source Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
-      } else {
-        console.log("[DEBUG] GA4 Source Summary 요청 abort됨");
-      }
     }
   });
 }

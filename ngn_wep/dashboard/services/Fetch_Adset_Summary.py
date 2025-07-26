@@ -114,6 +114,10 @@ def get_meta_ads_adset_summary_by_type(
     ‑ adset_name → type 매핑(CASE)
     """
 
+    # period 기반으로 올바른 날짜 계산
+    from ngn_wep.dashboard.handlers.data_handler import get_start_end_dates
+    start_date, end_date = get_start_end_dates(period, start_date, end_date)
+    
     today = datetime.today().strftime("%Y-%m-%d")
     start_date = (start_date or today).strip()
     end_date   = (end_date   or today).strip()

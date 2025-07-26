@@ -31,8 +31,12 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
     return;
   }
 
-  if (typeof showLoading === 'function') {
-    showLoading("#loadingOverlayTypeSummary");
+  try {
+    if (typeof showLoading === 'function') {
+      showLoading("#loadingOverlayTypeSummary");
+    }
+  } catch (e) {
+    console.warn("[WARN] showLoading 함수 호출 실패:", e);
   }
 
         const payload = {
@@ -49,8 +53,12 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
           contentType: "application/json",
           data: JSON.stringify(payload),
           success: function (res) {
-            if (typeof hideLoading === 'function') {
-              hideLoading("#loadingOverlayTypeSummary");
+            try {
+              if (typeof hideLoading === 'function') {
+                hideLoading("#loadingOverlayTypeSummary");
+              }
+            } catch (e) {
+              console.warn("[WARN] hideLoading 함수 호출 실패:", e);
             }
 
             const typeSummary = res?.data?.type_summary || [];
@@ -62,8 +70,12 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
             renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
           },
           error: function (err) {
-            if (typeof hideLoading === 'function') {
-              hideLoading("#loadingOverlayTypeSummary");
+            try {
+              if (typeof hideLoading === 'function') {
+                hideLoading("#loadingOverlayTypeSummary");
+              }
+            } catch (e) {
+              console.warn("[WARN] hideLoading 함수 호출 실패:", e);
             }
             console.error("[ERROR] 캠페인 목표별 요약 로드 실패", err);
             $("#metaAdsAdsetSummaryTableBody").html('<tr><td colspan="6">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>');

@@ -31,9 +31,7 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
     return;
   }
 
-  if (typeof showLoading === 'function') {
-    showLoading("#loadingOverlayTypeSummary");
-  }
+  showLoading("#loadingOverlayTypeSummary");
 
         const payload = {
           data_type: "meta_ads_adset_summary_by_type",
@@ -49,9 +47,7 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
           contentType: "application/json",
           data: JSON.stringify(payload),
           success: function (res) {
-            if (typeof hideLoading === 'function') {
-              hideLoading("#loadingOverlayTypeSummary");
-            }
+            hideLoading("#loadingOverlayTypeSummary");
 
             const typeSummary = res?.data?.type_summary || [];
             const totalSpendSum = res?.data?.total_spend_sum || 0;
@@ -62,9 +58,7 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
             renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
           },
           error: function (err) {
-            if (typeof hideLoading === 'function') {
-              hideLoading("#loadingOverlayTypeSummary");
-            }
+            hideLoading("#loadingOverlayTypeSummary");
             console.error("[ERROR] 캠페인 목표별 요약 로드 실패", err);
             $("#metaAdsAdsetSummaryTableBody").html('<tr><td colspan="6">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>');
           }

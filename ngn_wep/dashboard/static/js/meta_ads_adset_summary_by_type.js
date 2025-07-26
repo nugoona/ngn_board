@@ -1,5 +1,7 @@
 // File: static/js/meta_ads_adset_summary_by_type.js
 
+console.log("[DEBUG] 🔥 meta_ads_adset_summary_by_type.js 로드됨");
+
 import { resolveDateRange } from "./meta_ads_utils.js";
 import { metaAdsState } from "./meta_ads_state.js";
 

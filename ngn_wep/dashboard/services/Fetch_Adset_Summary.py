@@ -145,7 +145,7 @@ def get_meta_ads_adset_summary_by_type(
         ad.purchases,
         ad.purchase_value,
         ROW_NUMBER() OVER (
-          PARTITION BY ad.adset_id, DATE(ad.date), ad.adset_name 
+          PARTITION BY ad.adset_id, DATE(ad.date)
           ORDER BY ad.date DESC, ad.updated_at DESC
         ) AS rn
       FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` ad

@@ -1,3 +1,4 @@
+// 🔥 캐시 무효화용 임시 주석 - 2024-01-27
 // resolveDateRange 함수 정의 (meta_ads_utils.js에서 가져옴)
 function resolveDateRange(period) {
   const today = new Date();
@@ -133,27 +134,27 @@ function setupPagination_ratio() {
   if (totalPages <= 1) return;
   
   // 이전 버튼
-  if (currentPage > 1) {
-    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage - 1})">이전</button>`);
+  if (currentPage_product > 1) {
+    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage_product - 1})">이전</button>`);
   }
   
   // 페이지 번호
   for (let i = 1; i <= totalPages; i++) {
-    const btnClass = i === currentPage ? "pagination-btn active" : "pagination-btn";
+    const btnClass = i === currentPage_product ? "pagination-btn active" : "pagination-btn";
     paginationContainer.append(`<button class="${btnClass}" onclick="changePage_ratio(${i})">${i}</button>`);
   }
   
   // 다음 버튼
-  if (currentPage < totalPages) {
-    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage + 1})">다음</button>`);
+  if (currentPage_product < totalPages) {
+    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage_product + 1})">다음</button>`);
   }
 }
 
-// 전역 변수로 currentPage 선언 (한 번만)
-let currentPage = 1;
+// 전역 변수로 currentPage_product 선언 (한 번만)
+let currentPage_product = 1;
 
 function changePage_ratio(page) {
-  currentPage = page;
+  currentPage_product = page;
   renderProductSalesRatioTable(page);
   setupPagination_ratio();
 }

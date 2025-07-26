@@ -7,8 +7,11 @@ function fetchGa4SourceSummaryData(page = 1) {
   currentGa4SourcePage = page;
 
   const requestData = getRequestData(page, {
-    data_type: "ga4_source_summary"
+    data_type: "ga4_source_summary",
+    _cache_buster: Date.now() // 캐시 무효화
   });
+
+  console.log("[DEBUG] GA4 소스별 유입수 요청:", requestData);
 
   showLoading("#loadingOverlayGa4Source");
 
@@ -22,6 +25,8 @@ function fetchGa4SourceSummaryData(page = 1) {
 
       if (res.status === "success" && res.ga4_source_summary) {
         rawGa4SourceRows = res.ga4_source_summary;
+        console.log("[DEBUG] GA4 소스별 유입수 응답:", res.ga4_source_summary);
+        console.log("[DEBUG] GA4 소스별 유입수 데이터 개수:", res.ga4_source_summary.length);
 
         renderGa4SourceSummaryFilters(rawGa4SourceRows);  // 소스 드롭다운
         renderGa4CountrySummaryFilters(rawGa4SourceRows); // 국가 드롭다운
@@ -148,7 +153,7 @@ function renderGa4SourceSummaryPagination(totalItems) {
   else nextBtn.click(() => { currentGa4SourcePage++; renderGa4SourceSummaryTable(); renderGa4SourceSummaryPagination(totalItems); });
 
   container.append(prevBtn);
-  container.append(`<span class="pagination-info">${currentGa4SourcePage} / ${totalPages}</span>`);
+  container.append(`<span class="pagination-info">${String(currentGa4SourcePage)} / ${String(totalPages)}</span>`);
   container.append(nextBtn);
 }
 

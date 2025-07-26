@@ -3429,6 +3429,13 @@ h2::before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* 캠페인 목표별 성과 요약 전용 스타일 - 이중 배경 제거 */
+.campaign-summary-layout .chart-card {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
 .campaign-summary-layout {
   display: flex;
   gap: 1.5rem;

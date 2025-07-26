@@ -219,22 +219,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
 
   const option = {
     title: {
-      text: '목표별 지출 비중',
-      left: 'center',
-      top: 20,
-      textStyle: {
-        fontSize: 22,
-        fontWeight: '700',
-        fontFamily: 'Pretendard, sans-serif',
-        color: '#ffffff'
-      },
-      backgroundColor: '#1e293b',
-      borderRadius: 6,
-      padding: [12, 24],
-      shadowBlur: 8,
-      shadowColor: 'rgba(0, 0, 0, 0.15)',
-      shadowOffsetX: 2,
-      shadowOffsetY: 2
+      show: false
     },
     tooltip: {
       trigger: 'item',
@@ -263,9 +248,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     series: [{
       name: '지출 비중',
       type: 'pie',
-      radius: ['30%', '55%'],
+      radius: '55%',
       center: ['50%', '60%'],
-      roseType: 'area',
       data: chartData,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {

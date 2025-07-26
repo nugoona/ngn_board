@@ -210,12 +210,12 @@ function renderProductSalesRatioChart() {
 
   const option = {
     title: {
-      text: '상위 TOP5',
+      text: '매출 상위 상품군 TOP5',
       left: 'center',
-      top: 'center',
+      top: 20,
       textStyle: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 22,
+        fontWeight: '700',
         fontFamily: 'Pretendard, sans-serif',
         color: '#1e293b'
       }
@@ -231,8 +231,8 @@ function renderProductSalesRatioChart() {
     series: [{
       name: '매출 비중',
       type: 'pie',
-      radius: ['35%', '65%'], // 도넛 크기 조정
-      center: ['50%', '55%'], // 중앙으로 이동 (제목과 겹치지 않도록)
+      radius: ['30%', '55%'], // 파이 크기 축소
+      center: ['50%', '60%'], // 중앙 정렬 개선
       data: data,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
@@ -241,23 +241,41 @@ function renderProductSalesRatioChart() {
         formatter: function(params) {
           return `${params.name}\n${params.value}%`;
         },
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Pretendard, sans-serif',
         color: function(params) {
           // 파이 색상과 동일하게 설정
           const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
           return colors[params.dataIndex];
         },
-        fontWeight: '700'
+        fontWeight: '600',
+        rich: {
+          productName: {
+            fontSize: 15,
+            fontWeight: '600',
+            color: function(params) {
+              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+              return colors[params.dataIndex];
+            }
+          },
+          percentage: {
+            fontSize: 18,
+            fontWeight: '700',
+            color: function(params) {
+              const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+              return colors[params.dataIndex];
+            }
+          }
+        }
       },
       labelLine: {
         show: true,
-        length: 25,
-        length2: 35,
+        length: 20,
+        length2: 30,
         smooth: true,
         lineStyle: {
-          width: 2,
-          color: '#64748b'
+          width: 1.5,
+          color: '#94a3b8'
         }
       },
       emphasis: {

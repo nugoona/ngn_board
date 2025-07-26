@@ -212,6 +212,7 @@ function renderProductSalesRatioChart() {
     title: {
       text: '상위 TOP5',
       left: 'center',
+      top: 10,
       textStyle: {
         fontSize: 20,
         fontWeight: 'bold',
@@ -222,33 +223,38 @@ function renderProductSalesRatioChart() {
     tooltip: {
       trigger: 'item',
       formatter: function(params) {
-        const actualSales = params.data.actualSales || params.value;
+        const actualSales = params.data.actualSales || 0;
         const formattedSales = actualSales.toLocaleString();
         return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
-      }
-    },
-    legend: {
-      orient: 'vertical',
-      left: 'left',
-      textStyle: {
-        fontFamily: 'Pretendard, sans-serif',
-        fontSize: 14
       }
     },
     series: [{
       name: '매출 비중',
       type: 'pie',
-      radius: '50%',
+      radius: ['40%', '70%'], // 도넛 차트로 변경하여 더 크게
+      center: ['50%', '60%'], // 중앙으로 이동
       data: data,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
         show: true,
-        position: 'inside',
-        formatter: '{d}%',
-        fontSize: 16,
-        fontWeight: 'bold',
+        position: 'outside',
+        formatter: function(params) {
+          return `${params.name}\n${params.value}%`;
+        },
+        fontSize: 14,
         fontFamily: 'Pretendard, sans-serif',
-        color: '#fff'
+        color: '#1e293b',
+        fontWeight: '600'
+      },
+      labelLine: {
+        show: true,
+        length: 30,
+        length2: 40,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#64748b'
+        }
       },
       emphasis: {
         itemStyle: {

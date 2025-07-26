@@ -149,6 +149,7 @@ function setupPagination_ratio() {
   }
 }
 
+// 전역 변수로 currentPage 선언 (한 번만)
 let currentPage = 1;
 
 function changePage_ratio(page) {

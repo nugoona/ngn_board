@@ -288,8 +288,7 @@ function renderProductSalesRatioChart() {
             padding: [8, 12, 4, 12],
             textAlign: 'center',
             borderColor: '#e2e8f0',
-            borderWidth: 1,
-            width: 300
+            borderWidth: 1
           },
           productName: {
             fontSize: 24,
@@ -300,15 +299,14 @@ function renderProductSalesRatioChart() {
             padding: [4, 12, 8, 12],
             textAlign: 'center',
             borderColor: '#4a5568',
-            borderWidth: 1,
-            width: 300
+            borderWidth: 1
           }
         }
       },
       labelLine: {
         show: true,
-        length: 15,
-        length2: 25,
+        length: 10,
+        length2: 15,
         smooth: true,
         lineStyle: {
           width: 2,

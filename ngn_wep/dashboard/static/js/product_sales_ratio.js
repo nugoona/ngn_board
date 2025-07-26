@@ -263,6 +263,7 @@ function renderProductSalesRatioChart() {
       label: {
         show: true,
         position: 'outside',
+        align: 'center',
         formatter: function(params) {
           return `{percentage|${params.value.toFixed(1)}%}\n{productName|${params.name}}`;
         },
@@ -284,7 +285,7 @@ function renderProductSalesRatioChart() {
             color: '#000',
             backgroundColor: '#ffffff',
             borderRadius: [8, 8, 0, 0],
-            padding: [8, 16, 4, 16],
+            padding: [8, 12, 4, 12],
             textAlign: 'center',
             borderColor: '#e2e8f0',
             borderWidth: 1,
@@ -296,7 +297,7 @@ function renderProductSalesRatioChart() {
             color: '#ffffff',
             backgroundColor: '#4a5568',
             borderRadius: [0, 0, 8, 8],
-            padding: [4, 16, 8, 16],
+            padding: [4, 12, 8, 12],
             textAlign: 'center',
             borderColor: '#4a5568',
             borderWidth: 1,

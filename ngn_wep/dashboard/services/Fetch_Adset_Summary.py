@@ -10,21 +10,34 @@ def dictify_rows(rows):
 
 def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date: str, end_date: str):
     """
-    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회
+    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회 (중복 집계 방지)
     """
 
     today = datetime.today().strftime("%Y-%m-%d")
-    start_date = start_date.strip() if start_date else ""
-    end_date = end_date.strip() if end_date else ""
+    start_date = start_date.strip() if start_date else today
+    end_date = end_date.strip() if end_date else today
 
-    if not start_date:
-        start_date = today
-    if not end_date:
-        end_date = today
-
-    # ✅ 1. 캠페인 목표별 요약 - CASE 문 사용
+    # ✅ 1. 캠페인 목표별 요약 쿼리 (adset_id 중복 제거)
     type_summary_query = f"""
-    WITH filtered_data AS (
+    WITH deduplicated_data AS (
+      SELECT
+        account_id,
+        account_name,
+        adset_id,
+        adset_name,
+        SUM(spend) AS spend,
+        SUM(impressions) AS impressions,
+        SUM(clicks) AS clicks,
+        SUM(purchases) AS purchases,
+        SUM(purchase_value) AS purchase_value
+      FROM
+        `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+      WHERE
+        DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+        AND account_id = '{account_id}'
+      GROUP BY account_id, account_name, adset_id, adset_name
+    ),
+    filtered_data AS (
       SELECT
         account_id,
         account_name,
@@ -40,11 +53,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
           WHEN adset_name LIKE '%전환%' THEN '전환'
           ELSE '기타'
         END AS type
-      FROM
-        `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-      WHERE
-        DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-        AND account_id = '{account_id}'
+      FROM deduplicated_data
     )
 
     SELECT
@@ -68,15 +77,24 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     ORDER BY account_name, type
     """
 
-    # ✅ 2. 총 지출 합산
+    # ✅ 2. 총 지출 합산 쿼리 (adset_id 중복 제거)
     total_spend_query = f"""
     SELECT
       SUM(spend) AS total_spend
-    FROM
-      `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-    WHERE
-      DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-      AND account_id = '{account_id}'
+    FROM (
+      SELECT
+        account_id,
+        account_name,
+        adset_id,
+        adset_name,
+        SUM(spend) AS spend
+      FROM
+        `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+      WHERE
+        DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+        AND account_id = '{account_id}'
+      GROUP BY account_id, account_name, adset_id, adset_name
+    )
     """
 
     try:

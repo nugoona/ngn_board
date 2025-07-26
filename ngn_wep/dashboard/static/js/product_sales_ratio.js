@@ -291,28 +291,14 @@ function renderProductSalesRatioChart() {
       legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
     }
     
-    const baseOptions = window.ApexChartsGlobalStyles.getDefaultPieChartOptions();
-    chartInstance_product = new ApexCharts(chartContainer, {
-      ...baseOptions,
-      series: [100],
-      labels: ['데이터 없음'],
-      colors: ['#e5e7eb'],
-      dataLabels: {
-        enabled: false
-      },
-      tooltip: {
-        enabled: false
-      }
-    });
-    
-    chartInstance_product.render();
+    // 🔥 공통 함수 사용
+    chartInstance_product = window.createEmptyPieChart("productSalesRatioChart");
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
   }
 
   console.log("[DEBUG] 실제 데이터로 차트 렌더링");
   console.log("[DEBUG] 전체 데이터 개수:", allProductSalesRatioData.length);
-  console.log("[DEBUG] 전체 데이터:", allProductSalesRatioData);
   
   // 🔥 상위 5개 상품만 선택 (매출 비중 기준으로 정렬)
   const sortedData = [...allProductSalesRatioData].sort((a, b) => {
@@ -327,7 +313,6 @@ function renderProductSalesRatioChart() {
   const actualSales = top5Data.map(item => item.item_product_sales || item.total_sales || 0);
   const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
   
-  console.log("[DEBUG] 정렬된 데이터:", sortedData);
   console.log("[DEBUG] 상위 5개 데이터:", top5Data);
   console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
 
@@ -346,22 +331,14 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // 🔥 전역 스타일을 사용한 파이 차트 옵션
-  const baseOptions = window.ApexChartsGlobalStyles.getDefaultPieChartOptions();
-  const options = {
-    ...baseOptions,
+  // 🔥 공통 함수 사용
+  chartInstance_product = window.createPieChart("productSalesRatioChart", {
     series: values,
     labels: labels,
-    colors: colors,
-    // 🔥 매출 데이터를 전역 변수에 저장 (툴팁에서 사용)
-    globals: {
-      actualSales: actualSales
-    }
-  };
-
-  // ApexCharts 인스턴스 생성
-  chartInstance_product = new ApexCharts(chartContainer, options);
-  chartInstance_product.render();
+    actualSales: actualSales
+  }, {
+    colors: colors
+  });
 
   console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
 }

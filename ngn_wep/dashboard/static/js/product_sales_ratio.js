@@ -77,9 +77,13 @@ function fetchProductSalesRatio() {
       console.log("[DEBUG] 상품 매출 비중 데이터 수신:", allProductSalesRatioData);
       renderProductSalesRatioTable(1);
       setupPagination_ratio();
+      // 🔥 차트도 함께 업데이트
+      renderProductSalesRatioChart();
     } else {
       console.warn("[WARN] 상품 매출 비중 응답 없음", res);
       allProductSalesRatioData = [];
+      // 🔥 데이터가 없을 때도 차트 업데이트
+      renderProductSalesRatioChart();
     }
   });
 }
@@ -234,6 +238,14 @@ function setupPagination_ratio() {
   `;
   
   paginationContainer.html(paginationHtml);
+  
+  // 🔥 페이지네이션이 제대로 표시되는지 확인
+  console.log("[DEBUG] 페이지네이션 생성 완료:", {
+    totalItems: allProductSalesRatioData.length,
+    totalPages: totalPages,
+    currentPage: currentPage_product,
+    itemsPerPage: itemsPerPage
+  });
 }
 
 // 전역 변수로 currentPage_product 선언 (한 번만)
@@ -323,14 +335,24 @@ function renderProductSalesRatioChart() {
   }
 
   console.log("[DEBUG] 실제 데이터로 차트 렌더링");
+  console.log("[DEBUG] 전체 데이터 개수:", allProductSalesRatioData.length);
+  console.log("[DEBUG] 전체 데이터:", allProductSalesRatioData);
   
-  // 상위 5개 상품만 선택
-  const top5Data = allProductSalesRatioData.slice(0, 5);
+  // 🔥 상위 5개 상품만 선택 (매출 비중 기준으로 정렬)
+  const sortedData = [...allProductSalesRatioData].sort((a, b) => {
+    const ratioA = a.sales_ratio_percent || a.sales_ratio || 0;
+    const ratioB = b.sales_ratio_percent || b.sales_ratio || 0;
+    return ratioB - ratioA; // 내림차순 정렬
+  });
+  
+  const top5Data = sortedData.slice(0, 5);
   const labels = top5Data.map(item => item.cleaned_product_name || item.product_name || "-");
   const values = top5Data.map(item => item.sales_ratio_percent || item.sales_ratio || 0);
   const actualSales = top5Data.map(item => item.item_product_sales || item.total_sales || 0);
   const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
   
+  console.log("[DEBUG] 정렬된 데이터:", sortedData);
+  console.log("[DEBUG] 상위 5개 데이터:", top5Data);
   console.log("[DEBUG] 차트 데이터:", { labels, values, actualSales });
 
   // 커스텀 범례 생성

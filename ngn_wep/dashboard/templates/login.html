@@ -199,9 +199,10 @@
 
     /* 업데이트 알림 카드 스타일 */
     .update-notification {
-      position: absolute;
-      top: 20px;
-      right: 20px;
+      position: fixed;
+      top: 50%;
+      right: 30px;
+      transform: translateY(-50%);
       width: 420px;
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(15px);
@@ -212,7 +213,7 @@
       font-size: 13px;
       line-height: 1.5;
       color: #374151;
-      z-index: 1000;
+      z-index: 9999;
       transition: all 0.3s ease;
     }
 
@@ -304,11 +305,12 @@
       }
 
       .update-notification {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: 100%;
-        margin-top: 20px;
+        position: fixed;
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+        width: 90%;
+        max-width: 400px;
         background: rgba(255, 255, 255, 0.9);
       }
     }

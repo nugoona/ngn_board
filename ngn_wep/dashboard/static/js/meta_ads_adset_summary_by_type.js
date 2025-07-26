@@ -8,9 +8,21 @@ import { metaAdsState } from "./meta_ads_state.js";
 const $ = window.$;
 let typePieChartInstance = null;
 let adsetSummaryRequest = null;
+let adsetSummaryDebounceTimer = null;
 
 // ✅ 파라미터 기본값 추가: {} → undefined 방지
 export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
+  // 디바운싱: 300ms 내에 중복 호출 방지
+  if (adsetSummaryDebounceTimer) {
+    clearTimeout(adsetSummaryDebounceTimer);
+  }
+  
+  adsetSummaryDebounceTimer = setTimeout(() => {
+    _fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id });
+  }, 300);
+}
+
+function _fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
   if (adsetSummaryRequest) {
     adsetSummaryRequest.abort();
   }
@@ -22,7 +34,7 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
     end_date = resolved.end;
   }
 
-  console.log("[DEBUG] fetchMetaAdsAdsetSummaryByType 호출됨", {
+  console.log("[DEBUG] _fetchMetaAdsAdsetSummaryByType 호출됨", {
     accountId: account_id, period, startDate: start_date, endDate: end_date
   });
 
@@ -41,48 +53,54 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
     console.warn("[WARN] showLoading 함수 호출 실패:", e);
   }
 
-        const payload = {
-          data_type: "meta_ads_adset_summary_by_type",
-          account_id,
-          period,
-          start_date: start_date || null,
-          end_date: end_date || null
-        };
+  const payload = {
+    data_type: "meta_ads_adset_summary_by_type",
+    account_id,
+    period,
+    start_date: start_date || null,
+    end_date: end_date || null
+  };
 
-        adsetSummaryRequest = $.ajax({
-          url: "/dashboard/get_data",
-          method: "POST",
-          contentType: "application/json",
-          data: JSON.stringify(payload),
-          success: function (res) {
-            try {
-              if (typeof hideLoading === 'function') {
-                hideLoading("#loadingOverlayTypeSummary");
-              }
-            } catch (e) {
-              console.warn("[WARN] hideLoading 함수 호출 실패:", e);
-            }
+  adsetSummaryRequest = $.ajax({
+    url: "/dashboard/get_data",
+    method: "POST",
+    contentType: "application/json",
+    data: JSON.stringify(payload),
+    success: function (res) {
+      try {
+        if (typeof hideLoading === 'function') {
+          hideLoading("#loadingOverlayTypeSummary");
+        }
+      } catch (e) {
+        console.warn("[WARN] hideLoading 함수 호출 실패:", e);
+      }
 
-            const typeSummary = res?.data?.type_summary || [];
-            const totalSpendSum = res?.data?.total_spend_sum || 0;
+      const typeSummary = res?.data?.type_summary || [];
+      const totalSpendSum = res?.data?.total_spend_sum || 0;
 
-            console.log("[DEBUG] 캠페인 목표별 요약 응답:", typeSummary, totalSpendSum);
+      console.log("[DEBUG] 캠페인 목표별 요약 응답:", typeSummary, totalSpendSum);
 
-            renderMetaAdsAdsetSummaryTable(typeSummary);
-            renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
-          },
-          error: function (err) {
-            try {
-              if (typeof hideLoading === 'function') {
-                hideLoading("#loadingOverlayTypeSummary");
-              }
-            } catch (e) {
-              console.warn("[WARN] hideLoading 함수 호출 실패:", e);
-            }
-            console.error("[ERROR] 캠페인 목표별 요약 로드 실패", err);
-            $("#metaAdsAdsetSummaryTableBody").html('<tr><td colspan="6">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>');
-          }
-        });
+      renderMetaAdsAdsetSummaryTable(typeSummary);
+      renderMetaAdsAdsetSummaryChart(typeSummary, totalSpendSum);
+    },
+    error: function (err) {
+      try {
+        if (typeof hideLoading === 'function') {
+          hideLoading("#loadingOverlayTypeSummary");
+        }
+      } catch (e) {
+        console.warn("[WARN] hideLoading 함수 호출 실패:", e);
+      }
+      console.error("[ERROR] 캠페인 목표별 요약 로드 실패", err);
+      console.error("[ERROR] 에러 상세:", {
+        status: err.status,
+        statusText: err.statusText,
+        responseText: err.responseText,
+        readyState: err.readyState
+      });
+      $("#metaAdsAdsetSummaryTableBody").html('<tr><td colspan="6">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>');
+    }
+  });
 }
 
 function renderMetaAdsAdsetSummaryTable(data) {

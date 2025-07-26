@@ -202,8 +202,8 @@ function renderPlatformSalesRatioChart() {
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 24,
-            fontWeight: '800',
+            fontSize: 18,
+            fontWeight: '700',
             color: function(params) {
               const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
               return colors[params.dataIndex];
@@ -211,10 +211,10 @@ function renderPlatformSalesRatioChart() {
             padding: [0, 0, 4, 0]
           },
           platformName: {
-            fontSize: 13,
-            fontWeight: '600',
-            color: '#64748b',
-            lineHeight: 16
+            fontSize: 20,
+            fontWeight: '800',
+            color: '#1e293b',
+            lineHeight: 20
           }
         }
       },

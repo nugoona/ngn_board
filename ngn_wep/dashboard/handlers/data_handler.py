@@ -59,6 +59,24 @@ def cache_invalidate():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@data_blueprint.route("/cache/invalidate/ga4_source", methods=["POST"])
+def cache_invalidate_ga4_source():
+    """GA4 소스 요약 캐시 무효화 엔드포인트"""
+    try:
+        from ..utils.cache_utils import invalidate_cache_by_pattern
+        deleted_count = invalidate_cache_by_pattern("ga4_source_summary")
+        
+        return jsonify({
+            "status": "success",
+            "message": f"GA4 소스 요약 캐시 무효화 완료: {deleted_count}개 키 삭제",
+            "deleted_count": deleted_count
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"GA4 소스 요약 캐시 무효화 실패: {str(e)}"
+        }), 500
+
 # ─────────────────────────────────────────────────────────────
 
 def get_start_end_dates(period, start_date=None, end_date=None):

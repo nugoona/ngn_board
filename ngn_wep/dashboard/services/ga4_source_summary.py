@@ -12,6 +12,8 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     - 기준 컬럼: first_user_source → source, total_users → 유입수
     """
 
+    print(f"[DEBUG] GA4 소스 요약 호출 - company: {company_name}, start: {start_date}, end: {end_date}, limit: {limit}")
+
     if not start_date or not end_date:
         raise ValueError("start_date / end_date 값이 없습니다.")
 

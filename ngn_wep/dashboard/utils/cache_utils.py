@@ -62,6 +62,9 @@ def generate_cache_key(func_name: str, *args, **kwargs) -> str:
     hash_obj = hashlib.sha256(params_str.encode())
     param_hash = hash_obj.hexdigest()[:16]
     
+    # 디버깅을 위한 로그 추가
+    print(f"[CACHE] 키 생성 - 함수: {func_name}, 파라미터: {params_str}, 해시: {param_hash}")
+    
     return f"ngn_cache:{func_name}:{param_hash}"
 
 def get_cache_ttl(func_name: str) -> int:

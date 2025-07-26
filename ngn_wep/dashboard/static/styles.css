@@ -751,6 +751,10 @@ th {
   align-items: center !important;
   z-index: 10 !important;
   pointer-events: none !important;
+  /* 🔥 로딩 오버레이 크기 제한 - 카드 영역만 덮기 */
+  max-width: 1200px !important;
+  max-height: 200px !important;
+  margin: 0 auto !important;
 }
 
 /* ✅ 로딩 활성화 시 스피너 표시 */

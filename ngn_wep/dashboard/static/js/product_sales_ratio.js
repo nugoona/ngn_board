@@ -212,12 +212,12 @@ function renderProductSalesRatioChart() {
     title: {
       text: '상위 TOP5',
       left: 'center',
-      top: 10,
+      top: 'center',
       textStyle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         fontFamily: 'Pretendard, sans-serif',
-        color: '#1e293b'
+        color: '#64748b'
       }
     },
     tooltip: {
@@ -231,8 +231,8 @@ function renderProductSalesRatioChart() {
     series: [{
       name: '매출 비중',
       type: 'pie',
-      radius: ['40%', '70%'], // 도넛 차트로 변경하여 더 크게
-      center: ['50%', '60%'], // 중앙으로 이동
+      radius: ['35%', '65%'], // 도넛 크기 조정
+      center: ['50%', '55%'], // 중앙으로 이동 (제목과 겹치지 않도록)
       data: data,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
@@ -248,8 +248,8 @@ function renderProductSalesRatioChart() {
       },
       labelLine: {
         show: true,
-        length: 30,
-        length2: 40,
+        length: 25,
+        length2: 35,
         smooth: true,
         lineStyle: {
           width: 2,

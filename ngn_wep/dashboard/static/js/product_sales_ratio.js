@@ -194,11 +194,14 @@ function renderProductSalesRatioChart() {
   // 데이터 준비 (상위 5개, 0 매출 제외)
   const sortedData = [...allProductSalesRatioData]
     .filter(item => (item.item_product_sales || item.total_sales || 0) > 0)
-    .sort((a, b) => (b.item_product_sales || b.total_sales || 0) - (a.item_product_sales || a.total_sales || 0));
+    .sort((a, b) => (b.sales_ratio_percent || b.sales_ratio || 0) - (a.sales_ratio_percent || a.sales_ratio || 0));
   const top5 = sortedData.slice(0, 5);
+  
+  // 테이블 데이터에서 실제 퍼센트를 가져와서 사용
   const data = top5.map(item => ({
-    value: item.item_product_sales || item.total_sales || 0,
-    name: item.cleaned_product_name || item.product_name || '-'
+    value: item.sales_ratio_percent || item.sales_ratio || 0, // 실제 퍼센트 값 사용
+    name: item.cleaned_product_name || item.product_name || '-',
+    actualSales: item.item_product_sales || item.total_sales || 0 // 실제 매출액은 별도 저장
   }));
 
   // ECharts 인스턴스 생성
@@ -206,34 +209,55 @@ function renderProductSalesRatioChart() {
   window.echartsProductSalesRatio = myChart;
 
   const option = {
-    color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+    title: {
+      text: '상위 TOP5',
+      left: 'center',
+      textStyle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        fontFamily: 'Pretendard, sans-serif',
+        color: '#1e293b'
+      }
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: function(params) {
+        const actualSales = params.data.actualSales || params.value;
+        const formattedSales = actualSales.toLocaleString();
+        return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
+      }
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      textStyle: {
+        fontFamily: 'Pretendard, sans-serif',
+        fontSize: 14
+      }
+    },
     series: [{
+      name: '매출 비중',
       type: 'pie',
-      radius: ['55%', '80%'],
-      avoidLabelOverlap: false,
+      radius: '50%',
+      data: data,
+      color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
         show: true,
-        position: 'outside',
-        formatter: function(params) {
-          // {b}: 상품명, {d}: 퍼센트, {c}: 매출액
-          return `${params.name}\n${params.percent}%`;
-        },
-        fontSize: 15,
+        position: 'inside',
+        formatter: '{d}%',
+        fontSize: 16,
+        fontWeight: 'bold',
         fontFamily: 'Pretendard, sans-serif',
-        color: '#222',
-        alignTo: 'edge',
-        bleedMargin: 10
+        color: '#fff'
       },
-      labelLine: {
-        show: true,
-        length: 20,
-        length2: 30,
-        smooth: true
-      },
-      data: data
-    }],
-    tooltip: { show: false },
-    animation: true
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }]
   };
   myChart.setOption(option);
 }

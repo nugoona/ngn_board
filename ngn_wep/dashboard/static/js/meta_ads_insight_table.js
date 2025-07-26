@@ -39,12 +39,13 @@ $(document).ready(function () {
 
   // ✅ 캠페인 목표별 성과 보기 버튼 클릭
   $("#toggleTypeSummary").on("click", function () {
-    if (!metaAdsState.accountId) {
-      $("#typeSummaryContainer").hide();
-      $(this).text("캠페인 목표별 성과 보기");
-      showInlinePopup("계정을 먼저 선택해 주세요.");
-      return;
-    }
+    // 🔥 임시로 계정 선택 체크 제거 (디버깅용)
+    // if (!metaAdsState.accountId) {
+    //   $("#typeSummaryContainer").hide();
+    //   $(this).text("캠페인 목표별 성과 보기");
+    //   showInlinePopup("계정을 먼저 선택해 주세요.");
+    //   return;
+    // }
 
     const $container = $("#typeSummaryContainer");
     const isVisible = $container.is(":visible");
@@ -54,7 +55,7 @@ $(document).ready(function () {
 
     if (!isVisible) {
       fetchMetaAdsAdsetSummaryByType({
-        account_id: metaAdsState.accountId,
+        account_id: metaAdsState.accountId || "all", // 계정이 없으면 "all" 사용
         period: metaAdsState.period,
         start_date: metaAdsState.startDate,
         end_date: metaAdsState.endDate

@@ -280,48 +280,40 @@ window.createPieChart = function(containerId, data, options = {}) {
     return null;
   }
 
-  // 파이 차트 전용 옵션 가져오기
   const pieOptions = getChartOptions('pie');
-  
-  // 기본 옵션
+
   const defaultOptions = {
     chart: {
       type: 'pie',
       height: 350,
       width: '100%',
-      ...pieOptions.chart
+      ...(pieOptions.chart || {})
     },
     colors: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
-    series: data.series || [],
-    labels: data.labels || [],
-    ...pieOptions.plotOptions,
-    ...pieOptions.dataLabels,
-    ...pieOptions.legend,
-    ...pieOptions.tooltip,
-    ...pieOptions.responsive
+    series: Array.isArray(data.series) ? data.series : [],
+    labels: Array.isArray(data.labels) ? data.labels : [],
+    // ✅ 중첩 옵션은 올바른 키 아래에 배치
+    plotOptions: pieOptions.plotOptions || {},
+    dataLabels: pieOptions.dataLabels || {},
+    legend: pieOptions.legend || {},
+    tooltip: pieOptions.tooltip || {},
+    responsive: pieOptions.responsive || []
   };
 
-  // 사용자 옵션과 병합
+  // 사용자 옵션과 병합 (얕은 병합)
   const finalOptions = { ...defaultOptions, ...options };
-  
-  // 매출 데이터가 있는 경우 전역 변수에 저장
+
   if (data.actualSales) {
-    finalOptions.globals = { actualSales: data.actualSales };
+    // ApexCharts 자체 옵션에는 globals 키가 없으므로 커스텀 속성으로 지정
+    finalOptions.chart = finalOptions.chart || {};
+    finalOptions.chart.fore = finalOptions.chart.fore || {};
+    finalOptions.chart.fore.actualSales = data.actualSales; // 필요 시 consumer 측에서 사용
   }
 
-  // 차트 인스턴스 생성
   const chartInstance = new ApexCharts(chartContainer, finalOptions);
   chartInstance.render();
-  
+
   console.log(`[DEBUG] 파이 차트 생성 완료: ${containerId}`);
-  console.log(`[DEBUG] 차트 컨테이너 렌더링 후:`, {
-    container: chartContainer,
-    height: chartContainer.style.height,
-    width: chartContainer.style.width,
-    display: chartContainer.style.display,
-    innerHTML: chartContainer.innerHTML.substring(0, 200) + '...'
-  });
-  
   return chartInstance;
 };
 

@@ -1,4 +1,4 @@
-# File: services/fetch_adset_summary.py
+# File: services/Fetch_Adset_Summary.py
 
 """META Ads 캠페인 목표별 성과 요약 — adset 중복(날짜·이름) 완전 제거 버전"""
 
@@ -30,34 +30,53 @@ def get_meta_ads_adset_summary_by_type(
     end_date   = (end_date   or today).strip()
 
     # ─────────────────────────────────────────────────────────────
-    # 1) 목표별 요약 쿼리
-    #    • daily  : adset_id  +  date  단위 집계
-    #    • latest : adset_id 당 최신(adset_name) 1개 고정
-    #    • typed  : adset_name → type 매핑(CASE)
+    # 1) 목표별 요약 쿼리 - 중복 제거 로직 개선
+    #    • deduplicated: adset_id + date + adset_name 조합으로 중복 제거
+    #    • latest: adset_id 당 최신(adset_name) 1개 고정
+    #    • typed: adset_name → type 매핑(CASE)
     # ─────────────────────────────────────────────────────────────
     type_summary_query = f"""
-    WITH daily AS (
+    WITH deduplicated AS (
       SELECT
         account_id,
         adset_id,
-        DATE(date)                                 AS dt,
-        ANY_VALUE(adset_name)                      AS adset_name,
-        ANY_VALUE(account_name)                    AS account_name,
-        SUM(spend)            AS spend,
-        SUM(impressions)      AS impressions,
-        SUM(clicks)           AS clicks,
-        SUM(purchases)        AS purchases,
-        SUM(purchase_value)   AS purchase_value
+        DATE(date) AS dt,
+        adset_name,
+        account_name,
+        spend,
+        impressions,
+        clicks,
+        purchases,
+        purchase_value,
+        ROW_NUMBER() OVER (
+          PARTITION BY adset_id, DATE(date), adset_name 
+          ORDER BY date DESC, updated_at DESC
+        ) AS rn
       FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
       WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, adset_id, dt
+    ),
+    daily AS (
+      SELECT
+        account_id,
+        adset_id,
+        dt,
+        adset_name,
+        account_name,
+        SUM(spend) AS spend,
+        SUM(impressions) AS impressions,
+        SUM(clicks) AS clicks,
+        SUM(purchases) AS purchases,
+        SUM(purchase_value) AS purchase_value
+      FROM deduplicated
+      WHERE rn = 1  -- 중복 제거
+      GROUP BY account_id, adset_id, dt, adset_name, account_name
     ),
     latest AS (
       SELECT
         d.* EXCEPT(adset_name),
         FIRST_VALUE(adset_name) OVER (
-          PARTITION BY adset_id ORDER BY dt DESC
+          PARTITION BY adset_id ORDER BY dt DESC, spend DESC
         ) AS adset_name
       FROM daily AS d
     ),
@@ -93,15 +112,29 @@ def get_meta_ads_adset_summary_by_type(
     """
 
     # ─────────────────────────────────────────────────────────────
-    # 2) 전체 지출 합계 (동일 중복 제거 로직)
+    # 2) 전체 지출 합계 (동일 중복 제거 로직 적용)
     # ─────────────────────────────────────────────────────────────
     total_spend_query = f"""
     SELECT SUM(spend) AS total_spend
     FROM (
-      SELECT adset_id, DATE(date) AS dt, SUM(spend) AS spend
-      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-      WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-        AND account_id = '{account_id}'
+      SELECT 
+        adset_id, 
+        DATE(date) AS dt, 
+        SUM(spend) AS spend
+      FROM (
+        SELECT
+          adset_id,
+          date,
+          spend,
+          ROW_NUMBER() OVER (
+            PARTITION BY adset_id, DATE(date) 
+            ORDER BY date DESC, updated_at DESC
+          ) AS rn
+        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+        WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+          AND account_id = '{account_id}'
+      )
+      WHERE rn = 1  -- 중복 제거
       GROUP BY adset_id, dt
     );
     """
@@ -113,6 +146,7 @@ def get_meta_ads_adset_summary_by_type(
         spend_rows = client.query(total_spend_query).result()
         total_spend = list(spend_rows)[0].get("total_spend", 0.0) if spend_rows.total_rows else 0.0
 
+        print(f"[DEBUG] get_meta_ads_adset_summary_by_type 결과: {len(type_summary)}개 타입, 총 지출: {total_spend}")
         return type_summary, total_spend
 
     except Exception as err:

@@ -1,7 +1,7 @@
 # File: services/data_service.py
 
 import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 
 # ✅ 서비스 함수 임포트
 from services.cafe24_service import get_cafe24_sales_data, get_cafe24_product_sales

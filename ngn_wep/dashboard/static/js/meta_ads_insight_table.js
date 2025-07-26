@@ -1,3 +1,5 @@
+console.log("[DEBUG] 🔥 meta_ads_insight_table.js 로드됨");
+
 import { metaAdsState } from "./meta_ads_state.js";
 import { renderSelectedTags } from "./meta_ads_tags.js";
 // showLoading/hideLoading 함수는 common.js에서 정의됨
@@ -11,7 +13,12 @@ import { fetchMetaAdsPreviewList } from "./meta_ads_preview.js";
 import { fetchMetaAdsAdsetSummaryByType } from "./meta_ads_adset_summary_by_type.js";
 
 $(document).ready(function () {
-  if (window.location.pathname !== "/ads") return;
+  console.log("[DEBUG] 🔥 meta_ads_insight_table.js document.ready 시작");
+  if (window.location.pathname !== "/ads") {
+    console.log("[DEBUG] 현재 페이지가 /ads가 아님, 종료");
+    return;
+  }
+  console.log("[DEBUG] 현재 페이지가 /ads임, 계속 진행");
 
   const savedLevel = metaAdsState.tabLevel || "account";
   $(".tab-btn[data-level='" + savedLevel + "']").addClass("active");

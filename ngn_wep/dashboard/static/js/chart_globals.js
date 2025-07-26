@@ -1,48 +1,21 @@
 // 🔥 ApexCharts 파이 차트 공통 모듈
 // 모든 파이 차트에서 일관된 디자인과 기능 제공
 
-// 전역 차트 기본 설정 (모든 차트 공통)
-Apex.chart = {
-  fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-  toolbar: { 
-    show: false 
-  },
-  animations: {
-    enabled: false
-  },
-  background: 'transparent',
-  dropShadow: {
-    enabled: false
-  }
+// 🔥 ApexCharts 전역 설정 최소화
+// 공통 베이스만 남기고 디테일 옵션은 모두 제거
+
+Apex.chart = { 
+  fontFamily: 'Pretendard, sans-serif', 
+  toolbar: { show: false } 
 };
 
-// 전역 데이터 라벨 설정 (모든 차트 공통)
-Apex.dataLabels = {
-  enabled: true,
-  style: {
-    fontSize: '14px',
-    fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-    fontWeight: 600,
-    colors: ['#ffffff']
-  },
-  dropShadow: {
-    enabled: false
-  }
-};
-
-// 전역 반응형 설정 (모든 차트 공통)
-Apex.responsive = [
-  {
-    breakpoint: 768,
-    options: {
-      chart: {
-        height: 300
-      },
-      dataLabels: {
-        fontSize: '12px'
-      }
-    }
-  }
+Apex.responsive = [ 
+  { 
+    breakpoint: 768, 
+    options: { 
+      chart: { height: 300 } 
+    } 
+  } 
 ];
 
 // 🔥 차트 종류별 옵션 분리 함수
@@ -56,22 +29,11 @@ export function getChartOptions(type = 'default') {
       background: 'transparent',
       dropShadow: { enabled: false }
     },
-    dataLabels: {
-      enabled: false, // 기본적으로 비활성화
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: { enabled: false }
-    },
     responsive: [
       {
         breakpoint: 768,
         options: {
-          chart: { height: 300 },
-          dataLabels: { fontSize: '12px' }
+          chart: { height: 300 }
         }
       }
     ]
@@ -107,8 +69,8 @@ export function getChartOptions(type = 'default') {
           size: '65%',
           background: 'transparent',
           labels: {
-            show: true,
-            value: { show: false } // 🔥 중심 value 완전 제거
+            show: false, // 🔥 도넛 차트 중앙 라벨 완전 제거
+            value: { show: false }
           }
         }
       }
@@ -150,9 +112,7 @@ export function getChartOptions(type = 'default') {
     plotOptions: {
       bar: {
         dataLabels: {
-          formatter: function (val, opts) {
-            return typeof val === 'number' ? val.toLocaleString() : val;
-          }
+          enabled: false // 막대 차트에서 기본적으로 비활성화
         }
       }
     },
@@ -173,7 +133,15 @@ export function getChartOptions(type = 'default') {
     }
   } : {};
 
-  return { ...common, ...pieOnly, ...barLineOnly };
+  // 🔥 개선된 병합 로직 - 다른 타입에 퍼지지 않도록
+  const base = { ...common };
+  if (type === 'pie' || type === 'donut') {
+    Object.assign(base, pieOnly);
+  }
+  if (type === 'bar' || type === 'line') {
+    Object.assign(base, barLineOnly);
+  }
+  return base;
 }
 
 // 🔥 CSS 스타일 주입
@@ -209,17 +177,18 @@ const chartStyles = `
     gap: 8px;
     font-family: 'Pretendard', sans-serif;
     font-size: 14px;
-    background: transparent;
+    background: transparent !important;
     border-radius: 6px;
-    box-shadow: none;
-    padding: 0;
+    box-shadow: none !important;
+    padding: 8px 12px;
     margin: 0;
     transition: background 0.15s;
+    border: none !important;
   }
   
   .legend-item:hover {
-    background: #f3f4f6;
-    box-shadow: none;
+    background: #f3f4f6 !important;
+    box-shadow: none !important;
   }
   
   .legend-marker {
@@ -256,6 +225,32 @@ const chartStyles = `
   .apexcharts-pie-chart .apexcharts-tooltip-goals-group,
   .apexcharts-pie-chart .apexcharts-tooltip-text {
     display: none !important;
+  }
+
+  /* 범례 아이템 flat 스타일 강제 적용 */
+  .chart-card .legend-item,
+  .legend-container .legend-item,
+  .pie-chart-modern .legend-item {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+  }
+
+  .chart-card .legend-item:hover,
+  .legend-container .legend-item:hover,
+  .pie-chart-modern .legend-item:hover {
+    background: #f1f5f9 !important;
+    box-shadow: none !important;
+  }
+
+  .chart-card .legend-percentage,
+  .legend-container .legend-percentage,
+  .pie-chart-modern .legend-percentage {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 `;
 

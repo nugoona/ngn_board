@@ -293,37 +293,11 @@ function renderProductSalesRatioChart() {
     
     chartInstance_product = new ApexCharts(chartContainer, {
       series: [100],
-      chart: {
-        type: 'pie',
-        height: 350,
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        animations: {
-          enabled: false
-        },
-        // 🔥 배경 투명하게 설정
-        background: 'transparent',
-        dropShadow: {
-          enabled: false
-        }
-      },
       labels: ['데이터 없음'],
       colors: ['#e5e7eb'],
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-            // 🔥 도넛 배경을 완전히 투명하게
-            background: 'transparent'
-          }
-        }
-      },
-      legend: {
-        show: false
-      },
       dataLabels: {
         enabled: false
       },
-      // 🔥 Flat하고 깔끔한 툴팁 디자인
       tooltip: {
         enabled: false
       }
@@ -370,140 +344,15 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // 🔥 ApexCharts 옵션 설정 - Flat하고 깔끔한 디자인으로 개선
+  // 🔥 전역 스타일을 사용한 간소화된 옵션
   const options = {
     series: values,
-    chart: {
-      type: 'pie',
-      height: 350,
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      animations: {
-        enabled: false
-      },
-      // 🔥 배경 투명하게 설정
-      background: 'transparent',
-      dropShadow: {
-        enabled: false
-      }
-    },
     labels: labels,
     colors: colors,
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        expandOnClick: true,
-        offsetX: 0,
-        offsetY: 0,
-        customScale: 1,
-        dataLabels: {
-          offset: 0,
-          minAngleToShowLabel: 10
-        },
-        donut: {
-          size: '65%',
-          // 🔥 도넛 배경을 완전히 투명하게
-          background: 'transparent',
-          labels: {
-            show: true,
-            name: {
-              show: false
-            },
-            value: {
-              show: true,
-              fontSize: '16px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 700,
-              color: '#1e293b',
-              offsetY: 0,
-              formatter: function (val) {
-                return typeof val === 'number' ? val.toFixed(1) + '%' : '0.0%';
-              }
-            },
-            total: {
-              show: false
-            }
-          }
-        }
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
-      },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      // 🔥 그림자 효과 제거하여 flat하게
-      dropShadow: {
-        enabled: false
-      }
-    },
-    legend: {
-      show: false
-    },
-    // 🔥 Flat하고 깔끔한 툴팁 디자인
-    tooltip: {
-      enabled: true,
-      theme: 'light',
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, sans-serif'
-      },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const sales = actualSales[seriesIndex] || 0;
-        const percentage = series[seriesIndex];
-        const label = labels[seriesIndex];
-        const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
-        return `<div style="
-          background: #ffffff;
-          border: none;
-          border-radius: 8px;
-          padding: 12px 16px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-          font-family: 'Pretendard', sans-serif;
-          max-width: 280px;
-          font-size: 14px;
-        ">
-          <div style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #1e293b;
-            margin-bottom: 6px;
-            line-height: 1.4;
-          ">${label}</div>
-          <div style="
-            font-weight: 600;
-            font-size: 15px;
-            color: #6366f1;
-            margin-bottom: 4px;
-          ">₩${formattedSales}</div>
-          <div style="
-            font-weight: 500;
-            font-size: 13px;
-            color: #64748b;
-          ">${percentage.toFixed(1)}%</div>
-        </div>`;
-      }
-    },
-    // 🔥 반응형 설정 개선
-    responsive: [
-      {
-        breakpoint: 768,
-        options: {
-          chart: {
-            height: 300
-          },
-          dataLabels: {
-            fontSize: '12px'
-          }
-        }
-      }
-    ]
+    // 🔥 매출 데이터를 전역 변수에 저장 (툴팁에서 사용)
+    globals: {
+      actualSales: actualSales
+    }
   };
 
   // ApexCharts 인스턴스 생성

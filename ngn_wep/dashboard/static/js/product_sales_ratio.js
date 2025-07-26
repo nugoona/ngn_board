@@ -140,7 +140,7 @@ function setupPagination_ratio() {
   if (totalPages <= 1) return;
   
   // 🔥 페이지네이션 UI 개선 - 깔끔한 스타일
-  const paginationHtml = `
+  let paginationHtml = `
     <div class="pagination-wrapper" style="
       display: flex;
       align-items: center;

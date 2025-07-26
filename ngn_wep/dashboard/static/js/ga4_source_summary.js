@@ -23,6 +23,7 @@ function fetchGa4SourceSummaryData(requestData = {}, page = 1) {
     end_date: mergedRequest.end_date,
     company_name: mergedRequest.company_name
   });
+  console.log("[DEBUG] GA4 소스 요약 전체 payload:", JSON.stringify(mergedRequest, null, 2));
 
   showLoading("#loadingOverlayGa4Source");
 

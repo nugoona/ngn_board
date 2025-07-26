@@ -122,64 +122,36 @@ def get_meta_ads_adset_summary_by_type(
     # 디버깅: 데이터 소스 비교
     debug_data_source(account_id, start_date, end_date)
     
-    # 디버깅: 누락된 데이터 확인
+    # 디버깅: 누락된 데이터 확인 (실제 사용되는 날짜 범위로)
+    print(f"[DEBUG] 실제 집계 날짜 범위: {start_date} ~ {end_date}")
     debug_missing_data(account_id, start_date, end_date)
 
     # ─────────────────────────────────────────────────────────────
-    # 1) 목표별 요약 쿼리 - 원본 데이터 직접 집계
-    #    • deduplicated: adset_id + date + adset_name 조합으로 중복 제거
-    #    • latest: adset_id 당 최신(adset_name) 1개 고정
+    # 1) 목표별 요약 쿼리 - 광고세트별 목표 분류
+    #    • adset_summary: 광고세트별 데이터로 목표 분류 가능
     #    • typed: adset_name → type 매핑(CASE)
     # ─────────────────────────────────────────────────────────────
     type_summary_query = f"""
-    WITH deduplicated AS (
-      SELECT
-        ad.account_id,
-        ad.adset_id,
-        DATE(ad.date) AS dt,
-        ad.adset_name,
-        ad.account_name,
-        ad.spend,
-        ad.impressions,
-        ad.clicks,
-        ad.purchases,
-        ad.purchase_value,
-        ROW_NUMBER() OVER (
-          PARTITION BY ad.adset_id, DATE(ad.date)
-          ORDER BY ad.date DESC, ad.updated_at DESC
-        ) AS rn
-      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` ad
-      WHERE DATE(ad.date) BETWEEN '{start_date}' AND '{end_date}'
-        AND ad.account_id = '{account_id}'
-        AND ad.adset_id IS NOT NULL
-        AND ad.adset_name IS NOT NULL
-    ),
-    daily AS (
+    WITH adset_data AS (
       SELECT
         account_id,
-        adset_id,
-        dt,
-        adset_name,
         account_name,
-        SUM(spend) AS spend,
-        SUM(impressions) AS impressions,
-        SUM(clicks) AS clicks,
-        SUM(purchases) AS purchases,
-        SUM(purchase_value) AS purchase_value
-      FROM deduplicated
-      WHERE rn = 1  -- 중복 제거
-      GROUP BY account_id, adset_id, dt, adset_name, account_name
-    ),
-    latest AS (
-      SELECT
-        d.* EXCEPT(adset_name),
-        FIRST_VALUE(adset_name) OVER (
-          PARTITION BY adset_id ORDER BY dt DESC, spend DESC
-        ) AS adset_name
-      FROM daily AS d
+        adset_name,
+        SUM(spend) AS total_spend,
+        SUM(impressions) AS total_impressions,
+        SUM(clicks) AS total_clicks,
+        SUM(purchases) AS total_purchases,
+        SUM(purchase_value) AS total_purchase_value
+      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+      WHERE date BETWEEN '{start_date}' AND '{end_date}'
+        AND account_id = '{account_id}'
+      GROUP BY account_id, account_name, adset_name
     ),
     typed AS (
-      SELECT *,
+      SELECT
+        '{start_date} ~ {end_date}' AS period,
+        account_id,
+        account_name,
         CASE
           WHEN adset_name LIKE '%도달%' OR adset_name LIKE '%reach%' OR adset_name LIKE '%브랜드%' THEN '도달'
           WHEN adset_name LIKE '%유입%' OR adset_name LIKE '%traffic%' OR adset_name LIKE '%engagement%' OR adset_name LIKE '%참여%' OR adset_name LIKE '%유입목적%' THEN '유입'
@@ -187,56 +159,43 @@ def get_meta_ads_adset_summary_by_type(
           WHEN adset_name LIKE '%앱설치%' OR adset_name LIKE '%app%' THEN '앱설치'
           WHEN adset_name LIKE '%리드%' OR adset_name LIKE '%lead%' THEN '리드'
           ELSE '기타'
-        END AS type
-      FROM latest
+        END AS type,
+        total_spend,
+        total_impressions,
+        total_clicks,
+        total_purchases,
+        total_purchase_value
+      FROM adset_data
     )
     SELECT
-      '{start_date} ~ {end_date}'   AS period,
+      period,
       account_id,
       account_name,
       type,
-      SUM(spend)          AS total_spend,
-      SUM(impressions)    AS total_impressions,
-      SAFE_MULTIPLY(SAFE_DIVIDE(SUM(spend), SUM(impressions)), 1000) AS CPM,
-      SUM(clicks)         AS total_clicks,
-      SAFE_DIVIDE(SUM(spend), SUM(clicks))                         AS CPC,
-      SAFE_DIVIDE(SUM(clicks), SUM(impressions))                   AS CTR,
-      SUM(purchases)      AS total_purchases,
-      SUM(purchase_value) AS total_purchase_value,
-      SAFE_DIVIDE(SUM(purchase_value), SUM(spend))                 AS ROAS,
-      SAFE_DIVIDE(SUM(spend), SUM(purchases))                      AS CPA
+      SUM(total_spend) AS total_spend,
+      SUM(total_impressions) AS total_impressions,
+      SAFE_MULTIPLY(SAFE_DIVIDE(SUM(total_spend), SUM(total_impressions)), 1000) AS CPM,
+      SUM(total_clicks) AS total_clicks,
+      SAFE_DIVIDE(SUM(total_spend), SUM(total_clicks)) AS CPC,
+      SAFE_DIVIDE(SUM(total_clicks), SUM(total_impressions)) AS CTR,
+      SUM(total_purchases) AS total_purchases,
+      SUM(total_purchase_value) AS total_purchase_value,
+      SAFE_DIVIDE(SUM(total_purchase_value), SUM(total_spend)) AS ROAS,
+      SAFE_DIVIDE(SUM(total_spend), SUM(total_purchases)) AS CPA
     FROM typed
-    GROUP BY account_id, account_name, type
+    WHERE type <> '기타'
+    GROUP BY period, account_id, account_name, type
     ORDER BY total_spend DESC;
     """
 
     # ─────────────────────────────────────────────────────────────
-    # 2) 전체 지출 합계 (원본 데이터 직접 집계)
+    # 2) 전체 지출 합계 (광고세트별 데이터에서 계산)
     # ─────────────────────────────────────────────────────────────
     total_spend_query = f"""
     SELECT SUM(spend) AS total_spend
-    FROM (
-      SELECT 
-        adset_id, 
-        DATE(date) AS dt, 
-        SUM(spend) AS spend
-      FROM (
-        SELECT
-          ad.adset_id,
-          ad.date,
-          ad.spend,
-          ROW_NUMBER() OVER (
-            PARTITION BY ad.adset_id, DATE(ad.date) 
-            ORDER BY ad.date DESC, ad.updated_at DESC
-          ) AS rn
-        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` ad
-        WHERE DATE(ad.date) BETWEEN '{start_date}' AND '{end_date}'
-          AND ad.account_id = '{account_id}'
-          AND ad.adset_id IS NOT NULL
-      )
-      WHERE rn = 1  -- 중복 제거
-      GROUP BY adset_id, dt
-    );
+    FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+    WHERE date BETWEEN '{start_date}' AND '{end_date}'
+      AND account_id = '{account_id}';
     """
 
     try:

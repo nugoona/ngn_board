@@ -10,19 +10,20 @@ def dictify_rows(rows):
 
 def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date: str, end_date: str):
     """
-    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회 (adset 중복 제거)
+    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회 (일자별 adset 중복 제거 포함)
     """
 
     today = datetime.today().strftime("%Y-%m-%d")
     start_date = start_date.strip() if start_date else today
     end_date = end_date.strip() if end_date else today
 
-    # ✅ 1. 캠페인 목표별 요약 쿼리 (adset_id 중복 제거 포함)
+    # ✅ 1. 캠페인 목표별 요약 쿼리 (adset_id + date 단위 중복 제거)
     type_summary_query = f"""
-    WITH deduplicated_adsets AS (
+    WITH daily_deduplicated AS (
       SELECT
         account_id,
         adset_id,
+        DATE(date) AS date,
         ANY_VALUE(account_name) AS account_name,
         ANY_VALUE(adset_name) AS adset_name,
         SUM(spend) AS spend,
@@ -33,9 +34,8 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
       WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, adset_id
+      GROUP BY account_id, adset_id, DATE
     ),
-
     typed_adsets AS (
       SELECT *,
         CASE
@@ -44,9 +44,8 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
           WHEN adset_name LIKE '%전환%' THEN '전환'
           ELSE '기타'
         END AS type
-      FROM deduplicated_adsets
+      FROM daily_deduplicated
     )
-
     SELECT
       '{start_date} ~ {end_date}' AS period,
       account_id,
@@ -68,7 +67,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     ORDER BY account_name, type
     """
 
-    # ✅ 2. 총 지출 합산 쿼리 (중복 제거)
+    # ✅ 2. 총 지출 합산 쿼리 (adset_id + date 단위 중복 제거)
     total_spend_query = f"""
     SELECT
       SUM(spend) AS total_spend

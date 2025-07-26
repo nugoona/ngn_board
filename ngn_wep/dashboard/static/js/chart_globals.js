@@ -19,7 +19,7 @@ Apex.responsive = [
 ];
 
 // 🔥 차트 종류별 옵션 분리 함수
-export function getChartOptions(type = 'default') {
+function getChartOptions(type = 'default') {
   // 공통 옵션 (모든 차트) - 최소화
   const common = {
     chart: {

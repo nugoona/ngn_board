@@ -3234,16 +3234,18 @@ h2::before {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  background: #ffffff;
+  background: transparent;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: none;
   transition: all 0.2s ease;
   position: relative;
+  box-shadow: none;
 }
 
 .legend-item:hover {
   background: #f1f5f9;
   transform: translateX(4px);
+  box-shadow: none;
 }
 
 .legend-marker {
@@ -3265,11 +3267,12 @@ h2::before {
   font-size: 14px;
   font-weight: 700;
   color: #6366f1;
-  background: #eef2ff;
+  background: transparent;
   padding: 4px 8px;
   border-radius: 6px;
   min-width: 60px;
   text-align: center;
+  box-shadow: none;
 }
 
 /* ApexCharts 커스터마이징 */

@@ -149,8 +149,12 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
     }
     
-    // 🔥 공통 함수 사용
-    typePieChartInstance = window.createEmptyPieChart("metaAdsAdsetSummaryChart");
+      // 🔥 공통 함수 사용
+  if (typeof window.createEmptyPieChart !== 'function') {
+    console.error("[ERROR] createEmptyPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
+    return;
+  }
+  typePieChartInstance = window.createEmptyPieChart("metaAdsAdsetSummaryChart");
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
   }

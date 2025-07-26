@@ -71,4 +71,6 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         return data
     except Exception as ex:
         print("[ERROR] ga4_source_summary 오류:", ex)
+        print(f"[ERROR] 오류 상세: {type(ex).__name__}: {str(ex)}")
+        # 빈 데이터 반환으로 서버 오류 방지
         return []

@@ -301,6 +301,10 @@ function renderProductSalesRatioChart() {
     }
     
     // 🔥 공통 함수 사용
+    if (typeof window.createEmptyPieChart !== 'function') {
+      console.error("[ERROR] createEmptyPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
+      return;
+    }
     chartInstance_product = window.createEmptyPieChart("productSalesRatioChart");
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
@@ -342,6 +346,12 @@ function renderProductSalesRatioChart() {
 
   // 🔥 공통 함수 사용
   console.log("[DEBUG] createPieChart 호출 전 - series:", values, "labels:", labels);
+  
+  // createPieChart 함수 존재 여부 확인
+  if (typeof window.createPieChart !== 'function') {
+    console.error("[ERROR] createPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
+    return;
+  }
   
   chartInstance_product = window.createPieChart("productSalesRatioChart", {
     series: values,

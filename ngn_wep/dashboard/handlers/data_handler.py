@@ -238,10 +238,10 @@ def get_dashboard_data_route():
                     t1 = time.time()
                     try:
                         # 캐시 무효화 파라미터 추출
-                        cache_buster = request_data.get('_cache_buster')
+                        cache_buster = data.get('_cache_buster')
                         print(f"[DEBUG] GA4 Source Summary 호출 - company: {company_name}, start: {start_date}, end: {end_date}")
                         print(f"[DEBUG] GA4 Source Summary 파라미터 타입 - company: {type(company_name)}, start: {type(start_date)}, end: {type(end_date)}")
-                        print(f"[DEBUG] GA4 Source Summary 전체 request_data: {request_data}")
+                        print(f"[DEBUG] GA4 Source Summary 전체 data: {data}")
                         
                         if not start_date or not end_date:
                             print(f"[ERROR] GA4 Source Summary - start_date 또는 end_date가 없습니다!")

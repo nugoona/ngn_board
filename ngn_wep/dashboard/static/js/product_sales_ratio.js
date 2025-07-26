@@ -300,12 +300,23 @@ function renderProductSalesRatioChart() {
       legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
     }
     
-    // 🔥 공통 함수 사용
-    if (typeof window.createEmptyPieChart !== 'function') {
-      console.error("[ERROR] createEmptyPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
-      return;
-    }
-    chartInstance_product = window.createEmptyPieChart("productSalesRatioChart");
+    // 빈 파이 차트 생성
+    chartInstance_product = new ApexCharts(document.getElementById("productSalesRatioChart"), {
+      chart: {
+        type: 'pie',
+        height: 350
+      },
+      series: [100],
+      labels: ['데이터 없음'],
+      colors: ['#e2e8f0'],
+      dataLabels: {
+        enabled: false
+      },
+      tooltip: {
+        enabled: false
+      }
+    });
+    chartInstance_product.render();
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
   }
@@ -344,22 +355,43 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // 🔥 공통 함수 사용
+  // 파이 차트 생성
   console.log("[DEBUG] createPieChart 호출 전 - series:", values, "labels:", labels);
   
-  // createPieChart 함수 존재 여부 확인
-  if (typeof window.createPieChart !== 'function') {
-    console.error("[ERROR] createPieChart 함수가 정의되지 않았습니다. chart_globals.js가 로드되었는지 확인하세요.");
-    return;
-  }
-  
-  chartInstance_product = window.createPieChart("productSalesRatioChart", {
+  chartInstance_product = new ApexCharts(document.getElementById("productSalesRatioChart"), {
+    chart: {
+      type: 'pie',
+      height: 350
+    },
     series: values,
     labels: labels,
-    actualSales: actualSales
-  }, {
-    colors: colors
+    colors: colors,
+    dataLabels: {
+      enabled: true,
+      formatter: function(val) {
+        return val.toFixed(1) + '%';
+      }
+    },
+    tooltip: {
+      theme: 'light',
+      custom: function({ series, seriesIndex, w }) {
+        const label = w.globals.labels[seriesIndex];
+        const value = series[seriesIndex];
+        let salesInfo = '';
+        if (actualSales && actualSales[seriesIndex]) {
+          const sales = actualSales[seriesIndex];
+          const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
+          salesInfo = `<div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSales}</div>`;
+        }
+        return `<div style="background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.10);font-family:'Pretendard',sans-serif;max-width:300px;font-size:14px;">
+          <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;line-height:1.4;">${label}</div>
+          ${salesInfo}
+          <div style="font-weight:500;font-size:13px;color:#64748b;">${typeof value === 'number' ? value.toFixed(1) : '0.0'}%</div>
+        </div>`;
+      }
+    }
   });
+  chartInstance_product.render();
 
   console.log("[DEBUG] createPieChart 호출 후 - chartInstance:", chartInstance_product);
   console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");

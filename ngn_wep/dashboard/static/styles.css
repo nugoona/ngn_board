@@ -798,6 +798,11 @@ html .performance-summary-wrapper:not(.loading),
   -webkit-backdrop-filter: none !important;
 }
 
+/* 🔥 사이트 성과 요약만을 위한 특별한 배경 투명도 조정 */
+.performance-summary-wrapper.loading .summary-grid .summary-card {
+  opacity: 0.95 !important; /* 🔥 0.6 → 0.95로 증가하여 덜 뿌연 효과 */
+}
+
 
 
 /* ================================
@@ -3066,7 +3071,7 @@ h2::before {
   white-space: nowrap;
   display: block;
   font-weight: 500;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px); /* 🔥 원래대로 복원 */
   text-shadow: none;
   -webkit-text-stroke: none;
 }
@@ -3830,7 +3835,7 @@ select option {
   width: 100%;
   height: 100%;
   background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px); /* 🔥 원래대로 복원 */
   z-index: 9999;
   display: flex;
   justify-content: center;

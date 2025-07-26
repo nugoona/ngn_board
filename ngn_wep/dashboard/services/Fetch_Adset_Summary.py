@@ -1,6 +1,6 @@
 # File: services/Fetch_Adset_Summary.py
 
-"""META Ads 캠페인 목표별 성과 요약 — adset 중복(날짜·이름) 완전 제거 버전"""
+"""META Ads 캠페인 목표별 성과 요약 — 원본 데이터 직접 집계 버전"""
 
 from google.cloud import bigquery
 from datetime import datetime
@@ -13,6 +13,46 @@ def dictify_rows(rows):
     return [dict(r) for r in rows]
 
 
+def debug_data_source(account_id: str, start_date: str, end_date: str):
+    """데이터 소스 디버깅 함수"""
+    debug_query = f"""
+    SELECT 
+      'ad_level' as source,
+      COUNT(*) as total_rows,
+      COUNT(DISTINCT adset_id) as unique_adsets,
+      COUNT(DISTINCT DATE(date)) as unique_dates,
+      SUM(spend) as total_spend
+    FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level`
+    WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+      AND account_id = '{account_id}'
+      AND adset_id IS NOT NULL
+    
+    UNION ALL
+    
+    SELECT 
+      'adset_summary' as source,
+      COUNT(*) as total_rows,
+      COUNT(DISTINCT adset_id) as unique_adsets,
+      COUNT(DISTINCT DATE(date)) as unique_dates,
+      SUM(spend) as total_spend
+    FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+    WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+      AND account_id = '{account_id}'
+      AND adset_id IS NOT NULL
+    """
+    
+    try:
+        results = client.query(debug_query).result()
+        debug_data = dictify_rows(results)
+        print(f"[DEBUG] 데이터 소스 비교:")
+        for row in debug_data:
+            print(f"  {row['source']}: {row['total_rows']}행, {row['unique_adsets']}개 adset, {row['unique_dates']}일, 총 지출: {row['total_spend']}")
+        return debug_data
+    except Exception as e:
+        print(f"[ERROR] 디버깅 쿼리 실패: {e}")
+        return []
+
+
 def get_meta_ads_adset_summary_by_type(
     account_id: str,
     period: str,
@@ -21,7 +61,8 @@ def get_meta_ads_adset_summary_by_type(
 ):
     """광고 계정(account_id)‑기간(start~end) 기준 / 캠페인 목표별(도달·유입·전환) 성과 요약 반환.
 
-    ‑ adset_id + date 단위로 중복 제거 (하루 1 adset)
+    ‑ 원본 데이터(meta_ads_ad_level)에서 직접 집계하여 이중 집계 방지
+    ‑ adset_id + date 단위로 중복 제거
     ‑ adset_id 당 *최신* adset_name 하나만 사용 → type 중복 완전 차단
     """
 
@@ -29,8 +70,11 @@ def get_meta_ads_adset_summary_by_type(
     start_date = (start_date or today).strip()
     end_date   = (end_date   or today).strip()
 
+    # 디버깅: 데이터 소스 비교
+    debug_data_source(account_id, start_date, end_date)
+
     # ─────────────────────────────────────────────────────────────
-    # 1) 목표별 요약 쿼리 - 중복 제거 로직 개선
+    # 1) 목표별 요약 쿼리 - 원본 데이터 직접 집계
     #    • deduplicated: adset_id + date + adset_name 조합으로 중복 제거
     #    • latest: adset_id 당 최신(adset_name) 1개 고정
     #    • typed: adset_name → type 매핑(CASE)
@@ -38,23 +82,25 @@ def get_meta_ads_adset_summary_by_type(
     type_summary_query = f"""
     WITH deduplicated AS (
       SELECT
-        account_id,
-        adset_id,
-        DATE(date) AS dt,
-        adset_name,
-        account_name,
-        spend,
-        impressions,
-        clicks,
-        purchases,
-        purchase_value,
+        ad.account_id,
+        ad.adset_id,
+        DATE(ad.date) AS dt,
+        ad.adset_name,
+        ad.account_name,
+        ad.spend,
+        ad.impressions,
+        ad.clicks,
+        ad.purchases,
+        ad.purchase_value,
         ROW_NUMBER() OVER (
-          PARTITION BY adset_id, DATE(date), adset_name 
-          ORDER BY date DESC, updated_at DESC
+          PARTITION BY ad.adset_id, DATE(ad.date), ad.adset_name 
+          ORDER BY ad.date DESC, ad.updated_at DESC
         ) AS rn
-      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-      WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-        AND account_id = '{account_id}'
+      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` ad
+      WHERE DATE(ad.date) BETWEEN '{start_date}' AND '{end_date}'
+        AND ad.account_id = '{account_id}'
+        AND ad.adset_id IS NOT NULL
+        AND ad.adset_name IS NOT NULL
     ),
     daily AS (
       SELECT
@@ -112,7 +158,7 @@ def get_meta_ads_adset_summary_by_type(
     """
 
     # ─────────────────────────────────────────────────────────────
-    # 2) 전체 지출 합계 (동일 중복 제거 로직 적용)
+    # 2) 전체 지출 합계 (원본 데이터 직접 집계)
     # ─────────────────────────────────────────────────────────────
     total_spend_query = f"""
     SELECT SUM(spend) AS total_spend
@@ -123,16 +169,17 @@ def get_meta_ads_adset_summary_by_type(
         SUM(spend) AS spend
       FROM (
         SELECT
-          adset_id,
-          date,
-          spend,
+          ad.adset_id,
+          ad.date,
+          ad.spend,
           ROW_NUMBER() OVER (
-            PARTITION BY adset_id, DATE(date) 
-            ORDER BY date DESC, updated_at DESC
+            PARTITION BY ad.adset_id, DATE(ad.date) 
+            ORDER BY ad.date DESC, ad.updated_at DESC
           ) AS rn
-        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
-        WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
-          AND account_id = '{account_id}'
+        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` ad
+        WHERE DATE(ad.date) BETWEEN '{start_date}' AND '{end_date}'
+          AND ad.account_id = '{account_id}'
+          AND ad.adset_id IS NOT NULL
       )
       WHERE rn = 1  -- 중복 제거
       GROUP BY adset_id, dt
@@ -140,13 +187,20 @@ def get_meta_ads_adset_summary_by_type(
     """
 
     try:
+        print(f"[DEBUG] 원본 데이터 직접 집계 시작: {start_date} ~ {end_date}, account_id: {account_id}")
+        
         summary_rows = client.query(type_summary_query).result()
         type_summary = dictify_rows(summary_rows)
 
         spend_rows = client.query(total_spend_query).result()
         total_spend = list(spend_rows)[0].get("total_spend", 0.0) if spend_rows.total_rows else 0.0
 
-        print(f"[DEBUG] get_meta_ads_adset_summary_by_type 결과: {len(type_summary)}개 타입, 총 지출: {total_spend}")
+        print(f"[DEBUG] 원본 데이터 집계 결과: {len(type_summary)}개 타입, 총 지출: {total_spend}")
+        
+        # 디버깅을 위한 상세 로그
+        for row in type_summary:
+            print(f"[DEBUG] 타입별 집계: {row['type']} - 지출: {row['total_spend']}, 구매: {row['total_purchases']}")
+        
         return type_summary, total_spend
 
     except Exception as err:

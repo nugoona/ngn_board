@@ -122,13 +122,6 @@ function renderMetaAdsAdsetSummaryTable(data) {
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   console.log("[DEBUG] renderMetaAdsAdsetSummaryChart 호출됨");
   
-  // ApexCharts가 로드되었는지 확인
-  if (typeof ApexCharts === 'undefined') {
-    console.warn('ApexCharts not loaded, retrying in 100ms...');
-    setTimeout(() => renderMetaAdsAdsetSummaryChart(data, totalSpendSum), 100);
-    return;
-  }
-
   const chartContainer = document.getElementById("metaAdsAdsetSummaryChart");
   const legendContainer = document.getElementById("campaignLegendItems");
   
@@ -156,35 +149,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
     }
     
-    typePieChartInstance = new ApexCharts(chartContainer, {
-      series: [100],
-      chart: {
-        type: 'pie',
-        height: 350,
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        animations: {
-          enabled: false
-        }
-      },
-      labels: ['데이터 없음'],
-      colors: ['#e5e7eb'],
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-            background: 'transparent'
-          }
-        }
-      },
-      legend: {
-        show: false
-      },
-      dataLabels: {
-        enabled: false
-      }
-    });
-    
-    typePieChartInstance.render();
+    // 🔥 공통 함수 사용
+    typePieChartInstance = window.createEmptyPieChart("metaAdsAdsetSummaryChart");
     console.log("[DEBUG] 빈 차트 렌더링 완료");
     return;
   }
@@ -213,133 +179,14 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     });
   }
 
-  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
-  const options = {
+  // 🔥 공통 함수 사용
+  typePieChartInstance = window.createPieChart("metaAdsAdsetSummaryChart", {
     series: values,
-    chart: {
-      type: 'pie',
-      height: 350,
-      fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-      animations: {
-        enabled: false
-      }
-    },
     labels: labels,
-    colors: colors,
-    plotOptions: {
-      pie: {
-        startAngle: 0,
-        endAngle: 360,
-        expandOnClick: true,
-        offsetX: 0,
-        offsetY: 0,
-        customScale: 1,
-        dataLabels: {
-          offset: 0,
-          minAngleToShowLabel: 10
-        },
-        donut: {
-          size: '65%',
-          background: 'transparent',
-          labels: {
-            show: true,
-            name: {
-              show: false
-            },
-            value: {
-              show: true,
-              fontSize: '16px',
-              fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-              fontWeight: 700,
-              color: '#1e293b',
-              offsetY: 0,
-              formatter: function (val) {
-                return typeof val === 'number' ? val.toFixed(1) + '%' : '0.0%';
-              }
-            },
-            total: {
-              show: false
-            }
-          }
-        }
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
-      },
-      style: {
-        fontSize: '14px',
-        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
-        fontWeight: 600,
-        colors: ['#ffffff']
-      },
-      dropShadow: {
-        enabled: true,
-        opacity: 0.3,
-        blur: 3,
-        left: 1,
-        top: 1
-      }
-    },
-    legend: {
-      show: false
-    },
-    tooltip: {
-      enabled: true,
-      theme: 'light',
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        const spend = actualSpend[seriesIndex] || 0;
-        const percentage = series[seriesIndex];
-        const label = labels[seriesIndex];
-        const formattedSpend = typeof spend === 'number' ? spend.toLocaleString() : spend;
-        return `<div style="
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 12px 16px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-          font-family: 'Pretendard', sans-serif;
-          max-width: 280px;
-        ">
-          <div style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #1e293b;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 8px;
-          ">${label}</div>
-          <div style="
-            font-weight: 600;
-            font-size: 14px;
-            color: #6366f1;
-          ">₩${formattedSpend}</div>
-          <div style="
-            font-weight: 500;
-            font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
-          ">${percentage.toFixed(1)}%</div>
-        </div>`;
-      }
-    },
-    responsive: [
-      {
-        breakpoint: 768,
-        options: {
-          chart: {
-            height: 300
-          }
-        }
-      }
-    ]
-  };
-
-  // ApexCharts 인스턴스 생성
-  typePieChartInstance = new ApexCharts(chartContainer, options);
-  typePieChartInstance.render();
+    actualSales: actualSpend
+  }, {
+    colors: colors
+  });
 
   console.log("[DEBUG] 캠페인 목표별 지출 비중 차트 렌더링 완료");
 }

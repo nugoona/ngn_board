@@ -8,49 +8,53 @@
   </div>
 
   <!-- ✅ 테이블 + 차트 통합 wrapper -->
-  <div class="product-sales-ratio-wrapper">
-
-    <!-- ✅ 왼쪽: 테이블 영역 -->
-    <div class="product-sales-ratio-table">
-      <div class="table-content-container">
-        <table id="metaAdsAdsetSummaryTable" class="data-table">
-          <thead>
-            <tr>
-              <th>캠페인 목표</th>
-              <th>지출</th>
-              <th>노출당비용</th>
-              <th>클릭당비용</th>
-              <th>구매</th>
-              <th>ROAS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- JS로 데이터 렌더링됨 -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ✅ 오른쪽: 모던 파이 차트 영역 -->
-    <div class="campaign-goal-chart-wrapper">
-      <div class="pie-chart-modern">
-        <div class="pie-chart-title">
-          목표별 지출 비중
+  <div class="chart-card">
+    <div class="campaign-summary-layout">
+      
+      <!-- ✅ 왼쪽: 테이블 영역 -->
+      <div class="campaign-summary-table">
+        <div class="table-content-container">
+          <table id="metaAdsAdsetSummaryTable" class="data-table">
+            <thead>
+              <tr>
+                <th>캠페인 목표</th>
+                <th>지출</th>
+                <th>노출당비용</th>
+                <th>클릭당비용</th>
+                <th>구매</th>
+                <th>ROAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- JS로 데이터 렌더링됨 -->
+            </tbody>
+          </table>
         </div>
-        <div class="pie-chart-content">
-          <div class="pie-chart-area">
-            <div id="metaAdsAdsetSummaryChart"></div>
-          </div>
-          <div class="pie-chart-legend">
-            <div class="legend-title">지출 비중</div>
-            <div class="legend-items" id="campaignLegendItems">
-              <!-- JS에서 동적 생성 -->
+      </div>
+
+      <!-- ✅ 오른쪽: 파이 차트 영역 -->
+      <div class="campaign-summary-chart">
+        <div class="chart-container">
+          <div class="pie-chart-modern">
+            <div class="pie-chart-title">
+              목표별 지출 비중
+            </div>
+            <div class="pie-chart-content">
+              <div class="pie-chart-area">
+                <div id="metaAdsAdsetSummaryChart"></div>
+              </div>
+              <div class="legend-container">
+                <div class="legend-title">지출 비중</div>
+                <div class="legend-items" id="campaignLegendItems">
+                  <!-- JS에서 동적 생성 -->
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
+    </div>
   </div>
 </section>
 

@@ -3371,3 +3371,89 @@ h2::before {
  로딩 오버레이 관련 스타일
 ======================== */
 
+/* 🔥 캠페인 목표별 요약 레이아웃 */
+.campaign-summary-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.campaign-summary-table {
+  flex: 0 0 55%;
+  min-width: 0; /* flex item 축소 허용 */
+  max-width: 55%;
+}
+
+.campaign-summary-chart {
+  flex: 0 0 45%;
+  min-width: 0; /* flex item 축소 허용 */
+  max-width: 45%;
+}
+
+/* 테이블 폭 제한 */
+.campaign-summary-table .table-content-container {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.campaign-summary-table table {
+  width: 100%;
+  min-width: 600px; /* 최소 폭 설정 */
+  font-size: 14px;
+}
+
+.campaign-summary-table th,
+.campaign-summary-table td {
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+/* 차트 영역 스타일 */
+.campaign-summary-chart .chart-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.campaign-summary-chart .pie-chart-modern {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .campaign-summary-layout {
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .campaign-summary-table,
+  .campaign-summary-chart {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+  
+  .campaign-summary-table table {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .campaign-summary-layout {
+    gap: 16px;
+  }
+  
+  .campaign-summary-table table {
+    font-size: 13px;
+  }
+  
+  .campaign-summary-table th,
+  .campaign-summary-table td {
+    padding: 6px 8px;
+  }
+}
+

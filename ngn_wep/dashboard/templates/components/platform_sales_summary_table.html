@@ -5,12 +5,14 @@
 </div>
 
 <!-- ✅ 날짜 유형 선택 (기간합 / 일자별) -->
-<div class="date-type-filter" style="margin-bottom: 10px; font-size: 18px;">
-  <label style="margin-right: 5px; padding: 8px;">
-    <input type="radio" name="platformDateType" value="summary" checked> <b>기간합</b>
+<div class="date-type-filter radio-group" style="margin-bottom: 16px;">
+  <label class="radio-item">
+    <input type="radio" name="platformDateType" value="summary" checked>
+    <span>기간합</span>
   </label>
-  <label style="padding: 8px;">
-    <input type="radio" name="platformDateType" value="daily"> <b>일자별</b>
+  <label class="radio-item">
+    <input type="radio" name="platformDateType" value="daily">
+    <span>일자별</span>
   </label>
   <div class="modern-dropdown" style="display: none; margin-left: 10px;">
     <select id="platformDateSort">

@@ -12,9 +12,15 @@
       </select>
 
       <!-- ✅ 일자별 / 기간합 토글 -->
-      <div id="metaDateTypeToggle" style="display: flex; align-items: center;">
-        <label><input type="radio" name="metaDateType" value="summary" checked> 기간합</label>
-        <label style="margin-left: 10px;"><input type="radio" name="metaDateType" value="daily"> 일자별</label>
+      <div id="metaDateTypeToggle" class="radio-group" style="margin-left: 20px;">
+        <label class="radio-item">
+          <input type="radio" name="metaDateType" value="summary" checked>
+          <span>기간합</span>
+        </label>
+        <label class="radio-item">
+          <input type="radio" name="metaDateType" value="daily">
+          <span>일자별</span>
+        </label>
       </div>
     </div>
   </div>

@@ -50,8 +50,14 @@ $(document).ready(function () {
 
   // ✅ 캠페인 목표별 성과 보기 버튼 클릭
   $("#toggleTypeSummary").on("click", function () {
+    console.log("[DEBUG] 🔥 toggleTypeSummary 버튼 클릭됨");
+    console.log("[DEBUG] metaAdsState.accountId:", metaAdsState.accountId);
+    console.log("[DEBUG] 버튼 disabled 상태:", $(this).prop("disabled"));
+    console.log("[DEBUG] 버튼 disabled 클래스:", $(this).hasClass("disabled"));
+    
     // 계정 선택 체크
     if (!metaAdsState.accountId) {
+      console.log("[DEBUG] 계정이 선택되지 않음 - 팝업 표시");
       $("#typeSummaryContainer").hide();
       $(this).text("캠페인 목표별 성과 보기");
       showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
@@ -197,12 +203,23 @@ export function fetchMetaAccountList() {
       console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $("#toggleTypeSummary").length);
       console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $("#openCatalogSidebarBtn").length);
       
-      $("#toggleTypeSummary").removeClass("disabled").prop("disabled", false);
-      $("#openCatalogSidebarBtn").removeClass("disabled").prop("disabled", false);
+      const $toggleBtn = $("#toggleTypeSummary");
+      const $catalogBtn = $("#openCatalogSidebarBtn");
+      
+      console.log("[DEBUG] 버튼 활성화 전 상태:");
+      console.log("[DEBUG] toggleTypeSummary disabled:", $toggleBtn.prop("disabled"));
+      console.log("[DEBUG] toggleTypeSummary has disabled class:", $toggleBtn.hasClass("disabled"));
+      console.log("[DEBUG] openCatalogSidebarBtn disabled:", $catalogBtn.prop("disabled"));
+      console.log("[DEBUG] openCatalogSidebarBtn has disabled class:", $catalogBtn.hasClass("disabled"));
+      
+      $toggleBtn.removeClass("disabled").prop("disabled", false);
+      $catalogBtn.removeClass("disabled").prop("disabled", false);
       
       console.log("[DEBUG] 버튼 활성화 후 상태:");
-      console.log("[DEBUG] toggleTypeSummary disabled:", $("#toggleTypeSummary").prop("disabled"));
-      console.log("[DEBUG] openCatalogSidebarBtn disabled:", $("#openCatalogSidebarBtn").prop("disabled"));
+      console.log("[DEBUG] toggleTypeSummary disabled:", $toggleBtn.prop("disabled"));
+      console.log("[DEBUG] toggleTypeSummary has disabled class:", $toggleBtn.hasClass("disabled"));
+      console.log("[DEBUG] openCatalogSidebarBtn disabled:", $catalogBtn.prop("disabled"));
+      console.log("[DEBUG] openCatalogSidebarBtn has disabled class:", $catalogBtn.hasClass("disabled"));
       console.log("[DEBUG] ✅ 버튼 활성화 완료");
     } else {
       $("#previewCardContainer").html(

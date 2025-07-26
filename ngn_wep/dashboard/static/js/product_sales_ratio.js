@@ -32,6 +32,7 @@ function resolveDateRange(period) {
 
 let chartInstance_product = null;
 let allProductSalesRatioData = [];
+let currentPage_product = 1;
 
 function fetchProductSalesRatio() {
   const company = $("#accountFilter").val();
@@ -125,8 +126,8 @@ function renderProductSalesRatioTable(page) {
 
 // 페이지네이션 설정 - UI 개선
 function setupPagination_ratio() {
-  // 🔥 10개씩 표시로 변경
-  const itemsPerPage = 10;
+  // 🔥 5개씩 표시로 변경
+  const itemsPerPage = 5;
   const totalPages = Math.ceil(allProductSalesRatioData.length / itemsPerPage);
   
   const paginationContainer = $("#pagination_product_sales_ratio");
@@ -139,107 +140,34 @@ function setupPagination_ratio() {
   
   if (totalPages <= 1) return;
   
-  // 🔥 페이지네이션 UI 개선 - 깔끔한 스타일
-  let paginationHtml = `
-    <div class="pagination-wrapper" style="
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 20px;
-      font-family: 'Pretendard', sans-serif;
-    ">
-  `;
-  
-  // 이전 버튼
-  if (currentPage_product > 1) {
-    paginationHtml += `
-      <button class="pagination-btn" onclick="changePage_ratio(${currentPage_product - 1})" style="
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
-        color: #475569;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-      " onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
-        이전
-      </button>
-    `;
+  // 이전/다음 버튼 스타일
+  const prevBtn = $(`<button class="pagination-btn">이전</button>`);
+  const nextBtn = $(`<button class="pagination-btn">다음</button>`);
+
+  if (currentPage_product === 1) {
+    prevBtn.prop("disabled", true).addClass("disabled");
+  } else {
+    prevBtn.click(() => {
+      currentPage_product--;
+      renderProductSalesRatioTable(currentPage_product);
+      setupPagination_ratio();
+    });
   }
-  
-  // 페이지 번호 - 최대 5개까지만 표시
-  const maxVisiblePages = 5;
-  let startPage = Math.max(1, currentPage_product - Math.floor(maxVisiblePages / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-  
-  if (endPage - startPage + 1 < maxVisiblePages) {
-    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+
+  if (currentPage_product === totalPages) {
+    nextBtn.prop("disabled", true).addClass("disabled");
+  } else {
+    nextBtn.click(() => {
+      currentPage_product++;
+      renderProductSalesRatioTable(currentPage_product);
+      setupPagination_ratio();
+    });
   }
+
+  paginationContainer.append(prevBtn);
+  paginationContainer.append(`<span class="pagination-info">${currentPage_product} / ${totalPages}</span>`);
+  paginationContainer.append(nextBtn);
   
-  for (let i = startPage; i <= endPage; i++) {
-    const isActive = i === currentPage_product;
-    const btnStyle = isActive ? `
-      background: #6366f1;
-      color: #ffffff;
-      border: 1px solid #6366f1;
-    ` : `
-      background: #ffffff;
-      color: #475569;
-      border: 1px solid #e2e8f0;
-    `;
-    
-    paginationHtml += `
-      <button class="pagination-btn ${isActive ? 'active' : ''}" onclick="changePage_ratio(${i})" style="
-        padding: 8px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: ${isActive ? '600' : '400'};
-        transition: all 0.2s;
-        min-width: 40px;
-        ${btnStyle}
-      " onmouseover="${!isActive ? `this.style.background='#f8fafc'` : ''}" onmouseout="${!isActive ? `this.style.background='#ffffff'` : ''}">
-        ${i}
-      </button>
-    `;
-  }
-  
-  // 다음 버튼
-  if (currentPage_product < totalPages) {
-    paginationHtml += `
-      <button class="pagination-btn" onclick="changePage_ratio(${currentPage_product + 1})" style="
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        background: #ffffff;
-        color: #475569;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
-      " onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
-        다음
-      </button>
-    `;
-  }
-  
-  paginationHtml += `
-    </div>
-    <div style="
-      text-align: center;
-      margin-top: 8px;
-      font-size: 13px;
-      color: #64748b;
-      font-family: 'Pretendard', sans-serif;
-    ">
-      ${allProductSalesRatioData.length}개 중 ${(currentPage_product - 1) * itemsPerPage + 1}-${Math.min(currentPage_product * itemsPerPage, allProductSalesRatioData.length)}개 표시
-    </div>
-  `;
-  
-  paginationContainer.html(paginationHtml);
-  
-  // 🔥 페이지네이션이 제대로 표시되는지 확인
   console.log("[DEBUG] 페이지네이션 생성 완료:", {
     totalItems: allProductSalesRatioData.length,
     totalPages: totalPages,
@@ -247,9 +175,6 @@ function setupPagination_ratio() {
     itemsPerPage: itemsPerPage
   });
 }
-
-// 전역 변수로 currentPage_product 선언 (한 번만)
-let currentPage_product = 1;
 
 function changePage_ratio(page) {
   currentPage_product = page;

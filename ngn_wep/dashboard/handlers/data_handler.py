@@ -378,10 +378,7 @@ def get_dashboard_data_route():
                 end_date=end_date
             )
 
-            response_data["data"] = {
-                "type_summary": type_summary,
-                "total_spend_sum": total_spend_sum
-            }
+            response_data["meta_ads_adset_summary_by_type"] = type_summary
 
         # Meta Ads 광고 미리보기 - 단일
         if data_type == "meta_ads_preview_list":

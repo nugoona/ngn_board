@@ -3475,8 +3475,9 @@ h2::before {
   width: 100%;
   height: 400px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 0;
 }
 
 .campaign-summary-chart .pie-chart-modern {

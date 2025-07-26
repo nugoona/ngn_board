@@ -156,10 +156,10 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         shadowOffsetX: 2,
         shadowOffsetY: 2
       },
-      series: [{
-        type: 'pie',
-        radius: ['30%', '55%'],
-        center: ['50%', '60%'],
+             series: [{
+         type: 'pie',
+         radius: ['25%', '65%'],
+         center: ['50%', '60%'],
         data: [{ value: 100, name: '데이터 없음' }],
         color: ['#e5e7eb'],
         label: {
@@ -227,11 +227,11 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
         shadowColor: 'rgba(0, 0, 0, 0.1)'
       }
     }],
-    series: [{
-      name: '지출 비중',
-      type: 'pie',
-      radius: ['30%', '55%'],
-      center: ['50%', '60%'],
+          series: [{
+        name: '지출 비중',
+        type: 'pie',
+        radius: ['25%', '65%'],
+        center: ['50%', '60%'],
       data: chartData,
       color: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
       label: {

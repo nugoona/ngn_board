@@ -187,10 +187,12 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
     ]
 
     valid_sort_columns = {
+        "sales": "item_quantity",           # 판매순 (총 판매량)
+        "revenue": "item_product_sales",    # 매출순 (총 매출)
         "item_quantity": "item_quantity",
         "item_product_sales": "item_product_sales"
     }
-    order_by_column = valid_sort_columns.get(sort_by, "item_product_sales")
+    order_by_column = valid_sort_columns.get(sort_by, "item_quantity")
 
     # ✅ 최적화된 쿼리: 불필요한 JOIN 제거, 복잡한 URL 생성 로직 간소화
     data_query = f"""

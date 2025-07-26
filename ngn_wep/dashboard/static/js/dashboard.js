@@ -153,7 +153,7 @@ async function updateAllData() {
 
   const productRequest = getRequestData(1, {
     data_type: "cafe24_product_sales",
-    sort_by: $("input[name='cafe24_product_sort']:checked").val(),
+    sort_by: $("input[name='cafe24_product_sort']:checked").val() || "sales",
     limit: 10,
   });
 

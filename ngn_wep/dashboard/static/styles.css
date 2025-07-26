@@ -2911,21 +2911,21 @@ th.sortable.desc::after {
   backdrop-filter: blur(2px) !important; /* 성과 요약만 블러 효과 감소 */
 }
 
-/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) */
-.loading-overlay,
-.loading-overlay *,
-[class*="loading-overlay"],
-[id*="loadingOverlay"] {
+/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) - 성과 요약 제외 */
+.loading-overlay:not(#loadingOverlayPerformanceSummary),
+.loading-overlay:not(#loadingOverlayPerformanceSummary) *,
+[class*="loading-overlay"]:not(#loadingOverlayPerformanceSummary),
+[id*="loadingOverlay"]:not(#loadingOverlayPerformanceSummary) {
   background: transparent !important;
   background-color: transparent !important;
 }
 
-/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) */
-div[id*="loadingOverlay"],
-div[class*="loading-overlay"],
-.loading-overlay,
-.loading-overlay::before,
-.loading-overlay::after {
+/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) - 성과 요약 제외 */
+div[id*="loadingOverlay"]:not(#loadingOverlayPerformanceSummary),
+div[class*="loading-overlay"]:not(#loadingOverlayPerformanceSummary),
+.loading-overlay:not(#loadingOverlayPerformanceSummary),
+.loading-overlay:not(#loadingOverlayPerformanceSummary)::before,
+.loading-overlay:not(#loadingOverlayPerformanceSummary)::after {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;

@@ -159,8 +159,16 @@ def get_dashboard_data_route():
         date_sort = str(data.get("date_sort", "desc")).strip()
         sort_by = str(data.get("sort_by", "item_product_sales")).strip()
 
-        page = int(data.get("page", 1))
-        limit = int(data.get("limit", 15))
+        # 안전한 int 변환
+        try:
+            page = int(data.get("page", 1)) if isinstance(data.get("page"), (int, str)) else 1
+        except (ValueError, TypeError):
+            page = 1
+            
+        try:
+            limit = int(data.get("limit", 15)) if isinstance(data.get("limit"), (int, str)) else 15
+        except (ValueError, TypeError):
+            limit = 15
         offset = (page - 1) * limit
 
         # ✅ 기간 필터 필요 없는 테이블 예외 처리

@@ -280,7 +280,7 @@ function renderProductSalesRatioChart() {
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: 'bold',
             color: '#000',
             backgroundColor: '#ffffff',
@@ -291,7 +291,7 @@ function renderProductSalesRatioChart() {
             borderWidth: 1
           },
           productName: {
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: '600',
             color: '#ffffff',
             backgroundColor: '#4a5568',

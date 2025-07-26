@@ -101,7 +101,8 @@ function renderProductSalesRatioTable(page) {
     return;
   }
 
-  const itemsPerPage = 20;
+  // 🔥 10개씩 표시로 변경
+  const itemsPerPage = 10;
   const start = (page - 1) * itemsPerPage;
   const end = start + itemsPerPage;
   const pageData = allProductSalesRatioData.slice(start, end);
@@ -118,9 +119,10 @@ function renderProductSalesRatioTable(page) {
   });
 }
 
-// 페이지네이션 설정
+// 페이지네이션 설정 - UI 개선
 function setupPagination_ratio() {
-  const itemsPerPage = 20;
+  // 🔥 10개씩 표시로 변경
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(allProductSalesRatioData.length / itemsPerPage);
   
   const paginationContainer = $("#pagination_product_sales_ratio");
@@ -133,21 +135,105 @@ function setupPagination_ratio() {
   
   if (totalPages <= 1) return;
   
+  // 🔥 페이지네이션 UI 개선 - 깔끔한 스타일
+  const paginationHtml = `
+    <div class="pagination-wrapper" style="
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      font-family: 'Pretendard', sans-serif;
+    ">
+  `;
+  
   // 이전 버튼
   if (currentPage_product > 1) {
-    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage_product - 1})">이전</button>`);
+    paginationHtml += `
+      <button class="pagination-btn" onclick="changePage_ratio(${currentPage_product - 1})" style="
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #475569;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      " onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+        이전
+      </button>
+    `;
   }
   
-  // 페이지 번호
-  for (let i = 1; i <= totalPages; i++) {
-    const btnClass = i === currentPage_product ? "pagination-btn active" : "pagination-btn";
-    paginationContainer.append(`<button class="${btnClass}" onclick="changePage_ratio(${i})">${i}</button>`);
+  // 페이지 번호 - 최대 5개까지만 표시
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage_product - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    const isActive = i === currentPage_product;
+    const btnStyle = isActive ? `
+      background: #6366f1;
+      color: #ffffff;
+      border: 1px solid #6366f1;
+    ` : `
+      background: #ffffff;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+    `;
+    
+    paginationHtml += `
+      <button class="pagination-btn ${isActive ? 'active' : ''}" onclick="changePage_ratio(${i})" style="
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: ${isActive ? '600' : '400'};
+        transition: all 0.2s;
+        min-width: 40px;
+        ${btnStyle}
+      " onmouseover="${!isActive ? `this.style.background='#f8fafc'` : ''}" onmouseout="${!isActive ? `this.style.background='#ffffff'` : ''}">
+        ${i}
+      </button>
+    `;
   }
   
   // 다음 버튼
   if (currentPage_product < totalPages) {
-    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage_product + 1})">다음</button>`);
+    paginationHtml += `
+      <button class="pagination-btn" onclick="changePage_ratio(${currentPage_product + 1})" style="
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #475569;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      " onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#ffffff'">
+        다음
+      </button>
+    `;
   }
+  
+  paginationHtml += `
+    </div>
+    <div style="
+      text-align: center;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #64748b;
+      font-family: 'Pretendard', sans-serif;
+    ">
+      ${allProductSalesRatioData.length}개 중 ${(currentPage_product - 1) * itemsPerPage + 1}-${Math.min(currentPage_product * itemsPerPage, allProductSalesRatioData.length)}개 표시
+    </div>
+  `;
+  
+  paginationContainer.html(paginationHtml);
 }
 
 // 전역 변수로 currentPage_product 선언 (한 번만)
@@ -201,6 +287,11 @@ function renderProductSalesRatioChart() {
         fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
         animations: {
           enabled: false
+        },
+        // 🔥 배경 투명하게 설정
+        background: 'transparent',
+        dropShadow: {
+          enabled: false
         }
       },
       labels: ['데이터 없음'],
@@ -209,6 +300,7 @@ function renderProductSalesRatioChart() {
         pie: {
           donut: {
             size: '65%',
+            // 🔥 도넛 배경을 완전히 투명하게
             background: 'transparent'
           }
         }
@@ -217,6 +309,10 @@ function renderProductSalesRatioChart() {
         show: false
       },
       dataLabels: {
+        enabled: false
+      },
+      // 🔥 Flat하고 깔끔한 툴팁 디자인
+      tooltip: {
         enabled: false
       }
     });
@@ -252,7 +348,7 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
+  // 🔥 ApexCharts 옵션 설정 - Flat하고 깔끔한 디자인으로 개선
   const options = {
     series: values,
     chart: {
@@ -260,6 +356,11 @@ function renderProductSalesRatioChart() {
       height: 350,
       fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
       animations: {
+        enabled: false
+      },
+      // 🔥 배경 투명하게 설정
+      background: 'transparent',
+      dropShadow: {
         enabled: false
       }
     },
@@ -279,6 +380,7 @@ function renderProductSalesRatioChart() {
         },
         donut: {
           size: '65%',
+          // 🔥 도넛 배경을 완전히 투명하게
           background: 'transparent',
           labels: {
             show: true,
@@ -314,20 +416,22 @@ function renderProductSalesRatioChart() {
         fontWeight: 600,
         colors: ['#ffffff']
       },
+      // 🔥 그림자 효과 제거하여 flat하게
       dropShadow: {
-        enabled: true,
-        opacity: 0.3,
-        blur: 3,
-        left: 1,
-        top: 1
+        enabled: false
       }
     },
     legend: {
       show: false
     },
+    // 🔥 Flat하고 깔끔한 툴팁 디자인
     tooltip: {
       enabled: true,
       theme: 'light',
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, sans-serif'
+      },
       custom: function({ series, seriesIndex, dataPointIndex, w }) {
         const sales = actualSales[seriesIndex] || 0;
         const percentage = series[seriesIndex];
@@ -335,41 +439,45 @@ function renderProductSalesRatioChart() {
         const formattedSales = typeof sales === 'number' ? sales.toLocaleString() : sales;
         return `<div style="
           background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
+          border: none;
+          border-radius: 8px;
           padding: 12px 16px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
           font-family: 'Pretendard', sans-serif;
           max-width: 280px;
+          font-size: 14px;
         ">
           <div style="
             font-weight: 600;
             font-size: 14px;
             color: #1e293b;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 8px;
+            margin-bottom: 6px;
+            line-height: 1.4;
           ">${label}</div>
           <div style="
             font-weight: 600;
-            font-size: 14px;
+            font-size: 15px;
             color: #6366f1;
+            margin-bottom: 4px;
           ">₩${formattedSales}</div>
           <div style="
             font-weight: 500;
             font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
+            color: #64748b;
           ">${percentage.toFixed(1)}%</div>
         </div>`;
       }
     },
+    // 🔥 반응형 설정 개선
     responsive: [
       {
         breakpoint: 768,
         options: {
           chart: {
             height: 300
+          },
+          dataLabels: {
+            fontSize: '12px'
           }
         }
       }

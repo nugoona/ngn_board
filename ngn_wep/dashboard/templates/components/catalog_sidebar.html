@@ -127,10 +127,12 @@
 
           <!-- 검색 행 -->
           <div class="manual-search-row" style="width:100%;">
-            <select id="manualSearchTypeSelect" style="max-width:160px; min-width: auto;">
-              <option value="product_name">상품명으로 검색</option>
-              <option value="product_no">제품번호로 검색</option>
-            </select>
+            <div class="modern-dropdown" style="max-width:160px; min-width: auto;">
+              <select id="manualSearchTypeSelect">
+                <option value="product_name">상품명으로 검색</option>
+                <option value="product_no">제품번호로 검색</option>
+              </select>
+            </div>
             <input id="manualSearchInput" type="text" placeholder="검색어를 입력하세요">
             <button id="manualSearchBtn" class="manual-search-btn" aria-label="검색">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="#003366" stroke-width="1.8" fill="none">

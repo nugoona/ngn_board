@@ -3565,12 +3565,12 @@ label input[type="radio"] + b {
   vertical-align: middle;
 }
 
-/* ✅ 모던 드롭다운 디자인 */
+/* ✅ 모던 드롭다운 디자인 - 기존 select 스타일 개선 */
 select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background: white;
+  background: #ffffff;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   padding: 8px 12px;
@@ -3579,23 +3579,31 @@ select {
   color: #374151;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 120px;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 8px center;
   background-size: 16px;
-  padding-right: 36px;
-  min-width: 120px;
+  padding-right: 32px;
 }
 
 select:hover {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #d1d5db;
+  background-color: #f9fafb;
 }
 
 select:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background-color: #ffffff;
+}
+
+select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
 }
 
 select option {

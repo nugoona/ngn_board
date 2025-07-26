@@ -117,6 +117,11 @@ function toggleLoading(isLoading) {
         // 🔥 진짜 로딩 (강한 블러) - 1초 후 적용
         setTimeout(() => {
             $("#performanceSummaryWrapper").addClass("real-loading");
+            // 🔥 진짜 로딩 시 강한 블러 직접 적용
+            $("#performanceSummaryWrapper").css({
+                'backdrop-filter': 'blur(4px)',
+                '-webkit-backdrop-filter': 'blur(4px)'
+            });
         }, 1000);
         
         // 🔥 진짜 로딩 시 CSS 강제 적용
@@ -132,10 +137,21 @@ function toggleLoading(isLoading) {
             'backdrop-filter': 'none !important',
             'opacity': '1 !important'
         });
+        
+        // 🔥 성과 요약 래퍼에 직접 backdrop-filter 적용
+        $("#performanceSummaryWrapper").css({
+            'backdrop-filter': 'blur(2px)',
+            '-webkit-backdrop-filter': 'blur(2px)'
+        });
     } else {
         // 🔥 로딩 완료 시 모든 클래스 제거
         hideLoading("#loadingOverlayPerformanceSummary");
         $("#performanceSummaryWrapper").removeClass("loading real-loading");
+        // 🔥 로딩 완료 시 backdrop-filter 제거
+        $("#performanceSummaryWrapper").css({
+            'backdrop-filter': 'none',
+            '-webkit-backdrop-filter': 'none'
+        });
     }
 }
 

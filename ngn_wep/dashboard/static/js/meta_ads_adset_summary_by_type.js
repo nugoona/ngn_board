@@ -93,12 +93,12 @@ function renderMetaAdsAdsetSummaryTable(data) {
     totalPurchaseValue += purchaseValue;
 
     const tr = $("<tr></tr>");
-    tr.append(`<td>${row.type || "-"}</td>`);
-    tr.append(`<td>${spend.toLocaleString()}</td>`);
-    tr.append(`<td>${cpm.toFixed(0)}</td>`);
-    tr.append(`<td>${cpc.toFixed(0)}</td>`);
-    tr.append(`<td>${purchases.toLocaleString()}</td>`);
-    tr.append(`<td>${roas.toFixed(1)}%</td>`);
+    tr.append(`<td style="text-align: center;">${row.type || "-"}</td>`);
+    tr.append(`<td style="text-align: center;">${spend.toLocaleString()}</td>`);
+    tr.append(`<td style="text-align: center;">${cpm.toFixed(0)}</td>`);
+    tr.append(`<td style="text-align: center;">${cpc.toFixed(0)}</td>`);
+    tr.append(`<td style="text-align: center;">${purchases.toLocaleString()}</td>`);
+    tr.append(`<td style="text-align: center;">${roas.toFixed(1)}%</td>`);
     
     tbody.append(tr);
   });
@@ -109,126 +109,201 @@ function renderMetaAdsAdsetSummaryTable(data) {
   const totalRoas = totalSpend > 0 ? (totalPurchaseValue / totalSpend) * 100 : 0;
 
   const totalTr = $("<tr style='font-weight: bold; background-color: #f3f4f6;'></tr>");
-  totalTr.append(`<td>총합</td>`);
-  totalTr.append(`<td>${totalSpend.toLocaleString()}</td>`);
-  totalTr.append(`<td>${totalCpm.toFixed(0)}</td>`);
-  totalTr.append(`<td>${totalCpc.toFixed(0)}</td>`);
-  totalTr.append(`<td>${totalPurchases.toLocaleString()}</td>`);
-  totalTr.append(`<td>${totalRoas.toFixed(1)}%</td>`);
+  totalTr.append(`<td style="text-align: center;">총합</td>`);
+  totalTr.append(`<td style="text-align: center;">${totalSpend.toLocaleString()}</td>`);
+  totalTr.append(`<td style="text-align: center;">${totalCpm.toFixed(0)}</td>`);
+  totalTr.append(`<td style="text-align: center;">${totalCpc.toFixed(0)}</td>`);
+  totalTr.append(`<td style="text-align: center;">${totalPurchases.toLocaleString()}</td>`);
+  totalTr.append(`<td style="text-align: center;">${totalRoas.toFixed(1)}%</td>`);
   
   tbody.append(totalTr);
 }
 
 function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
-  console.log("[DEBUG] renderMetaAdsAdsetSummaryChart 호출됨");
+  const chartDom = document.getElementById('metaAdsAdsetSummaryChart');
+  if (!chartDom) return;
   
-  const chartContainer = document.getElementById("metaAdsAdsetSummaryChart");
-  const legendContainer = document.getElementById("campaignLegendItems");
-  
-  console.log("[DEBUG] 차트 컨테이너:", chartContainer);
-
-  if (!chartContainer) {
-    console.error("[ERROR] metaAdsAdsetSummaryChart 컨테이너를 찾을 수 없습니다!");
-    return;
-  }
-
   // 기존 차트 인스턴스 제거
-  if (typePieChartInstance) {
-    typePieChartInstance.destroy();
+  if (window.echartsMetaAdsAdsetSummary) {
+    window.echartsMetaAdsAdsetSummary.dispose();
   }
 
   // 총 지출 계산
   totalSpendSum = totalSpendSum || data.reduce((sum, row) => sum + (row.total_spend || 0), 0);
 
-  // 데이터가 없거나 총 지출이 0인 경우 빈 차트 표시
+  // 데이터가 없는 경우 빈 차트 표시
   if (!data || data.length === 0 || totalSpendSum === 0) {
     console.log("[DEBUG] 빈 차트 렌더링");
+    const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
+    window.echartsMetaAdsAdsetSummary = myChart;
     
-    // 빈 범례 표시
-    if (legendContainer) {
-      legendContainer.innerHTML = '<div class="legend-item"><div class="legend-text">데이터가 없습니다</div></div>';
-    }
-    
-      // 빈 파이 차트 생성
-  typePieChartInstance = new ApexCharts(chartContainer, {
-    chart: {
-      type: 'pie',
-      height: 350
-    },
-    series: [100],
-    labels: ['데이터 없음'],
-    colors: ['#e2e8f0'],
-    dataLabels: {
-      enabled: false
-    },
-    tooltip: {
-      enabled: false
-    }
-  });
-  typePieChartInstance.render();
-    console.log("[DEBUG] 빈 차트 렌더링 완료");
+    const option = {
+      title: {
+        text: '목표별 지출 비중',
+        left: 'center',
+        top: 20,
+        textStyle: {
+          fontSize: 22,
+          fontWeight: '700',
+          fontFamily: 'Pretendard, sans-serif',
+          color: '#ffffff'
+        },
+        backgroundColor: '#1e293b',
+        borderRadius: 6,
+        padding: [12, 24],
+        shadowBlur: 8,
+        shadowColor: 'rgba(0, 0, 0, 0.15)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2
+      },
+      series: [{
+        type: 'pie',
+        radius: ['30%', '55%'],
+        center: ['50%', '60%'],
+        data: [{ value: 100, name: '데이터 없음' }],
+        color: ['#e5e7eb'],
+        label: {
+          show: false
+        }
+      }]
+    };
+    myChart.setOption(option);
     return;
   }
 
   console.log("[DEBUG] 실제 데이터로 차트 렌더링");
   
-  const labels = data.map(row => row.type || "-");
-  const values = data.map(row => totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0);
-  const actualSpend = data.map(row => row.total_spend || 0);
-  const colors = ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'];
+  const chartData = data.map(row => ({
+    value: totalSpendSum ? (row.total_spend / totalSpendSum * 100) : 0,
+    name: row.type || "-",
+    actualSpend: row.total_spend || 0
+  }));
 
-  console.log("[DEBUG] 차트 데이터:", { labels, values, actualSpend });
+  // ECharts 인스턴스 생성
+  const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
+  window.echartsMetaAdsAdsetSummary = myChart;
 
-  // 커스텀 범례 생성
-  if (legendContainer) {
-    legendContainer.innerHTML = '';
-    labels.forEach((label, index) => {
-      const legendItem = document.createElement('div');
-      legendItem.className = 'legend-item';
-      legendItem.innerHTML = `
-        <div class="legend-marker" style="background-color: ${colors[index]}"></div>
-        <div class="legend-text">${label}</div>
-        <div class="legend-percentage">${values[index].toFixed(1)}%</div>
-      `;
-      legendContainer.appendChild(legendItem);
-    });
-  }
-
-  // 파이 차트 생성
-  typePieChartInstance = new ApexCharts(chartContainer, {
-    chart: {
-      type: 'pie',
-      height: 350
-    },
-    series: values,
-    labels: labels,
-    colors: colors,
-    dataLabels: {
-      enabled: true,
-      formatter: function(val) {
-        return val.toFixed(1) + '%';
-      }
+  const option = {
+    title: {
+      text: '목표별 지출 비중',
+      left: 'center',
+      top: 20,
+      textStyle: {
+        fontSize: 22,
+        fontWeight: '700',
+        fontFamily: 'Pretendard, sans-serif',
+        color: '#ffffff'
+      },
+      backgroundColor: '#1e293b',
+      borderRadius: 6,
+      padding: [12, 24],
+      shadowBlur: 8,
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
+      shadowOffsetX: 2,
+      shadowOffsetY: 2
     },
     tooltip: {
-      theme: 'light',
-      custom: function({ series, seriesIndex, w }) {
-        const label = w.globals.labels[seriesIndex];
-        const value = series[seriesIndex];
-        let spendInfo = '';
-        if (actualSpend && actualSpend[seriesIndex]) {
-          const spend = actualSpend[seriesIndex];
-          const formattedSpend = typeof spend === 'number' ? spend.toLocaleString() : spend;
-          spendInfo = `<div style="font-weight:600;font-size:15px;color:#6366f1;margin-bottom:4px;">₩${formattedSpend}</div>`;
-        }
-        return `<div style="background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 4px 16px rgba(0,0,0,0.10);font-family:'Pretendard',sans-serif;max-width:300px;font-size:14px;">
-          <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;line-height:1.4;">${label}</div>
-          ${spendInfo}
-          <div style="font-weight:500;font-size:13px;color:#64748b;">${typeof value === 'number' ? value.toFixed(1) : '0.0'}%</div>
-        </div>`;
+      trigger: 'item',
+      formatter: function(params) {
+        const actualSpend = params.data.actualSpend || 0;
+        const formattedSpend = actualSpend.toLocaleString();
+        return `${params.name}<br/>₩${formattedSpend} (${params.value}%)`;
       }
-    }
-  });
-  typePieChartInstance.render();
-
-  console.log("[DEBUG] 캠페인 목표별 지출 비중 차트 렌더링 완료");
+    },
+    graphic: [{
+      type: 'line',
+      left: 'center',
+      top: 70,
+      shape: {
+        x1: -80,
+        y1: 0,
+        x2: 80,
+        y2: 0
+      },
+      style: {
+        stroke: '#e2e8f0',
+        lineWidth: 2,
+        shadowBlur: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      }
+    }],
+    series: [{
+      name: '지출 비중',
+      type: 'pie',
+      radius: ['30%', '55%'],
+      center: ['50%', '60%'],
+      data: chartData,
+      color: ['#4e73df', '#f6c23e', '#36b9cc', '#e74a3b', '#6f42c1'],
+      label: {
+        show: true,
+        position: 'outside',
+        align: 'center',
+        formatter: function(params) {
+          return `{percentage|${params.value.toFixed(1)}%}\n{goalName|${params.name}}`;
+        },
+        fontSize: 14,
+        fontFamily: 'Pretendard, sans-serif',
+        backgroundColor: 'transparent',
+        borderRadius: 8,
+        padding: [0, 0],
+        borderColor: 'transparent',
+        borderWidth: 0,
+        shadowBlur: 4,
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        rich: {
+          percentage: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: '#000',
+            backgroundColor: '#ffffff',
+            borderRadius: [8, 8, 0, 0],
+            padding: [8, 12, 4, 12],
+            textAlign: 'center',
+            borderColor: '#e2e8f0',
+            borderWidth: 1
+          },
+          goalName: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#ffffff',
+            backgroundColor: '#4a5568',
+            borderRadius: [0, 0, 8, 8],
+            padding: [4, 12, 8, 12],
+            textAlign: 'center',
+            borderColor: '#4a5568',
+            borderWidth: 1
+          }
+        }
+      },
+      labelLine: {
+        show: true,
+        length: 10,
+        length2: 15,
+        smooth: true,
+        lineStyle: {
+          width: 2,
+          color: '#cbd5e1',
+          shadowBlur: 3,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      },
+      itemStyle: {
+        shadowBlur: 8,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2,
+        shadowColor: 'rgba(0, 0, 0, 0.1)'
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 15,
+          shadowOffsetX: 4,
+          shadowOffsetY: 4,
+          shadowColor: 'rgba(0, 0, 0, 0.2)'
+        }
+      }
+    }]
+  };
+  myChart.setOption(option);
 }

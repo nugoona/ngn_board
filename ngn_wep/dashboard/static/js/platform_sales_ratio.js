@@ -186,31 +186,33 @@ function renderPlatformSalesRatioChart() {
         show: true,
         position: 'outside',
         formatter: function(params) {
-          return `{percentage|${params.value}%}\n{platformName|${params.name}}`;
+          return `{percentage|${params.value.toFixed(1)}%}\n{platformName|${params.name}}`;
         },
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Pretendard, sans-serif',
         backgroundColor: '#ffffff',
-        borderRadius: 6,
-        padding: [6, 10],
+        borderRadius: 8,
+        padding: [6, 8],
         borderColor: '#e2e8f0',
         borderWidth: 1,
-        shadowBlur: 8,
-        shadowColor: 'rgba(0, 0, 0, 0.15)',
+        shadowBlur: 4,
+        shadowColor: 'rgba(0, 0, 0, 0.3)',
         shadowOffsetX: 2,
         shadowOffsetY: 2,
         rich: {
           percentage: {
             fontSize: 16,
-            fontWeight: 'bold',
-            color: '#333',
-            padding: [0, 0, 2, 0]
+            fontWeight: '600',
+            color: '#000',
+            padding: [0, 0, 2, 0],
+            textAlign: 'center'
           },
           platformName: {
             fontSize: 12,
             fontWeight: 'normal',
             color: '#666',
-            lineHeight: 14
+            lineHeight: 14,
+            textAlign: 'center'
           }
         }
       },

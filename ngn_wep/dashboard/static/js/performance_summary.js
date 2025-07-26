@@ -110,9 +110,14 @@ async function fetchPerformanceSummaryData() {
 
 function toggleLoading(isLoading) {
     if (isLoading) {
-        // 🔥 로딩 클래스 먼저 추가 (배경 효과 방지)
+        // 🔥 가짜 로딩 (약한 블러)
         $("#performanceSummaryWrapper").addClass("loading");
         showLoading("#loadingOverlayPerformanceSummary");
+        
+        // 🔥 진짜 로딩 (강한 블러) - 1초 후 적용
+        setTimeout(() => {
+            $("#performanceSummaryWrapper").addClass("real-loading");
+        }, 1000);
         
         // 🔥 진짜 로딩 시 CSS 강제 적용
         $("#loadingOverlayPerformanceSummary").css({
@@ -128,9 +133,9 @@ function toggleLoading(isLoading) {
             'opacity': '1 !important'
         });
     } else {
-        // 🔥 로딩 오버레이 먼저 숨기고 클래스 제거
+        // 🔥 로딩 완료 시 모든 클래스 제거
         hideLoading("#loadingOverlayPerformanceSummary");
-        $("#performanceSummaryWrapper").removeClass("loading");
+        $("#performanceSummaryWrapper").removeClass("loading real-loading");
     }
 }
 

@@ -765,13 +765,22 @@ th {
   opacity: 0 !important; /* 로딩 오버레이 완전 투명 */
 }
 
-/* 🔥 사이트 성과 요약만 backdrop-filter 제거 */
-.performance-summary-wrapper,
-.performance-summary-wrapper .summary-grid,
-.performance-summary-wrapper .summary-card {
+/* 🔥 사이트 성과 요약 전용 가짜/진짜 블러 효과 */
+.performance-summary-wrapper.loading {
+  backdrop-filter: blur(2px) !important; /* 가짜 로딩 시 약한 블러 */
+  -webkit-backdrop-filter: blur(2px) !important;
+  transition: backdrop-filter 0.3s ease !important;
+}
+
+.performance-summary-wrapper.loading.real-loading {
+  backdrop-filter: blur(4px) !important; /* 진짜 로딩 시 강한 블러 */
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* 🔥 로딩 완료 시 블러 제거 */
+.performance-summary-wrapper:not(.loading) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  filter: none !important;
 }
 
 
@@ -2640,7 +2649,7 @@ th.sortable.desc::after {
     right: 0;
     bottom: 0;
     background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(1px);
+    backdrop-filter: none; /* 🔥 전체 backdrop-filter 제거 */
     z-index: 10;
 }
 

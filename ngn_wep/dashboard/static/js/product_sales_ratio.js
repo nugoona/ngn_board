@@ -289,7 +289,7 @@ function renderProductSalesRatioChart() {
             textAlign: 'center',
             borderColor: '#e2e8f0',
             borderWidth: 1,
-            width: 'auto'
+            width: 200
           },
           productName: {
             fontSize: 24,
@@ -301,7 +301,7 @@ function renderProductSalesRatioChart() {
             textAlign: 'center',
             borderColor: '#4a5568',
             borderWidth: 1,
-            width: 'auto'
+            width: 200
           }
         }
       },

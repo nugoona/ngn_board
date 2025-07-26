@@ -2893,8 +2893,8 @@ th.sortable.desc::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(4px) !important; /* 원래 값으로 복원 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: none !important; /* 🔥 모든 backdrop-filter 제거 */
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2907,29 +2907,11 @@ th.sortable.desc::after {
 
 /* 🔥 사이트 성과 요약 전용 로딩 오버레이 최적화 */
 #loadingOverlayPerformanceSummary {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(2px) !important; /* 성과 요약만 블러 효과 감소 */
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: none !important; /* 성과 요약도 backdrop-filter 제거 */
 }
 
-/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) - 성과 요약 제외 */
-.loading-overlay:not(#loadingOverlayPerformanceSummary),
-.loading-overlay:not(#loadingOverlayPerformanceSummary) *,
-[class*="loading-overlay"]:not(#loadingOverlayPerformanceSummary),
-[id*="loadingOverlay"]:not(#loadingOverlayPerformanceSummary) {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) - 성과 요약 제외 */
-div[id*="loadingOverlay"]:not(#loadingOverlayPerformanceSummary),
-div[class*="loading-overlay"]:not(#loadingOverlayPerformanceSummary),
-.loading-overlay:not(#loadingOverlayPerformanceSummary),
-.loading-overlay:not(#loadingOverlayPerformanceSummary)::before,
-.loading-overlay:not(#loadingOverlayPerformanceSummary)::after {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-}
+/* 🔥 강제 투명화 규칙 제거 - backdrop-filter 제거로 해결됨 */
 
 /* 스피너 스타일 */
 .spinner {
@@ -2948,19 +2930,19 @@ div[class*="loading-overlay"]:not(#loadingOverlayPerformanceSummary),
   font-size: 16px;
   color: #374151;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   padding: 12px 20px;
   border-radius: 8px;
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px); /* 원래 값으로 복원 */
+  backdrop-filter: none; /* 🔥 모든 backdrop-filter 제거 */
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
 /* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */
 #loadingOverlayPerformanceSummary .loading-text {
-  backdrop-filter: none; /* 성과 요약만 backdrop-filter 제거 */
+  background: rgba(255, 255, 255, 0.95); /* 성과 요약만 배경 투명도 조정 */
 }
 
 /* ================================

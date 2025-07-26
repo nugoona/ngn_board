@@ -179,6 +179,7 @@ function renderPlatformSalesRatioChart() {
       type: 'pie',
       radius: ['30%', '55%'],
       center: ['50%', '60%'],
+      roseType: 'area',
       data: data,
       color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
@@ -202,8 +203,8 @@ function renderPlatformSalesRatioChart() {
         shadowOffsetY: 2,
         rich: {
           percentage: {
-            fontSize: 18,
-            fontWeight: '700',
+            fontSize: 26,
+            fontWeight: '800',
             color: function(params) {
               const colors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
               return colors[params.dataIndex];

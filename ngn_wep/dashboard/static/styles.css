@@ -751,10 +751,6 @@ th {
   align-items: center !important;
   z-index: 10 !important;
   pointer-events: none !important;
-  /* 🔥 로딩 오버레이 크기 제한 - 카드 영역만 덮기 */
-  max-width: 1200px !important;
-  max-height: 200px !important;
-  margin: 0 auto !important;
 }
 
 /* ✅ 로딩 활성화 시 스피너 표시 */
@@ -766,7 +762,7 @@ th {
 #loadingOverlayPerformanceSummary {
   background: transparent !important; /* 항상 투명 배경 유지 */
   backdrop-filter: none !important; /* backdrop-filter 제거 */
-  opacity: 0.3 !important; /* 로딩 오버레이 자체 투명도 낮추기 */
+  opacity: 0 !important; /* 로딩 오버레이 완전 투명 */
 }
 
 /* 🔥 사이트 성과 요약만 backdrop-filter 제거 */

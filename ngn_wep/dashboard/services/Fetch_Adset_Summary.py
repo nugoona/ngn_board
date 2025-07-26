@@ -10,21 +10,22 @@ def dictify_rows(rows):
 
 def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date: str, end_date: str):
     """
-    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회 (중복 집계 방지)
+    특정 기간과 광고 계정으로 META Ads 캠페인 목표별 성과 요약 조회 (일자별 중복 제거 포함)
     """
 
     today = datetime.today().strftime("%Y-%m-%d")
     start_date = start_date.strip() if start_date else today
     end_date = end_date.strip() if end_date else today
 
-    # ✅ 1. 캠페인 목표별 요약 쿼리 (adset_id 중복 제거)
+    # ✅ 1. 캠페인 목표별 요약 쿼리
     type_summary_query = f"""
-    WITH deduplicated_data AS (
+    WITH daily_aggregated AS (
       SELECT
         account_id,
         account_name,
         adset_id,
         adset_name,
+        DATE(date) AS date,
         SUM(spend) AS spend,
         SUM(impressions) AS impressions,
         SUM(clicks) AS clicks,
@@ -35,7 +36,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_id, adset_name
+      GROUP BY account_id, account_name, adset_id, adset_name, DATE
     ),
     filtered_data AS (
       SELECT
@@ -53,7 +54,7 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
           WHEN adset_name LIKE '%전환%' THEN '전환'
           ELSE '기타'
         END AS type
-      FROM deduplicated_data
+      FROM daily_aggregated
     )
 
     SELECT
@@ -77,23 +78,21 @@ def get_meta_ads_adset_summary_by_type(account_id: str, period: str, start_date:
     ORDER BY account_name, type
     """
 
-    # ✅ 2. 총 지출 합산 쿼리 (adset_id 중복 제거)
+    # ✅ 2. 총 지출 합산 쿼리 (일자별 중복 제거 포함)
     total_spend_query = f"""
     SELECT
       SUM(spend) AS total_spend
     FROM (
       SELECT
-        account_id,
-        account_name,
         adset_id,
-        adset_name,
+        DATE(date) AS date,
         SUM(spend) AS spend
       FROM
         `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
       WHERE
         DATE(date) BETWEEN '{start_date}' AND '{end_date}'
         AND account_id = '{account_id}'
-      GROUP BY account_id, account_name, adset_id, adset_name
+      GROUP BY adset_id, DATE
     )
     """
 

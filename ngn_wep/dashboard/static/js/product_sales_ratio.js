@@ -29,8 +29,6 @@ function resolveDateRange(period) {
   return { start, end };
 }
 
-let currentPage_ratio = 1;
-const limit_ratio = 10;
 let chartInstance_product = null;
 let allProductSalesRatioData = [];
 
@@ -50,7 +48,12 @@ function fetchProductSalesRatio() {
   });
 
   console.log("[DEBUG] 상품 매출 비중 요청:", requestData);
-  showLoading("#loadingOverlayProductSalesRatio");
+  
+  // 로딩 오버레이가 있는 경우에만 표시
+  const loadingOverlay = $("#loadingOverlayProductSalesRatio");
+  if (loadingOverlay.length > 0) {
+    showLoading("#loadingOverlayProductSalesRatio");
+  }
 
   latestAjaxRequest("product_sales_ratio", {
     url: "/dashboard/get_data",
@@ -58,44 +61,100 @@ function fetchProductSalesRatio() {
     contentType: "application/json",
     data: JSON.stringify(requestData),
     error: function (xhr, status, error) {
-      hideLoading("#loadingOverlayProductSalesRatio");
+      if (loadingOverlay.length > 0) {
+        hideLoading("#loadingOverlayProductSalesRatio");
+      }
       console.error("[ERROR] 상품 매출 비중 오류:", status, error);
     }
   }, function (res) {
-    hideLoading("#loadingOverlayProductSalesRatio");
+    if (loadingOverlay.length > 0) {
+      hideLoading("#loadingOverlayProductSalesRatio");
+    }
 
     if (res.status === "success") {
       allProductSalesRatioData = res.product_sales_ratio || [];
-      renderProductSalesRatioChart();
+      console.log("[DEBUG] 상품 매출 비중 데이터 수신:", allProductSalesRatioData);
+      renderProductSalesRatioTable(1);
+      setupPagination_ratio();
     } else {
       console.warn("[WARN] 상품 매출 비중 응답 없음", res);
+      allProductSalesRatioData = [];
     }
   });
 }
 
+// 테이블 렌더링 함수 추가
 function renderProductSalesRatioTable(page) {
+  console.log("[DEBUG] renderProductSalesRatioTable 호출됨");
+  
   const tbody = $("#productSalesRatioTableBody");
+  if (tbody.length === 0) {
+    console.warn("[WARN] productSalesRatioTableBody 요소를 찾을 수 없습니다.");
+    return;
+  }
+  
   tbody.empty();
 
-  const start = (page - 1) * limit_ratio;
-  const end = start + limit_ratio;
-  const pageData = allProductSalesRatioData.slice(start, end);
-
-  if (pageData.length === 0) {
+  if (!allProductSalesRatioData || allProductSalesRatioData.length === 0) {
     tbody.append("<tr><td colspan='6'>데이터가 없습니다.</td></tr>");
     return;
   }
 
-  pageData.forEach(row => {
+  const itemsPerPage = 20;
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  const pageData = allProductSalesRatioData.slice(start, end);
+
+  pageData.forEach(item => {
     const tr = $("<tr></tr>");
-    tr.append(`<td>${row.report_period || "-"}</td>`);
-    tr.append(`<td>${row.company_name || "-"}</td>`);
-    tr.append(`<td>${row.cleaned_product_name || "-"}</td>`);
-    tr.append(`<td>${row.item_quantity || 0}</td>`);
-    tr.append(`<td>${cleanData(row.item_product_sales)}</td>`);
-    tr.append(`<td>${(row.sales_ratio_percent || 0).toFixed(1)}%</td>`);
+    tr.append(`<td>${item.report_period || "-"}</td>`);
+    tr.append(`<td>${item.company_name || "-"}</td>`);
+    tr.append(`<td>${item.cleaned_product_name || item.product_name || "-"}</td>`);
+    tr.append(`<td>${(item.item_quantity || 0).toLocaleString()}</td>`);
+    tr.append(`<td>${(item.item_product_sales || 0).toLocaleString()}</td>`);
+    tr.append(`<td>${(item.sales_ratio_percent || 0).toFixed(1)}%</td>`);
     tbody.append(tr);
   });
+}
+
+// 페이지네이션 설정
+function setupPagination_ratio() {
+  const itemsPerPage = 20;
+  const totalPages = Math.ceil(allProductSalesRatioData.length / itemsPerPage);
+  
+  const paginationContainer = $("#pagination_product_sales_ratio");
+  if (paginationContainer.length === 0) {
+    console.warn("[WARN] pagination_product_sales_ratio 요소를 찾을 수 없습니다.");
+    return;
+  }
+  
+  paginationContainer.empty();
+  
+  if (totalPages <= 1) return;
+  
+  // 이전 버튼
+  if (currentPage > 1) {
+    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage - 1})">이전</button>`);
+  }
+  
+  // 페이지 번호
+  for (let i = 1; i <= totalPages; i++) {
+    const btnClass = i === currentPage ? "pagination-btn active" : "pagination-btn";
+    paginationContainer.append(`<button class="${btnClass}" onclick="changePage_ratio(${i})">${i}</button>`);
+  }
+  
+  // 다음 버튼
+  if (currentPage < totalPages) {
+    paginationContainer.append(`<button class="pagination-btn" onclick="changePage_ratio(${currentPage + 1})">다음</button>`);
+  }
+}
+
+let currentPage = 1;
+
+function changePage_ratio(page) {
+  currentPage = page;
+  renderProductSalesRatioTable(page);
+  setupPagination_ratio();
 }
 
 function renderProductSalesRatioChart() {
@@ -191,7 +250,7 @@ function renderProductSalesRatioChart() {
     });
   }
 
-  // ApexCharts 옵션 설정
+  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
   const options = {
     series: values,
     chart: {
@@ -243,7 +302,23 @@ function renderProductSalesRatioChart() {
       }
     },
     dataLabels: {
-      enabled: false
+      enabled: true,
+      formatter: function (val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: {
+        enabled: true,
+        opacity: 0.3,
+        blur: 3,
+        left: 1,
+        top: 1
+      }
     },
     legend: {
       show: false
@@ -306,58 +381,15 @@ function renderProductSalesRatioChart() {
   console.log("[DEBUG] 상품 매출 비중 차트 렌더링 완료");
 }
 
-function setupPagination_ratio() {
-  const pagination = $("#pagination_product_sales_ratio");
-  pagination.empty();
-
-  const totalPages = Math.ceil(allProductSalesRatioData.length / limit_ratio);
-  if (totalPages <= 1) return;
-
-  const prevBtn = $('<button class="pagination-btn">이전</button>');
-  if (currentPage_ratio === 1) {
-    prevBtn.prop("disabled", true).addClass("disabled");
-  } else {
-    prevBtn.click(() => {
-      currentPage_ratio--;
-      renderProductSalesRatioTable(currentPage_ratio);
-      setupPagination_ratio();
-    });
-  }
-
-  const nextBtn = $('<button class="pagination-btn">다음</button>');
-  if (currentPage_ratio === totalPages) {
-    nextBtn.prop("disabled", true).addClass("disabled");
-  } else {
-    nextBtn.click(() => {
-      currentPage_ratio++;
-      renderProductSalesRatioTable(currentPage_ratio);
-      setupPagination_ratio();
-    });
-  }
-
-  const pageInfo = $(`<span class="pagination-info">${currentPage_ratio} / ${totalPages}</span>`);
-  pagination.append(prevBtn, pageInfo, nextBtn);
-}
-
-// ✅ 토글 버튼 이벤트 핸들러
+// 토글 버튼 이벤트
 $(document).ready(function() {
   $("#toggleProductSalesRatioChart").on("click", function() {
-    const container = $("#productSalesRatioChartContainer");
-    const button = $(this);
-    
-    if (container.is(":visible")) {
-      // 차트 숨기기
-      container.hide();
-      button.text("상위 TOP5 차트 보기");
-    } else {
-      // 차트 보이기 및 렌더링
-      container.show();
-      button.text("상위 TOP5 차트 숨기기");
-      
-      // 차트가 처음 렌더링되는 경우에만 실행
-      if (!chartInstance_product) {
-        renderProductSalesRatioChart();
-      }
+    const $container = $("#productSalesRatioChartContainer");
+    const isVisible = $container.is(":visible");
+    $container.toggle();
+    $(this).text(isVisible ? "상위 TOP5 차트 보기" : "상위 TOP5 차트 숨기기");
+    if (!isVisible) {
+      renderProductSalesRatioChart();
     }
   });
 });

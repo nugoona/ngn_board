@@ -17,7 +17,12 @@ function fetchPlatformSalesRatio() {
   });
 
   console.log("[DEBUG] 플랫폼 매출 비중 요청:", requestData);
-  showLoading("#loadingOverlayPlatformSalesRatio");
+  
+  // 로딩 오버레이가 있는 경우에만 표시
+  const loadingOverlay = $("#loadingOverlayPlatformSalesRatio");
+  if (loadingOverlay.length > 0) {
+    showLoading("#loadingOverlayPlatformSalesRatio");
+  }
 
   latestAjaxRequest("platform_sales_ratio", {
     url: "/dashboard/get_data",
@@ -25,11 +30,15 @@ function fetchPlatformSalesRatio() {
     contentType: "application/json",
     data: JSON.stringify(requestData),
     error: function (xhr, status, error) {
-      hideLoading("#loadingOverlayPlatformSalesRatio");
+      if (loadingOverlay.length > 0) {
+        hideLoading("#loadingOverlayPlatformSalesRatio");
+      }
       console.error("[ERROR] 플랫폼 매출 비중 오류:", status, error);
     }
   }, function (res) {
-    hideLoading("#loadingOverlayPlatformSalesRatio");
+    if (loadingOverlay.length > 0) {
+      hideLoading("#loadingOverlayPlatformSalesRatio");
+    }
 
     if (res.status === "success") {
       platformSalesRatioData = res.platform_sales_ratio || [];
@@ -151,7 +160,7 @@ function renderPlatformSalesRatioChart() {
     });
   }
 
-  // ApexCharts 옵션 설정
+  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
   const options = {
     series: values,
     chart: {
@@ -203,7 +212,23 @@ function renderPlatformSalesRatioChart() {
       }
     },
     dataLabels: {
-      enabled: false
+      enabled: true,
+      formatter: function (val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: {
+        enabled: true,
+        opacity: 0.3,
+        blur: 3,
+        left: 1,
+        top: 1
+      }
     },
     legend: {
       show: false

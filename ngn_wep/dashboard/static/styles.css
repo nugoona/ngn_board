@@ -3157,10 +3157,10 @@ h2::before {
 
 
 /* ========================
- ApexCharts 모던 파이 차트 스타일 (v1.3)
+ ApexCharts 모던 파이 차트 스타일 (v1.4)
 ======================== */
 
-/* 파이 차트 컨테이너 */
+/* 파이 차트 컨테이너 - 단일 배경 */
 .pie-chart-modern {
   background: #ffffff;
   border-radius: 16px;
@@ -3194,14 +3194,17 @@ h2::before {
   justify-content: center;
   align-items: center;
   min-height: 350px;
+  background: transparent;
 }
 
+/* 범례 영역 - 단일 배경 */
 .pie-chart-legend {
   flex: 0 0 280px;
   padding: 20px;
   background: #f8fafc;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  position: relative;
 }
 
 .legend-title {
@@ -3227,6 +3230,7 @@ h2::before {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .legend-item:hover {
@@ -3263,6 +3267,7 @@ h2::before {
 /* ApexCharts 커스터마이징 */
 .apexcharts-canvas {
   margin: 0 auto !important;
+  background: transparent !important;
 }
 
 .apexcharts-legend {
@@ -3303,6 +3308,14 @@ h2::before {
   font-weight: 500 !important;
   color: #475569 !important;
   font-size: 13px !important;
+}
+
+/* 데이터 라벨 스타일 */
+.apexcharts-datalabel {
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* 반응형 디자인 */

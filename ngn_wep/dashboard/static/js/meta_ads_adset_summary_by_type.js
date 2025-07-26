@@ -19,7 +19,12 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
   });
 
   console.log("[DEBUG] 캠페인 목표별 성과 요약 요청:", requestData);
-  showLoading("#loadingOverlayTypeSummary");
+  
+  // 로딩 오버레이가 있는 경우에만 표시
+  const loadingOverlay = $("#loadingOverlayTypeSummary");
+  if (loadingOverlay.length > 0) {
+    showLoading("#loadingOverlayTypeSummary");
+  }
 
   latestAjaxRequest("meta_ads_adset_summary_by_type", {
     url: "/dashboard/get_data",
@@ -27,11 +32,15 @@ export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, a
     contentType: "application/json",
     data: JSON.stringify(requestData),
     error: function (xhr, status, error) {
-      hideLoading("#loadingOverlayTypeSummary");
+      if (loadingOverlay.length > 0) {
+        hideLoading("#loadingOverlayTypeSummary");
+      }
       console.error("[ERROR] 캠페인 목표별 성과 요약 오류:", status, error);
     }
   }, function (res) {
-    hideLoading("#loadingOverlayTypeSummary");
+    if (loadingOverlay.length > 0) {
+      hideLoading("#loadingOverlayTypeSummary");
+    }
 
     if (res.status === "success") {
       const data = res.meta_ads_adset_summary_by_type || [];
@@ -48,6 +57,11 @@ function renderMetaAdsAdsetSummaryTable(data) {
   console.log("[DEBUG] renderMetaAdsAdsetSummaryTable 호출됨");
   
   const tbody = $("#metaAdsAdsetSummaryTable tbody");
+  if (tbody.length === 0) {
+    console.warn("[WARN] metaAdsAdsetSummaryTable tbody 요소를 찾을 수 없습니다.");
+    return;
+  }
+  
   tbody.empty();
 
   if (!data || data.length === 0) {
@@ -199,7 +213,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
     });
   }
 
-  // ApexCharts 옵션 설정
+  // ApexCharts 옵션 설정 - 직관적인 디자인으로 변경
   const options = {
     series: values,
     chart: {
@@ -251,7 +265,23 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       }
     },
     dataLabels: {
-      enabled: false
+      enabled: true,
+      formatter: function (val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toFixed(1) + '%';
+      },
+      style: {
+        fontSize: '14px',
+        fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif',
+        fontWeight: 600,
+        colors: ['#ffffff']
+      },
+      dropShadow: {
+        enabled: true,
+        opacity: 0.3,
+        blur: 3,
+        left: 1,
+        top: 1
+      }
     },
     legend: {
       show: false

@@ -195,19 +195,22 @@
       text-decoration: underline;
     }
 
+
+
     /* 업데이트 알림 카드 스타일 */
     .update-notification {
       position: absolute;
       bottom: 20px;
       right: 20px;
-      width: 320px;
-      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.1);
-      font-size: 13px;
-      line-height: 1.6;
+      width: 280px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 11px;
+      line-height: 1.4;
       color: #374151;
       z-index: 1000;
       transition: all 0.3s ease;
@@ -215,102 +218,74 @@
 
     .update-notification.hidden {
       opacity: 0;
-      transform: translateX(20px);
+      transform: translateY(20px);
       pointer-events: none;
     }
 
-    .update-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
     .update-title {
-      font-size: 18px;
-      font-weight: 800;
+      font-size: 13px;
+      font-weight: 700;
       color: #1a1a1a;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e5e7eb;
     }
 
     .update-version {
-      font-size: 12px;
+      font-size: 9px;
       font-weight: 600;
       color: #6366f1;
       background: rgba(99, 102, 241, 0.1);
-      padding: 4px 8px;
-      border-radius: 6px;
-      margin-left: auto;
-    }
-
-    .update-close {
-      background: none;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .update-close:hover {
-      background: #f3f4f6;
-      color: #374151;
-    }
-
-    .update-content {
-      margin-bottom: 16px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      margin-left: 6px;
     }
 
     .update-item {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      padding: 8px 0;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 10px;
     }
 
     .update-item svg {
-      width: 16px;
-      height: 16px;
+      width: 10px;
+      height: 10px;
       flex-shrink: 0;
-      margin-top: 2px;
+      margin-top: 1px;
       color: #6366f1;
     }
 
     .update-section {
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
 
     .update-section-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .update-future {
-      border-top: 2px solid #e5e7eb;
-      padding-top: 20px;
-      margin-top: 20px;
-    }
-
-    .update-future-title {
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 600;
       color: #6366f1;
-      margin-bottom: 12px;
-      font-size: 14px;
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .update-close {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+
+    .update-close:hover {
+      background: #f3f4f6;
+      color: #374151;
     }
 
     @media (max-width: 480px) {
@@ -341,22 +316,13 @@
 <body>
 
 <div class="login-container">
+
   <!-- 업데이트 알림 카드 -->
   <div class="update-notification" id="updateNotification">
-    <div class="update-header">
-      <div class="update-title">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        NGN 대시보드 V 10.1 업데이트
-        <span class="update-version">V 10.1</span>
-      </div>
-      <button class="update-close" onclick="hideUpdateNotification()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+    <button class="update-close" onclick="hideUpdateNotification()">×</button>
+    
+    <div class="update-title">
+      NGN 대시보드 V 10.1 업데이트<span class="update-version">V 10.1</span>
     </div>
     
     <div class="update-section">
@@ -387,13 +353,8 @@
       </div>
     </div>
     
-    <div class="update-future">
-      <div class="update-section-title">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
-        </svg>
-        다음 업데이트 V 10.2 (예정)
-      </div>
+    <div class="update-section">
+      <div class="update-section-title">다음 업데이트 V 10.2 (예정)</div>
       <div class="update-item">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082m-.75-.082L24 14.5m-9.75 0v5.714a2.25 2.25 0 01-.659 1.591L5 14.5" />
@@ -470,6 +431,7 @@
       notification.classList.add('hidden');
     }
   });
+
 </script>
 
 </body>

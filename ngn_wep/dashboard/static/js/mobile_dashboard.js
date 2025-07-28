@@ -507,6 +507,9 @@ function setupFilters() {
             }
         });
     }
+    
+    // 캠페인 필터 이벤트 설정
+    addCampaignFilterEvents();
 }
 
 // ─────────────────────────────────────────────
@@ -780,7 +783,7 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     console.log('📊 원본 메타 광고 데이터:', adsData);
     
-    // 모바일용 데이터 처리
+    // 모바일용 데이터 처리 (CPC, ROAS 계산 포함)
     const processedAdsData = processMetaAdsForMobile(adsData);
     console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
     
@@ -790,24 +793,38 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     // 광고별 성과 데이터 렌더링
     displayAdsData.forEach((row, index) => {
         console.log(`📊 광고 ${index + 1}:`, row);
+        
+        // CPC와 ROAS 계산 (웹버전과 동일한 로직)
+        const spend = row.spend || 0;
+        const clicks = row.clicks || 0;
+        const purchases = row.purchases || 0;
+        const purchase_value = row.purchase_value || 0;
+        
+        const cpc = clicks > 0 ? spend / clicks : 0;
+        const roas = spend > 0 ? (purchase_value / spend) * 100 : 0;
+        
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
             <td class="text-truncate">${row.campaign_name || '-'}</td>
             <td class="text-truncate">${row.ad_name || '-'}</td>
-            <td class="text-right">${formatNumber(row.spend || 0)}</td>
-            <td class="text-right">${formatNumber(row.cpc || 0)}</td>
-            <td class="text-right">${formatNumber(row.purchases || 0)}</td>
-            <td class="text-right">${formatNumber(row.roas || 0)}</td>
+            <td class="text-right">${formatNumber(spend)}</td>
+            <td class="text-right">${formatNumber(cpc)}</td>
+            <td class="text-right">${formatNumber(purchases)}</td>
+            <td class="text-right">${formatNumber(roas)}%</td>
         `;
         tbody.appendChild(tableRow);
     });
     
-    // 총합 로우 추가
+    // 총합 로우 추가 (전체 데이터 기준)
     if (processedAdsData.length > 0) {
         const totalSpend = processedAdsData.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const totalClicks = processedAdsData.reduce((sum, row) => sum + (row.clicks || 0), 0);
         const totalPurchases = processedAdsData.reduce((sum, row) => sum + (row.purchases || 0), 0);
-        const totalCpc = processedAdsData.reduce((sum, row) => sum + (row.cpc || 0), 0);
-        const avgRoas = processedAdsData.reduce((sum, row) => sum + (row.roas || 0), 0) / processedAdsData.length;
+        const totalPurchaseValue = processedAdsData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+        
+        // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
+        const totalCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+        const totalRoas = totalSpend > 0 ? (totalPurchaseValue / totalSpend) * 100 : 0;
         
         const totalRow = document.createElement('tr');
         totalRow.className = 'bg-gray-50 font-semibold';
@@ -816,7 +833,7 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
             <td class="text-right">${formatNumber(totalSpend)}</td>
             <td class="text-right">${formatNumber(totalCpc)}</td>
             <td class="text-right">${formatNumber(totalPurchases)}</td>
-            <td class="text-right">${formatNumber(avgRoas)}</td>
+            <td class="text-right">${formatNumber(totalRoas)}%</td>
         `;
         tbody.appendChild(totalRow);
     }
@@ -824,6 +841,9 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     // 페이지네이션 업데이트 (전체 데이터 개수 사용)
     metaAdsTotalCount = totalCount || adsData.length; // 서버에서 받은 전체 개수 또는 현재 데이터 개수
     updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
+    
+    // 테이블 헤더 클릭 이벤트 추가
+    addTableSortEvents();
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
@@ -987,7 +1007,102 @@ function updatePagination(table, currentPage, totalItems) {
 }
 
 // ─────────────────────────────────────────────
-// 14) 디버깅용 전역 함수 (개발용)
+// 16) 테이블 정렬 기능
+// ─────────────────────────────────────────────
+function addTableSortEvents() {
+    const table = document.querySelector('#meta-ads-table').closest('table');
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th');
+    headers.forEach((header, index) => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            sortTable(table, index);
+        });
+    });
+}
+
+function sortTable(table, columnIndex) {
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.bg-gray-50)'));
+    const totalRow = tbody.querySelector('tr.bg-gray-50');
+    
+    // 현재 정렬 상태 확인
+    const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+    const currentOrder = header.dataset.order || 'none';
+    
+    // 정렬 순서 변경
+    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    
+    // 모든 헤더의 정렬 표시 제거
+    table.querySelectorAll('th').forEach(th => {
+        th.dataset.order = 'none';
+        th.textContent = th.textContent.replace(' ↑', '').replace(' ↓', '');
+    });
+    
+    // 현재 헤더에 정렬 표시
+    header.dataset.order = newOrder;
+    header.textContent += newOrder === 'asc' ? ' ↑' : ' ↓';
+    
+    // 행 정렬
+    rows.sort((a, b) => {
+        const aValue = getCellValue(a, columnIndex);
+        const bValue = getCellValue(b, columnIndex);
+        
+        if (newOrder === 'asc') {
+            return aValue > bValue ? 1 : -1;
+        } else {
+            return aValue < bValue ? 1 : -1;
+        }
+    });
+    
+    // 정렬된 행 다시 추가
+    rows.forEach(row => tbody.appendChild(row));
+    if (totalRow) {
+        tbody.appendChild(totalRow);
+    }
+}
+
+function getCellValue(row, columnIndex) {
+    const cell = row.cells[columnIndex];
+    if (!cell) return 0;
+    
+    const text = cell.textContent.trim();
+    
+    // 숫자 추출 (쉼표와 % 제거)
+    const number = parseFloat(text.replace(/[%,]/g, ''));
+    return isNaN(number) ? text : number;
+}
+
+// ─────────────────────────────────────────────
+// 17) 캠페인 필터 기능
+// ─────────────────────────────────────────────
+function addCampaignFilterEvents() {
+    const filterCheckboxes = document.querySelectorAll('.campaign-filter input[type="checkbox"]');
+    
+    filterCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            filterMetaAdsByCampaign();
+        });
+    });
+}
+
+function filterMetaAdsByCampaign() {
+    const selectedCampaigns = [];
+    document.querySelectorAll('.campaign-filter input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedCampaigns.push(checkbox.value);
+    });
+    
+    console.log('🔍 선택된 캠페인:', selectedCampaigns);
+    
+    // 현재 메타 광고 계정이 선택되어 있으면 필터링된 데이터 다시 요청
+    if (selectedMetaAccount) {
+        fetchMetaAdsByAccount(selectedMetaAccount, 1); // 첫 페이지부터 다시 로드
+    }
+}
+
+// ─────────────────────────────────────────────
+// 18) 디버깅용 전역 함수 (개발용)
 // ─────────────────────────────────────────────
 window.mobileDashboard = {
     fetchData: fetchMobileData,

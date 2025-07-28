@@ -465,6 +465,67 @@
             color: #6b7280;
             font-weight: 500;
         }
+
+        /* 캠페인 필터 스타일 */
+        .campaign-filter {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        .radio-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+        }
+
+        /* 테이블 가로 스크롤 스타일 */
+        .table-container {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -598,16 +659,34 @@
         <div class="section">
             <div class="section-header">메타 광고 성과</div>
             <div class="section-content">
-                <div class="table-container">
-                    <table class="data-table">
+                <!-- 캠페인 필터 -->
+                <div class="campaign-filter">
+                    <label class="filter-label">캠페인 필터:</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-conversion" value="전환" checked>
+                            <span>전환</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-inflow" value="유입" checked>
+                            <span>유입</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-reach" value="도달" checked>
+                            <span>도달</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="data-table" style="min-width: 600px;">
                         <thead>
                             <tr>
-                                <th style="width: 20%;">캠페인</th>
-                                <th style="width: 30%;">광고</th>
-                                <th class="text-right" style="width: 15%;">지출</th>
-                                <th class="text-right" style="width: 15%;">CPC</th>
-                                <th class="text-right" style="width: 10%;">구매</th>
-                                <th class="text-right" style="width: 10%;">ROAS</th>
+                                <th style="width: 120px; min-width: 120px;">캠페인</th>
+                                <th style="width: 200px; min-width: 200px;">광고</th>
+                                <th class="text-right" style="width: 100px; min-width: 100px;">지출</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">CPC</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">구매</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">ROAS</th>
                             </tr>
                         </thead>
                         <tbody id="meta-ads-table">

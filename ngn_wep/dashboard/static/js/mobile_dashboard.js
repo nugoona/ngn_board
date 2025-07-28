@@ -1255,6 +1255,13 @@ function addTableSortEvents() {
 function sortTable(table, columnIndex) {
     console.log('🔄 전체 데이터 정렬 시작 - 컬럼:', columnIndex);
     
+    // 헤더 정렬 상태 확인 및 업데이트
+    const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+    const currentOrder = header.dataset.order || 'none';
+    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    
+    console.log('🔄 정렬 상태 변경:', currentOrder, '→', newOrder);
+    
     // 전체 데이터 정렬
     if (metaAdsAllData.length > 0) {
         // 정렬 기준 컬럼에 따라 전체 데이터 정렬
@@ -1291,15 +1298,20 @@ function sortTable(table, columnIndex) {
                     bValue = 0;
             }
             
-            // 현재 정렬 상태 확인
-            const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
-            const currentOrder = header.dataset.order || 'none';
-            const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+            // 문자열 비교
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                if (newOrder === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            }
             
+            // 숫자 비교
             if (newOrder === 'asc') {
-                return aValue > bValue ? 1 : -1;
+                return aValue - bValue;
             } else {
-                return aValue < bValue ? 1 : -1;
+                return bValue - aValue;
             }
         });
         
@@ -1315,11 +1327,6 @@ function sortTable(table, columnIndex) {
         renderMetaAdsByAccount(pageData, metaAdsAllData.length);
     }
     
-    // 헤더 정렬 표시 업데이트
-    const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
-    const currentOrder = header.dataset.order || 'none';
-    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
-    
     // 모든 헤더의 정렬 표시 제거
     table.querySelectorAll('th').forEach(th => {
         th.dataset.order = 'none';
@@ -1329,6 +1336,8 @@ function sortTable(table, columnIndex) {
     // 현재 헤더에 정렬 표시
     header.dataset.order = newOrder;
     header.textContent += newOrder === 'asc' ? ' ↑' : ' ↓';
+    
+    console.log('🔄 정렬 표시 업데이트 완료:', header.textContent);
 }
 
 function getCellValue(row, columnIndex) {

@@ -229,7 +229,7 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
-        /* KPI 카드 스타일 - 2x2 그리드로 복원 */
+        /* KPI 카드 스타일 - 강제 2x2 그리드 */
         .kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -284,7 +284,6 @@
             box-sizing: border-box;
             border-radius: 12px;
             overflow: hidden;
-            margin: 0 12px; /* 좌우 여백 추가 */
         }
 
         .data-table {
@@ -333,8 +332,8 @@
             border-bottom: 1px solid var(--border-color);
             font-weight: 700;
             font-size: 18px;
-            color: var(--text-primary);
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            color: white; /* 흰색 텍스트 */
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%); /* 파란색 배경 */
             text-align: center; /* 섹션 제목 중앙 정렬 */
         }
 

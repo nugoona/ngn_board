@@ -223,21 +223,24 @@ def get_meta_ads_insight_table(
     if level == "ad":
         conditions.append(f"({latest_alias}.campaign_name IS NULL OR NOT LOWER({latest_alias}.campaign_name) LIKE '%instagram%')")
         
-        # 광고 상태 필터링: 과거 기간이면 모든 광고, 최근 기간이면 ACTIVE만
+        # 광고 상태 필터링: 기간 길이로 판단하도록 수정
         from datetime import datetime, timedelta
-        today = datetime.now().date()
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
         end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
         
-        # 최근 7일 이내인지 확인
-        is_recent_period = (today - end_date_obj).days <= 7
+        # 기간의 길이로 판단 (7일 이내면 최근, 그 이상이면 과거)
+        period_length = (end_date_obj - start_date_obj).days
+        is_recent_period = period_length <= 7
+        
+        print(f"[DEBUG] 광고 상태 필터링 - 기간: {start_date} ~ {end_date}, 기간 길이: {period_length}일, 최근 기간: {is_recent_period}")
         
         if is_recent_period:
-            # 최근 기간: ACTIVE 광고만
+            # 최근 기간 (7일 이내): ACTIVE 광고만
             conditions.append(f"({latest_alias}.ad_status = 'ACTIVE' OR {latest_alias}.ad_status IS NULL)")
+            print(f"[DEBUG] 최근 기간 - ACTIVE 광고만 포함")
         else:
-            # 과거 기간: 모든 광고 (ACTIVE, PAUSED, DELETED 등)
-            print(f"[INFO] 과거 기간 ({start_date} ~ {end_date}) - 모든 광고 상태 포함")
+            # 과거 기간 (7일 초과): 모든 광고 (ACTIVE, PAUSED, DELETED 등)
+            print(f"[DEBUG] 과거 기간 - 모든 광고 상태 포함")
             
     elif level != "account":
         conditions.append("(A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')")

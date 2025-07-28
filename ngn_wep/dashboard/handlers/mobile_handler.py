@@ -378,9 +378,9 @@ def get_meta_ads_by_account():
         else:
             company_name = str(raw_company_name).strip().lower()
         
-        # 페이지네이션 파라미터 추출
+        # 페이지네이션 파라미터 추출 (백엔드에서는 모든 데이터 가져오기)
         page = data.get("page", 1)
-        limit = data.get("limit", 10)
+        limit = None  # 백엔드에서는 모든 데이터 가져오기 (프론트엔드에서 페이지네이션 처리)
         
         # 메타 광고별 성과 조회 (광고 탭 기준)
         print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}, page={page}, limit={limit}")
@@ -391,8 +391,8 @@ def get_meta_ads_by_account():
             start_date=start_date,
             end_date=end_date,
             account_id=account_id,
-            limit=limit,
-            page=page
+            limit=limit,  # None으로 설정하여 모든 데이터 가져오기
+            page=1  # 항상 첫 페이지로 가져오기 (프론트엔드에서 페이지네이션 처리)
         )
         
         # 페이지네이션된 결과 처리

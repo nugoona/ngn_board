@@ -10,7 +10,63 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Heroicons -->
+    <script src="https://unpkg.com/@heroicons/react@2.0.18/24/outline/esm/index.js"></script>
     <style>
+        :root {
+            /* Light Mode Colors */
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-200: #bae6fd;
+            --primary-300: #7dd3fc;
+            --primary-400: #38bdf8;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-700: #0369a1;
+            --primary-800: #075985;
+            --primary-900: #0c4a6e;
+            
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            
+            --success-500: #10b981;
+            --warning-500: #f59e0b;
+            --error-500: #ef4444;
+            
+            /* Dark Mode Colors */
+            --dark-bg: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-surface-2: #334155;
+            --dark-text: #f1f5f9;
+            --dark-text-secondary: #cbd5e1;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: var(--dark-bg);
+            --bg-secondary: var(--dark-surface);
+            --bg-tertiary: var(--dark-surface-2);
+            --text-primary: var(--dark-text);
+            --text-secondary: var(--dark-text-secondary);
+            --border-color: #334155;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: var(--gray-50);
+            --bg-tertiary: var(--gray-100);
+            --text-primary: var(--gray-900);
+            --text-secondary: var(--gray-600);
+            --border-color: var(--gray-200);
+        }
+
         * {
             box-sizing: border-box;
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -19,8 +75,9 @@
         body {
             margin: 0;
             padding: 0;
-            background: #f8fafc;
+            background: var(--bg-primary);
             min-height: 100vh;
+            transition: all 0.3s ease;
         }
 
         /* 모바일 전용 wrapper */
@@ -30,6 +87,7 @@
             padding: 0;
             margin: 0;
             box-sizing: border-box;
+            padding-top: 140px; /* 헤더 높이만큼 상단 여백 */
         }
 
         /* 섹션 전체 너비 조정 */
@@ -65,28 +123,24 @@
             white-space: nowrap;
         }
 
-        /* 필터 스타일 */
+        /* 필터 스타일 - 모던한 디자인 */
         .filter-section {
-            background: white;
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* 헤더 고정으로 인한 본문 여백 조정 */
-        #m-dashboard {
-            padding-top: 120px; /* 헤더 높이만큼 상단 여백 추가 */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
 
         .filter-row {
             display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
         .filter-row:last-child {
@@ -95,213 +149,352 @@
 
         .filter-select {
             flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             font-size: 14px;
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-select option {
+            background: var(--bg-primary);
+            color: var(--text-primary);
         }
 
         .date-input {
             flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
         }
 
         .update-time {
             font-size: 12px;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.8);
             text-align: left;
-            margin-top: 4px;
+            margin-top: 8px;
         }
 
         .header-bottom {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 12px;
         }
 
         .logout-btn {
-            background: #ef4444;
+            background: rgba(239, 68, 68, 0.9);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .logout-btn:hover {
-            background: #dc2626;
+            background: rgba(220, 38, 38, 0.9);
+            transform: translateY(-1px);
         }
 
-        /* 섹션 스타일 */
+        /* 섹션 스타일 - 모던한 카드 디자인 */
         .section {
-            background: white;
-            margin: 8px;
-            border-radius: 12px;
+            background: var(--bg-primary);
+            margin: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         .section-header {
-            padding: 16px;
-            border-bottom: 1px solid #f3f4f6;
-            font-weight: 600;
-            font-size: 16px;
-            color: #111827;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
         }
 
         .section-content {
-            padding: 16px;
+            padding: 20px;
         }
 
-        /* KPI 카드 스타일 */
+        /* KPI 카드 스타일 - 모던한 그리드 */
         .kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 16px;
         }
 
         .kpi-card {
-            background: #f9fafb;
-            padding: 16px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-600) 100%);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
         .kpi-label {
             font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 4px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
         .kpi-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #111827;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
         }
 
-        /* 테이블 스타일 */
+        /* 테이블 스타일 - 모던한 디자인 */
         .table-container {
             overflow-x: hidden;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            background: var(--bg-primary);
         }
 
         .data-table th {
-            background: #f9fafb;
-            padding: 8px 4px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            padding: 16px 12px;
             text-align: left;
-            font-size: 11px;
-            font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .data-table td {
-            padding: 12px 8px;
-            font-size: 14px;
-            border-bottom: 1px solid #f3f4f6;
-            word-wrap: break-word;
+            padding: 16px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
         }
 
-        .data-table .text-right {
+        .data-table tr:hover td {
+            background: var(--bg-secondary);
+        }
+
+        .text-right {
             text-align: right;
         }
 
-        /* 상품명 hover/터치 시 전체 텍스트 표시 */
-        .data-table td[title] {
-            cursor: pointer;
-            position: relative;
+        .text-center {
+            text-align: center;
         }
 
-        /* 데스크톱에서 hover 시 전체 텍스트 표시 */
-        @media (hover: hover) {
-            .data-table td[title]:hover {
-                white-space: normal !important;
-                overflow: visible !important;
-                text-overflow: clip !important;
-                background: #fef3c7;
-                z-index: 10;
-                position: relative;
-            }
-        }
-
-        /* 모바일에서 터치 시 전체 텍스트 표시 */
-        .data-table td[title].expanded {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            background: #fef3c7;
-            z-index: 10;
-            position: relative;
-        }
-
-        /* 메타 광고 계정 선택 */
+        /* 메타 광고 계정 선택 - 모던한 디자인 */
         .meta-account-filter {
-            background: #f3f4f6;
-            padding: 12px;
-            margin: 8px;
-            border-radius: 8px;
+            background: var(--bg-secondary);
+            padding: 16px;
+            margin: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .meta-account-select {
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .meta-account-select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         /* 계정 선택 컨테이너 */
         .account-selection-container {
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .account-select-wrapper {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .account-notice {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #64748b;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
             line-height: 1.4;
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-500);
         }
 
         .notice-icon {
-            font-size: 14px;
-            color: #3b82f6;
+            font-size: 16px;
+            color: var(--primary-500);
         }
 
         .notice-text {
             flex: 1;
         }
 
-        /* LIVE 광고 미리보기 - 웹버전과 동일한 인스타그램 스타일 */
-        .live-ads-container {
+        /* 캠페인 필터 스타일 */
+        .campaign-filter {
+            margin-bottom: 20px;
             padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .radio-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .radio-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-500);
+        }
+
+        .radio-item span {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* 페이지네이션 스타일 - 모던한 디자인 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 16px 0;
+        }
+
+        .pagination-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--bg-secondary);
+            border-color: var(--primary-500);
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn:disabled {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* LIVE 광고 미리보기 - 인스타그램 스타일 */
+        .live-ads-container {
+            padding: 20px;
             width: 100%;
             box-sizing: border-box;
         }
@@ -314,7 +507,7 @@
             width: 100%;
             box-sizing: border-box;
             scrollbar-width: thin;
-            scrollbar-color: #6366f1 #f1f5f9;
+            scrollbar-color: var(--primary-500) var(--bg-secondary);
         }
 
         .live-ads-scroll::-webkit-scrollbar {
@@ -323,36 +516,42 @@
         }
 
         .live-ads-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: var(--bg-secondary);
             border-radius: 4px;
         }
 
         .live-ads-scroll::-webkit-scrollbar-thumb {
-            background: #6366f1;
+            background: var(--primary-500);
             border-radius: 4px;
             transition: background 0.2s ease;
         }
 
         .live-ads-scroll::-webkit-scrollbar-thumb:hover {
-            background: #4f46e5;
+            background: var(--primary-600);
         }
 
         /* 인스타그램 스타일 카드 */
         .insta-card {
             width: 300px;
             margin-bottom: 20px;
-            background: white;
-            border: 1px solid #dbdbdb;
-            border-radius: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .insta-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         /* 광고 이미지 */
         .insta-image {
             position: relative;
-            background: #f0f0f0;
+            background: var(--bg-secondary);
         }
 
         .ad-image {
@@ -377,32 +576,35 @@
         .play-icon {
             width: 60px;
             height: 60px;
-            opacity: 0.8;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
         }
 
-        /* 헤더/푸터 공통 */
-        .insta-header, .insta-footer {
-            padding: 12px;
-            font-size: 14px;
-        }
-
-        /* 헤더 */
+        /* 인스타그램 헤더 */
         .insta-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .insta-header-left {
+            padding: 12px 16px;
             display: flex;
             align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .profile-image {
+        .insta-avatar {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            margin-right: 10px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
         }
 
         .account-info {
@@ -411,26 +613,29 @@
         }
 
         .insta-account-name {
-            font-weight: bold;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 14px;
         }
 
         .insta-menu {
             font-size: 20px;
             cursor: pointer;
-            color: #555;
+            color: var(--text-primary);
+            margin-left: auto;
         }
 
         /* CTA 영역 */
         .insta-cta {
-            padding: 10px 12px;
-            font-weight: bold;
+            padding: 12px 16px;
+            font-weight: 600;
             font-size: 14px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .insta-cta a {
             text-decoration: none;
-            color: #385185;
+            color: var(--primary-600);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -438,14 +643,14 @@
 
         /* 푸터 */
         .insta-footer {
-            padding: 12px;
+            padding: 16px;
         }
 
         .insta-icons {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .insta-icons-left {
@@ -456,118 +661,96 @@
         .insta-icons svg {
             width: 24px;
             height: 24px;
-            color: #262626;
+            color: var(--text-primary);
             cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .insta-icons svg:hover {
+            color: var(--primary-500);
         }
 
         .insta-caption {
             font-size: 14px;
             line-height: 1.4;
-            color: #262626;
+            color: var(--text-primary);
         }
 
-        /* 페이지네이션 스타일 */
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-top: 16px;
-            padding: 8px 0;
-        }
-
-        .pagination-btn {
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 14px;
-            color: #374151;
+        /* 다크모드 토글 버튼 */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            border: none;
+            color: white;
+            font-size: 20px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
         }
 
-        .pagination-btn:hover:not(:disabled) {
-            background: #e5e7eb;
-            border-color: #9ca3af;
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
         }
 
-        .pagination-btn:disabled {
-            background: #f9fafb;
-            border-color: #e5e7eb;
-            color: #9ca3af;
-            cursor: not-allowed;
+        /* 로딩 스피너 */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary-500);
+            animation: spin 1s ease-in-out infinite;
         }
 
-        .pagination-info {
-            font-size: 14px;
-            color: #6b7280;
-            font-weight: 500;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        /* 캠페인 필터 스타일 */
-        .campaign-filter {
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 8px;
+        /* 반응형 디자인 */
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .section {
+                margin: 8px;
+            }
+            
+            .section-content {
+                padding: 16px;
+            }
+            
+            .filter-section {
+                padding: 12px;
+            }
+            
+            #m-dashboard {
+                padding-top: 120px;
+            }
         }
 
-        .filter-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 8px;
+        /* 스무스 스크롤 */
+        html {
+            scroll-behavior: smooth;
         }
 
-        .radio-group {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .radio-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 14px;
-            color: #374151;
-            cursor: pointer;
-        }
-
-        .radio-item input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: #3b82f6;
-        }
-
-        /* 테이블 가로 스크롤 스타일 */
-        .table-container {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .table-container::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .table-container::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 3px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+        /* 포커스 스타일 */
+        *:focus {
+            outline: 2px solid var(--primary-500);
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
+<body data-theme="light">
     <div id="m-dashboard">
         <!-- 상단 필터 (웹버전과 동일한 ID 사용) -->
         <div class="filter-section">
@@ -755,6 +938,11 @@
         </div>
     </div>
 
+    <!-- 다크모드 토글 버튼 -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="테마 변경">
+        🌙
+    </button>
+
     <!-- 웹버전과 동일한 전역 변수 설정 -->
     <script>
         const userCompanyList = {{ session['company_names'] | tojson }};
@@ -763,5 +951,32 @@
 
     <!-- 모바일 전용 JS -->
     <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
+    
+    <!-- 테마 토글 스크립트 -->
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            body.setAttribute('data-theme', newTheme);
+            
+            // 버튼 아이콘 변경
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.innerHTML = newTheme === 'light' ? '🌙' : '☀️';
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // 페이지 로드 시 저장된 테마 적용
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.innerHTML = savedTheme === 'light' ? '🌙' : '☀️';
+        });
+    </script>
 </body>
 </html> 

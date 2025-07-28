@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>NGN 모바일 대시보드</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
@@ -291,6 +294,19 @@
                         <div class="kpi-value" id="total-visitors">--</div>
                     </div>
                     <div class="kpi-card">
+                        <div class="kpi-label">주문수</div>
+                        <div class="kpi-value" id="orders-count">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 광고 성과 요약 -->
+        <div class="section">
+            <div class="section-header">광고 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
                         <div class="kpi-label">광고비</div>
                         <div class="kpi-value" id="ad-spend">--</div>
                     </div>
@@ -298,26 +314,13 @@
                         <div class="kpi-label">구매수</div>
                         <div class="kpi-value" id="total-purchases">--</div>
                     </div>
-                    <div class="kpi-card" style="grid-column: 1 / -1;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">클릭당 비용</div>
+                        <div class="kpi-value" id="cpc">--</div>
+                    </div>
+                    <div class="kpi-card">
                         <div class="kpi-label">ROAS</div>
                         <div class="kpi-value" id="roas">--</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 사이트 성과 -->
-        <div class="section">
-            <div class="section-header">사이트 성과</div>
-            <div class="section-content">
-                <div class="kpi-grid">
-                    <div class="kpi-card">
-                        <div class="kpi-label">주문수</div>
-                        <div class="kpi-value" id="orders-count">--</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-label">상품매출</div>
-                        <div class="kpi-value" id="product-revenue">--</div>
                     </div>
                 </div>
             </div>
@@ -413,6 +416,6 @@
     </script>
 
     <!-- 모바일 전용 JS -->
-    <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
 </body>
 </html> 

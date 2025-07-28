@@ -796,8 +796,8 @@ function renderMetaAds(metaAds) {
     processedMetaAds.forEach(row => {
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
-            <td class="text-truncate">${row.campaign_name || '-'}</td>
-            <td class="text-truncate">${row.ad_name || '-'}</td>
+            <td class="text-left">${row.campaign_name || '-'}</td>
+            <td class="text-left">${row.ad_name || '-'}</td>
             <td class="text-right">${formatNumber(row.total_spend || 0)}</td>
             <td class="text-right">${formatNumber(row.cpc || 0)}</td>
             <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
@@ -872,8 +872,8 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
-            <td class="text-truncate">${row.campaign_name || '-'}</td>
-            <td class="text-truncate">${row.ad_name || '-'}</td>
+            <td class="text-left">${row.campaign_name || '-'}</td>
+            <td class="text-left">${row.ad_name || '-'}</td>
             <td class="text-right">${formatNumber(spend)}</td>
             <td class="text-right">${formatNumber(cpc)}</td>
             <td class="text-right">${formatNumber(purchases)}</td>

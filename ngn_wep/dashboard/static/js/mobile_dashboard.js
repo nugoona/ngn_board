@@ -499,9 +499,9 @@ function renderCafe24ProductSales(products) {
     products.forEach(product => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="text-truncate">${product.item_product_name || '-'}</td>
-            <td class="text-right">${formatNumber(product.item_qty || 0)}</td>
-            <td class="text-right">${formatNumber(product.item_orders || 0)}</td>
+            <td class="text-truncate">${product.product_name || '-'}</td>
+            <td class="text-right">${formatNumber(product.item_quantity || 0)}</td>
+            <td class="text-right">${formatNumber(product.item_product_sales || 0)}</td>
         `;
         tbody.appendChild(row);
     });

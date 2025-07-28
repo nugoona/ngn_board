@@ -229,11 +229,11 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
-        /* KPI 카드 스타일 - 강제 2x2 그리드 */
+        /* KPI 카드 스타일 */
         .kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 12px;
         }
 
         .kpi-card {
@@ -294,16 +294,16 @@
         }
 
         .data-table th {
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
-            padding: 16px 12px;
-            text-align: center; /* 헤더 텍스트 중앙 정렬 */
-            font-size: 12px;
-            font-weight: 700;
-            color: white; /* 흰색 텍스트 */
-            border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            background: #f9fafb;
+            padding: 8px 4px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .data-table td {
@@ -439,7 +439,7 @@
         .radio-item input[type="checkbox"] {
             width: 16px;
             height: 16px;
-            accent-color: var(--primary-500); /* 파란색으로 변경 */
+            accent-color: #3b82f6;
         }
 
         .radio-item span {
@@ -489,9 +489,9 @@
             font-weight: 500;
         }
 
-        /* LIVE 광고 미리보기 - 원래 디자인 복원 */
+        /* LIVE 광고 미리보기 - 웹버전과 동일한 인스타그램 스타일 */
         .live-ads-container {
-            padding: 20px;
+            padding: 16px;
             width: 100%;
             box-sizing: border-box;
         }
@@ -504,7 +504,7 @@
             width: 100%;
             box-sizing: border-box;
             scrollbar-width: thin;
-            scrollbar-color: var(--primary-500) var(--bg-secondary);
+            scrollbar-color: #6366f1 #f1f5f9;
         }
 
         .live-ads-scroll::-webkit-scrollbar {
@@ -513,42 +513,36 @@
         }
 
         .live-ads-scroll::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
+            background: #f1f5f9;
             border-radius: 4px;
         }
 
         .live-ads-scroll::-webkit-scrollbar-thumb {
-            background: var(--primary-500);
+            background: #6366f1;
             border-radius: 4px;
             transition: background 0.2s ease;
         }
 
         .live-ads-scroll::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-600);
+            background: #4f46e5;
         }
 
-        /* 인스타그램 스타일 카드 - 원래 디자인 복원 */
+        /* 인스타그램 스타일 카드 */
         .insta-card {
             width: 300px;
             margin-bottom: 20px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-
-        .insta-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
         /* 광고 이미지 */
         .insta-image {
             position: relative;
-            background: var(--bg-secondary);
+            background: #f0f0f0;
         }
 
         .ad-image {
@@ -573,20 +567,94 @@
         .play-icon {
             width: 60px;
             height: 60px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
+            opacity: 0.8;
         }
 
-        /* 인스타그램 헤더 - 원래 디자인 복원 */
+        /* 헤더/푸터 공통 */
+        .insta-header, .insta-footer {
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        /* 헤더 */
         .insta-header {
-            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insta-header-left {
             display: flex;
             align-items: center;
+        }
+
+        .profile-image {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .insta-account-name {
+            font-weight: bold;
+        }
+
+        .insta-menu {
+            font-size: 20px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* CTA 영역 */
+        .insta-cta {
+            padding: 10px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .insta-cta a {
+            text-decoration: none;
+            color: #385185;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 푸터 */
+        .insta-footer {
+            padding: 12px;
+        }
+
+        .insta-icons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .insta-icons-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .insta-icons svg {
+            width: 24px;
+            height: 24px;
+            color: #262626;
+            cursor: pointer;
+        }
+
+        .insta-caption {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #262626;
+        }
             gap: 12px;
             border-bottom: 1px solid var(--border-color);
         }

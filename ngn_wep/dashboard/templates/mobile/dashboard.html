@@ -215,6 +215,19 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
+        /* 모바일에서 로딩 시 배경 어두워짐 방지 */
+        #m-dashboard.loading,
+        #m-dashboard.real-loading {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        .section.loading,
+        .section.real-loading {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
         .update-time {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.8);

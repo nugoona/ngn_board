@@ -267,7 +267,11 @@ def get_data():
             if platform_sales and len(platform_sales) > 0:
                 platform_data = platform_sales[0]
                 site_revenue = platform_data.get('site_official', 0)  # 자사몰 매출
-                total_visitors = platform_data.get('total_visitors', 0)  # 방문자 수 (별도 조회 필요)
+                
+                # 방문자 수는 GA4 트래픽 데이터에서 별도 조회
+                from ..services.ga4_source_summary import get_ga4_traffic_summary
+                ga4_traffic = get_ga4_traffic_summary(company_name, start_date, end_date, user_id=user_id)
+                total_visitors = sum(row.get('visitors', 0) for row in ga4_traffic) if ga4_traffic else 0
                 
                 # 광고비 비율 계산
                 ad_spend = first_row.get('ad_spend', 0) if performance_data else 0

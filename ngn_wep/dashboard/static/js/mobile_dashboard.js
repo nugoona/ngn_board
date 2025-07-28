@@ -297,19 +297,18 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         
         metaAdsCurrentPage = page;
         
-        console.log('📊 메타 광고 데이터 요청 파라미터:', {
+        // 전체 데이터를 한 번에 가져오기 (limit 없이)
+        console.log('📊 메타 광고 전체 데이터 요청 파라미터:', {
             data_type: 'meta_ads_insight_table',
             level: 'ad',
             account_id: accountId,
             company_name: companyName,
             period: period,
             start_date: startDateValue,
-            end_date: endDateValue,
-            page: page,
-            limit: 10
+            end_date: endDateValue
         });
         
-        // 웹버전과 동일한 엔드포인트 사용
+        // 웹버전과 동일한 엔드포인트 사용 (전체 데이터 요청)
         const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
@@ -322,9 +321,8 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
                 company_name: companyName,
                 period: period,
                 start_date: startDateValue,
-                end_date: endDateValue,
-                page: page,
-                limit: 10
+                end_date: endDateValue
+                // limit과 page 제거하여 전체 데이터 요청
             })
         });
         
@@ -336,14 +334,19 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
         if (data.status === 'success' && data.meta_ads_insight_table) {
-            console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_insight_table);
-            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table_total_count);
+            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_insight_table);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table.length);
             
-            // 전체 데이터 저장 (페이지네이션과 관계없이)
+            // 전체 데이터 저장
             metaAdsAllData = data.meta_ads_insight_table;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
-            renderMetaAdsByAccount(data.meta_ads_insight_table, data.meta_ads_insight_table_total_count);
+            // 페이지별 데이터로 렌더링
+            const startIndex = (page - 1) * 10;
+            const endIndex = startIndex + 10;
+            const pageData = metaAdsAllData.slice(startIndex, endIndex);
+            
+            renderMetaAdsByAccount(pageData, metaAdsAllData.length);
         } else {
             console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
         }
@@ -823,7 +826,7 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         tbody.appendChild(tableRow);
     });
     
-    // 총합 로우 추가 (전체 데이터 기준)
+    // 총합 로우 추가 (전체 데이터 기준 - 페이지와 관계없이 고정)
     if (metaAdsAllData.length > 0) {
         // 전체 데이터로 총합 계산 (페이지와 관계없이)
         const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
@@ -835,7 +838,7 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
         const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
         
-        console.log('📊 전체 데이터 기준 총합:', {
+        console.log('📊 전체 데이터 기준 총합 (페이지와 관계없이):', {
             totalSpend,
             totalClicks,
             totalPurchases,
@@ -1113,9 +1116,42 @@ function filterMetaAdsByCampaign() {
     
     console.log('🔍 선택된 캠페인:', selectedCampaigns);
     
-    // 현재 메타 광고 계정이 선택되어 있으면 필터링된 데이터 다시 요청
-    if (selectedMetaAccount) {
-        fetchMetaAdsByAccount(selectedMetaAccount, 1); // 첫 페이지부터 다시 로드
+    // 전체 데이터에서 필터링
+    if (metaAdsAllData.length > 0) {
+        const filteredData = metaAdsAllData.filter(row => {
+            const campaignName = row.campaign_name || '';
+            
+            // 선택된 캠페인 타입이 없으면 모든 데이터 표시
+            if (selectedCampaigns.length === 0) {
+                return true;
+            }
+            
+            // 선택된 캠페인 타입 중 하나라도 포함되면 표시
+            return selectedCampaigns.some(campaignType => 
+                campaignName.includes(campaignType)
+            );
+        });
+        
+        console.log('🔍 필터링된 데이터:', filteredData.length, '개');
+        
+        // 필터링된 데이터로 렌더링 (첫 페이지)
+        const startIndex = 0;
+        const endIndex = 10;
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        // 필터링된 데이터를 임시로 저장하여 총합 계산에 사용
+        const originalMetaAdsAllData = metaAdsAllData;
+        metaAdsAllData = filteredData;
+        
+        renderMetaAdsByAccount(pageData, filteredData.length);
+        
+        // 원본 데이터 복원
+        metaAdsAllData = originalMetaAdsAllData;
+        
+        // 페이지네이션 업데이트
+        metaAdsCurrentPage = 1;
+        metaAdsTotalCount = filteredData.length;
+        updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     }
 }
 

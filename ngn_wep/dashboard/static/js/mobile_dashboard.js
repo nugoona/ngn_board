@@ -470,16 +470,18 @@ function renderMobileData(data) {
 function renderPerformanceSummary(performanceData) {
     console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
-    // KPI 값들 설정
+    // 사이트 성과 요약 KPI 값들 설정
     document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
     document.getElementById('total-visitors').textContent = formatNumber(performanceData.total_visitors || 0);
+    // 모바일 전용: total_orders 사용 (performanceData.total_orders가 있으면 사용, 없으면 total_purchases 사용)
+    const ordersCount = data.total_orders !== undefined ? data.total_orders : (performanceData.total_purchases || 0);
+    document.getElementById('orders-count').textContent = formatNumber(ordersCount);
+    
+    // 광고 성과 요약 KPI 값들 설정
     document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
     document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
+    document.getElementById('cpc').textContent = formatCurrency(performanceData.avg_cpc || 0);
     document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
-    
-    // 사이트 성과 (주문수, 상품매출)
-    document.getElementById('orders-count').textContent = formatNumber(performanceData.total_purchases || 0);
-    document.getElementById('product-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
 }
 
 // 카페24 상품판매 렌더링

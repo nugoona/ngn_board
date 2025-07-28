@@ -45,69 +45,33 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
 
-    # ✅ 총 광고 성과: 메타 광고 계정 테이블에서 직접 조회
-    # ✅ 사이트 성과 요약: performance_summary_ngn 테이블에서 조회
+    # ✅ 백업 파일의 원래 쿼리 사용 (performance_summary_ngn 테이블)
     query = f"""
-      WITH meta_ads_summary AS (
-          -- 총 광고 성과: 메타 광고 계정 테이블에서 직접 조회
-          SELECT
-              COALESCE(SUM(spend), 0) AS ad_spend,
-              COALESCE(SUM(impressions), 0) AS total_impressions,
-              COALESCE(SUM(clicks), 0) AS total_clicks,
-              COALESCE(SUM(purchases), 0) AS total_purchases,
-              COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
-              COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(purchases), 0), 2), 0) AS avg_order_value,
-              COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(spend), 0) * 100, 2), 0) AS roas_percentage,
-              COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0) AS avg_cpc,
-              COALESCE(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2), 0) AS click_through_rate,
-              COALESCE(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2), 0) AS conversion_rate
-          FROM `winged-precept-443218-v8.ngn_dataset.ads_performance` ap
-          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` ci
-              ON ap.account_name = ci.meta_acc
-          WHERE ap.date BETWEEN @start_date AND @end_date
-            AND {company_filter}
-            AND ap.date IS NOT NULL
-      ),
-      site_performance AS (
-          -- 사이트 성과 요약: performance_summary_ngn 테이블에서 조회
-          SELECT
-              SUM(site_revenue) AS site_revenue,
-              SUM(total_visitors) AS total_visitors,
-              SUM(product_views) AS product_views,
-              ROUND(SAFE_DIVIDE(SUM(product_views), SUM(total_visitors)), 2) AS views_per_visit,
-              MAX(updated_at) AS updated_at
-          FROM `winged-precept-443218-v8.ngn_dataset.performance_summary_ngn`
-          WHERE {company_filter}
-            AND DATE(date) BETWEEN @start_date AND @end_date
-      )
-      SELECT
-        FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
-        'meta' AS ad_media,
-        -- 총 광고 성과 (메타 광고 계정 테이블에서)
-        m.ad_spend,
-        m.total_impressions,
-        m.total_clicks,
-        m.total_purchases,
-        m.total_purchase_value,
-        m.avg_order_value,
-        m.roas_percentage,
-        m.avg_cpc,
-        m.click_through_rate,
-        m.conversion_rate,
-        -- 사이트 성과 요약 (performance_summary_ngn 테이블에서)
-        COALESCE(s.site_revenue, 0) AS site_revenue,
-        COALESCE(s.total_visitors, 0) AS total_visitors,
-        COALESCE(s.product_views, 0) AS product_views,
-        COALESCE(s.views_per_visit, 0) AS views_per_visit,
-        CASE WHEN COALESCE(s.site_revenue, 0) = 0 THEN 0
-             ELSE ROUND(m.ad_spend / s.site_revenue * 100, 2)
-        END AS ad_spend_ratio,
-        COALESCE(s.updated_at, CURRENT_TIMESTAMP()) AS updated_at
-      FROM meta_ads_summary m
-      CROSS JOIN site_performance s
+        SELECT
+          FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
+          ad_media,
+          SUM(ad_spend) AS ad_spend,
+          SUM(total_clicks) AS total_clicks,
+          SUM(total_purchases) AS total_purchases,
+          SUM(total_purchase_value) AS total_purchase_value,
+          ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(total_purchases)), 2) AS avg_order_value,
+          ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(ad_spend)) * 100, 2) AS roas_percentage,
+          ROUND(SAFE_DIVIDE(SUM(ad_spend * avg_cpc), SUM(ad_spend)), 2) AS avg_cpc,
+          ROUND(SAFE_DIVIDE(SUM(total_clicks * click_through_rate), SUM(total_clicks)), 2) AS click_through_rate,
+          ROUND(SAFE_DIVIDE(SUM(total_clicks * conversion_rate), SUM(total_clicks)), 2) AS conversion_rate,
+          SUM(site_revenue) AS site_revenue,
+          SUM(total_visitors) AS total_visitors,
+          SUM(product_views) AS product_views,
+          ROUND(SAFE_DIVIDE(SUM(product_views), SUM(total_visitors)), 2) AS views_per_visit,
+          ROUND(SAFE_DIVIDE(SUM(ad_spend), SUM(site_revenue)) * 100, 2) AS ad_spend_ratio,
+          MAX(updated_at) AS updated_at
+        FROM winged-precept-443218-v8.ngn_dataset.performance_summary_ngn
+        WHERE {company_filter}
+          AND DATE(date) BETWEEN @start_date AND @end_date
+        GROUP BY ad_media
     """
 
-    print("[DEBUG] performance_summary (총 광고 성과: 메타 계정 테이블 + 사이트 성과: performance_summary_ngn) Query:\n", query)
+    print("[DEBUG] performance_summary_ngn Query:\n", query)
 
     try:
         client = get_bigquery_client()

@@ -260,7 +260,7 @@
             font-size: 14px;
         }
 
-        /* LIVE 광고 미리보기 - 웹버전과 동일한 스타일 */
+        /* LIVE 광고 미리보기 - 웹버전과 동일한 인스타그램 스타일 */
         .live-ads-container {
             padding: 16px;
             width: 100%;
@@ -270,7 +270,7 @@
         .live-ads-scroll {
             display: flex;
             overflow-x: auto;
-            gap: 16px;
+            gap: 20px;
             padding: 8px 0;
             width: 100%;
             box-sizing: border-box;
@@ -298,50 +298,133 @@
             background: #4f46e5;
         }
 
-        .live-ad-card {
-            min-width: 280px;
-            max-width: 320px;
+        /* 인스타그램 스타일 카드 */
+        .insta-card {
+            width: 300px;
+            margin-bottom: 20px;
             background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
+            border: 1px solid #dbdbdb;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
         }
 
-        .live-ad-image {
-            width: 100%;
-            height: 200px;
-            background: #f3f4f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* 광고 이미지 */
+        .insta-image {
             position: relative;
-            overflow: hidden;
+            background: #f0f0f0;
         }
 
-        .live-ad-image img {
+        .ad-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 플레이 버튼 오버레이 (영상 광고 전용) */
+        .play-overlay {
+            position: absolute;
+            top: 0; left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.0);
         }
 
-        .live-ad-content {
-            padding: 16px;
+        .play-icon {
+            width: 60px;
+            height: 60px;
+            opacity: 0.8;
         }
 
-        .live-ad-title {
+        /* 헤더/푸터 공통 */
+        .insta-header, .insta-footer {
+            padding: 12px;
             font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 8px;
-            line-height: 1.4;
         }
 
-        .live-ad-link {
-            font-size: 12px;
-            color: #6b7280;
-            word-break: break-all;
+        /* 헤더 */
+        .insta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insta-header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-image {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .insta-account-name {
+            font-weight: bold;
+        }
+
+        .insta-menu {
+            font-size: 20px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* CTA 영역 */
+        .insta-cta {
+            padding: 10px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .insta-cta a {
+            text-decoration: none;
+            color: #385185;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 푸터 */
+        .insta-footer {
+            padding: 12px;
+        }
+
+        .insta-icons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .insta-icons-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .insta-icons svg {
+            width: 24px;
+            height: 24px;
+            color: #262626;
+            cursor: pointer;
+        }
+
+        .insta-caption {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #262626;
         }
     </style>
 </head>

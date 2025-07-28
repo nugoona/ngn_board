@@ -709,7 +709,7 @@ function renderMetaAdsByAccount(adsData) {
     }
 }
 
-// LIVE 광고 미리보기 렌더링 (웹버전과 동일)
+// LIVE 광고 미리보기 렌더링 (웹버전과 동일한 인스타그램 스타일)
 function renderLiveAds(liveAds) {
     console.log('🖼️ LIVE 광고 미리보기 렌더링:', liveAds);
     
@@ -725,24 +725,78 @@ function renderLiveAds(liveAds) {
     
     liveAds.forEach(ad => {
         const adCard = document.createElement('div');
-        adCard.className = 'live-ad-card';
+        adCard.className = 'insta-card';
         
-        // 인스타그램 스타일 카드 생성
+        // 인스타그램 스타일 카드 생성 (웹버전과 동일)
         const instagramAccName = ad.instagram_acc_name || 'No Name';
         const message = ad.message || '(문구 없음)';
         const firstLine = message.split('\n')[0];
-        const shortCaption = `${instagramAccName} ${firstLine}...`;
+        
+        const accountNameHTML = `<span style='font-weight:bold;'>${instagramAccName}</span>`;
+        const shortCaption = `${accountNameHTML} ${firstLine} <span class='more-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... more</span>`;
         
         adCard.innerHTML = `
-            <div class="live-ad-image">
-                <img src="${ad.image_url || ''}" alt="광고" onerror="this.style.display='none'">
-                ${ad.is_video ? '<div class="play-overlay" style="display: flex; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"><svg viewBox="0 0 100 100" style="width: 40px; height: 40px;"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : ''}
+            <div class="insta-header">
+                <div class="insta-header-left">
+                    <img class="profile-image" src="https://cdn-icons-png.flaticon.com/512/1946/1946429.png" alt="프로필">
+                    <div class="account-info">
+                        <span class="insta-account-name">${instagramAccName}</span>
+                        <span class="ad-label" style="color: gray;">광고</span>
+                    </div>
+                </div>
+                <div class="insta-menu">⋯</div>
             </div>
-            <div class="live-ad-content">
-                <div class="live-ad-title">${shortCaption}</div>
-                <div class="live-ad-link">${ad.link || '#'}</div>
+
+            <div class="insta-image" style="position: relative;">
+                <img class="ad-image" src="${ad.image_url || ''}" alt="광고 이미지" loading="lazy" onerror="this.style.display='none'">
+                
+                ${ad.is_video ? '<div class="play-overlay" style="display: flex;"><svg viewBox="0 0 100 100" class="play-icon" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : '<div class="play-overlay" style="display: none;"></div>'}
+            </div>
+
+            <div class="insta-cta">
+                <a class="cta-link" href="${ad.link || '#'}" target="_blank">
+                    <span>더 알아보기</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#385185" viewBox="0 0 24 24" width="18" height="18">
+                        <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+            </div>
+
+            <div class="insta-footer">
+                <div class="insta-icons">
+                    <div class="insta-icons-left">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4 8.5 8.5 0 0 1-6.6 3.1 8.38 8.38 0 0 1-5.4-1.9L3 21l2.9-3.1a8.38 8.38 0 0 1-1.9-5.4 8.5 8.5 0 0 1 3.1-6.6A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 6.6 3.1A8.38 8.38 0 0 1 21 11.5z"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                        </svg>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="insta-caption ad-caption">${shortCaption}</div>
             </div>
         `;
+        
+        // 더보기/접기 기능 추가
+        const captionElement = adCard.querySelector('.ad-caption');
+        if (captionElement) {
+            const fullCaption = `${accountNameHTML} ${message} <span class='less-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... less</span>`;
+            
+            captionElement.addEventListener('click', function(e) {
+                if (e.target.classList.contains('more-toggle')) {
+                    this.innerHTML = fullCaption;
+                } else if (e.target.classList.contains('less-toggle')) {
+                    this.innerHTML = shortCaption;
+                }
+            });
+        }
+        
         liveAdsScroll.appendChild(adCard);
     });
 }

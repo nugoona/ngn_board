@@ -801,6 +801,7 @@ let cafe24ProductSalesTotalCount = 0;
 let metaAdsCurrentPage = 1;
 let metaAdsTotalCount = 0;
 let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
+let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 방지
 
 
 
@@ -1065,14 +1066,10 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     metaAdsTotalCount = totalCount || adsData.length; // 서버에서 받은 전체 개수 또는 현재 데이터 개수
     updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     
-    // 테이블 헤더 클릭 이벤트 추가
-    addTableSortEvents();
-    
-    // 초기 지출 내림차순 표시
-    const spendHeader = document.querySelector('#meta-ads-table').closest('table').querySelector('th:nth-child(3)');
-    if (spendHeader) {
-        spendHeader.dataset.order = 'desc';
-        spendHeader.textContent = spendHeader.textContent.replace(' ↑', '').replace(' ↓', '') + ' ↓';
+    // 테이블 헤더 클릭 이벤트는 한 번만 등록 (중복 방지)
+    if (!tableSortEventsAdded) {
+        addTableSortEvents();
+        tableSortEventsAdded = true;
     }
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
@@ -1245,6 +1242,11 @@ function addTableSortEvents() {
     
     const headers = table.querySelectorAll('th');
     headers.forEach((header, index) => {
+        // 원본 텍스트 저장 (정렬 표시 제외)
+        if (!header.dataset.originalText) {
+            header.dataset.originalText = header.textContent.replace(' ↑', '').replace(' ↓', '');
+        }
+        
         header.style.cursor = 'pointer';
         header.addEventListener('click', () => {
             sortTable(table, index);
@@ -1331,12 +1333,12 @@ function sortTable(table, columnIndex) {
     // 모든 헤더의 정렬 표시 제거
     table.querySelectorAll('th').forEach(th => {
         th.dataset.order = 'none';
-        th.textContent = th.textContent.replace(' ↑', '').replace(' ↓', '');
+        th.textContent = th.dataset.originalText || th.textContent.replace(' ↑', '').replace(' ↓', '');
     });
     
     // 현재 헤더에 정렬 표시
     header.dataset.order = newOrder;
-    header.textContent += newOrder === 'asc' ? ' ↑' : ' ↓';
+    header.textContent = (header.dataset.originalText || header.textContent.replace(' ↑', '').replace(' ↓', '')) + (newOrder === 'asc' ? ' ↑' : ' ↓');
     
     console.log('🔄 정렬 표시 업데이트 완료:', header.textContent);
 }

@@ -67,6 +67,7 @@ def get_start_end_dates(period, start_date=None, end_date=None):
 @login_required
 def dashboard():
     """모바일 대시보드 메인 페이지"""
+    print(f"[MOBILE] 대시보드 페이지 접근 - user_id: {session.get('user_id')}")
     return render_template("mobile/dashboard.html",
                          company_names=session.get("company_names", []),
                          now=datetime.datetime.now())
@@ -83,8 +84,13 @@ def get_data():
         data = request.get_json() or {}
         user_id = session.get("user_id")
         
+        print(f"[MOBILE] 🔍 API 호출 시작 - user_id: {user_id}")
+        print(f"[MOBILE] 📊 요청 데이터: {data}")
+        
         # ✅ 웹버전과 동일한 company_name 처리
         raw_company_name = data.get("company_name", "all")
+        print(f"[MOBILE] 🏢 raw_company_name: {raw_company_name}")
+        
         if raw_company_name == "all":
             company_name = ["demo"] if user_id == "demo" else [
                 name for name in session.get("company_names", []) if name.lower() != "demo"
@@ -98,6 +104,8 @@ def get_data():
             if name == "demo" and user_id != "demo":
                 return jsonify({"status": "error", "message": "demo 업체 접근 불가"}), 403
             company_name = name
+        
+        print(f"[MOBILE] 🏢 처리된 company_name: {company_name}")
 
         # ✅ 웹버전과 동일한 기간 필터 처리
         period = str(data.get("period", "today")).strip()  # 기본값: 오늘
@@ -105,8 +113,7 @@ def get_data():
         end_date = data.get("end_date")
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
 
-        print(f"[MOBILE] 요청 필터 - company_name={company_name}, period={period}, "
-              f"start_date={start_date}, end_date={end_date}")
+        print(f"[MOBILE] 📅 필터 값 - period: {period}, start_date: {start_date}, end_date: {end_date}")
 
         # ✅ 웹버전과 동일한 서비스 함수 호출, 축소된 데이터만 반환
         response_data = {
@@ -116,12 +123,15 @@ def get_data():
 
         # 1. Performance Summary (웹버전과 동일)
         try:
+            print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")
             performance_data = get_performance_summary(
                 company_name=company_name,
                 start_date=start_date,
                 end_date=end_date,
                 user_id=user_id
             )
+            
+            print(f"[MOBILE] 📊 Performance Summary 결과: {len(performance_data) if performance_data else 0}개")
             
             if performance_data:
                 first_row = performance_data[0]
@@ -130,46 +140,55 @@ def get_data():
                     str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
                     for row in performance_data if row.get("updated_at")
                 ], default=None)
+                print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']}")
             else:
                 response_data["performance_summary"] = []
+                print(f"[MOBILE] ⚠️ Performance Summary 데이터 없음")
         except Exception as e:
-            print(f"[MOBILE] Performance Summary 오류: {e}")
+            print(f"[MOBILE] ❌ Performance Summary 오류: {e}")
             response_data["performance_summary"] = []
 
         # 2. Cafe24 Product Sales (상위 5개만)
         try:
+            print(f"[MOBILE] 🔄 Cafe24 Product Sales 호출 시작...")
             product_data = get_cafe24_product_sales(
                 company_name, period, start_date, end_date, 
                 "summary", "desc", 5, 1, user_id  # 상위 5개만
             )
             response_data["cafe24_product_sales"] = product_data.get("rows", [])[:5]
+            print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개")
         except Exception as e:
-            print(f"[MOBILE] Cafe24 Product Sales 오류: {e}")
+            print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
             response_data["cafe24_product_sales"] = []
 
         # 3. GA4 Source Summary (상위 5개만)
         try:
+            print(f"[MOBILE] 🔄 GA4 Source Summary 호출 시작...")
             ga4_data = get_ga4_source_summary(company_name, start_date, end_date, user_id)
             # not set 제외하고 상위 5개만
             filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set"][:5]
             response_data["ga4_source_summary"] = filtered_sources
+            print(f"[MOBILE] 📊 GA4 Source Summary 결과: {len(response_data['ga4_source_summary'])}개")
         except Exception as e:
-            print(f"[MOBILE] GA4 Source Summary 오류: {e}")
+            print(f"[MOBILE] ❌ GA4 Source Summary 오류: {e}")
             response_data["ga4_source_summary"] = []
 
         # 4. Meta Ads (상위 10개만)
         try:
+            print(f"[MOBILE] 🔄 Meta Ads 호출 시작...")
             meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
             response_data["meta_ads"] = meta_data[:10]  # 상위 10개만
+            print(f"[MOBILE] 📊 Meta Ads 결과: {len(response_data['meta_ads'])}개")
         except Exception as e:
-            print(f"[MOBILE] Meta Ads 오류: {e}")
+            print(f"[MOBILE] ❌ Meta Ads 오류: {e}")
             response_data["meta_ads"] = []
 
-        print(f"[MOBILE] 응답 완료 - 소요시간: {time.time() - t0:.3f}초")
+        print(f"[MOBILE] ✅ 응답 완료 - 소요시간: {time.time() - t0:.3f}초")
+        print(f"[MOBILE] 📊 최종 응답 데이터: {response_data}")
         return jsonify(response_data)
 
     except Exception as e:
-        print(f"[MOBILE] 전체 API 오류: {e}")
+        print(f"[MOBILE] ❌ 전체 API 오류: {e}")
         return jsonify({
             "status": "error",
             "message": str(e),

@@ -476,6 +476,9 @@ function renderPerformanceSummary(performanceData, totalOrders) {
     // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
     const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
+    // 매출대비 광고비 (백분율로 표시)
+    const adSpendRatio = performanceData.ad_spend_ratio || 0;
+    document.getElementById('ad-spend-ratio').textContent = formatPercentage(adSpendRatio);
     
     // 광고 성과 요약 KPI 값들 설정
     document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);

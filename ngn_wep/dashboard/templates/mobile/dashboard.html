@@ -70,9 +70,17 @@
             background: white;
             padding: 12px;
             border-bottom: 1px solid #e5e7eb;
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 10;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 헤더 고정으로 인한 본문 여백 조정 */
+        #m-dashboard {
+            padding-top: 120px; /* 헤더 높이만큼 상단 여백 추가 */
         }
 
         .filter-row {

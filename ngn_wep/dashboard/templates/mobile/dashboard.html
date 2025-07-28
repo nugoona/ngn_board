@@ -229,20 +229,7 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
 
-        .section-header {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--text-primary);
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-        }
-
-        .section-content {
-            padding: 20px;
-        }
-
-        /* KPI 카드 스타일 - 모던한 그리드 */
+        /* KPI 카드 스타일 - 2x2 그리드로 복원 */
         .kpi-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -297,6 +284,7 @@
             box-sizing: border-box;
             border-radius: 12px;
             overflow: hidden;
+            margin: 0 12px; /* 좌우 여백 추가 */
         }
 
         .data-table {
@@ -307,12 +295,12 @@
         }
 
         .data-table th {
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
             padding: 16px 12px;
-            text-align: left;
+            text-align: center; /* 헤더 텍스트 중앙 정렬 */
             font-size: 12px;
             font-weight: 700;
-            color: var(--text-primary);
+            color: white; /* 흰색 텍스트 */
             border-bottom: 2px solid var(--border-color);
             position: sticky;
             top: 0;
@@ -337,6 +325,21 @@
 
         .text-center {
             text-align: center;
+        }
+
+        /* 섹션 헤더 중앙 정렬 */
+        .section-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            text-align: center; /* 섹션 제목 중앙 정렬 */
+        }
+
+        .section-content {
+            padding: 20px;
         }
 
         /* 메타 광고 계정 선택 - 모던한 디자인 */
@@ -365,7 +368,7 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        /* 계정 선택 컨테이너 */
+        /* 계정 선택 컨테이너 - 아이콘 제거 */
         .account-selection-container {
             margin-bottom: 20px;
             padding: 16px;
@@ -391,16 +394,11 @@
             border-left: 3px solid var(--primary-500);
         }
 
-        .notice-icon {
-            font-size: 16px;
-            color: var(--primary-500);
-        }
-
         .notice-text {
             flex: 1;
         }
 
-        /* 캠페인 필터 스타일 */
+        /* 캠페인 필터 스타일 - 체크박스 색상 변경 */
         .campaign-filter {
             margin-bottom: 20px;
             padding: 16px;
@@ -442,7 +440,7 @@
         .radio-item input[type="checkbox"] {
             width: 16px;
             height: 16px;
-            accent-color: var(--primary-500);
+            accent-color: var(--primary-500); /* 파란색으로 변경 */
         }
 
         .radio-item span {
@@ -492,7 +490,7 @@
             font-weight: 500;
         }
 
-        /* LIVE 광고 미리보기 - 인스타그램 스타일 */
+        /* LIVE 광고 미리보기 - 원래 디자인 복원 */
         .live-ads-container {
             padding: 20px;
             width: 100%;
@@ -530,7 +528,7 @@
             background: var(--primary-600);
         }
 
-        /* 인스타그램 스타일 카드 */
+        /* 인스타그램 스타일 카드 - 원래 디자인 복원 */
         .insta-card {
             width: 300px;
             margin-bottom: 20px;
@@ -585,7 +583,7 @@
             font-size: 24px;
         }
 
-        /* 인스타그램 헤더 */
+        /* 인스타그램 헤더 - 원래 디자인 복원 */
         .insta-header {
             padding: 12px 16px;
             display: flex;
@@ -882,7 +880,6 @@
                         </select>
                     </div>
                     <div class="account-notice">
-                        <span class="notice-icon">ℹ️</span>
                         <span class="notice-text">계정을 선택하면 광고 성과 데이터가 표시됩니다</span>
                     </div>
                 </div>

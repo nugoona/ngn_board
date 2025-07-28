@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>NGN 모바일 대시보드</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* 모바일 전용 wrapper */
+        #m-dashboard {
+            max-width: 100vw;
+            overflow-x: hidden;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        /* 섹션 전체 너비 조정 */
+        .section {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .section-content {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0;
+        }
+
+        /* 스켈레톤 애니메이션 */
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* 텍스트 말줄임표 */
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 필터 스타일 */
+        .filter-section {
+            background: white;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 헤더 고정으로 인한 본문 여백 조정 */
+        #m-dashboard {
+            padding-top: 120px; /* 헤더 높이만큼 상단 여백 추가 */
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .date-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: left;
+            margin-top: 4px;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* 섹션 스타일 */
+        .section {
+            background: white;
+            margin: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-weight: 600;
+            font-size: 16px;
+            color: #111827;
+        }
+
+        .section-content {
+            padding: 16px;
+        }
+
+        /* KPI 카드 스타일 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        /* 테이블 스타일 */
+        .table-container {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .data-table th {
+            background: #f9fafb;
+            padding: 8px 4px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .data-table td {
+            padding: 12px 8px;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+            word-wrap: break-word;
+        }
+
+        .data-table .text-right {
+            text-align: right;
+        }
+
+        /* 상품명 hover/터치 시 전체 텍스트 표시 */
+        .data-table td[title] {
+            cursor: pointer;
+            position: relative;
+        }
+
+        /* 데스크톱에서 hover 시 전체 텍스트 표시 */
+        @media (hover: hover) {
+            .data-table td[title]:hover {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                background: #fef3c7;
+                z-index: 10;
+                position: relative;
+            }
+        }
+
+        /* 모바일에서 터치 시 전체 텍스트 표시 */
+        .data-table td[title].expanded {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            background: #fef3c7;
+            z-index: 10;
+            position: relative;
+        }
+
+        /* 메타 광고 계정 선택 */
+        .meta-account-filter {
+            background: #f3f4f6;
+            padding: 12px;
+            margin: 8px;
+            border-radius: 8px;
+        }
+
+        .meta-account-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* 계정 선택 컨테이너 */
+        .account-selection-container {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .account-select-wrapper {
+            margin-bottom: 8px;
+        }
+
+        .account-notice {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .notice-icon {
+            font-size: 14px;
+            color: #3b82f6;
+        }
+
+        .notice-text {
+            flex: 1;
+        }
+
+        /* LIVE 광고 미리보기 - 웹버전과 동일한 인스타그램 스타일 */
+        .live-ads-container {
+            padding: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .live-ads-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 8px 0;
+            width: 100%;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: #6366f1 #f1f5f9;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+        }
+
+        /* 인스타그램 스타일 카드 */
+        .insta-card {
+            width: 300px;
+            margin-bottom: 20px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        /* 광고 이미지 */
+        .insta-image {
+            position: relative;
+            background: #f0f0f0;
+        }
+
+        .ad-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 플레이 버튼 오버레이 (영상 광고 전용) */
+        .play-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.0);
+        }
+
+        .play-icon {
+            width: 60px;
+            height: 60px;
+            opacity: 0.8;
+        }
+
+        /* 헤더/푸터 공통 */
+        .insta-header, .insta-footer {
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        /* 헤더 */
+        .insta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insta-header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-image {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .insta-account-name {
+            font-weight: bold;
+        }
+
+        .insta-menu {
+            font-size: 20px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* CTA 영역 */
+        .insta-cta {
+            padding: 10px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .insta-cta a {
+            text-decoration: none;
+            color: #385185;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 푸터 */
+        .insta-footer {
+            padding: 12px;
+        }
+
+        .insta-icons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .insta-icons-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .insta-icons svg {
+            width: 24px;
+            height: 24px;
+            color: #262626;
+            cursor: pointer;
+        }
+
+        .insta-caption {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #262626;
+        }
+
+        /* 페이지네이션 스타일 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 8px 0;
+        }
+
+        .pagination-btn {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+
+        .pagination-btn:disabled {
+            background: #f9fafb;
+            border-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        /* 캠페인 필터 스타일 */
+        .campaign-filter {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        .radio-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+        }
+
+        /* 테이블 가로 스크롤 스타일 */
+        .table-container {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div id="m-dashboard">
+        <!-- 상단 필터 (웹버전과 동일한 ID 사용) -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <select id="accountFilter" class="filter-select">
+                    <option value="">업체 선택</option>
+                </select>
+                <select id="periodFilter" class="filter-select">
+                    <option value="today" selected>오늘</option>
+                    <option value="yesterday">어제</option>
+                    <option value="last7days">최근 7일</option>
+                    <option value="current_month">이번 달</option>
+                    <option value="last_month">지난 달</option>
+                    <option value="manual">직접 선택</option>
+                </select>
+            </div>
+            <div class="filter-row" id="dateRangeContainer" style="display: none;">
+                <input type="text" id="startDate" class="date-input" placeholder="시작일" readonly>
+                <input type="text" id="endDate" class="date-input" placeholder="종료일" readonly>
+            </div>
+            <div class="header-bottom">
+                <div class="update-time" id="updatedAtText">업데이트: --</div>
+                <button class="logout-btn" onclick="window.location.href='/logout'">로그아웃</button>
+            </div>
+        </div>
+
+        <!-- 사이트 성과 요약 (핵심 KPI) -->
+        <div class="section">
+            <div class="section-header">사이트 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">사이트 매출</div>
+                        <div class="kpi-value" id="site-revenue">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">방문자</div>
+                        <div class="kpi-value" id="total-visitors">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">주문수</div>
+                        <div class="kpi-value" id="orders-count">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">매출대비 광고비</div>
+                        <div class="kpi-value" id="ad-spend-ratio">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 광고 성과 요약 -->
+        <div class="section">
+            <div class="section-header">광고 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">광고비</div>
+                        <div class="kpi-value" id="ad-spend">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">구매수</div>
+                        <div class="kpi-value" id="total-purchases">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">클릭당 비용</div>
+                        <div class="kpi-value" id="cpc">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">ROAS</div>
+                        <div class="kpi-value" id="roas">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 카페24 상품판매 -->
+        <div class="section">
+            <div class="section-header">카페24 상품판매</div>
+            <div class="section-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50%;">상품명</th>
+                                <th class="text-right" style="width: 25%;">총판매량</th>
+                                <th class="text-right" style="width: 25%;">총매출</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cafe24-products">
+                            <tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- 카페24 상품판매 페이지네이션 -->
+                <div id="pagination_cafe24_product_sales" class="pagination-container"></div>
+            </div>
+        </div>
+
+        <!-- GA4 소스별 유입수 -->
+        <div class="section">
+            <div class="section-header">GA4 소스별 유입수</div>
+            <div class="section-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>소스</th>
+                                <th class="text-right">유입수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ga4-sources">
+                            <tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메타 광고 성과 테이블 -->
+        <div class="section">
+            <div class="section-header">메타 광고 성과</div>
+            <div class="section-content">
+                <!-- 계정 선택 및 안내 -->
+                <div class="account-selection-container">
+                    <div class="account-select-wrapper">
+                        <select id="metaAccountSelector" class="meta-account-select">
+                            <option value="">계정을 선택해주세요</option>
+                        </select>
+                    </div>
+                    <div class="account-notice">
+                        <span class="notice-icon">ℹ️</span>
+                        <span class="notice-text">계정을 선택하면 광고 성과 데이터가 표시됩니다</span>
+                    </div>
+                </div>
+                
+                <!-- 캠페인 필터 -->
+                <div class="campaign-filter">
+                    <label class="filter-label">캠페인 필터:</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-conversion" value="전환" checked>
+                            <span>전환</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-inflow" value="유입" checked>
+                            <span>유입</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-reach" value="도달" checked>
+                            <span>도달</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="data-table" style="min-width: 600px;">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px; min-width: 80px;">캠페인</th>
+                                <th style="width: 150px; min-width: 150px;">광고</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">지출</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">CPC</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">구매</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">ROAS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meta-ads-table">
+                            <tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- 메타 광고 성과 페이지네이션 -->
+                <div id="pagination_meta_ads" class="pagination-container"></div>
+            </div>
+        </div>
+
+        <!-- LIVE 광고 미리보기 -->
+        <div class="section" id="live-ads-section" style="display: none;">
+            <div class="section-header">LIVE 광고 미리보기</div>
+            <div class="live-ads-container">
+                <div class="live-ads-scroll" id="live-ads-scroll">
+                    <div class="text-center">광고 계정을 선택해주세요</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 웹버전과 동일한 전역 변수 설정 -->
+    <script>
+        const userCompanyList = {{ session['company_names'] | tojson }};
+        const currentUserId = "{{ session['user_id'] }}";
+    </script>
+
+    <!-- 모바일 전용 JS -->
+    <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
+</body>
+</html> 

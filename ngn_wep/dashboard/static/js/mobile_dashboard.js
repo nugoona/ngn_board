@@ -142,6 +142,8 @@ async function fetchCafe24ProductSalesData(page = 1) {
         const startDateValue = startDate ? startDate.value : '';
         const endDateValue = endDate ? endDate.value : '';
         
+        showLoading("#loadingOverlayCafe24Products");
+        
         const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
@@ -171,6 +173,8 @@ async function fetchCafe24ProductSalesData(page = 1) {
         
     } catch (error) {
         console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
+    } finally {
+        hideLoading("#loadingOverlayCafe24Products");
     }
 }
 
@@ -189,12 +193,6 @@ async function fetchMobileData() {
     isLoading = true;
     console.log('🔄 모바일 데이터 로딩 시작...');
     
-    // 모든 로딩 오버레이 표시
-    showLoading("#loadingOverlaySitePerformance");
-    showLoading("#loadingOverlayAdPerformance");
-    showLoading("#loadingOverlayCafe24Products");
-    showLoading("#loadingOverlayGa4Sources");
-    
     try {
         // 현재 필터 값들 가져오기 (웹버전과 동일)
         const companySelect = document.getElementById('accountFilter');
@@ -209,18 +207,48 @@ async function fetchMobileData() {
         
         console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         
-        // 웹버전과 동일한 API 호출
-        const response = await fetch('/m/get_data', {
+        // 웹버전처럼 개별 API 호출로 병렬 처리
+        const promises = [];
+        
+        // 1. 성과 요약 데이터
+        promises.push(fetchMobilePerformanceSummary(companyName, period, startDateValue, endDateValue));
+        
+        // 2. 카페24 상품판매 데이터
+        promises.push(fetchMobileCafe24Products(companyName, period, startDateValue, endDateValue));
+        
+        // 3. GA4 소스별 유입수 데이터
+        promises.push(fetchMobileGa4Sources(companyName, period, startDateValue, endDateValue));
+        
+        // 병렬로 모든 데이터 로딩
+        await Promise.all(promises);
+        
+        console.log('✅ 모바일 데이터 로딩 완료');
+        
+    } catch (error) {
+        console.error('❌ 모바일 데이터 로딩 실패:', error);
+        showError('데이터 로드 실패');
+    } finally {
+        isLoading = false;
+    }
+}
+
+// 개별 API 호출 함수들
+async function fetchMobilePerformanceSummary(companyName, period, startDate, endDate) {
+    showLoading("#loadingOverlaySitePerformance");
+    showLoading("#loadingOverlayAdPerformance");
+    
+    try {
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                data_type: 'performance_summary',
                 company_name: companyName,
                 period: period,
-                start_date: startDateValue,
-                end_date: endDateValue,
-                data_type: 'all'
+                start_date: startDate,
+                end_date: endDate
             })
         });
         
@@ -229,73 +257,146 @@ async function fetchMobileData() {
         }
         
         const data = await response.json();
-        console.log('✅ 모바일 데이터 로딩 성공:', data);
+        console.log('✅ 성과 요약 데이터 로딩 성공:', data);
         
-        mobileData = data;
-        
-        // 웹버전과 동일한 업데이트 시간 표시
-        const updatedAtText = document.getElementById('updatedAtText');
-        if (updatedAtText && data.latest_update) {
-            try {
-                console.log('🔍 원본 latest_update:', data.latest_update);
-                
-                // 다양한 날짜 형식 처리
-                let dateStr = data.latest_update;
-                
-                // 2025-07-28-22-11 형식인 경우 처리
-                if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
-                    const parts = dateStr.split('-');
-                    const year = parts[0];
-                    const month = parts[1];
-                    const day = parts[2];
-                    const hour = parts[3];
-                    const minute = parts[4];
-                    dateStr = `${year}-${month}-${day}T${hour}:${minute}:00`;
-                    console.log('🔧 변환된 날짜 형식:', dateStr);
-                }
-                
-                const utc = new Date(dateStr);
-                
-                // 유효한 날짜인지 확인
-                if (isNaN(utc.getTime())) {
-                    console.warn('❌ 유효하지 않은 날짜 형식:', data.latest_update);
-                    updatedAtText.textContent = '최종 업데이트: -';
-                    return;
-                }
-                
-                // 시간만 보정 (날짜는 그대로 유지)
-                const hours = utc.getUTCHours() + 9;
-                const adjustedHour = hours % 24;
-                const carryDate = hours >= 24 ? 1 : 0;
-                
-                const year = utc.getUTCFullYear();
-                const month = utc.getUTCMonth() + 1;
-                const date = utc.getUTCDate();
-                const finalDate = date + carryDate;
-                const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
-                
-                const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
-                updatedAtText.textContent = `최종 업데이트: ${formatted}`;
-                console.log('✅ 업데이트 시간 표시 완료:', formatted);
-            } catch (error) {
-                console.error('❌ 업데이트 시간 처리 오류:', error);
-                updatedAtText.textContent = '최종 업데이트: -';
-            }
+        // 성과 요약 렌더링
+        if (data.performance_summary) {
+            renderPerformanceSummary(data.performance_summary, data.total_orders || 0);
         }
         
-        // 웹버전과 동일한 데이터 렌더링
-        renderMobileData(data);
+        // 업데이트 시간 표시
+        updateMobileTimestamp(data.latest_update);
         
     } catch (error) {
-        console.error('❌ 모바일 데이터 로딩 실패:', error);
-        showError('데이터 로드 실패');
+        console.error('❌ 성과 요약 데이터 로딩 실패:', error);
     } finally {
-        // 모든 로딩 오버레이 숨기기
         hideLoading("#loadingOverlaySitePerformance");
         hideLoading("#loadingOverlayAdPerformance");
+    }
+}
+
+async function fetchMobileCafe24Products(companyName, period, startDate, endDate) {
+    showLoading("#loadingOverlayCafe24Products");
+    
+    try {
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'cafe24_product_sales',
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate,
+                page: 1,
+                limit: 5
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ 카페24 상품판매 데이터 로딩 성공:', data);
+        
+        if (data.cafe24_product_sales) {
+            renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count || 0);
+        }
+        
+    } catch (error) {
+        console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
+    } finally {
         hideLoading("#loadingOverlayCafe24Products");
+    }
+}
+
+async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
+    showLoading("#loadingOverlayGa4Sources");
+    
+    try {
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'ga4_source_summary',
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ GA4 소스별 유입수 데이터 로딩 성공:', data);
+        
+        if (data.ga4_source_summary) {
+            renderGa4SourceSummary(data.ga4_source_summary);
+        }
+        
+    } catch (error) {
+        console.error('❌ GA4 소스별 유입수 데이터 로딩 실패:', error);
+    } finally {
         hideLoading("#loadingOverlayGa4Sources");
-        isLoading = false;
+    }
+}
+
+function updateMobileTimestamp(latestUpdate) {
+    const updatedAtText = document.getElementById('updatedAtText');
+    if (!updatedAtText || !latestUpdate) return;
+    
+    try {
+        console.log('🔍 원본 latest_update:', latestUpdate);
+        
+        // 다양한 날짜 형식 처리
+        let dateStr = latestUpdate;
+        
+        // 2025-07-28-22-11 형식인 경우 처리
+        if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
+            const parts = dateStr.split('-');
+            const year = parts[0];
+            const month = parts[1];
+            const day = parts[2];
+            const hour = parts[3];
+            const minute = parts[4];
+            dateStr = `${year}-${month}-${day}T${hour}:${minute}:00`;
+            console.log('🔧 변환된 날짜 형식:', dateStr);
+        }
+        
+        const utc = new Date(dateStr);
+        
+        // 유효한 날짜인지 확인
+        if (isNaN(utc.getTime())) {
+            console.warn('❌ 유효하지 않은 날짜 형식:', latestUpdate);
+            updatedAtText.textContent = '최종 업데이트: -';
+            return;
+        }
+        
+        // 시간만 보정 (날짜는 그대로 유지)
+        const hours = utc.getUTCHours() + 9;
+        const adjustedHour = hours % 24;
+        const carryDate = hours >= 24 ? 1 : 0;
+        
+        const year = utc.getUTCFullYear();
+        const month = utc.getUTCMonth() + 1;
+        const date = utc.getUTCDate();
+        const finalDate = date + carryDate;
+        const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
+        
+        const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+        updatedAtText.textContent = `최종 업데이트: ${formatted}`;
+        console.log('✅ 업데이트 시간 표시 완료:', formatted);
+    } catch (error) {
+        console.error('❌ 업데이트 시간 처리 오류:', error);
+        updatedAtText.textContent = '최종 업데이트: -';
     }
 }
 
@@ -701,61 +802,37 @@ let metaAdsCurrentPage = 1;
 let metaAdsTotalCount = 0;
 let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
 
-// ─────────────────────────────────────────────
-// 14) 데이터 렌더링 함수 (요구사항에 맞게 구현)
-// ─────────────────────────────────────────────
-function renderMobileData(data) {
-    console.log('🎨 모바일 데이터 렌더링 시작...');
-    
-    // 1. 사이트 성과 요약 (핵심 KPI)
-    if (data.performance_summary && data.performance_summary.length > 0) {
-        renderPerformanceSummary(data.performance_summary[0], data.total_orders);
-    }
-    
-    // 2. 카페24 상품판매
-    if (data.cafe24_product_sales) {
-        renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
-    }
-    
-    // 3. GA4 소스별 유입수
-    if (data.ga4_source_summary) {
-        renderGa4SourceSummary(data.ga4_source_summary);
-    }
-    
-    // 4. 메타 광고 (기본 계정별 성과) - 메타 광고 계정이 선택되지 않은 경우에만 렌더링
-    if (data.meta_ads && !selectedMetaAccount) {
-        renderMetaAds(data.meta_ads);
-    }
-    
-    console.log('✅ 모바일 데이터 렌더링 완료');
-}
+
 
 // 사이트 성과 요약 렌더링 (핵심 KPI)
 function renderPerformanceSummary(performanceData, totalOrders) {
     console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
+    // 성과 데이터가 배열인 경우 첫 번째 요소 사용
+    const data = Array.isArray(performanceData) ? performanceData[0] : performanceData;
+    
     // 사이트 성과 요약 KPI 값들 설정
-    document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
+    document.getElementById('site-revenue').textContent = formatCurrency(data.site_revenue || 0);
     // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
-    const visitors = performanceData.total_visitors || 0;
+    const visitors = data.total_visitors || 0;
     document.getElementById('total-visitors').textContent = visitors.toLocaleString();
     // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
-    const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
+    const ordersCount = totalOrders !== undefined ? totalOrders : (data.total_purchases || 0);
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
     // 매출대비 광고비 (백분율로 표시)
-    const adSpendRatio = performanceData.ad_spend_ratio || 0;
+    const adSpendRatio = data.ad_spend_ratio || 0;
     document.getElementById('ad-spend-ratio').textContent = formatPercentage(adSpendRatio);
     
     // 광고 성과 요약 KPI 값들 설정
-    document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
-    document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
+    document.getElementById('ad-spend').textContent = formatCurrency(data.ad_spend || 0);
+    document.getElementById('total-purchases').textContent = formatNumber(data.total_purchases || 0);
     // avg_opo는 실제로 avg_cpc 필드입니다 - CPC는 정수로 표시
-    const cpcValue = performanceData.avg_opo || performanceData.avg_cpc || 0;
+    const cpcValue = data.avg_opo || data.avg_cpc || 0;
     document.getElementById('cpc').textContent = formatCurrency(Math.round(cpcValue));
-    document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
+    document.getElementById('roas').textContent = formatPercentage(data.roas_percentage || 0);
     
     // 광고 성과 요약 제목에 광고 미디어 정보 추가
-    const adMedia = performanceData.ad_media || '';
+    const adMedia = data.ad_media || '';
     const adPerformanceSection = document.querySelector('.section:nth-child(3) .section-header');
     if (adMedia && adPerformanceSection) {
         adPerformanceSection.textContent = `광고 성과 요약 - ${adMedia}`;

@@ -251,9 +251,11 @@ async function fetchMetaAdsByAccount(accountId) {
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
         
+        const companySelect = document.getElementById('accountFilter');
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
         const endDateValue = endDate ? endDate.value : '';
+        const companyName = companySelect ? companySelect.value : 'all';
         
         const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
@@ -262,6 +264,7 @@ async function fetchMetaAdsByAccount(accountId) {
             },
             body: JSON.stringify({
                 account_id: accountId,
+                company_name: companyName,
                 period: period,
                 start_date: startDateValue,
                 end_date: endDateValue

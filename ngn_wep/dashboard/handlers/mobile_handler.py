@@ -367,6 +367,15 @@ def get_meta_ads_by_account():
         end_date = data.get("end_date")
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
         
+        # company_name 설정 (웹버전과 동일한 로직)
+        raw_company_name = data.get("company_name", "all")
+        if raw_company_name == "all":
+            company_name = ["demo"] if user_id == "demo" else [
+                name for name in session.get("company_names", []) if name.lower() != "demo"
+            ]
+        else:
+            company_name = str(raw_company_name).strip().lower()
+        
         # 메타 광고별 성과 조회 (광고 탭 기준)
         print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}")
         

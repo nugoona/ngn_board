@@ -498,11 +498,31 @@ function renderCafe24ProductSales(products) {
     
     products.forEach(product => {
         const row = document.createElement('tr');
+        const productName = product.product_name || '-';
+        const salesAmount = product.item_product_sales || 0;
+        
         row.innerHTML = `
-            <td class="text-truncate">${product.product_name || '-'}</td>
+            <td class="text-truncate" title="${productName}">${productName}</td>
             <td class="text-right">${formatNumber(product.item_quantity || 0)}</td>
-            <td class="text-right">${formatNumber(product.item_product_sales || 0)}</td>
+            <td class="text-right">${formatCurrency(salesAmount)}</td>
         `;
+        
+        // 상품명 터치 시 전체 텍스트 표시
+        const productNameCell = row.querySelector('td[title]');
+        if (productNameCell && productNameCell.title !== productNameCell.textContent) {
+            productNameCell.addEventListener('click', function() {
+                if (this.style.whiteSpace === 'normal') {
+                    this.style.whiteSpace = 'nowrap';
+                    this.style.overflow = 'hidden';
+                    this.style.textOverflow = 'ellipsis';
+                } else {
+                    this.style.whiteSpace = 'normal';
+                    this.style.overflow = 'visible';
+                    this.style.textOverflow = 'clip';
+                }
+            });
+        }
+        
         tbody.appendChild(row);
     });
 }

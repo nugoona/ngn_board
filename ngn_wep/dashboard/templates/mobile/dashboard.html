@@ -136,12 +136,13 @@
 
         /* 테이블 스타일 */
         .table-container {
-            overflow-x: auto;
+            overflow-x: hidden;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .data-table th {
@@ -152,16 +153,23 @@
             font-weight: 600;
             color: #374151;
             border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
         }
 
         .data-table td {
             padding: 12px 8px;
             font-size: 14px;
             border-bottom: 1px solid #f3f4f6;
+            word-wrap: break-word;
         }
 
         .data-table .text-right {
             text-align: right;
+        }
+
+        /* 상품명 터치 시 전체 텍스트 표시 */
+        .data-table td[title] {
+            cursor: pointer;
         }
 
         /* 메타 광고 계정 선택 */
@@ -302,7 +310,7 @@
                             <tr>
                                 <th style="width: 50%;">상품명</th>
                                 <th class="text-right" style="width: 25%;">총판매량</th>
-                                <th class="text-right" style="width: 25%;">총구매수</th>
+                                <th class="text-right" style="width: 25%;">총매출</th>
                             </tr>
                         </thead>
                         <tbody id="cafe24-products">

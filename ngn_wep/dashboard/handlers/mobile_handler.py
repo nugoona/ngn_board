@@ -216,6 +216,44 @@ def get_data():
             
             if performance_data:
                 first_row = performance_data[0]
+                
+                # 모바일 전용: 추가 데이터 조회하여 보완
+                try:
+                    print(f"[MOBILE] 🔄 추가 데이터 조회 시작...")
+                    
+                    # 사이트 성과 요약 관련 데이터만 조회
+                    # 사이트 매출 조회
+                    from ..services.platform_sales_summary import get_platform_sales_by_day
+                    platform_sales = get_platform_sales_by_day(
+                        company_names=company_name if isinstance(company_name, list) else [company_name],
+                        start_date=start_date,
+                        end_date=end_date,
+                        date_type="summary"
+                    )
+                    
+                    site_revenue = 0
+                    if platform_sales and len(platform_sales) > 0:
+                        site_revenue = platform_sales[0].get('site_official', 0)
+                    
+                    # 방문자 수 조회
+                    from ..services.ga4_source_summary import get_ga4_traffic_summary
+                    ga4_traffic = get_ga4_traffic_summary(company_name, start_date, end_date, user_id=user_id)
+                    total_visitors = sum(row.get('visitors', 0) for row in ga4_traffic) if ga4_traffic else 0
+                    
+                    # 광고비 비율 계산 (사이트 성과 요약용)
+                    ad_spend = first_row.get('ad_spend', 0)
+                    ad_spend_ratio = round((ad_spend / site_revenue * 100), 2) if site_revenue > 0 else 0
+                    
+                    # 사이트 성과 요약 관련 필드만 업데이트 (총 광고 성과는 건드리지 않음)
+                    first_row['site_revenue'] = site_revenue
+                    first_row['total_visitors'] = total_visitors
+                    first_row['ad_spend_ratio'] = ad_spend_ratio
+                    
+                    print(f"[MOBILE] ✅ 사이트 성과 요약 데이터 보완 완료 - 사이트 매출: {site_revenue}, 방문자: {total_visitors}, 광고비 비율: {ad_spend_ratio}%")
+                except Exception as e:
+                    print(f"[MOBILE] ❌ 추가 데이터 조회 오류: {e}")
+                    # 오류가 발생해도 기존 데이터는 유지
+                
                 response_data["performance_summary"] = [first_row]  # 첫 번째 행만
                 # 웹버전과 동일한 형식으로 latest_update 설정
                 latest_update = max([
@@ -230,6 +268,14 @@ def get_data():
                 
                 response_data["latest_update"] = latest_update
                 print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']} (type: {type(response_data['latest_update'])})")
+                
+                # 디버깅: 실제 데이터 값들 출력
+                print(f"[MOBILE] 🔍 Performance Summary 데이터 값들:")
+                print(f"  site_revenue: {first_row.get('site_revenue')}")
+                print(f"  total_visitors: {first_row.get('total_visitors')}")
+                print(f"  ad_spend_ratio: {first_row.get('ad_spend_ratio')}")
+                print(f"  product_views: {first_row.get('product_views')}")
+                print(f"  views_per_visit: {first_row.get('views_per_visit')}")
             else:
                 response_data["performance_summary"] = []
                 print(f"[MOBILE] ⚠️ Performance Summary 데이터 없음")
@@ -252,44 +298,7 @@ def get_data():
             print(f"[MOBILE] ❌ Total Orders 오류: {e}")
             response_data["total_orders"] = 0
 
-        # 1-2. 모바일 전용: 플랫폼 매출 요약 데이터 가져오기 (웹버전과 동일)
-        try:
-            print(f"[MOBILE] 🔄 플랫폼 매출 요약 데이터 호출 시작...")
-            
-            from ..services.platform_sales_summary import get_platform_sales_by_day
-            platform_sales = get_platform_sales_by_day(
-                company_names=company_name if isinstance(company_name, list) else [company_name],
-                start_date=start_date,
-                end_date=end_date,
-                date_type="summary"
-            )
-            
-            if platform_sales and len(platform_sales) > 0:
-                platform_data = platform_sales[0]
-                site_revenue = platform_data.get('site_official', 0)  # 자사몰 매출
-                
-                # 방문자 수는 GA4 트래픽 데이터에서 별도 조회
-                from ..services.ga4_source_summary import get_ga4_traffic_summary
-                ga4_traffic = get_ga4_traffic_summary(company_name, start_date, end_date, user_id=user_id)
-                total_visitors = sum(row.get('visitors', 0) for row in ga4_traffic) if ga4_traffic else 0
-                
-                # 광고비 비율 계산
-                ad_spend = first_row.get('ad_spend', 0) if performance_data else 0
-                ad_spend_ratio = round((ad_spend / site_revenue * 100), 2) if site_revenue > 0 else 0
-                
-                # Performance Summary 데이터 업데이트
-                if performance_data and len(performance_data) > 0:
-                    performance_data[0]['site_revenue'] = site_revenue
-                    performance_data[0]['total_visitors'] = total_visitors
-                    performance_data[0]['ad_spend_ratio'] = ad_spend_ratio
-                    response_data["performance_summary"] = [performance_data[0]]
-                
-                print(f"[MOBILE] ✅ 사이트 매출: {site_revenue}, 방문자: {total_visitors}, 광고비 비율: {ad_spend_ratio}%")
-            else:
-                print(f"[MOBILE] ⚠️ 플랫폼 매출 데이터 없음")
-        except Exception as e:
-            print(f"[MOBILE] ❌ 플랫폼 매출 요약 데이터 오류: {e}")
-            # 오류가 발생해도 기존 데이터는 유지
+        # 1-2. Performance Summary에서 추가 데이터 조회 완료
 
         # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
         try:

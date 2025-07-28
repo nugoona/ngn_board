@@ -7,7 +7,7 @@ def get_bigquery_client():
 @cached_query(func_name="performance_summary", ttl=300)  # 5분 캐싱
 def get_performance_summary(company_name, start_date: str, end_date: str, user_id: str = None):
     """
-    ✅ 메타 광고 성과의 '계정' 레벨과 정확히 동일한 쿼리 사용
+    ✅ 메타 광고 성과의 '계정' 레벨과 동일한 쿼리 사용
     - demo 계정: demo 업체만 조회
     - 일반 계정: demo 업체 제외
     - 메타 광고 성과와 정확히 동일한 데이터
@@ -17,62 +17,77 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
 
-    # ✅ 메타 광고 성과의 '계정' 레벨과 정확히 동일한 쿼리 사용
-    base_tbl = "meta_ads_account_summary"
-    latest_alias = "acc_latest"
-    
-    # 업체 필터 처리
+    query_params = []
+
+    # ✅ 업체 필터 처리
     if isinstance(company_name, list):
-        companies = ", ".join(f"'{c.lower()}'" for c in company_name)
-        company_filter = f"LOWER({latest_alias}.company_name) IN ({companies})"
+        filtered_companies = [name.lower() for name in company_name]
+        filtered_companies = (
+            ["demo"] if user_id == "demo"
+            else [name for name in filtered_companies if name != "demo"]
+        )
+        if not filtered_companies:
+            print("[DEBUG] 필터링된 company_name 리스트 없음 → 빈 결과 반환")
+            return []
+        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
     else:
         company_name = company_name.lower()
-        company_filter = f"LOWER({latest_alias}.company_name) = LOWER('{company_name}')"
+        if company_name == "demo" and user_id != "demo":
+            print("[DEBUG] demo 계정 아님 + demo 요청 → 빈 결과 반환")
+            return []
+        company_filter = "LOWER(company_name) = @company_name"
+        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
 
-    # ✅ 메타 광고 성과의 '계정' 레벨과 동일한 쿼리 구조
+    # ✅ 날짜 파라미터
+    query_params.extend([
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
+    ])
+
+    # ✅ 메타 광고 성과의 '계정' 레벨과 동일한 쿼리 사용
     query = f"""
+      WITH ranked_data AS (
+          SELECT
+              ap.*,
+              COALESCE(LOWER(ci.company_name), LOWER(ap.account_name), 'unknown') AS company_name,
+              ROW_NUMBER() OVER (PARTITION BY ap.account_name, ap.date ORDER BY ap.spend DESC) AS row_num
+          FROM `winged-precept-443218-v8.ngn_dataset.ads_performance` ap
+          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` ci
+              ON ap.account_name = ci.meta_acc
+      )
       SELECT
-        '{start_date} ~ {end_date}' AS date_range,
+        FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
         'meta' AS ad_media,
-        SUM(A.spend) AS ad_spend,
-        SUM(A.impressions) AS total_impressions,
-        SUM(A.clicks) AS total_clicks,
-        SUM(A.purchases) AS total_purchases,
-        SUM(A.purchase_value) AS total_purchase_value,
-        COALESCE(ROUND(SUM(A.purchase_value) / NULLIF(SUM(A.purchases), 0), 2), 0) AS avg_order_value,
-        COALESCE(ROUND(SUM(A.purchase_value) / NULLIF(SUM(A.spend), 0) * 100, 2), 0) AS roas_percentage,
-        COALESCE(ROUND(SUM(A.spend) / NULLIF(SUM(A.clicks), 0), 2), 0) AS avg_cpc,
-        COALESCE(ROUND(SUM(A.clicks) / NULLIF(SUM(A.impressions), 0) * 100, 2), 0) AS click_through_rate,
-        COALESCE(ROUND(SUM(A.purchases) / NULLIF(SUM(A.clicks), 0) * 100, 2), 0) AS conversion_rate,
+        COALESCE(SUM(spend), 0) AS ad_spend,
+        COALESCE(SUM(impressions), 0) AS total_impressions,
+        COALESCE(SUM(clicks), 0) AS total_clicks,
+        COALESCE(SUM(purchases), 0) AS total_purchases,
+        COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
+        COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(purchases), 0), 2), 0) AS avg_order_value,
+        COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(spend), 0) * 100, 2), 0) AS roas_percentage,
+        COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0) AS avg_cpc,
+        COALESCE(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2), 0) AS click_through_rate,
+        COALESCE(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2), 0) AS conversion_rate,
         0 AS site_revenue,  -- 사이트 매출은 별도 조회 필요
         0 AS total_visitors,  -- 방문자 수는 별도 조회 필요
         0 AS product_views,  -- 상품 조회는 별도 조회 필요
         0 AS views_per_visit,  -- 방문당 조회는 별도 조회 필요
         0 AS ad_spend_ratio,  -- 광고비 비율은 별도 조회 필요
         CURRENT_TIMESTAMP() AS updated_at
-      FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}` A
-      LEFT JOIN (
-          SELECT * EXCEPT(rn) FROM (
-              SELECT account_id,
-                     account_name,
-                     company_name,
-                     ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
-              FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}`
-          )
-          WHERE rn = 1
-      ) AS {latest_alias}
-      ON A.account_id = {latest_alias}.account_id
-      WHERE A.date BETWEEN '{start_date}' AND '{end_date}'
+      FROM ranked_data
+      WHERE row_num = 1
+        AND date BETWEEN @start_date AND @end_date
         AND {company_filter}
+        AND date IS NOT NULL
       GROUP BY ad_media
-      HAVING SUM(A.spend) > 0
     """
 
     print("[DEBUG] performance_summary (계정 레벨과 동일) Query:\n", query)
 
     try:
         client = get_bigquery_client()
-        result = client.query(query).result()
+        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         rows = [dict(row) for row in result]
         print(f"[DEBUG] performance_summary 결과: {len(rows)}개")
         return rows

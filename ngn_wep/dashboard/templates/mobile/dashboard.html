@@ -232,13 +232,13 @@
         /* 섹션 스타일 - 웹버전과 동일한 카드 디자인 */
         .section {
             background: var(--bg-primary);
-            margin: 8px;
+            margin: 4px;
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
-            width: calc(100% - 16px);
+            width: calc(100% - 8px);
             box-sizing: border-box;
         }
 
@@ -256,7 +256,7 @@
 
         .kpi-card {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-            padding: 20px;
+            padding: 16px;
             border-radius: 16px;
             text-align: center;
             border: 1px solid var(--border-color);
@@ -301,39 +301,42 @@
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
-            border-radius: 12px;  /* 둥근 모서리 복구 */
-            overflow: hidden;
+            border-radius: 12px;
             padding: 0;
             margin: 0;
         }
 
         .data-table {
             width: 100% !important;
-            max-width: 100% !important;
+            min-width: 600px;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
             background: var(--bg-primary);
         }
 
         .data-table th {
             background: var(--bg-tertiary);
-            padding: 12px 16px;
+            padding: 6px 4px;
             text-align: left;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 600;
             color: var(--text-primary);
             border-bottom: 1px solid var(--border-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            min-width: 0;
         }
 
         .data-table td {
-            padding: 16px;
-            font-size: 14px;
+            padding: 6px 4px;
+            font-size: 12px;
             color: var(--text-primary);
             border-bottom: 1px solid var(--border-color);
             transition: background 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .data-table tr:hover td {
@@ -350,17 +353,17 @@
 
         /* 섹션 헤더 - 웹버전과 동일한 스타일 */
         .section-header {
-            padding: 20px 20px 16px;
+            padding: 16px 16px 12px;
             border-bottom: 1px solid var(--border-color);
             font-weight: 700;
-            font-size: 18px;
+            font-size: 16px;
             color: white;
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             text-align: center;
         }
 
         .section-content {
-            padding: 20px;
+            padding: 12px;
         }
 
         /* 메타 광고 계정 선택 - 모던한 디자인 */

@@ -341,6 +341,15 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             metaAdsAllData = data.meta_ads_insight_table;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
+            // 초기 로딩 시 지출 내림차순으로 정렬
+            metaAdsAllData.sort((a, b) => {
+                const aSpend = a.spend || 0;
+                const bSpend = b.spend || 0;
+                return bSpend - aSpend; // 내림차순
+            });
+            
+            console.log('🔄 초기 지출 내림차순 정렬 완료');
+            
             // 페이지별 데이터로 렌더링
             const startIndex = (page - 1) * 10;
             const endIndex = startIndex + 10;
@@ -866,6 +875,13 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     // 테이블 헤더 클릭 이벤트 추가
     addTableSortEvents();
     
+    // 초기 지출 내림차순 표시
+    const spendHeader = document.querySelector('#meta-ads-table').closest('table').querySelector('th:nth-child(3)');
+    if (spendHeader) {
+        spendHeader.dataset.order = 'desc';
+        spendHeader.textContent = spendHeader.textContent.replace(' ↑', '').replace(' ↓', '') + ' ↓';
+    }
+    
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
 
@@ -1044,15 +1060,71 @@ function addTableSortEvents() {
 }
 
 function sortTable(table, columnIndex) {
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr:not(.bg-gray-50)'));
-    const totalRow = tbody.querySelector('tr.bg-gray-50');
+    console.log('🔄 전체 데이터 정렬 시작 - 컬럼:', columnIndex);
     
-    // 현재 정렬 상태 확인
+    // 전체 데이터 정렬
+    if (metaAdsAllData.length > 0) {
+        // 정렬 기준 컬럼에 따라 전체 데이터 정렬
+        const sortedData = [...metaAdsAllData].sort((a, b) => {
+            let aValue, bValue;
+            
+            switch (columnIndex) {
+                case 0: // 캠페인
+                    aValue = (a.campaign_name || '').toLowerCase();
+                    bValue = (b.campaign_name || '').toLowerCase();
+                    break;
+                case 1: // 광고
+                    aValue = (a.ad_name || '').toLowerCase();
+                    bValue = (b.ad_name || '').toLowerCase();
+                    break;
+                case 2: // 지출
+                    aValue = a.spend || 0;
+                    bValue = b.spend || 0;
+                    break;
+                case 3: // CPC
+                    aValue = a.clicks > 0 ? Math.round(a.spend / a.clicks) : 0;
+                    bValue = b.clicks > 0 ? Math.round(b.spend / b.clicks) : 0;
+                    break;
+                case 4: // 구매
+                    aValue = a.purchases || 0;
+                    bValue = b.purchases || 0;
+                    break;
+                case 5: // ROAS
+                    aValue = a.spend > 0 ? Math.round((a.purchase_value / a.spend) * 100) : 0;
+                    bValue = b.spend > 0 ? Math.round((b.purchase_value / b.spend) * 100) : 0;
+                    break;
+                default:
+                    aValue = 0;
+                    bValue = 0;
+            }
+            
+            // 현재 정렬 상태 확인
+            const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+            const currentOrder = header.dataset.order || 'none';
+            const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+            
+            if (newOrder === 'asc') {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+        
+        // 정렬된 전체 데이터 저장
+        metaAdsAllData = sortedData;
+        console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
+        
+        // 현재 페이지 데이터로 다시 렌더링
+        const startIndex = (metaAdsCurrentPage - 1) * 10;
+        const endIndex = startIndex + 10;
+        const pageData = metaAdsAllData.slice(startIndex, endIndex);
+        
+        renderMetaAdsByAccount(pageData, metaAdsAllData.length);
+    }
+    
+    // 헤더 정렬 표시 업데이트
     const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
     const currentOrder = header.dataset.order || 'none';
-    
-    // 정렬 순서 변경
     const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
     
     // 모든 헤더의 정렬 표시 제거
@@ -1064,24 +1136,6 @@ function sortTable(table, columnIndex) {
     // 현재 헤더에 정렬 표시
     header.dataset.order = newOrder;
     header.textContent += newOrder === 'asc' ? ' ↑' : ' ↓';
-    
-    // 행 정렬
-    rows.sort((a, b) => {
-        const aValue = getCellValue(a, columnIndex);
-        const bValue = getCellValue(b, columnIndex);
-        
-        if (newOrder === 'asc') {
-            return aValue > bValue ? 1 : -1;
-        } else {
-            return aValue < bValue ? 1 : -1;
-        }
-    });
-    
-    // 정렬된 행 다시 추가
-    rows.forEach(row => tbody.appendChild(row));
-    if (totalRow) {
-        tbody.appendChild(totalRow);
-    }
 }
 
 function getCellValue(row, columnIndex) {

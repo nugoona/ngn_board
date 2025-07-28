@@ -445,7 +445,7 @@ function renderMobileData(data) {
     
     // 1. 사이트 성과 요약 (핵심 KPI)
     if (data.performance_summary && data.performance_summary.length > 0) {
-        renderPerformanceSummary(data.performance_summary[0]);
+        renderPerformanceSummary(data.performance_summary[0], data.total_orders);
     }
     
     // 2. 카페24 상품판매
@@ -467,14 +467,14 @@ function renderMobileData(data) {
 }
 
 // 사이트 성과 요약 렌더링 (핵심 KPI)
-function renderPerformanceSummary(performanceData) {
+function renderPerformanceSummary(performanceData, totalOrders) {
     console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
     // 사이트 성과 요약 KPI 값들 설정
     document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
     document.getElementById('total-visitors').textContent = formatNumber(performanceData.total_visitors || 0);
-    // 모바일 전용: total_orders 사용 (performanceData.total_orders가 있으면 사용, 없으면 total_purchases 사용)
-    const ordersCount = data.total_orders !== undefined ? data.total_orders : (performanceData.total_purchases || 0);
+    // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
+    const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
     
     // 광고 성과 요약 KPI 값들 설정

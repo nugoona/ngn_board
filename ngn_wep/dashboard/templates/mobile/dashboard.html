@@ -86,8 +86,30 @@
         .update-time {
             font-size: 12px;
             color: #6b7280;
-            text-align: right;
+            text-align: left;
             margin-top: 4px;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
         }
 
         /* 섹션 스타일 */
@@ -277,7 +299,10 @@
                 <input type="text" id="startDate" class="date-input" placeholder="시작일" readonly>
                 <input type="text" id="endDate" class="date-input" placeholder="종료일" readonly>
             </div>
-            <div class="update-time" id="updatedAtText">업데이트: --</div>
+            <div class="header-bottom">
+                <div class="update-time" id="updatedAtText">업데이트: --</div>
+                <button class="logout-btn" onclick="window.location.href='/logout'">로그아웃</button>
+            </div>
         </div>
 
         <!-- 사이트 성과 요약 (핵심 KPI) -->

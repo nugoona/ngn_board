@@ -148,14 +148,21 @@ async function fetchMobileData() {
         // 웹버전과 동일한 업데이트 시간 표시
         const updatedAtText = document.getElementById('updatedAtText');
         if (updatedAtText && data.latest_update) {
-            const date = new Date(data.latest_update.replace(/-/g, ':').replace('T', ' '));
-            const timeString = date.toLocaleTimeString('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            });
-            updatedAtText.textContent = `업데이트: ${timeString}`;
+            const utc = new Date(data.latest_update);
+            
+            // 시간만 보정 (날짜는 그대로 유지)
+            const hours = utc.getUTCHours() + 9;
+            const adjustedHour = hours % 24;
+            const carryDate = hours >= 24 ? 1 : 0;
+            
+            const year = utc.getUTCFullYear();
+            const month = utc.getUTCMonth() + 1;
+            const date = utc.getUTCDate();
+            const finalDate = date + carryDate;
+            const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
+            
+            const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+            updatedAtText.textContent = `최종 업데이트: ${formatted}`;
         }
         
         // 웹버전과 동일한 데이터 렌더링

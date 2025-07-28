@@ -32,7 +32,40 @@ function formatPercentage(num) {
 }
 
 // ─────────────────────────────────────────────
-// 3) 웹버전과 호환되는 함수들 (filters.js 호환)
+// 3) 메타 광고 데이터 처리 함수 (모바일 전용)
+// ─────────────────────────────────────────────
+function processMetaAdsForMobile(metaAdsData) {
+    console.log('🔧 메타 광고 데이터 모바일 처리 시작:', metaAdsData);
+    
+    return metaAdsData.map(row => {
+        const processedRow = { ...row };
+        
+        // 캠페인명 처리: "전환", "도달", "유입" 키워드만 추출
+        const campaignName = row.campaign_name || '';
+        if (campaignName) {
+            if (campaignName.includes('전환')) {
+                processedRow.campaign_name = '전환';
+            } else if (campaignName.includes('도달')) {
+                processedRow.campaign_name = '도달';
+            } else if (campaignName.includes('유입')) {
+                processedRow.campaign_name = '유입';
+            }
+        }
+        
+        // 광고명 처리: [ ] 부분 제거
+        const adName = row.ad_name || '';
+        if (adName) {
+            // [ ] 패턴을 모두 제거
+            const cleanedAdName = adName.replace(/\[[^\]]*\]/g, '').trim();
+            processedRow.ad_name = cleanedAdName;
+        }
+        
+        return processedRow;
+    });
+}
+
+// ─────────────────────────────────────────────
+// 4) 웹버전과 호환되는 함수들 (filters.js 호환)
 // ─────────────────────────────────────────────
 
 // 웹버전의 updateAllData 함수와 동일한 역할
@@ -66,7 +99,7 @@ async function fetchGa4SourceSummaryData() {
 }
 
 // ─────────────────────────────────────────────
-// 4) API 호출 함수 (웹버전과 동일한 구조)
+// 5) API 호출 함수 (웹버전과 동일한 구조)
 // ─────────────────────────────────────────────
 async function fetchMobileData() {
     if (isLoading) return;
@@ -137,7 +170,7 @@ async function fetchMobileData() {
 }
 
 // ─────────────────────────────────────────────
-// 5) 메타 광고 계정 목록 조회
+// 6) 메타 광고 계정 목록 조회
 // ─────────────────────────────────────────────
 async function fetchMetaAccounts() {
     try {
@@ -171,7 +204,7 @@ async function fetchMetaAccounts() {
 }
 
 // ─────────────────────────────────────────────
-// 6) 메타 광고별 성과 조회
+// 7) 메타 광고별 성과 조회
 // ─────────────────────────────────────────────
 async function fetchMetaAdsByAccount(accountId) {
     if (!accountId) return;
@@ -215,7 +248,7 @@ async function fetchMetaAdsByAccount(accountId) {
 }
 
 // ─────────────────────────────────────────────
-// 7) LIVE 광고 미리보기 조회
+// 8) LIVE 광고 미리보기 조회
 // ─────────────────────────────────────────────
 async function fetchLiveAds(accountId) {
     if (!accountId) return;
@@ -248,14 +281,14 @@ async function fetchLiveAds(accountId) {
 }
 
 // ─────────────────────────────────────────────
-// 8) 에러 처리 함수
+// 9) 에러 처리 함수
 // ─────────────────────────────────────────────
 function showError(message) {
     console.error('🚨 에러:', message);
 }
 
 // ─────────────────────────────────────────────
-// 9) 필터 이벤트 핸들러 (웹버전과 동일)
+// 10) 필터 이벤트 핸들러 (웹버전과 동일)
 // ─────────────────────────────────────────────
 function setupFilters() {
     const companySelect = document.getElementById('accountFilter');
@@ -342,7 +375,7 @@ function setupFilters() {
 }
 
 // ─────────────────────────────────────────────
-// 10) 초기화 함수
+// 11) 초기화 함수
 // ─────────────────────────────────────────────
 function initMobileDashboard() {
     console.log('🚀 모바일 대시보드 초기화 시작...');
@@ -355,12 +388,12 @@ function initMobileDashboard() {
 }
 
 // ─────────────────────────────────────────────
-// 11) DOM 로드 시 초기화
+// 12) DOM 로드 시 초기화
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', initMobileDashboard);
 
 // ─────────────────────────────────────────────
-// 12) 데이터 렌더링 함수 (요구사항에 맞게 구현)
+// 13) 데이터 렌더링 함수 (요구사항에 맞게 구현)
 // ─────────────────────────────────────────────
 function renderMobileData(data) {
     console.log('🎨 모바일 데이터 렌더링 시작...');
@@ -466,11 +499,14 @@ function renderMetaAds(metaAds) {
         return;
     }
     
-    metaAds.forEach(row => {
+    // 모바일용 데이터 처리
+    const processedMetaAds = processMetaAdsForMobile(metaAds);
+    
+    processedMetaAds.forEach(row => {
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
-            <td class="text-truncate">${row.company_name || '-'}</td>
-            <td class="text-truncate">-</td>
+            <td class="text-truncate">${row.campaign_name || '-'}</td>
+            <td class="text-truncate">${row.ad_name || '-'}</td>
             <td class="text-right">${formatCurrency(row.total_spend || 0)}</td>
             <td class="text-right">${formatCurrency(row.cpc || 0)}</td>
             <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
@@ -522,8 +558,11 @@ function renderMetaAdsByAccount(adsData) {
         return;
     }
     
+    // 모바일용 데이터 처리
+    const processedAdsData = processMetaAdsForMobile(adsData);
+    
     // 광고별 성과 데이터 렌더링
-    adsData.forEach(row => {
+    processedAdsData.forEach(row => {
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
             <td class="text-truncate">${row.campaign_name || '-'}</td>
@@ -537,11 +576,11 @@ function renderMetaAdsByAccount(adsData) {
     });
     
     // 총합 로우 추가
-    if (adsData.length > 0) {
-        const totalSpend = adsData.reduce((sum, row) => sum + (row.spend || 0), 0);
-        const totalPurchases = adsData.reduce((sum, row) => sum + (row.purchases || 0), 0);
-        const totalCpc = adsData.reduce((sum, row) => sum + (row.cpc || 0), 0);
-        const avgRoas = adsData.reduce((sum, row) => sum + (row.roas || 0), 0) / adsData.length;
+    if (processedAdsData.length > 0) {
+        const totalSpend = processedAdsData.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const totalPurchases = processedAdsData.reduce((sum, row) => sum + (row.purchases || 0), 0);
+        const totalCpc = processedAdsData.reduce((sum, row) => sum + (row.cpc || 0), 0);
+        const avgRoas = processedAdsData.reduce((sum, row) => sum + (row.roas || 0), 0) / processedAdsData.length;
         
         const totalRow = document.createElement('tr');
         totalRow.className = 'bg-gray-50 font-semibold';
@@ -601,7 +640,7 @@ function hideLiveAdsSection() {
 }
 
 // ─────────────────────────────────────────────
-// 13) 디버깅용 전역 함수 (개발용)
+// 14) 디버깅용 전역 함수 (개발용)
 // ─────────────────────────────────────────────
 window.mobileDashboard = {
     fetchData: fetchMobileData,
@@ -610,5 +649,6 @@ window.mobileDashboard = {
     renderData: renderMobileData,
     fetchMetaAccounts: fetchMetaAccounts,
     fetchMetaAdsByAccount: fetchMetaAdsByAccount,
-    fetchLiveAds: fetchLiveAds
+    fetchLiveAds: fetchLiveAds,
+    processMetaAdsForMobile: processMetaAdsForMobile
 }; 

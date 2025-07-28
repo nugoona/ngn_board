@@ -1,6 +1,7 @@
 # File: ngn_wep/dashboard/handlers/mobile_handler.py
 import time
 import datetime
+import re
 from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 from functools import wraps
 from google.cloud import bigquery
@@ -55,13 +56,46 @@ def get_start_end_dates(period, start_date=None, end_date=None):
             (now_kst.replace(day=1) - datetime.timedelta(days=1)).replace(day=1).strftime("%Y-%m-%d"),
             (now_kst.replace(day=1) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         ),
-        "custom": (start_date, end_date) if start_date and end_date else (now_kst.strftime("%Y-%m-%d"), now_kst.strftime("%Y-%m-%d"))
+        "manual": (start_date, end_date) if start_date and end_date else (now_kst.strftime("%Y-%m-%d"), now_kst.strftime("%Y-%m-%d"))
     }
 
     return date_map.get(period, date_map["today"])
 
 # ─────────────────────────────────────────────
-# 4) 모바일 대시보드 라우트
+# 4) 메타 광고 데이터 처리 함수 (모바일 전용)
+# ─────────────────────────────────────────────
+def process_meta_ads_for_mobile(meta_ads_data):
+    """메타 광고 데이터를 모바일용으로 처리"""
+    processed_data = []
+    
+    for row in meta_ads_data:
+        processed_row = row.copy()
+        
+        # 캠페인명 처리: "전환", "도달", "유입" 키워드만 추출
+        campaign_name = row.get('campaign_name', '')
+        if campaign_name:
+            if '전환' in campaign_name:
+                processed_row['campaign_name'] = '전환'
+            elif '도달' in campaign_name:
+                processed_row['campaign_name'] = '도달'
+            elif '유입' in campaign_name:
+                processed_row['campaign_name'] = '유입'
+            else:
+                processed_row['campaign_name'] = campaign_name
+        
+        # 광고명 처리: [ ] 부분 제거
+        ad_name = row.get('ad_name', '')
+        if ad_name:
+            # [ ] 패턴을 모두 제거
+            cleaned_ad_name = re.sub(r'\[[^\]]*\]', '', ad_name).strip()
+            processed_row['ad_name'] = cleaned_ad_name
+        
+        processed_data.append(processed_row)
+    
+    return processed_data
+
+# ─────────────────────────────────────────────
+# 5) 모바일 대시보드 라우트
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/dashboard")
 @login_required
@@ -73,7 +107,7 @@ def dashboard():
                          now=datetime.datetime.now())
 
 # ─────────────────────────────────────────────
-# 5) 모바일 데이터 API (웹버전과 동일한 구조, 데이터만 축소)
+# 6) 모바일 데이터 API (웹버전과 동일한 구조, 데이터만 축소)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_data", methods=["POST"])
 @login_required
@@ -173,11 +207,13 @@ def get_data():
             print(f"[MOBILE] ❌ GA4 Source Summary 오류: {e}")
             response_data["ga4_source_summary"] = []
 
-        # 4. Meta Ads (상위 10개만)
+        # 4. Meta Ads (상위 10개만, 모바일용 처리)
         try:
             print(f"[MOBILE] 🔄 Meta Ads 호출 시작...")
             meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
-            response_data["meta_ads"] = meta_data[:10]  # 상위 10개만
+            # 모바일용 데이터 처리
+            processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
+            response_data["meta_ads"] = processed_meta_data
             print(f"[MOBILE] 📊 Meta Ads 결과: {len(response_data['meta_ads'])}개")
         except Exception as e:
             print(f"[MOBILE] ❌ Meta Ads 오류: {e}")
@@ -196,7 +232,7 @@ def get_data():
         }), 500
 
 # ─────────────────────────────────────────────
-# 6) 메타 광고 계정 목록 API (웹버전과 동일)
+# 7) 메타 광고 계정 목록 API (웹버전과 동일)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_meta_accounts", methods=["POST"])
 @login_required
@@ -230,7 +266,7 @@ def get_meta_accounts():
         }), 500
 
 # ─────────────────────────────────────────────
-# 7) 메타 광고별 성과 API (광고 탭 기준)
+# 8) 메타 광고별 성과 API (광고 탭 기준)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_meta_ads_by_account", methods=["POST"])
 @login_required
@@ -258,9 +294,12 @@ def get_meta_ads_by_account():
             account_id=account_id
         )
         
+        # 모바일용 데이터 처리
+        processed_ads_data = process_meta_ads_for_mobile(ads_data[:10])
+        
         return jsonify({
             "status": "success",
-            "meta_ads_by_account": ads_data[:10]  # 상위 10개만
+            "meta_ads_by_account": processed_ads_data
         })
         
     except Exception as e:
@@ -271,7 +310,7 @@ def get_meta_ads_by_account():
         }), 500
 
 # ─────────────────────────────────────────────
-# 8) LIVE 광고 미리보기 API (웹버전과 동일)
+# 9) LIVE 광고 미리보기 API (웹버전과 동일)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_live_ads", methods=["POST"])
 @login_required

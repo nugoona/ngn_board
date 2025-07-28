@@ -13,11 +13,6 @@ let selectedMetaAccount = null;
 // ─────────────────────────────────────────────
 function formatNumber(num) {
     if (num === null || num === undefined) return '--';
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
     return num.toLocaleString();
 }
 
@@ -294,12 +289,13 @@ async function fetchLiveAds(accountId) {
     if (!accountId) return;
     
     try {
-        const response = await fetch('/m/get_live_ads', {
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                data_type: 'meta_ads_preview_list',
                 account_id: accountId
             })
         });
@@ -311,12 +307,17 @@ async function fetchLiveAds(accountId) {
         const data = await response.json();
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
-        if (data.status === 'success' && data.live_ads) {
-            renderLiveAds(data.live_ads);
+        if (data.status === 'success' && data.meta_ads_preview_list) {
+            renderLiveAds(data.meta_ads_preview_list);
+            showLiveAdsSection();
+        } else {
+            console.warn('🔍 LIVE 광고 미리보기 데이터 없음');
+            hideLiveAdsSection();
         }
         
     } catch (error) {
         console.error('❌ LIVE 광고 미리보기 로딩 실패:', error);
+        hideLiveAdsSection();
     }
 }
 
@@ -718,19 +719,28 @@ function renderLiveAds(liveAds) {
     liveAdsScroll.innerHTML = '';
     
     if (liveAds.length === 0) {
-        liveAdsScroll.innerHTML = '<div class="text-center">데이터가 없습니다</div>';
+        liveAdsScroll.innerHTML = '<div class="text-center">미리볼 광고가 없습니다.</div>';
         return;
     }
     
     liveAds.forEach(ad => {
         const adCard = document.createElement('div');
         adCard.className = 'live-ad-card';
+        
+        // 인스타그램 스타일 카드 생성
+        const instagramAccName = ad.instagram_acc_name || 'No Name';
+        const message = ad.message || '(문구 없음)';
+        const firstLine = message.split('\n')[0];
+        const shortCaption = `${instagramAccName} ${firstLine}...`;
+        
         adCard.innerHTML = `
             <div class="live-ad-image">
                 <img src="${ad.image_url || ''}" alt="광고" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
+                ${ad.is_video ? '<div class="play-overlay" style="display: flex; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"><svg viewBox="0 0 100 100" style="width: 40px; height: 40px;"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : ''}
             </div>
             <div class="live-ad-content">
-                <div class="live-ad-title">${ad.headline || ad.ad_name || '광고 제목'}</div>
+                <div class="live-ad-title" style="font-size: 12px; color: #666; margin-bottom: 4px;">${shortCaption}</div>
+                <div style="font-size: 11px; color: #999;">${ad.link || '#'}</div>
             </div>
         `;
         liveAdsScroll.appendChild(adCard);

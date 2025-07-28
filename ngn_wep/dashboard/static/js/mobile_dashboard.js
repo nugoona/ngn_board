@@ -688,8 +688,9 @@ function renderPerformanceSummary(performanceData, totalOrders) {
     // 광고 성과 요약 KPI 값들 설정
     document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
     document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
-    // avg_opo는 실제로 avg_cpc 필드입니다
-    document.getElementById('cpc').textContent = formatCurrency(performanceData.avg_opo || performanceData.avg_cpc || 0);
+    // avg_opo는 실제로 avg_cpc 필드입니다 - CPC는 정수로 표시
+    const cpcValue = performanceData.avg_opo || performanceData.avg_cpc || 0;
+    document.getElementById('cpc').textContent = formatCurrency(Math.round(cpcValue));
     document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
     
     // 광고 성과 요약 제목에 광고 미디어 정보 추가

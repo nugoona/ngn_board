@@ -253,6 +253,8 @@ async function fetchMetaAdsByAccount(accountId) {
         const companyName = companySelect ? companySelect.value : 'all';
         
         console.log('📊 메타 광고 데이터 요청 파라미터:', {
+            data_type: 'meta_ads_insight_table',
+            level: 'ad',
             account_id: accountId,
             company_name: companyName,
             period: period,
@@ -260,12 +262,15 @@ async function fetchMetaAdsByAccount(accountId) {
             end_date: endDateValue
         });
         
-        const response = await fetch('/m/get_meta_ads_by_account', {
+        // 웹버전과 동일한 엔드포인트 사용
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                data_type: 'meta_ads_insight_table',
+                level: 'ad',
                 account_id: accountId,
                 company_name: companyName,
                 period: period,
@@ -281,9 +286,9 @@ async function fetchMetaAdsByAccount(accountId) {
         const data = await response.json();
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_by_account) {
-            console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_by_account);
-            renderMetaAdsByAccount(data.meta_ads_by_account);
+        if (data.status === 'success' && data.meta_ads_insight_table) {
+            console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_insight_table);
+            renderMetaAdsByAccount(data.meta_ads_insight_table);
         } else {
             console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
         }

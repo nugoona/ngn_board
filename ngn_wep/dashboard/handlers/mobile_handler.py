@@ -182,23 +182,26 @@ def get_data():
             print(f"[MOBILE] ❌ Performance Summary 오류: {e}")
             response_data["performance_summary"] = []
 
-        # 2. Cafe24 Product Sales (상위 5개만)
+        # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
         try:
             print(f"[MOBILE] 🔄 Cafe24 Product Sales 호출 시작...")
-            product_data = get_cafe24_product_sales(
-                company_name, period, start_date, end_date, 
-                "summary", "desc", 5, 1, user_id  # 상위 5개만
+            # 웹버전과 동일한 파라미터 순서: company_name, period, start_date, end_date, sort_by, limit, page, user_id
+            result = get_cafe24_product_sales(
+                company_name, period, start_date, end_date,
+                sort_by="item_product_sales", limit=5, page=1, user_id=user_id
             )
-            response_data["cafe24_product_sales"] = product_data.get("rows", [])[:5]
+            response_data["cafe24_product_sales"] = result.get("rows", [])[:5]
             print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개")
         except Exception as e:
             print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
             response_data["cafe24_product_sales"] = []
 
-        # 3. GA4 Source Summary (상위 5개만, not set 제외)
+        # 3. GA4 Source Summary (웹버전과 동일한 호출 방식)
         try:
             print(f"[MOBILE] 🔄 GA4 Source Summary 호출 시작...")
-            ga4_data = get_ga4_source_summary(company_name, start_date, end_date, user_id)
+            # 웹버전과 동일한 파라미터: company_name, start_date, end_date, limit, _cache_buster
+            cache_buster = data.get('_cache_buster')
+            ga4_data = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
             # not set 제외하고 상위 5개만
             filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set"][:5]
             response_data["ga4_source_summary"] = filtered_sources

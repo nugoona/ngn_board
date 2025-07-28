@@ -325,6 +325,14 @@ function setupFilters() {
     if (companySelect) {
         companySelect.addEventListener('change', () => {
             console.log('🏢 업체 변경:', companySelect.value);
+            
+            // 메타 광고 계정 선택 초기화
+            selectedMetaAccount = null;
+            if (metaAccountSelect) {
+                metaAccountSelect.value = '';
+            }
+            hideLiveAdsSection();
+            
             fetchMobileData(); // API 재호출
             fetchMetaAccounts(); // 메타 광고 계정 목록 업데이트
         });
@@ -479,7 +487,7 @@ function renderGa4SourceSummary(sources) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="text-truncate">${source.source || '-'}</td>
-            <td class="text-right">${formatNumber(source.visits || 0)}</td>
+            <td class="text-right">${formatNumber(source.total_users || 0)}</td>
         `;
         tbody.appendChild(row);
     });

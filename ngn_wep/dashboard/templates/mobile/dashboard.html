@@ -279,11 +279,13 @@
         /* 테이블 스타일 - 모던한 디자인 */
         .table-container {
             overflow-x: hidden;
-            width: 100%;
-            max-width: 100%;
+            width: calc(100% - 4px);  /* 패딩 고려한 정확한 너비 */
+            max-width: calc(100% - 4px);
             box-sizing: border-box;
             border-radius: 12px;
             overflow: hidden;
+            padding: 0 2px;  /* 좌우 2px 패딩 */
+            margin: 0 auto;  /* 중앙 정렬 */
         }
 
         .data-table {

@@ -314,39 +314,50 @@
             background: var(--bg-primary);
         }
 
-        /* 카페24 상품판매 테이블 - 컬럼 너비 자동 분배 */
+        /* 카페24 상품판매 테이블 - 고정 레이아웃으로 컬럼 너비 지정 */
         .cafe24-products-table {
-            table-layout: auto;
+            table-layout: fixed;
+            width: 100%;
         }
 
         .cafe24-products-table th:nth-child(1),
         .cafe24-products-table td:nth-child(1) {
-            width: 60%; /* 상품명 - 더 많은 공간 */
+            width: 50%; /* 상품명 - 말줄임표로 자름 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .cafe24-products-table th:nth-child(2),
         .cafe24-products-table td:nth-child(2) {
-            width: 20%; /* 총판매량 */
+            width: 25%; /* 총판매량 */
+            text-align: right;
         }
 
         .cafe24-products-table th:nth-child(3),
         .cafe24-products-table td:nth-child(3) {
-            width: 20%; /* 총매출 */
+            width: 25%; /* 총매출 */
+            text-align: right;
         }
 
         /* GA4 소스별 유입수 테이블 */
         .ga4-sources-table {
-            table-layout: auto;
+            table-layout: fixed;
+            width: 100%;
         }
 
         .ga4-sources-table th:nth-child(1),
         .ga4-sources-table td:nth-child(1) {
-            width: 70%; /* 소스명 */
+            width: 60%; /* 소스명 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .ga4-sources-table th:nth-child(2),
         .ga4-sources-table td:nth-child(2) {
-            width: 30%; /* 유입수 */
+            width: 40%; /* 유입수 */
+            text-align: right;
         }
 
         .data-table th {
@@ -377,6 +388,7 @@
         .product-name-cell {
             position: relative;
             cursor: pointer;
+            user-select: none;
         }
 
         .product-name-cell:hover::after,
@@ -396,6 +408,11 @@
             max-width: 300px;
             z-index: 1000;
             box-shadow: var(--shadow-lg);
+        }
+
+        /* 터치 시 시각적 피드백 */
+        .product-name-cell:active {
+            background-color: var(--bg-secondary);
         }
 
         .data-table tr:hover td {

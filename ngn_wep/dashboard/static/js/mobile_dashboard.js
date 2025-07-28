@@ -729,15 +729,19 @@ function renderCafe24ProductSales(products, totalCount = 0) {
         `;
         
         // 상품명 터치 시 전체 텍스트 표시 (모바일 전용)
-        const productNameCell = row.querySelector('td[title]');
-        if (productNameCell && productNameCell.title !== productNameCell.textContent) {
-            productNameCell.classList.add('product-name-cell');
-            productNameCell.setAttribute('data-full-text', productNameCell.title);
-            
-            productNameCell.addEventListener('click', function() {
-                // 터치 시 전체 텍스트를 토스트로 표시
-                showProductNameToast(this.title);
-            });
+        const productNameCell = row.querySelector('td:first-child');
+        if (productNameCell) {
+            const productName = productNameCell.textContent.trim();
+            if (productName && productName !== '-') {
+                productNameCell.classList.add('product-name-cell');
+                productNameCell.setAttribute('data-full-text', productName);
+                productNameCell.setAttribute('title', productName);
+                
+                productNameCell.addEventListener('click', function() {
+                    // 터치 시 전체 텍스트를 토스트로 표시
+                    showProductNameToast(productName);
+                });
+            }
         }
         
         tbody.appendChild(row);

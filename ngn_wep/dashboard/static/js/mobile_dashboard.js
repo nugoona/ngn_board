@@ -252,6 +252,14 @@ async function fetchMetaAdsByAccount(accountId) {
         const endDateValue = endDate ? endDate.value : '';
         const companyName = companySelect ? companySelect.value : 'all';
         
+        console.log('📊 메타 광고 데이터 요청 파라미터:', {
+            account_id: accountId,
+            company_name: companyName,
+            period: period,
+            start_date: startDateValue,
+            end_date: endDateValue
+        });
+        
         const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
             headers: {
@@ -274,7 +282,10 @@ async function fetchMetaAdsByAccount(accountId) {
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
         if (data.status === 'success' && data.meta_ads_by_account) {
+            console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_by_account);
             renderMetaAdsByAccount(data.meta_ads_by_account);
+        } else {
+            console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
         }
         
     } catch (error) {
@@ -357,7 +368,9 @@ function setupFilters() {
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
+                console.log('🔄 기간 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
             }
         });
     }
@@ -374,6 +387,12 @@ function setupFilters() {
             }
             hideLiveAdsSection();
             
+            // 메타 광고 테이블 초기화
+            const metaAdsTable = document.getElementById('meta-ads-table');
+            if (metaAdsTable) {
+                metaAdsTable.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+            }
+            
             fetchMobileData(); // API 재호출
             fetchMetaAccounts(); // 메타 광고 계정 목록 업데이트
         });
@@ -387,7 +406,9 @@ function setupFilters() {
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
+                console.log('🔄 시작일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
             }
         });
     }
@@ -399,7 +420,9 @@ function setupFilters() {
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
+                console.log('🔄 종료일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
             }
         });
     }
@@ -413,11 +436,19 @@ function setupFilters() {
             selectedMetaAccount = accountId;
             
             if (accountId) {
+                console.log('🔄 메타 광고 계정 선택으로 인한 데이터 로딩:', accountId);
                 fetchMetaAdsByAccount(accountId);
                 fetchLiveAds(accountId);
                 showLiveAdsSection();
             } else {
+                console.log('🔄 메타 광고 계정 선택 해제');
                 hideLiveAdsSection();
+                
+                // 메타 광고 테이블 초기화
+                const metaAdsTable = document.getElementById('meta-ads-table');
+                if (metaAdsTable) {
+                    metaAdsTable.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+                }
             }
         });
     }

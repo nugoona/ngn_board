@@ -75,7 +75,26 @@ def is_mobile_device():
     """모바일 디바이스인지 확인"""
     user_agent = request.headers.get('User-Agent', '').lower()
     mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone']
-    return any(keyword in user_agent for keyword in mobile_keywords)
+    
+    # 디버깅을 위한 로그 추가
+    print(f"[MOBILE DETECTION] User-Agent: {user_agent}")
+    print(f"[MOBILE DETECTION] Mobile keywords found: {[kw for kw in mobile_keywords if kw in user_agent]}")
+    
+    # 화면 크기 기반 추가 감지 (쿼리 파라미터로)
+    screen_width = request.args.get('screen_width')
+    if screen_width:
+        try:
+            width = int(screen_width)
+            if width <= 768:  # 모바일 기준 너비
+                print(f"[MOBILE DETECTION] Screen width detected: {width}px (mobile)")
+                return True
+        except ValueError:
+            pass
+    
+    # User-Agent 기반 감지
+    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    print(f"[MOBILE DETECTION] Result: {is_mobile}")
+    return is_mobile
 
 # ─────────────────────────────────────────────
 # 7) 라우트 정의
@@ -85,8 +104,11 @@ def index():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
     
-    # 모바일 디바이스인 경우 모바일 버전으로 리다이렉트
-    if is_mobile_device():
+    # 강제 모바일 버전 요청 확인
+    force_mobile = request.args.get('mobile') == 'true'
+    
+    # 모바일 디바이스인 경우 또는 강제 모바일 요청인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device() or force_mobile:
         return redirect(url_for("mobile.dashboard"))
     
     return render_template("index.html",
@@ -97,8 +119,11 @@ def ads_page():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
     
-    # 모바일 디바이스인 경우 모바일 버전으로 리다이렉트
-    if is_mobile_device():
+    # 강제 모바일 버전 요청 확인
+    force_mobile = request.args.get('mobile') == 'true'
+    
+    # 모바일 디바이스인 경우 또는 강제 모바일 요청인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device() or force_mobile:
         return redirect(url_for("mobile.dashboard"))
     
     return render_template("ads_page.html",

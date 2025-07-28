@@ -222,8 +222,14 @@ def get_data():
                     row.get("updated_at")
                     for row in performance_data if row.get("updated_at")
                 ], default=None)
+                
+                # 디버깅: 실제 updated_at 값들 출력
+                print(f"[MOBILE] 🔍 Performance Data의 updated_at 값들:")
+                for i, row in enumerate(performance_data):
+                    print(f"  Row {i}: updated_at = {row.get('updated_at')} (type: {type(row.get('updated_at'))})")
+                
                 response_data["latest_update"] = latest_update
-                print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']}")
+                print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']} (type: {type(response_data['latest_update'])})")
             else:
                 response_data["performance_summary"] = []
                 print(f"[MOBILE] ⚠️ Performance Summary 데이터 없음")

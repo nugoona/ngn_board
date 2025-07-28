@@ -149,7 +149,24 @@ async function fetchMobileData() {
         const updatedAtText = document.getElementById('updatedAtText');
         if (updatedAtText && data.latest_update) {
             try {
-                const utc = new Date(data.latest_update);
+                console.log('🔍 원본 latest_update:', data.latest_update);
+                
+                // 다양한 날짜 형식 처리
+                let dateStr = data.latest_update;
+                
+                // 2025-07-28-22-11 형식인 경우 처리
+                if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
+                    const parts = dateStr.split('-');
+                    const year = parts[0];
+                    const month = parts[1];
+                    const day = parts[2];
+                    const hour = parts[3];
+                    const minute = parts[4];
+                    dateStr = `${year}-${month}-${day}T${hour}:${minute}:00`;
+                    console.log('🔧 변환된 날짜 형식:', dateStr);
+                }
+                
+                const utc = new Date(dateStr);
                 
                 // 유효한 날짜인지 확인
                 if (isNaN(utc.getTime())) {
@@ -171,6 +188,7 @@ async function fetchMobileData() {
                 
                 const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
                 updatedAtText.textContent = `최종 업데이트: ${formatted}`;
+                console.log('✅ 업데이트 시간 표시 완료:', formatted);
             } catch (error) {
                 console.error('❌ 업데이트 시간 처리 오류:', error);
                 updatedAtText.textContent = '최종 업데이트: -';

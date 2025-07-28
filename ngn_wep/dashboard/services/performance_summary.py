@@ -61,9 +61,18 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
               COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0) AS avg_cpc,
               COALESCE(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2), 0) AS click_through_rate,
               COALESCE(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2), 0) AS conversion_rate
-          FROM `winged-precept-443218-v8.ngn_dataset.ads_performance` ap
-          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` ci
-              ON ap.account_name = ci.meta_acc
+          FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` ap
+          LEFT JOIN (
+              SELECT * EXCEPT(rn) FROM (
+                  SELECT account_id,
+                         account_name,
+                         company_name,
+                         ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
+                  FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
+              )
+              WHERE rn = 1
+          ) AS acc_latest
+          ON ap.account_id = acc_latest.account_id
           WHERE ap.date BETWEEN @start_date AND @end_date
             AND {company_filter}
             AND ap.date IS NOT NULL
@@ -108,6 +117,44 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
     """
 
     print("[DEBUG] performance_summary (총 광고 성과: 메타 계정 테이블 + 사이트 성과: performance_summary_ngn) Query:\n", query)
+
+    # 디버그: 메타 광고 계정 테이블에서 구매 데이터 확인
+    debug_query = f"""
+      SELECT 
+        COUNT(*) as total_rows,
+        SUM(CASE WHEN purchases > 0 THEN 1 ELSE 0 END) as rows_with_purchases,
+        SUM(CASE WHEN purchase_value > 0 THEN 1 ELSE 0 END) as rows_with_purchase_value,
+        SUM(purchases) as total_purchases,
+        SUM(purchase_value) as total_purchase_value
+      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` ap
+      LEFT JOIN (
+          SELECT * EXCEPT(rn) FROM (
+              SELECT account_id,
+                     account_name,
+                     company_name,
+                     ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
+              FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
+          )
+          WHERE rn = 1
+      ) AS acc_latest
+      ON ap.account_id = acc_latest.account_id
+      WHERE ap.date BETWEEN @start_date AND @end_date
+        AND {company_filter}
+        AND ap.date IS NOT NULL
+    """
+    
+    try:
+        client = get_bigquery_client()
+        debug_result = client.query(debug_query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
+        debug_row = next(debug_result)
+        print(f"[DEBUG] 메타 광고 계정 테이블 구매 데이터 확인:")
+        print(f"  전체 행 수: {debug_row.get('total_rows', 0)}")
+        print(f"  구매가 있는 행 수: {debug_row.get('rows_with_purchases', 0)}")
+        print(f"  구매액이 있는 행 수: {debug_row.get('rows_with_purchase_value', 0)}")
+        print(f"  총 구매 수: {debug_row.get('total_purchases', 0)}")
+        print(f"  총 구매액: {debug_row.get('total_purchase_value', 0)}")
+    except Exception as e:
+        print(f"[DEBUG] 메타 광고 계정 테이블 디버그 쿼리 오류: {e}")
 
     try:
         client = get_bigquery_client()

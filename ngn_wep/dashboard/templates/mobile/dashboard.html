@@ -9,22 +9,28 @@
     <title>NGN 모바일 대시보드</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Heroicons -->
     <script src="https://unpkg.com/@heroicons/react@2.0.18/24/outline/esm/index.js"></script>
     <style>
         :root {
-            /* Light Mode Colors */
+            /* Light Mode Colors - 웹버전과 동일한 색상 팔레트 */
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
             --primary-50: #f0f9ff;
             --primary-100: #e0f2fe;
             --primary-200: #bae6fd;
             --primary-300: #7dd3fc;
             --primary-400: #38bdf8;
-            --primary-500: #0ea5e9;
-            --primary-600: #0284c7;
-            --primary-700: #0369a1;
-            --primary-800: #075985;
-            --primary-900: #0c4a6e;
+            --primary-500: #6366f1;  /* 웹버전과 동일 */
+            --primary-600: #4f46e5;  /* 웹버전과 동일 */
+            --primary-700: #4338ca;
+            --primary-800: #3730a3;
+            --primary-900: #312e81;
             
             --gray-50: #f8fafc;
             --gray-100: #f1f5f9;
@@ -40,6 +46,12 @@
             --success-500: #10b981;
             --warning-500: #f59e0b;
             --error-500: #ef4444;
+            
+            /* 웹버전과 동일한 그림자 시스템 */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
             
             /* Dark Mode Colors */
             --dark-bg: #0f172a;
@@ -69,7 +81,7 @@
 
         * {
             box-sizing: border-box;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
         }
         
         body {
@@ -127,9 +139,9 @@
             white-space: nowrap;
         }
 
-        /* 필터 스타일 - 모던한 디자인 */
+        /* 필터 스타일 - 웹버전과 동일한 디자인 */
         .filter-section {
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             padding: 16px;
             border-bottom: 1px solid var(--border-color);
             position: fixed;
@@ -137,7 +149,7 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-lg);
             backdrop-filter: blur(10px);
         }
 
@@ -217,13 +229,13 @@
             transform: translateY(-1px);
         }
 
-        /* 섹션 스타일 - 모던한 카드 디자인 */
+        /* 섹션 스타일 - 웹버전과 동일한 카드 디자인 */
         .section {
             background: var(--bg-primary);
             margin: 8px;
-            border-radius: 16px;  /* 둥근 모서리 복구 */
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-lg);
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             width: calc(100% - 16px);
@@ -232,7 +244,7 @@
 
         .section:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            box-shadow: var(--shadow-xl);
         }
 
         /* KPI 카드 스타일 */
@@ -245,12 +257,13 @@
         .kpi-card {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
             padding: 20px;
-            border-radius: 16px;  /* 더 둥근 모서리로 업그레이드 */
+            border-radius: 16px;
             text-align: center;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--shadow-md);
         }
 
         .kpi-card::before {
@@ -265,7 +278,7 @@
 
         .kpi-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-lg);
         }
 
         .kpi-label {
@@ -303,21 +316,21 @@
         }
 
         .data-table th {
-            background: #f9fafb;
-            padding: 8px 4px;
+            background: var(--bg-tertiary);
+            padding: 12px 16px;
             text-align: left;
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .data-table td {
-            padding: 16px 12px;
-            font-size: 13px;
+            padding: 16px;
+            font-size: 14px;
             color: var(--text-primary);
             border-bottom: 1px solid var(--border-color);
             transition: background 0.2s ease;
@@ -335,15 +348,15 @@
             text-align: center;
         }
 
-        /* 섹션 헤더 중앙 정렬 */
+        /* 섹션 헤더 - 웹버전과 동일한 스타일 */
         .section-header {
             padding: 20px 20px 16px;
             border-bottom: 1px solid var(--border-color);
             font-weight: 700;
             font-size: 18px;
-            color: white; /* 흰색 텍스트 */
-            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%); /* 파란색 배경 */
-            text-align: center; /* 섹션 제목 중앙 정렬 */
+            color: white;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            text-align: center;
         }
 
         .section-content {
@@ -949,15 +962,12 @@
         <div class="section">
             <div class="section-header">메타 광고 성과</div>
             <div class="section-content">
-                <!-- 계정 선택 및 안내 -->
+                <!-- 계정 선택 -->
                 <div class="account-selection-container">
                     <div class="account-select-wrapper">
                         <select id="metaAccountSelector" class="meta-account-select">
-                            <option value="">계정을 선택해주세요</option>
+                            <option value="" class="placeholder-option">계정을 선택해주세요</option>
                         </select>
-                    </div>
-                    <div class="account-notice">
-                        <span class="notice-text">계정을 선택하면 광고 성과 데이터가 표시됩니다</span>
                     </div>
                 </div>
                 

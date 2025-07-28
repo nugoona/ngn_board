@@ -48,20 +48,29 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
     # ✅ 총 광고 성과: 메타 광고 계정 테이블에서 직접 조회
     # ✅ 사이트 성과 요약: performance_summary_ngn 테이블에서 조회
     query = f"""
-      WITH meta_ads_data AS (
+      WITH meta_ads_summary AS (
           -- 총 광고 성과: 메타 광고 계정 테이블에서 직접 조회
           SELECT
-              ap.*,
-              COALESCE(LOWER(ci.company_name), LOWER(ap.account_name), 'unknown') AS company_name,
-              ROW_NUMBER() OVER (PARTITION BY ap.account_name, ap.date ORDER BY ap.spend DESC) AS row_num
+              COALESCE(SUM(spend), 0) AS ad_spend,
+              COALESCE(SUM(impressions), 0) AS total_impressions,
+              COALESCE(SUM(clicks), 0) AS total_clicks,
+              COALESCE(SUM(purchases), 0) AS total_purchases,
+              COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
+              COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(purchases), 0), 2), 0) AS avg_order_value,
+              COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(spend), 0) * 100, 2), 0) AS roas_percentage,
+              COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0) AS avg_cpc,
+              COALESCE(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2), 0) AS click_through_rate,
+              COALESCE(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2), 0) AS conversion_rate
           FROM `winged-precept-443218-v8.ngn_dataset.ads_performance` ap
           LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` ci
               ON ap.account_name = ci.meta_acc
+          WHERE ap.date BETWEEN @start_date AND @end_date
+            AND {company_filter}
+            AND ap.date IS NOT NULL
       ),
-      site_performance_data AS (
+      site_performance AS (
           -- 사이트 성과 요약: performance_summary_ngn 테이블에서 조회
           SELECT
-              company_name,
               SUM(site_revenue) AS site_revenue,
               SUM(total_visitors) AS total_visitors,
               SUM(product_views) AS product_views,
@@ -70,38 +79,32 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
           FROM `winged-precept-443218-v8.ngn_dataset.performance_summary_ngn`
           WHERE {company_filter}
             AND DATE(date) BETWEEN @start_date AND @end_date
-          GROUP BY company_name
       )
       SELECT
         FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
         'meta' AS ad_media,
         -- 총 광고 성과 (메타 광고 계정 테이블에서)
-        COALESCE(SUM(m.spend), 0) AS ad_spend,
-        COALESCE(SUM(m.impressions), 0) AS total_impressions,
-        COALESCE(SUM(m.clicks), 0) AS total_clicks,
-        COALESCE(SUM(m.purchases), 0) AS total_purchases,
-        COALESCE(SUM(m.purchase_value), 0) AS total_purchase_value,
-        COALESCE(ROUND(SUM(m.purchase_value) / NULLIF(SUM(m.purchases), 0), 2), 0) AS avg_order_value,
-        COALESCE(ROUND(SUM(m.purchase_value) / NULLIF(SUM(m.spend), 0) * 100, 2), 0) AS roas_percentage,
-        COALESCE(ROUND(SUM(m.spend) / NULLIF(SUM(m.clicks), 0), 2), 0) AS avg_cpc,
-        COALESCE(ROUND(SUM(m.clicks) / NULLIF(SUM(m.impressions), 0) * 100, 2), 0) AS click_through_rate,
-        COALESCE(ROUND(SUM(m.purchases) / NULLIF(SUM(m.clicks), 0) * 100, 2), 0) AS conversion_rate,
+        m.ad_spend,
+        m.total_impressions,
+        m.total_clicks,
+        m.total_purchases,
+        m.total_purchase_value,
+        m.avg_order_value,
+        m.roas_percentage,
+        m.avg_cpc,
+        m.click_through_rate,
+        m.conversion_rate,
         -- 사이트 성과 요약 (performance_summary_ngn 테이블에서)
         COALESCE(s.site_revenue, 0) AS site_revenue,
         COALESCE(s.total_visitors, 0) AS total_visitors,
         COALESCE(s.product_views, 0) AS product_views,
         COALESCE(s.views_per_visit, 0) AS views_per_visit,
         CASE WHEN COALESCE(s.site_revenue, 0) = 0 THEN 0
-             ELSE ROUND(COALESCE(SUM(m.spend), 0) / s.site_revenue * 100, 2)
+             ELSE ROUND(m.ad_spend / s.site_revenue * 100, 2)
         END AS ad_spend_ratio,
         COALESCE(s.updated_at, CURRENT_TIMESTAMP()) AS updated_at
-      FROM meta_ads_data m
-      LEFT JOIN site_performance_data s ON LOWER(m.company_name) = LOWER(s.company_name)
-      WHERE m.row_num = 1
-        AND m.date BETWEEN @start_date AND @end_date
-        AND {company_filter}
-        AND m.date IS NOT NULL
-      GROUP BY ad_media, s.site_revenue, s.total_visitors, s.product_views, s.views_per_visit, s.updated_at
+      FROM meta_ads_summary m
+      CROSS JOIN site_performance s
     """
 
     print("[DEBUG] performance_summary (총 광고 성과: 메타 계정 테이블 + 사이트 성과: performance_summary_ngn) Query:\n", query)

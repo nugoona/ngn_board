@@ -507,19 +507,11 @@ function renderCafe24ProductSales(products) {
             <td class="text-right">${formatCurrency(salesAmount)}</td>
         `;
         
-        // 상품명 터치 시 전체 텍스트 표시
+        // 상품명 터치 시 전체 텍스트 표시 (모바일 전용)
         const productNameCell = row.querySelector('td[title]');
         if (productNameCell && productNameCell.title !== productNameCell.textContent) {
             productNameCell.addEventListener('click', function() {
-                if (this.style.whiteSpace === 'normal') {
-                    this.style.whiteSpace = 'nowrap';
-                    this.style.overflow = 'hidden';
-                    this.style.textOverflow = 'ellipsis';
-                } else {
-                    this.style.whiteSpace = 'normal';
-                    this.style.overflow = 'visible';
-                    this.style.textOverflow = 'clip';
-                }
+                this.classList.toggle('expanded');
             });
         }
         

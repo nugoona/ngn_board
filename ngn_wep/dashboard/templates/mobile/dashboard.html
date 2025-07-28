@@ -167,9 +167,32 @@
             text-align: right;
         }
 
-        /* 상품명 터치 시 전체 텍스트 표시 */
+        /* 상품명 hover/터치 시 전체 텍스트 표시 */
         .data-table td[title] {
             cursor: pointer;
+            position: relative;
+        }
+
+        /* 데스크톱에서 hover 시 전체 텍스트 표시 */
+        @media (hover: hover) {
+            .data-table td[title]:hover {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                background: #fef3c7;
+                z-index: 10;
+                position: relative;
+            }
+        }
+
+        /* 모바일에서 터치 시 전체 텍스트 표시 */
+        .data-table td[title].expanded {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            background: #fef3c7;
+            z-index: 10;
+            position: relative;
         }
 
         /* 메타 광고 계정 선택 */

@@ -196,6 +196,12 @@ def get_data():
 
         print(f"[MOBILE] 📅 필터 값 - period: {period}, start_date: {start_date}, end_date: {end_date}")
 
+        # ✅ 웹버전과 동일한 서비스 함수 호출, 데이터만 축소
+        response_data = {
+            "status": "success",
+            "last_updated": datetime.datetime.now().isoformat()
+        }
+
         # 1. Performance Summary (웹버전과 동일)
         try:
             print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")

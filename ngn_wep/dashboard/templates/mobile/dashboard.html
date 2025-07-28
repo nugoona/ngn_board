@@ -416,7 +416,7 @@
             text-overflow: ellipsis;
         }
 
-        /* 모바일 메타 광고 테이블 헤더와 데이터 정렬 일치 */
+        /* 모바일 메타 광고 테이블 헤더와 데이터 정렬 일치 - 최고 우선순위 */
         .data-table th.text-right,
         .data-table td.text-right {
             text-align: right !important;
@@ -431,6 +431,8 @@
         .data-table td.text-left {
             text-align: left !important;
         }
+
+
 
         /* 상품명 컬럼 - 터치 시 전체 텍스트 표시 */
         .product-name-cell {
@@ -1125,12 +1127,12 @@
                     <table class="data-table" style="min-width: 600px;">
                         <thead>
                             <tr>
-                                <th class="text-center" style="width: 80px; min-width: 80px;">캠페인</th>
-                                <th class="text-center" style="width: 150px; min-width: 150px;">광고</th>
-                                <th class="text-center" style="width: 80px; min-width: 80px;">지출</th>
-                                <th class="text-center" style="width: 60px; min-width: 60px;">CPC</th>
-                                <th class="text-center" style="width: 60px; min-width: 60px;">구매</th>
-                                <th class="text-center" style="width: 60px; min-width: 60px;">ROAS</th>
+                                <th class="text-left" style="width: 80px; min-width: 80px;">캠페인</th>
+                                <th class="text-left" style="width: 150px; min-width: 150px;">광고</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">지출</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">CPC</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">구매</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">ROAS</th>
                             </tr>
                         </thead>
                         <tbody id="meta-ads-table">

@@ -473,7 +473,8 @@ function renderPerformanceSummary(performanceData, totalOrders) {
     // 사이트 성과 요약 KPI 값들 설정
     document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
     // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
-    document.getElementById('total-visitors').textContent = formatNumber(performanceData.total_visitors || 0);
+    const visitors = performanceData.total_visitors || 0;
+    document.getElementById('total-visitors').textContent = visitors.toLocaleString();
     // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
     const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);

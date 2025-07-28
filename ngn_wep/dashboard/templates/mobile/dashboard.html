@@ -139,9 +139,9 @@
             white-space: nowrap;
         }
 
-        /* 필터 스타일 - 웹버전과 동일한 디자인 */
+        /* 필터 스타일 - 섹션 헤더와 통일된 디자인 */
         .filter-section {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--gray-700);
             padding: 16px;
             border-bottom: 1px solid var(--border-color);
             position: fixed;
@@ -150,7 +150,6 @@
             right: 0;
             z-index: 1000;
             box-shadow: var(--shadow-lg);
-            backdrop-filter: blur(10px);
         }
 
         .filter-row {
@@ -167,11 +166,11 @@
             flex: 1;
             padding: 12px 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;  /* 더 둥근 모서리로 업그레이드 */
+            border-radius: 8px;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            backdrop-filter: blur(10px);
+            background: white;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
         }
 
@@ -190,11 +189,11 @@
             flex: 1;
             padding: 12px 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;  /* 더 둥근 모서리로 업그레이드 */
+            border-radius: 8px;
             font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            backdrop-filter: blur(10px);
+            background: white;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
         }
 
         .update-time {
@@ -212,20 +211,20 @@
         }
 
         .logout-btn {
-            background: rgba(239, 68, 68, 0.9);
+            background: var(--gray-600);
             color: white;
             border: none;
             padding: 8px 16px;
-            border-radius: 12px;  /* 더 둥근 모서리로 업그레이드 */
+            border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-sm);
         }
 
         .logout-btn:hover {
-            background: rgba(220, 38, 38, 0.9);
+            background: var(--gray-500);
             transform: translateY(-1px);
         }
 

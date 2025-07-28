@@ -5,12 +5,13 @@ from flask import Blueprint, render_template, session, redirect, url_for, jsonif
 from functools import wraps
 from google.cloud import bigquery
 
-# 📦 기존 서비스 함수 임포트 (재사용)
+# 📦 기존 서비스 함수 임포트 (웹버전과 동일)
 from ..services.performance_summary import get_performance_summary
 from ..services.cafe24_service import get_cafe24_product_sales
 from ..services.ga4_source_summary import get_ga4_source_summary
 from ..services.meta_ads_service import get_meta_ads_data
 from ..services.meta_ads_insight import get_meta_account_list_filtered
+from ..services.meta_ads_preview import get_meta_ads_preview_list
 
 # ─────────────────────────────────────────────
 # 1) 모바일 블루프린트 생성
@@ -29,10 +30,10 @@ def login_required(f):
     return decorated_function
 
 # ─────────────────────────────────────────────
-# 3) 기존 필터 함수 재사용
+# 3) 기존 필터 함수 재사용 (웹버전과 동일)
 # ─────────────────────────────────────────────
 def get_start_end_dates(period, start_date=None, end_date=None):
-    """ ✅ 필터링 기간을 결정하는 함수 (KST 기준 적용) - 기존과 동일 """
+    """ ✅ 필터링 기간을 결정하는 함수 (KST 기준 적용) - 웹버전과 동일 """
     now_utc = datetime.datetime.utcnow()
     now_kst = now_utc + datetime.timedelta(hours=9)
 
@@ -54,14 +55,6 @@ def get_start_end_dates(period, start_date=None, end_date=None):
             (now_kst.replace(day=1) - datetime.timedelta(days=1)).replace(day=1).strftime("%Y-%m-%d"),
             (now_kst.replace(day=1) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         ),
-        "last30days": (
-            (now_kst - datetime.timedelta(days=30)).strftime("%Y-%m-%d"),
-            (now_kst - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        ),
-        "last90days": (
-            (now_kst - datetime.timedelta(days=90)).strftime("%Y-%m-%d"),
-            (now_kst - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        ),
         "custom": (start_date, end_date) if start_date and end_date else (now_kst.strftime("%Y-%m-%d"), now_kst.strftime("%Y-%m-%d"))
     }
 
@@ -75,21 +68,22 @@ def get_start_end_dates(period, start_date=None, end_date=None):
 def dashboard():
     """모바일 대시보드 메인 페이지"""
     return render_template("mobile/dashboard.html",
-                         company_names=session.get("company_names", []))
+                         company_names=session.get("company_names", []),
+                         now=datetime.datetime.now())
 
 # ─────────────────────────────────────────────
-# 5) 모바일 데이터 API (기존 서비스 함수 재사용)
+# 5) 모바일 데이터 API (웹버전과 동일한 구조)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_data", methods=["POST"])
 @login_required
 def get_data():
-    """모바일 전용 경량 데이터 API - 기존 서비스 함수 재사용"""
+    """모바일 전용 데이터 API - 웹버전과 동일한 구조, 축소된 데이터만 반환"""
     t0 = time.time()
     try:
         data = request.get_json() or {}
         user_id = session.get("user_id")
         
-        # ✅ 기존과 동일한 company_name 처리
+        # ✅ 웹버전과 동일한 company_name 처리
         raw_company_name = data.get("company_name", "all")
         if raw_company_name == "all":
             company_name = ["demo"] if user_id == "demo" else [
@@ -105,8 +99,8 @@ def get_data():
                 return jsonify({"status": "error", "message": "demo 업체 접근 불가"}), 403
             company_name = name
 
-        # ✅ 기존과 동일한 기간 필터 처리
-        period = str(data.get("period", "last7days")).strip()  # 모바일 기본값: 최근 7일
+        # ✅ 웹버전과 동일한 기간 필터 처리
+        period = str(data.get("period", "today")).strip()  # 기본값: 오늘
         start_date = data.get("start_date")
         end_date = data.get("end_date")
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
@@ -114,13 +108,13 @@ def get_data():
         print(f"[MOBILE] 요청 필터 - company_name={company_name}, period={period}, "
               f"start_date={start_date}, end_date={end_date}")
 
-        # ✅ 기존 서비스 함수 호출하여 데이터 수집
+        # ✅ 웹버전과 동일한 서비스 함수 호출, 축소된 데이터만 반환
         response_data = {
             "status": "success",
             "last_updated": datetime.datetime.now().isoformat()
         }
 
-        # 1. KPI 데이터 (Performance Summary에서 추출)
+        # 1. Performance Summary (웹버전과 동일)
         try:
             performance_data = get_performance_summary(
                 company_name=company_name,
@@ -129,91 +123,47 @@ def get_data():
                 user_id=user_id
             )
             
-            # KPI 데이터 추출 (첫 번째 행 기준)
             if performance_data:
                 first_row = performance_data[0]
-                response_data["kpi"] = {
-                    "revenue": float(first_row.get("site_revenue", 0)),
-                    "visitors": int(first_row.get("total_visitors", 0)),
-                    "ad_spend": float(first_row.get("ad_spend", 0)),
-                    "purchases": int(first_row.get("total_purchases", 0)),
-                    "roas": float(first_row.get("roas_percentage", 0))
-                }
+                response_data["performance_summary"] = [first_row]  # 첫 번째 행만
+                response_data["latest_update"] = max([
+                    str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
+                    for row in performance_data if row.get("updated_at")
+                ], default=None)
             else:
-                response_data["kpi"] = {"revenue": 0, "visitors": 0, "ad_spend": 0, "purchases": 0, "roas": 0}
+                response_data["performance_summary"] = []
         except Exception as e:
-            print(f"[MOBILE] KPI 데이터 오류: {e}")
-            response_data["kpi"] = {"revenue": 0, "visitors": 0, "ad_spend": 0, "purchases": 0, "roas": 0}
+            print(f"[MOBILE] Performance Summary 오류: {e}")
+            response_data["performance_summary"] = []
 
-        # 2. 사이트 성과 (Performance Summary에서 추출)
-        try:
-            if performance_data:
-                first_row = performance_data[0]
-                response_data["site_perf"] = {
-                    "orders": int(first_row.get("total_purchases", 0)),
-                    "product_sales": float(first_row.get("site_revenue", 0))
-                }
-            else:
-                response_data["site_perf"] = {"orders": 0, "product_sales": 0}
-        except Exception as e:
-            print(f"[MOBILE] 사이트 성과 데이터 오류: {e}")
-            response_data["site_perf"] = {"orders": 0, "product_sales": 0}
-
-        # 3. 상위 상품 (Cafe24 Product Sales)
+        # 2. Cafe24 Product Sales (상위 5개만)
         try:
             product_data = get_cafe24_product_sales(
                 company_name, period, start_date, end_date, 
-                "summary", "desc", 10, 1, user_id  # 상위 10개만
+                "summary", "desc", 5, 1, user_id  # 상위 5개만
             )
-            response_data["top_products"] = [
-                {"name": row.get("item_product_name", ""), "qty": int(row.get("item_qty", 0))}
-                for row in product_data.get("rows", [])[:10]  # 최대 10개
-            ]
+            response_data["cafe24_product_sales"] = product_data.get("rows", [])[:5]
         except Exception as e:
-            print(f"[MOBILE] 상위 상품 데이터 오류: {e}")
-            response_data["top_products"] = []
+            print(f"[MOBILE] Cafe24 Product Sales 오류: {e}")
+            response_data["cafe24_product_sales"] = []
 
-        # 4. 상위 소스 (GA4 Source Summary)
+        # 3. GA4 Source Summary (상위 5개만)
         try:
             ga4_data = get_ga4_source_summary(company_name, start_date, end_date, user_id)
             # not set 제외하고 상위 5개만
             filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set"][:5]
-            response_data["top_sources"] = [
-                {"source": row.get("source", ""), "visits": int(row.get("visits", 0))}
-                for row in filtered_sources
-            ]
+            response_data["ga4_source_summary"] = filtered_sources
         except Exception as e:
-            print(f"[MOBILE] 상위 소스 데이터 오류: {e}")
-            response_data["top_sources"] = []
+            print(f"[MOBILE] GA4 Source Summary 오류: {e}")
+            response_data["ga4_source_summary"] = []
 
-        # 5. 메타 광고 성과
+        # 4. Meta Ads (상위 10개만)
         try:
             meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
-            # 필요한 필드만 추출
-            response_data["meta_ads"] = {
-                "rows": [
-                    {
-                        "campaign": row.get("company_name", ""),
-                        "ad": row.get("company_name", ""),  # 임시로 company_name 사용
-                        "spend": float(row.get("total_spend", 0)),
-                        "cpc": float(row.get("cpc", 0)),
-                        "purchases": int(row.get("total_purchases", 0)),
-                        "roas": float(row.get("roas", 0))
-                    }
-                    for row in meta_data[:20]  # 최대 20개
-                ],
-                "total": {
-                    "spend": sum(float(row.get("total_spend", 0)) for row in meta_data),
-                    "purchases": sum(int(row.get("total_purchases", 0)) for row in meta_data),
-                    "roas": sum(float(row.get("roas", 0)) for row in meta_data) / len(meta_data) if meta_data else 0
-                }
-            }
+            response_data["meta_ads"] = meta_data[:10]  # 상위 10개만
         except Exception as e:
-            print(f"[MOBILE] 메타 광고 데이터 오류: {e}")
-            response_data["meta_ads"] = {"rows": [], "total": {"spend": 0, "purchases": 0, "roas": 0}}
-
-        # 6. LIVE 광고 미리보기 (1단계에서는 빈 배열)
-        response_data["live_ads"] = []
+            print(f"[MOBILE] Meta Ads 오류: {e}")
+            response_data["meta_ads"] = []
 
         print(f"[MOBILE] 응답 완료 - 소요시간: {time.time() - t0:.3f}초")
         return jsonify(response_data)
@@ -224,4 +174,110 @@ def get_data():
             "status": "error",
             "message": str(e),
             "last_updated": datetime.datetime.now().isoformat()
+        }), 500
+
+# ─────────────────────────────────────────────
+# 6) 메타 광고 계정 목록 API
+# ─────────────────────────────────────────────
+@mobile_blueprint.route("/get_meta_accounts", methods=["POST"])
+@login_required
+def get_meta_accounts():
+    """메타 광고 계정 목록 조회"""
+    try:
+        data = request.get_json() or {}
+        user_id = session.get("user_id")
+        
+        raw_company_name = data.get("company_name", "all")
+        if raw_company_name == "all":
+            company_name = ["demo"] if user_id == "demo" else [
+                name for name in session.get("company_names", []) if name.lower() != "demo"
+            ]
+        else:
+            company_name = str(raw_company_name).strip().lower()
+        
+        # 메타 광고 계정 목록 조회
+        accounts = get_meta_account_list_filtered(company_name)
+        
+        return jsonify({
+            "status": "success",
+            "meta_accounts": accounts
+        })
+        
+    except Exception as e:
+        print(f"[MOBILE] 메타 광고 계정 목록 오류: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# ─────────────────────────────────────────────
+# 7) 메타 광고별 성과 API
+# ─────────────────────────────────────────────
+@mobile_blueprint.route("/get_meta_ads_by_account", methods=["POST"])
+@login_required
+def get_meta_ads_by_account():
+    """특정 계정의 메타 광고별 성과 조회"""
+    try:
+        data = request.get_json() or {}
+        user_id = session.get("user_id")
+        
+        account_id = data.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id 누락"}), 400
+        
+        period = str(data.get("period", "today")).strip()
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        start_date, end_date = get_start_end_dates(period, start_date, end_date)
+        
+        # 메타 광고별 성과 조회 (광고 탭 기준)
+        from ..services.meta_ads_insight import get_meta_ads_insight_table
+        
+        ads_data = get_meta_ads_insight_table(
+            level="ad",
+            company_name=account_id,
+            start_date=start_date,
+            end_date=end_date,
+            account_id=account_id
+        )
+        
+        return jsonify({
+            "status": "success",
+            "meta_ads_by_account": ads_data[:10]  # 상위 10개만
+        })
+        
+    except Exception as e:
+        print(f"[MOBILE] 메타 광고별 성과 오류: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+# ─────────────────────────────────────────────
+# 8) LIVE 광고 미리보기 API
+# ─────────────────────────────────────────────
+@mobile_blueprint.route("/get_live_ads", methods=["POST"])
+@login_required
+def get_live_ads():
+    """특정 계정의 LIVE 광고 미리보기 조회"""
+    try:
+        data = request.get_json() or {}
+        account_id = data.get("account_id")
+        
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id 누락"}), 400
+        
+        # LIVE 광고 미리보기 조회
+        live_ads = get_meta_ads_preview_list(account_id)
+        
+        return jsonify({
+            "status": "success",
+            "live_ads": live_ads[:5]  # 상위 5개만
+        })
+        
+    except Exception as e:
+        print(f"[MOBILE] LIVE 광고 미리보기 오류: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
         }), 500 

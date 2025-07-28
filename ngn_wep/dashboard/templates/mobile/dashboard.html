@@ -988,10 +988,18 @@
             justify-content: center !important;
             align-items: center !important;
             flex-direction: column !important;
-            z-index: 1000 !important;
+            z-index: 9999 !important;
             pointer-events: auto !important;
             transition: all 0.3s ease !important;
             border-radius: 12px !important;
+        }
+
+        /* 로딩 오버레이 강제 표시 (다른 스타일 덮어쓰기) */
+        .loading-overlay[style*="display: flex"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 9999 !important;
         }
 
         /* 스피너 스타일 */

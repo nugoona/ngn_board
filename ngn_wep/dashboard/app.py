@@ -37,6 +37,7 @@ from .handlers.accounts_handler   import accounts_blueprint
 from .handlers.data_handler       import data_blueprint
 from .handlers.auth_handler       import auth_blueprint
 from .services.meta_demo_handler  import meta_demo_blueprint
+from .handlers.mobile_handler     import mobile_blueprint
 
 # ─────────────────────────────────────────────
 # 4) Flask 앱 생성 & 기본 설정
@@ -123,6 +124,7 @@ app.register_blueprint(accounts_blueprint,  url_prefix="/accounts")
 app.register_blueprint(data_blueprint,      url_prefix="/dashboard")
 app.register_blueprint(auth_blueprint,      url_prefix="/auth")
 app.register_blueprint(meta_demo_blueprint, url_prefix="/meta-api")
+app.register_blueprint(mobile_blueprint,    url_prefix="/m")
 
 # ─────────────────────────────────────────────
 # 8) 부팅 완료 로그

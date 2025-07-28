@@ -337,7 +337,8 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         
         if (data.status === 'success' && data.meta_ads_insight_table) {
             console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_insight_table);
-            renderMetaAdsByAccount(data.meta_ads_insight_table);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table_total_count);
+            renderMetaAdsByAccount(data.meta_ads_insight_table, data.meta_ads_insight_table_total_count);
         } else {
             console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
         }
@@ -759,8 +760,9 @@ function renderMetaAccountFilter(accounts) {
 }
 
 // 메타 광고별 성과 렌더링 (광고 탭 기준)
-function renderMetaAdsByAccount(adsData) {
+function renderMetaAdsByAccount(adsData, totalCount = null) {
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
+    console.log('📊 메타 광고별 성과 전체 개수:', totalCount);
     
     const tbody = document.getElementById('meta-ads-table');
     if (!tbody) {
@@ -820,8 +822,8 @@ function renderMetaAdsByAccount(adsData) {
     }
     
     // 페이지네이션 업데이트 (전체 데이터 개수 사용)
-    metaAdsTotalCount = adsData.length; // 원본 데이터의 전체 개수
-    updatePagination('meta_ads', metaAdsCurrentPage, adsData.length);
+    metaAdsTotalCount = totalCount || adsData.length; // 서버에서 받은 전체 개수 또는 현재 데이터 개수
+    updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }

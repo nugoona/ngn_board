@@ -395,15 +395,32 @@ def get_meta_ads_by_account():
             page=page
         )
         
-        print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
-        
-        # 모바일용 데이터 처리
-        processed_ads_data = process_meta_ads_for_mobile(ads_data[:10])
-        
-        return jsonify({
-            "status": "success",
-            "meta_ads_by_account": processed_ads_data
-        })
+        # 페이지네이션된 결과 처리
+        if isinstance(ads_data, dict) and "rows" in ads_data:
+            # 페이지네이션된 결과 (전체 개수 포함)
+            rows = ads_data.get("rows", [])
+            total_count = ads_data.get("total_count", len(rows))
+            print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(rows)}개 / 전체: {total_count}개")
+            
+            # 모바일용 데이터 처리
+            processed_ads_data = process_meta_ads_for_mobile(rows)
+            
+            return jsonify({
+                "status": "success",
+                "meta_ads_by_account": processed_ads_data,
+                "meta_ads_total_count": total_count
+            })
+        else:
+            # 기존 형식 (페이지네이션 없음)
+            print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
+            
+            # 모바일용 데이터 처리
+            processed_ads_data = process_meta_ads_for_mobile(ads_data[:10])
+            
+            return jsonify({
+                "status": "success",
+                "meta_ads_by_account": processed_ads_data
+            })
         
     except Exception as e:
         print(f"[MOBILE] 메타 광고별 성과 오류: {e}")

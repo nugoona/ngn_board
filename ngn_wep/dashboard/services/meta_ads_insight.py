@@ -274,6 +274,37 @@ def get_meta_ads_insight_table(
         if date_type == "summary":
             for r in result:
                 r["start_date"], r["end_date"] = start_date, end_date
+        
+        # 페이지네이션이 적용된 경우 전체 개수도 조회
+        if limit is not None and page > 0:
+            # 전체 개수 조회 쿼리 (페이지네이션 없이)
+            count_query = f"""
+              SELECT COUNT(*) AS total_count
+              FROM (
+                SELECT 1
+                FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}` A
+                {latest_join}
+                WHERE {" AND ".join(conditions)}
+                GROUP BY { (group_date + ', ' if group_date else '') + group_cols }
+                HAVING SUM(A.spend) > 0
+              )
+            """
+            
+            try:
+                count_rows = client.query(count_query).result()
+                total_count = next(count_rows)["total_count"]
+                print(f"[DEBUG] 메타 광고 전체 개수: {total_count}, 현재 페이지: {len(result)}개")
+                return {
+                    "rows": result,
+                    "total_count": total_count
+                }
+            except Exception as count_error:
+                print(f"[ERROR] 전체 개수 조회 실패: {count_error}")
+                return {
+                    "rows": result,
+                    "total_count": len(result)
+                }
+        
         return result
 
     except Exception as e:

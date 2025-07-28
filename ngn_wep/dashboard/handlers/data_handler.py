@@ -397,9 +397,19 @@ def get_dashboard_data_route():
             )
             t2 = time.time()
             timing_log["meta_ads_insight_table"] = round(t2-t1, 3)
-            response_data["meta_ads_insight_table"] = rows
-            if rows:
-                response_data["updated_at"] = rows[0].get("updated_at")
+            
+            # 페이지네이션된 결과 처리
+            if isinstance(rows, dict) and "rows" in rows:
+                # 페이지네이션된 결과 (전체 개수 포함)
+                response_data["meta_ads_insight_table"] = rows["rows"]
+                response_data["meta_ads_insight_table_total_count"] = rows["total_count"]
+                if rows["rows"]:
+                    response_data["updated_at"] = rows["rows"][0].get("updated_at")
+            else:
+                # 기존 형식 (페이지네이션 없음)
+                response_data["meta_ads_insight_table"] = rows
+                if rows:
+                    response_data["updated_at"] = rows[0].get("updated_at")
 
         # Meta Ads 계정 목록 요청 처리
         if data_type == "meta_account_list":

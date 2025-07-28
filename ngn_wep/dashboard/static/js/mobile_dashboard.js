@@ -388,11 +388,48 @@ function setupFilters() {
 function initMobileDashboard() {
     console.log('🚀 모바일 대시보드 초기화 시작...');
     
+    // 웹버전과 동일한 업체명 자동 선택 로직
+    setupCompanyAutoSelection();
+    
     setupFilters();
     fetchMobileData();
     fetchMetaAccounts(); // 메타 광고 계정 목록 로드
     
     console.log('✅ 모바일 대시보드 초기화 완료');
+}
+
+// 웹버전과 동일한 업체명 자동 선택 로직
+function setupCompanyAutoSelection() {
+    const companySelect = document.getElementById('accountFilter');
+    if (!companySelect) return;
+    
+    // 현재 사용자 정보 확인
+    const isDemoUser = currentUserId === "demo";
+    
+    if (isDemoUser) {
+        // demo 사용자는 demo만 선택
+        companySelect.innerHTML = '<option value="demo" selected>demo</option>';
+    } else {
+        // 일반 사용자는 업체 목록에서 demo 제외
+        const filteredCompanies = userCompanyList.filter(name => name.toLowerCase() !== "demo");
+        
+        if (filteredCompanies.length === 1) {
+            // 업체가 1개면 자동 선택
+            const company = filteredCompanies[0];
+            companySelect.innerHTML = `<option value="${company.toLowerCase()}" selected>${company}</option>`;
+        } else if (filteredCompanies.length > 1) {
+            // 업체가 2개 이상이면 "모든 업체" 옵션 추가
+            companySelect.innerHTML = '<option value="all" selected>모든 업체</option>';
+            filteredCompanies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company.toLowerCase();
+                option.textContent = company;
+                companySelect.appendChild(option);
+            });
+        }
+    }
+    
+    console.log('🏢 업체명 자동 선택 완료:', companySelect.value);
 }
 
 // ─────────────────────────────────────────────

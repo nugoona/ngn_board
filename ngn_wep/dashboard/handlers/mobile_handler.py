@@ -185,13 +185,22 @@ def get_data():
         # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
         try:
             print(f"[MOBILE] 🔄 Cafe24 Product Sales 호출 시작...")
+            print(f"[MOBILE] 📊 Cafe24 Product Sales 파라미터: company_name={company_name}, period={period}, start_date={start_date}, end_date={end_date}")
+            
             # 웹버전과 동일한 파라미터 순서: company_name, period, start_date, end_date, sort_by, limit, page, user_id
             result = get_cafe24_product_sales(
                 company_name, period, start_date, end_date,
                 sort_by="item_product_sales", limit=5, page=1, user_id=user_id
             )
-            response_data["cafe24_product_sales"] = result.get("rows", [])[:5]
-            print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개")
+            
+            print(f"[MOBILE] 📊 Cafe24 Product Sales 서비스 결과: {result}")
+            
+            if result and "rows" in result:
+                response_data["cafe24_product_sales"] = result.get("rows", [])[:5]
+                print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개")
+            else:
+                print(f"[MOBILE] ⚠️ Cafe24 Product Sales 결과가 비어있음")
+                response_data["cafe24_product_sales"] = []
         except Exception as e:
             print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
             response_data["cafe24_product_sales"] = []
@@ -289,6 +298,8 @@ def get_meta_ads_by_account():
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
         
         # 메타 광고별 성과 조회 (광고 탭 기준)
+        print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}")
+        
         ads_data = get_meta_ads_insight_table(
             level="ad",
             company_name=company_name,
@@ -296,6 +307,8 @@ def get_meta_ads_by_account():
             end_date=end_date,
             account_id=account_id
         )
+        
+        print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
         
         # 모바일용 데이터 처리
         processed_ads_data = process_meta_ads_for_mobile(ads_data[:10])

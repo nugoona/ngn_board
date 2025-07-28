@@ -196,12 +196,6 @@ def get_data():
 
         print(f"[MOBILE] 📅 필터 값 - period: {period}, start_date: {start_date}, end_date: {end_date}")
 
-        # ✅ 웹버전과 동일한 서비스 함수 호출, 데이터만 축소
-        response_data = {
-            "status": "success",
-            "last_updated": datetime.datetime.now().isoformat()
-        }
-
         # 1. Performance Summary (웹버전과 동일)
         try:
             print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")
@@ -216,43 +210,6 @@ def get_data():
             
             if performance_data:
                 first_row = performance_data[0]
-                
-                # 모바일 전용: 사이트 성과 요약 추가 데이터 조회
-                try:
-                    print(f"[MOBILE] 🔄 사이트 성과 요약 추가 데이터 조회 시작...")
-                    
-                    # 사이트 매출 조회
-                    from ..services.platform_sales_summary import get_platform_sales_by_day
-                    platform_sales = get_platform_sales_by_day(
-                        company_names=company_name if isinstance(company_name, list) else [company_name],
-                        start_date=start_date,
-                        end_date=end_date,
-                        date_type="summary"
-                    )
-                    
-                    site_revenue = 0
-                    if platform_sales and len(platform_sales) > 0:
-                        site_revenue = platform_sales[0].get('site_official', 0)
-                    
-                    # 방문자 수 조회
-                    from ..services.ga4_source_summary import get_ga4_traffic_summary
-                    ga4_traffic = get_ga4_traffic_summary(company_name, start_date, end_date, user_id=user_id)
-                    total_visitors = sum(row.get('visitors', 0) for row in ga4_traffic) if ga4_traffic else 0
-                    
-                    # 광고비 비율 계산
-                    ad_spend = first_row.get('ad_spend', 0)
-                    ad_spend_ratio = round((ad_spend / site_revenue * 100), 2) if site_revenue > 0 else 0
-                    
-                    # 사이트 성과 요약 데이터만 업데이트 (총 광고 성과는 그대로)
-                    first_row['site_revenue'] = site_revenue
-                    first_row['total_visitors'] = total_visitors
-                    first_row['ad_spend_ratio'] = ad_spend_ratio
-                    
-                    print(f"[MOBILE] ✅ 사이트 성과 요약 추가 데이터 조회 완료 - 사이트 매출: {site_revenue}, 방문자: {total_visitors}, 광고비 비율: {ad_spend_ratio}%")
-                except Exception as e:
-                    print(f"[MOBILE] ❌ 사이트 성과 요약 추가 데이터 조회 오류: {e}")
-                    # 오류가 발생해도 기존 데이터는 유지
-                
                 response_data["performance_summary"] = [first_row]  # 첫 번째 행만
                 # 웹버전과 동일한 형식으로 latest_update 설정
                 latest_update = max([

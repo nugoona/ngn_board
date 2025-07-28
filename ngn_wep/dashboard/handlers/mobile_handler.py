@@ -217,10 +217,12 @@ def get_data():
             if performance_data:
                 first_row = performance_data[0]
                 response_data["performance_summary"] = [first_row]  # 첫 번째 행만
-                response_data["latest_update"] = max([
-                    str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
+                # 웹버전과 동일한 형식으로 latest_update 설정
+                latest_update = max([
+                    row.get("updated_at")
                     for row in performance_data if row.get("updated_at")
                 ], default=None)
+                response_data["latest_update"] = latest_update
                 print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']}")
             else:
                 response_data["performance_summary"] = []

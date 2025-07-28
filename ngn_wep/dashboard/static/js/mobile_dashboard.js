@@ -148,21 +148,33 @@ async function fetchMobileData() {
         // 웹버전과 동일한 업데이트 시간 표시
         const updatedAtText = document.getElementById('updatedAtText');
         if (updatedAtText && data.latest_update) {
-            const utc = new Date(data.latest_update);
-            
-            // 시간만 보정 (날짜는 그대로 유지)
-            const hours = utc.getUTCHours() + 9;
-            const adjustedHour = hours % 24;
-            const carryDate = hours >= 24 ? 1 : 0;
-            
-            const year = utc.getUTCFullYear();
-            const month = utc.getUTCMonth() + 1;
-            const date = utc.getUTCDate();
-            const finalDate = date + carryDate;
-            const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
-            
-            const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
-            updatedAtText.textContent = `최종 업데이트: ${formatted}`;
+            try {
+                const utc = new Date(data.latest_update);
+                
+                // 유효한 날짜인지 확인
+                if (isNaN(utc.getTime())) {
+                    console.warn('❌ 유효하지 않은 날짜 형식:', data.latest_update);
+                    updatedAtText.textContent = '최종 업데이트: -';
+                    return;
+                }
+                
+                // 시간만 보정 (날짜는 그대로 유지)
+                const hours = utc.getUTCHours() + 9;
+                const adjustedHour = hours % 24;
+                const carryDate = hours >= 24 ? 1 : 0;
+                
+                const year = utc.getUTCFullYear();
+                const month = utc.getUTCMonth() + 1;
+                const date = utc.getUTCDate();
+                const finalDate = date + carryDate;
+                const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
+                
+                const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+                updatedAtText.textContent = `최종 업데이트: ${formatted}`;
+            } catch (error) {
+                console.error('❌ 업데이트 시간 처리 오류:', error);
+                updatedAtText.textContent = '최종 업데이트: -';
+            }
         }
         
         // 웹버전과 동일한 데이터 렌더링

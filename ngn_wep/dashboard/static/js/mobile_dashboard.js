@@ -796,12 +796,12 @@ function renderMetaAds(metaAds) {
     processedMetaAds.forEach(row => {
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
-            <td class="text-left">${row.campaign_name || '-'}</td>
-            <td class="text-left">${row.ad_name || '-'}</td>
-            <td class="text-right">${formatNumber(row.total_spend || 0)}</td>
-            <td class="text-right">${formatNumber(row.cpc || 0)}</td>
-            <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
-            <td class="text-right">${formatNumber(row.roas || 0)}</td>
+            <td class="text-center">${row.campaign_name || '-'}</td>
+            <td class="text-center">${row.ad_name || '-'}</td>
+            <td class="text-center">${formatNumber(row.total_spend || 0)}</td>
+            <td class="text-center">${formatNumber(row.cpc || 0)}</td>
+            <td class="text-center">${formatNumber(row.total_purchases || 0)}</td>
+            <td class="text-center">${formatNumber(row.roas || 0)}</td>
         `;
         tbody.appendChild(tableRow);
     });
@@ -872,12 +872,12 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
-            <td class="text-left">${row.campaign_name || '-'}</td>
-            <td class="text-left">${row.ad_name || '-'}</td>
-            <td class="text-right">${formatNumber(spend)}</td>
-            <td class="text-right">${formatNumber(cpc)}</td>
-            <td class="text-right">${formatNumber(purchases)}</td>
-            <td class="text-right">${formatNumber(roas)}%</td>
+            <td class="text-center">${row.campaign_name || '-'}</td>
+            <td class="text-center">${row.ad_name || '-'}</td>
+            <td class="text-center">${formatNumber(spend)}</td>
+            <td class="text-center">${formatNumber(cpc)}</td>
+            <td class="text-center">${formatNumber(purchases)}</td>
+            <td class="text-center">${formatNumber(roas)}%</td>
         `;
         tbody.appendChild(tableRow);
     });

@@ -719,7 +719,7 @@ function renderLiveAds(liveAds) {
     liveAdsScroll.innerHTML = '';
     
     if (liveAds.length === 0) {
-        liveAdsScroll.innerHTML = '<div class="text-center">미리볼 광고가 없습니다.</div>';
+        liveAdsScroll.innerHTML = '<div class="text-center" style="padding: 20px; color: #6b7280;">미리볼 광고가 없습니다.</div>';
         return;
     }
     
@@ -735,12 +735,12 @@ function renderLiveAds(liveAds) {
         
         adCard.innerHTML = `
             <div class="live-ad-image">
-                <img src="${ad.image_url || ''}" alt="광고" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
+                <img src="${ad.image_url || ''}" alt="광고" onerror="this.style.display='none'">
                 ${ad.is_video ? '<div class="play-overlay" style="display: flex; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"><svg viewBox="0 0 100 100" style="width: 40px; height: 40px;"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : ''}
             </div>
             <div class="live-ad-content">
-                <div class="live-ad-title" style="font-size: 12px; color: #666; margin-bottom: 4px;">${shortCaption}</div>
-                <div style="font-size: 11px; color: #999;">${ad.link || '#'}</div>
+                <div class="live-ad-title">${shortCaption}</div>
+                <div class="live-ad-link">${ad.link || '#'}</div>
             </div>
         `;
         liveAdsScroll.appendChild(adCard);

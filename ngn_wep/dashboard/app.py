@@ -5,7 +5,7 @@ _boot = time.time()                               # ─────────�
 import os
 from pathlib import Path
 from datetime import timedelta
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for, request
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────────
@@ -69,12 +69,26 @@ else:
     LOG.error("GCP 인증 파일이 존재하지 않거나 설정되지 않음: %s", gcp_path)
 
 # ─────────────────────────────────────────────
-# 6) 라우트 정의
+# 6) 모바일 디바이스 감지 함수
+# ─────────────────────────────────────────────
+def is_mobile_device():
+    """모바일 디바이스인지 확인"""
+    user_agent = request.headers.get('User-Agent', '').lower()
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone']
+    return any(keyword in user_agent for keyword in mobile_keywords)
+
+# ─────────────────────────────────────────────
+# 7) 라우트 정의
 # ─────────────────────────────────────────────
 @app.route("/")
 def index():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
+    
+    # 모바일 디바이스인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device():
+        return redirect(url_for("mobile.dashboard"))
+    
     return render_template("index.html",
                            company_names=session.get("company_names", []))
 
@@ -82,6 +96,11 @@ def index():
 def ads_page():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
+    
+    # 모바일 디바이스인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device():
+        return redirect(url_for("mobile.dashboard"))
+    
     return render_template("ads_page.html",
                            company_names=session.get("company_names", []))
 
@@ -118,7 +137,7 @@ def logout_redirect():
     return redirect(url_for("auth.logout"))
 
 # ─────────────────────────────────────────────
-# 7) 블루프린트 등록
+# 8) 블루프린트 등록
 # ─────────────────────────────────────────────
 app.register_blueprint(accounts_blueprint,  url_prefix="/accounts")
 app.register_blueprint(data_blueprint,      url_prefix="/dashboard")
@@ -127,12 +146,12 @@ app.register_blueprint(meta_demo_blueprint, url_prefix="/meta-api")
 app.register_blueprint(mobile_blueprint,    url_prefix="/m")
 
 # ─────────────────────────────────────────────
-# 8) 부팅 완료 로그
+# 9) 부팅 완료 로그
 # ─────────────────────────────────────────────
 LOG.info("⭐ app import done in %.1fs", time.time() - _boot)
 
 # ─────────────────────────────────────────────
-# 9) 개발 모드 직접 실행 (로컬)
+# 10) 개발 모드 직접 실행 (로컬)
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_ENV", "production") == "development"

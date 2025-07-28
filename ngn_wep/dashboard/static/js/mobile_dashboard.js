@@ -1,5 +1,5 @@
 // File: ngn_wep/dashboard/static/js/mobile_dashboard.js
-// 모바일 대시보드 JavaScript - 웹버전의 축소버전
+// 모바일 대시보드 JavaScript - 웹버전과 동일한 구조, 데이터만 축소
 
 // ─────────────────────────────────────────────
 // 1) 전역 변수 (웹버전과 동일)
@@ -12,6 +12,7 @@ let selectedMetaAccount = null;
 // 2) 유틸리티 함수 (웹버전과 동일)
 // ─────────────────────────────────────────────
 function formatNumber(num) {
+    if (num === null || num === undefined) return '--';
     if (num >= 1000000) {
         return (num / 1000000).toFixed(1) + 'M';
     } else if (num >= 1000) {
@@ -21,10 +22,12 @@ function formatNumber(num) {
 }
 
 function formatCurrency(num) {
+    if (num === null || num === undefined) return '--';
     return '₩' + num.toLocaleString();
 }
 
 function formatPercentage(num) {
+    if (num === null || num === undefined) return '--';
     return num.toFixed(1) + '%';
 }
 
@@ -41,17 +44,15 @@ async function fetchMobileData() {
         // 현재 필터 값들 가져오기 (웹버전과 동일)
         const companySelect = document.getElementById('company-select');
         const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
         const periodSelect = document.getElementById('period-filter');
         
         const companyName = companySelect ? companySelect.value : 'all';
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
+        const endDateValue = endDate ? endDate.value : '';
         
-        // 직접 선택 모드일 때는 시작일과 종료일을 동일하게 설정
-        let endDateValue = startDateValue;
-        if (period === 'custom' && startDateValue) {
-            endDateValue = startDateValue;
-        }
+        console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         
         // 웹버전과 동일한 API 호출
         const response = await fetch('/m/get_data', {
@@ -144,14 +145,11 @@ async function fetchMetaAdsByAccount(accountId) {
     try {
         const periodSelect = document.getElementById('period-filter');
         const startDate = document.getElementById('start-date');
+        const endDate = document.getElementById('end-date');
         
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
-        
-        let endDateValue = startDateValue;
-        if (period === 'custom' && startDateValue) {
-            endDateValue = startDateValue;
-        }
+        const endDateValue = endDate ? endDate.value : '';
         
         const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
@@ -228,6 +226,7 @@ function showError(message) {
 function setupFilters() {
     const companySelect = document.getElementById('company-select');
     const startDate = document.getElementById('start-date');
+    const endDate = document.getElementById('end-date');
     const periodSelect = document.getElementById('period-filter');
     const metaAccountSelect = document.getElementById('meta-account-select');
     
@@ -237,11 +236,12 @@ function setupFilters() {
             console.log('📅 기간 변경:', periodSelect.value);
             
             // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
-            if (startDate) {
+            const dateRangeRow = document.getElementById('date-range-row');
+            if (dateRangeRow) {
                 if (periodSelect.value === 'custom') {
-                    startDate.style.display = 'block';
+                    dateRangeRow.style.display = 'flex';
                 } else {
-                    startDate.style.display = 'none';
+                    dateRangeRow.style.display = 'none';
                 }
             }
             
@@ -266,7 +266,19 @@ function setupFilters() {
     // 날짜 변경 시
     if (startDate) {
         startDate.addEventListener('change', () => {
-            console.log('📅 날짜 변경:', startDate.value);
+            console.log('📅 시작일 변경:', startDate.value);
+            fetchMobileData(); // API 재호출
+            
+            // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
+            if (selectedMetaAccount) {
+                fetchMetaAdsByAccount(selectedMetaAccount);
+            }
+        });
+    }
+    
+    if (endDate) {
+        endDate.addEventListener('change', () => {
+            console.log('📅 종료일 변경:', endDate.value);
             fetchMobileData(); // API 재호출
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
@@ -314,24 +326,27 @@ function initMobileDashboard() {
 document.addEventListener('DOMContentLoaded', initMobileDashboard);
 
 // ─────────────────────────────────────────────
-// 11) 데이터 렌더링 함수 (웹버전과 동일한 구조)
+// 11) 데이터 렌더링 함수 (요구사항에 맞게 구현)
 // ─────────────────────────────────────────────
 function renderMobileData(data) {
     console.log('🎨 모바일 데이터 렌더링 시작...');
     
-    // 웹버전과 동일한 데이터 구조로 렌더링
+    // 1. 사이트 성과 요약 (핵심 KPI)
     if (data.performance_summary && data.performance_summary.length > 0) {
         renderPerformanceSummary(data.performance_summary[0]);
     }
     
+    // 2. 카페24 상품판매
     if (data.cafe24_product_sales) {
         renderCafe24ProductSales(data.cafe24_product_sales);
     }
     
+    // 3. GA4 소스별 유입수
     if (data.ga4_source_summary) {
         renderGa4SourceSummary(data.ga4_source_summary);
     }
     
+    // 4. 메타 광고 (기본 계정별 성과)
     if (data.meta_ads) {
         renderMetaAds(data.meta_ads);
     }
@@ -339,137 +354,102 @@ function renderMobileData(data) {
     console.log('✅ 모바일 데이터 렌더링 완료');
 }
 
-// Performance Summary 렌더링 (웹버전과 동일)
+// 사이트 성과 요약 렌더링 (핵심 KPI)
 function renderPerformanceSummary(performanceData) {
-    // KPI 카드 렌더링
-    const kpiCards = document.querySelectorAll('#m-kpi-cards .kpi-card');
-    if (!kpiCards.length) return;
+    console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
-    const kpiLabels = ['매출', '방문자', '광고비', '구매수', 'ROAS'];
-    const kpiValues = [
-        performanceData.site_revenue,
-        performanceData.total_visitors,
-        performanceData.ad_spend,
-        performanceData.total_purchases,
-        performanceData.roas_percentage
-    ];
+    // KPI 값들 설정
+    document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
+    document.getElementById('total-visitors').textContent = formatNumber(performanceData.total_visitors || 0);
+    document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
+    document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
+    document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
     
-    kpiCards.forEach((card, index) => {
-        if (index < kpiLabels.length) {
-            card.innerHTML = '';
-            card.innerHTML = `
-                <div class="text-sm text-gray-600 mb-1">${kpiLabels[index]}</div>
-                <div class="text-lg font-bold text-gray-900">
-                    ${index === 0 || index === 2 ? formatCurrency(kpiValues[index]) : 
-                      index === 4 ? formatPercentage(kpiValues[index]) : 
-                      formatNumber(kpiValues[index])}
-                </div>
-            `;
-        }
-    });
-    
-    // 사이트 성과 렌더링
-    const sitePerf = document.getElementById('m-site-perf');
-    if (sitePerf) {
-        sitePerf.innerHTML = `
-            <div class="flex justify-between p-3 bg-gray-50 rounded-xl">
-                <div class="flex-1">
-                    <div class="text-sm text-gray-600 mb-1">주문수</div>
-                    <div class="text-lg font-bold text-gray-900">${formatNumber(performanceData.total_purchases)}</div>
-                </div>
-                <div class="flex-1 text-right">
-                    <div class="text-sm text-gray-600 mb-1">상품매출</div>
-                    <div class="text-lg font-bold text-gray-900">${formatCurrency(performanceData.site_revenue)}</div>
-                </div>
-            </div>
-        `;
-    }
+    // 사이트 성과 (주문수, 상품매출)
+    document.getElementById('orders-count').textContent = formatNumber(performanceData.total_purchases || 0);
+    document.getElementById('product-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
 }
 
-// Cafe24 Product Sales 렌더링 (웹버전과 동일)
+// 카페24 상품판매 렌더링
 function renderCafe24ProductSales(products) {
-    const productsContainer = document.getElementById('m-top-products');
-    if (!productsContainer) return;
+    console.log('📦 카페24 상품판매 렌더링:', products);
     
-    const productsList = productsContainer.querySelector('.bg-white');
-    if (!productsList) return;
+    const tbody = document.getElementById('cafe24-products');
+    if (!tbody) return;
     
-    productsList.innerHTML = '';
+    tbody.innerHTML = '';
     
     if (products.length === 0) {
-        productsList.innerHTML = '<div class="p-4 text-center text-gray-500">데이터가 없습니다</div>';
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
     products.forEach(product => {
-        const productItem = document.createElement('div');
-        productItem.className = 'flex justify-between items-center p-3 border-b border-gray-100';
-        productItem.innerHTML = `
-            <div class="flex-1 text-sm text-gray-900">${product.item_product_name}</div>
-            <div class="text-sm font-semibold text-gray-700">${formatNumber(product.item_qty)}</div>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="text-truncate">${product.item_product_name || '-'}</td>
+            <td class="text-right">${formatNumber(product.item_qty || 0)}</td>
         `;
-        productsList.appendChild(productItem);
+        tbody.appendChild(row);
     });
 }
 
-// GA4 Source Summary 렌더링 (웹버전과 동일)
+// GA4 소스별 유입수 렌더링
 function renderGa4SourceSummary(sources) {
-    const sourcesContainer = document.getElementById('m-top-sources');
-    if (!sourcesContainer) return;
+    console.log('🌐 GA4 소스별 유입수 렌더링:', sources);
     
-    const sourcesList = sourcesContainer.querySelector('.bg-white');
-    if (!sourcesList) return;
+    const tbody = document.getElementById('ga4-sources');
+    if (!tbody) return;
     
-    sourcesList.innerHTML = '';
+    tbody.innerHTML = '';
     
     if (sources.length === 0) {
-        sourcesList.innerHTML = '<div class="p-4 text-center text-gray-500">데이터가 없습니다</div>';
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
     sources.forEach(source => {
-        const sourceItem = document.createElement('div');
-        sourceItem.className = 'flex justify-between items-center p-3 border-b border-gray-100';
-        sourceItem.innerHTML = `
-            <div class="flex-1 text-sm text-gray-900">${source.source}</div>
-            <div class="text-sm font-semibold text-gray-700">${formatNumber(source.visits)}</div>
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="text-truncate">${source.source || '-'}</td>
+            <td class="text-right">${formatNumber(source.visits || 0)}</td>
         `;
-        sourcesList.appendChild(sourceItem);
+        tbody.appendChild(row);
     });
 }
 
-// Meta Ads 렌더링 (웹버전과 동일)
+// 메타 광고 렌더링 (기본 계정별 성과)
 function renderMetaAds(metaAds) {
-    const metaContainer = document.getElementById('m-meta-ads');
-    if (!metaContainer) return;
+    console.log('📊 메타 광고 렌더링:', metaAds);
     
-    const tableBody = metaContainer.querySelector('tbody');
-    if (!tableBody) return;
+    const tbody = document.getElementById('meta-ads-table');
+    if (!tbody) return;
     
-    tableBody.innerHTML = '';
+    tbody.innerHTML = '';
     
     if (metaAds.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">데이터가 없습니다</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
     metaAds.forEach(row => {
         const tableRow = document.createElement('tr');
-        tableRow.className = 'border-b border-gray-100';
         tableRow.innerHTML = `
-            <td class="p-2 text-sm text-gray-900 text-truncate">${row.company_name}</td>
-            <td class="p-2 text-sm text-gray-900 text-truncate">-</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(row.total_spend)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(row.cpc)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatNumber(row.total_purchases)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatPercentage(row.roas)}</td>
+            <td class="text-truncate">${row.company_name || '-'}</td>
+            <td class="text-truncate">-</td>
+            <td class="text-right">${formatCurrency(row.total_spend || 0)}</td>
+            <td class="text-right">${formatCurrency(row.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
+            <td class="text-right">${formatPercentage(row.roas || 0)}</td>
         `;
-        tableBody.appendChild(tableRow);
+        tbody.appendChild(tableRow);
     });
 }
 
 // 메타 광고 계정 필터 렌더링
 function renderMetaAccountFilter(accounts) {
+    console.log('🏢 메타 광고 계정 필터 렌더링:', accounts);
+    
     const metaAccountFilter = document.getElementById('meta-account-filter');
     const metaAccountSelect = document.getElementById('meta-account-select');
     
@@ -477,7 +457,7 @@ function renderMetaAccountFilter(accounts) {
     
     // 계정이 있으면 필터 표시
     if (accounts && accounts.length > 0) {
-        metaAccountFilter.style.display = 'flex';
+        metaAccountFilter.style.display = 'block';
         
         // 기존 옵션 제거 (기본 옵션 제외)
         metaAccountSelect.innerHTML = '<option value="">메타 광고 계정 선택</option>';
@@ -494,34 +474,32 @@ function renderMetaAccountFilter(accounts) {
     }
 }
 
-// 메타 광고별 성과 렌더링
+// 메타 광고별 성과 렌더링 (광고 탭 기준)
 function renderMetaAdsByAccount(adsData) {
-    const metaContainer = document.getElementById('m-meta-ads');
-    if (!metaContainer) return;
+    console.log('📊 메타 광고별 성과 렌더링:', adsData);
     
-    const tableBody = metaContainer.querySelector('tbody');
-    if (!tableBody) return;
+    const tbody = document.getElementById('meta-ads-table');
+    if (!tbody) return;
     
-    tableBody.innerHTML = '';
+    tbody.innerHTML = '';
     
     if (adsData.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">데이터가 없습니다</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
     // 광고별 성과 데이터 렌더링
     adsData.forEach(row => {
         const tableRow = document.createElement('tr');
-        tableRow.className = 'border-b border-gray-100';
         tableRow.innerHTML = `
-            <td class="p-2 text-sm text-gray-900 text-truncate">${row.campaign_name || '-'}</td>
-            <td class="p-2 text-sm text-gray-900 text-truncate">${row.ad_name || '-'}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(row.spend || 0)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(row.cpc || 0)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatNumber(row.purchases || 0)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatPercentage(row.roas || 0)}</td>
+            <td class="text-truncate">${row.campaign_name || '-'}</td>
+            <td class="text-truncate">${row.ad_name || '-'}</td>
+            <td class="text-right">${formatCurrency(row.spend || 0)}</td>
+            <td class="text-right">${formatCurrency(row.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(row.purchases || 0)}</td>
+            <td class="text-right">${formatPercentage(row.roas || 0)}</td>
         `;
-        tableBody.appendChild(tableRow);
+        tbody.appendChild(tableRow);
     });
     
     // 총합 로우 추가
@@ -532,60 +510,59 @@ function renderMetaAdsByAccount(adsData) {
         const avgRoas = adsData.reduce((sum, row) => sum + (row.roas || 0), 0) / adsData.length;
         
         const totalRow = document.createElement('tr');
-        totalRow.className = 'border-b border-gray-200 bg-gray-50 font-semibold';
+        totalRow.className = 'bg-gray-50 font-semibold';
         totalRow.innerHTML = `
-            <td class="p-2 text-sm text-gray-900" colspan="2">총합</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(totalSpend)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatCurrency(totalCpc)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatNumber(totalPurchases)}</td>
-            <td class="p-2 text-sm text-right text-gray-700">${formatPercentage(avgRoas)}</td>
+            <td colspan="2" class="text-truncate">총합</td>
+            <td class="text-right">${formatCurrency(totalSpend)}</td>
+            <td class="text-right">${formatCurrency(totalCpc)}</td>
+            <td class="text-right">${formatNumber(totalPurchases)}</td>
+            <td class="text-right">${formatPercentage(avgRoas)}</td>
         `;
-        tableBody.appendChild(totalRow);
+        tbody.appendChild(totalRow);
     }
 }
 
 // LIVE 광고 미리보기 렌더링
 function renderLiveAds(liveAds) {
-    const liveContainer = document.getElementById('m-live-ads');
-    if (!liveContainer) return;
+    console.log('🖼️ LIVE 광고 미리보기 렌더링:', liveAds);
     
-    const liveList = liveContainer.querySelector('.flex.overflow-x-scroll');
-    if (!liveList) return;
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    if (!liveAdsScroll) return;
     
-    liveList.innerHTML = '';
+    liveAdsScroll.innerHTML = '';
     
     if (liveAds.length === 0) {
-        liveList.innerHTML = '<div class="p-4 text-center text-gray-500">데이터가 없습니다</div>';
+        liveAdsScroll.innerHTML = '<div class="text-center">데이터가 없습니다</div>';
         return;
     }
     
     liveAds.forEach(ad => {
         const adCard = document.createElement('div');
-        adCard.className = 'w-64 h-48 bg-white rounded-xl shadow-sm flex-shrink-0 border border-gray-200';
+        adCard.className = 'live-ad-card';
         adCard.innerHTML = `
-            <div class="h-32 bg-gray-200 rounded-t-xl flex items-center justify-center">
-                <img src="${ad.image_url || ''}" alt="광고" class="w-full h-full object-cover rounded-t-xl" onerror="this.style.display='none'">
+            <div class="live-ad-image">
+                <img src="${ad.image_url || ''}" alt="광고" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
             </div>
-            <div class="p-3">
-                <div class="text-sm font-semibold text-gray-900 text-truncate">${ad.headline || '광고 제목'}</div>
+            <div class="live-ad-content">
+                <div class="live-ad-title">${ad.headline || '광고 제목'}</div>
             </div>
         `;
-        liveList.appendChild(adCard);
+        liveAdsScroll.appendChild(adCard);
     });
 }
 
 // LIVE 광고 섹션 표시/숨김
 function showLiveAdsSection() {
-    const liveContainer = document.getElementById('m-live-ads');
-    if (liveContainer) {
-        liveContainer.style.display = 'block';
+    const liveAdsSection = document.getElementById('live-ads-section');
+    if (liveAdsSection) {
+        liveAdsSection.style.display = 'block';
     }
 }
 
 function hideLiveAdsSection() {
-    const liveContainer = document.getElementById('m-live-ads');
-    if (liveContainer) {
-        liveContainer.style.display = 'none';
+    const liveAdsSection = document.getElementById('live-ads-section');
+    if (liveAdsSection) {
+        liveAdsSection.style.display = 'none';
     }
 }
 

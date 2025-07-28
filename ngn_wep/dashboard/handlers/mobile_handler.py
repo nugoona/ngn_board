@@ -5,12 +5,12 @@ from flask import Blueprint, render_template, session, redirect, url_for, jsonif
 from functools import wraps
 from google.cloud import bigquery
 
-# 📦 기존 서비스 함수 임포트 (웹버전과 동일)
+# 📦 웹버전과 동일한 서비스 함수 임포트
 from ..services.performance_summary import get_performance_summary
-from ..services.cafe24_service import get_cafe24_product_sales
+from ..services.cafe24_service import get_cafe24_product_sales, get_cafe24_sales_data
 from ..services.ga4_source_summary import get_ga4_source_summary
 from ..services.meta_ads_service import get_meta_ads_data
-from ..services.meta_ads_insight import get_meta_account_list_filtered
+from ..services.meta_ads_insight import get_meta_account_list_filtered, get_meta_ads_insight_table
 from ..services.meta_ads_preview import get_meta_ads_preview_list
 
 # ─────────────────────────────────────────────
@@ -19,7 +19,7 @@ from ..services.meta_ads_preview import get_meta_ads_preview_list
 mobile_blueprint = Blueprint("mobile", __name__)
 
 # ─────────────────────────────────────────────
-# 2) 로그인 체크 데코레이터 (기존과 동일)
+# 2) 로그인 체크 데코레이터 (웹버전과 동일)
 # ─────────────────────────────────────────────
 def login_required(f):
     @wraps(f)
@@ -30,7 +30,7 @@ def login_required(f):
     return decorated_function
 
 # ─────────────────────────────────────────────
-# 3) 기존 필터 함수 재사용 (웹버전과 동일)
+# 3) 웹버전과 동일한 필터 함수
 # ─────────────────────────────────────────────
 def get_start_end_dates(period, start_date=None, end_date=None):
     """ ✅ 필터링 기간을 결정하는 함수 (KST 기준 적용) - 웹버전과 동일 """
@@ -73,12 +73,12 @@ def dashboard():
                          now=datetime.datetime.now())
 
 # ─────────────────────────────────────────────
-# 5) 모바일 데이터 API (웹버전과 동일한 구조)
+# 5) 모바일 데이터 API (웹버전과 동일한 구조, 데이터만 축소)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_data", methods=["POST"])
 @login_required
 def get_data():
-    """모바일 전용 데이터 API - 웹버전과 동일한 구조, 축소된 데이터만 반환"""
+    """모바일 전용 데이터 API - 웹버전과 동일한 구조, 데이터만 축소"""
     t0 = time.time()
     try:
         data = request.get_json() or {}
@@ -108,14 +108,14 @@ def get_data():
         print(f"[MOBILE] 🏢 처리된 company_name: {company_name}")
 
         # ✅ 웹버전과 동일한 기간 필터 처리
-        period = str(data.get("period", "today")).strip()  # 기본값: 오늘
+        period = str(data.get("period", "today")).strip()
         start_date = data.get("start_date")
         end_date = data.get("end_date")
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
 
         print(f"[MOBILE] 📅 필터 값 - period: {period}, start_date: {start_date}, end_date: {end_date}")
 
-        # ✅ 웹버전과 동일한 서비스 함수 호출, 축소된 데이터만 반환
+        # ✅ 웹버전과 동일한 서비스 함수 호출, 데이터만 축소
         response_data = {
             "status": "success",
             "last_updated": datetime.datetime.now().isoformat()
@@ -161,7 +161,7 @@ def get_data():
             print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
             response_data["cafe24_product_sales"] = []
 
-        # 3. GA4 Source Summary (상위 5개만)
+        # 3. GA4 Source Summary (상위 5개만, not set 제외)
         try:
             print(f"[MOBILE] 🔄 GA4 Source Summary 호출 시작...")
             ga4_data = get_ga4_source_summary(company_name, start_date, end_date, user_id)
@@ -196,12 +196,12 @@ def get_data():
         }), 500
 
 # ─────────────────────────────────────────────
-# 6) 메타 광고 계정 목록 API
+# 6) 메타 광고 계정 목록 API (웹버전과 동일)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_meta_accounts", methods=["POST"])
 @login_required
 def get_meta_accounts():
-    """메타 광고 계정 목록 조회"""
+    """메타 광고 계정 목록 조회 - 웹버전과 동일"""
     try:
         data = request.get_json() or {}
         user_id = session.get("user_id")
@@ -214,7 +214,7 @@ def get_meta_accounts():
         else:
             company_name = str(raw_company_name).strip().lower()
         
-        # 메타 광고 계정 목록 조회
+        # 메타 광고 계정 목록 조회 (웹버전과 동일)
         accounts = get_meta_account_list_filtered(company_name)
         
         return jsonify({
@@ -230,12 +230,12 @@ def get_meta_accounts():
         }), 500
 
 # ─────────────────────────────────────────────
-# 7) 메타 광고별 성과 API
+# 7) 메타 광고별 성과 API (광고 탭 기준)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_meta_ads_by_account", methods=["POST"])
 @login_required
 def get_meta_ads_by_account():
-    """특정 계정의 메타 광고별 성과 조회"""
+    """특정 계정의 메타 광고별 성과 조회 - 광고 탭 기준"""
     try:
         data = request.get_json() or {}
         user_id = session.get("user_id")
@@ -250,8 +250,6 @@ def get_meta_ads_by_account():
         start_date, end_date = get_start_end_dates(period, start_date, end_date)
         
         # 메타 광고별 성과 조회 (광고 탭 기준)
-        from ..services.meta_ads_insight import get_meta_ads_insight_table
-        
         ads_data = get_meta_ads_insight_table(
             level="ad",
             company_name=account_id,
@@ -273,12 +271,12 @@ def get_meta_ads_by_account():
         }), 500
 
 # ─────────────────────────────────────────────
-# 8) LIVE 광고 미리보기 API
+# 8) LIVE 광고 미리보기 API (웹버전과 동일)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_live_ads", methods=["POST"])
 @login_required
 def get_live_ads():
-    """특정 계정의 LIVE 광고 미리보기 조회"""
+    """특정 계정의 LIVE 광고 미리보기 조회 - 웹버전과 동일"""
     try:
         data = request.get_json() or {}
         account_id = data.get("account_id")
@@ -286,7 +284,7 @@ def get_live_ads():
         if not account_id:
             return jsonify({"status": "error", "message": "account_id 누락"}), 400
         
-        # LIVE 광고 미리보기 조회
+        # LIVE 광고 미리보기 조회 (웹버전과 동일)
         live_ads = get_meta_ads_preview_list(account_id)
         
         return jsonify({

@@ -42,26 +42,198 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        /* 필터 스타일 */
+        .filter-section {
+            background: white;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .date-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* 섹션 스타일 */
+        .section {
+            background: white;
+            margin: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-weight: 600;
+            font-size: 16px;
+            color: #111827;
+        }
+
+        .section-content {
+            padding: 16px;
+        }
+
+        /* KPI 카드 스타일 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        /* 테이블 스타일 */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f9fafb;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-table td {
+            padding: 12px 8px;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .data-table .text-right {
+            text-align: right;
+        }
+
+        /* 메타 광고 계정 선택 */
+        .meta-account-filter {
+            background: #f3f4f6;
+            padding: 12px;
+            margin: 8px;
+            border-radius: 8px;
+        }
+
+        .meta-account-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        /* LIVE 광고 미리보기 */
+        .live-ads-container {
+            display: none;
+            padding: 16px;
+        }
+
+        .live-ads-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .live-ad-card {
+            min-width: 200px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .live-ad-image {
+            width: 100%;
+            height: 120px;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .live-ad-content {
+            padding: 12px;
+        }
+
+        .live-ad-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
     <div id="m-dashboard">
-        <!-- 상단 필터바 -->
-        <div id="m-filter-bar" class="flex flex-col gap-2 p-2 bg-white shadow sticky top-0 z-10">
-            <!-- 첫 번째 줄: 업체 선택과 업데이트 시간 -->
-            <div class="flex items-center gap-2">
-                <select id="company-select" class="flex-1 p-2 border rounded-lg text-sm">
+        <!-- 상단 필터 (웹버전과 동일) -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <select id="company-select" class="filter-select">
                     <option value="">업체 선택</option>
                     {% for company in company_names %}
                     <option value="{{ company }}">{{ company }}</option>
                     {% endfor %}
                 </select>
-                <span id="last-updated" class="text-xs text-gray-500 whitespace-nowrap">업데이트: --</span>
-            </div>
-            
-            <!-- 두 번째 줄: 기간 필터와 날짜 선택 -->
-            <div class="flex items-center gap-2">
-                <select id="period-filter" class="flex-1 p-2 border rounded-lg text-sm">
+                <select id="period-filter" class="filter-select">
                     <option value="today" selected>오늘</option>
                     <option value="yesterday">어제</option>
                     <option value="last7days">최근 7일</option>
@@ -69,113 +241,138 @@
                     <option value="last_month">지난 달</option>
                     <option value="custom">직접 선택</option>
                 </select>
-                <input type="date" id="start-date" class="p-2 border rounded-lg text-sm" value="{{ now.strftime('%Y-%m-%d') if now else '' }}" style="display: none;">
             </div>
-
-            <!-- 세 번째 줄: 메타 광고 계정 선택 (조건부 표시) -->
-            <div id="meta-account-filter" class="flex items-center gap-2" style="display: none;">
-                <select id="meta-account-select" class="flex-1 p-2 border rounded-lg text-sm">
-                    <option value="">메타 광고 계정 선택</option>
-                </select>
+            <div class="filter-row" id="date-range-row" style="display: none;">
+                <input type="date" id="start-date" class="date-input" value="{{ now.strftime('%Y-%m-%d') if now else '' }}">
+                <input type="date" id="end-date" class="date-input" value="{{ now.strftime('%Y-%m-%d') if now else '' }}">
             </div>
+            <div class="update-time" id="last-updated">업데이트: --</div>
         </div>
 
-        <!-- KPI 카드 (5개) -->
-        <div id="m-kpi-cards" class="p-2">
-            <div class="grid grid-cols-2 gap-2">
-                <!-- KPI 1: 매출 -->
-                <div class="kpi-card bg-white p-3 rounded-xl shadow-sm">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
-                </div>
-                <!-- KPI 2: 방문자 -->
-                <div class="kpi-card bg-white p-3 rounded-xl shadow-sm">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
-                </div>
-                <!-- KPI 3: 광고비 -->
-                <div class="kpi-card bg-white p-3 rounded-xl shadow-sm">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
-                </div>
-                <!-- KPI 4: 구매수 -->
-                <div class="kpi-card bg-white p-3 rounded-xl shadow-sm">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
-                </div>
-                <!-- KPI 5: ROAS (full width) -->
-                <div class="kpi-card bg-white p-3 rounded-xl shadow-sm col-span-2">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
+        <!-- 사이트 성과 요약 (핵심 KPI) -->
+        <div class="section">
+            <div class="section-header">사이트 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">사이트 매출</div>
+                        <div class="kpi-value" id="site-revenue">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">방문자</div>
+                        <div class="kpi-value" id="total-visitors">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">광고비</div>
+                        <div class="kpi-value" id="ad-spend">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">구매수</div>
+                        <div class="kpi-value" id="total-purchases">--</div>
+                    </div>
+                    <div class="kpi-card" style="grid-column: 1 / -1;">
+                        <div class="kpi-label">ROAS</div>
+                        <div class="kpi-value" id="roas">--</div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 사이트 성과 -->
-        <div id="m-site-perf" class="p-2">
-            <div class="flex justify-between p-3 bg-gray-50 rounded-xl">
-                <div class="flex-1">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
+        <div class="section">
+            <div class="section-header">사이트 성과</div>
+            <div class="section-content">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">주문수</div>
+                        <div class="kpi-value" id="orders-count">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">상품매출</div>
+                        <div class="kpi-value" id="product-revenue">--</div>
+                    </div>
                 </div>
-                <div class="flex-1 text-right">
-                    <div class="skeleton h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="skeleton h-6 bg-gray-200 rounded"></div>
+            </div>
+        </div>
+
+        <!-- 카페24 상품판매 -->
+        <div class="section">
+            <div class="section-header">카페24 상품판매</div>
+            <div class="section-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>상품명</th>
+                                <th class="text-right">판매량</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cafe24-products">
+                            <tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- 카페24 상위 상품 -->
-        <div id="m-top-products" class="p-2">
-            <h3 class="text-lg font-semibold mb-2">상위 상품</h3>
-            <div class="bg-white rounded-xl shadow-sm divide-y">
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
+        <!-- GA4 소스별 유입수 -->
+        <div class="section">
+            <div class="section-header">GA4 소스별 유입수</div>
+            <div class="section-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>소스</th>
+                                <th class="text-right">유입수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ga4-sources">
+                            <tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- GA4 상위 소스 -->
-        <div id="m-top-sources" class="p-2">
-            <h3 class="text-lg font-semibold mb-2">상위 소스</h3>
-            <div class="bg-white rounded-xl shadow-sm divide-y">
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
-                <div class="skeleton h-12 bg-gray-200 rounded"></div>
+        <!-- 메타 광고 계정 선택 (웹버전과 동일) -->
+        <div class="meta-account-filter" id="meta-account-filter" style="display: none;">
+            <select id="meta-account-select" class="meta-account-select">
+                <option value="">메타 광고 계정 선택</option>
+            </select>
+        </div>
+
+        <!-- 메타 광고 성과 테이블 -->
+        <div class="section">
+            <div class="section-header">메타 광고 성과</div>
+            <div class="section-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>캠페인</th>
+                                <th>광고</th>
+                                <th class="text-right">지출</th>
+                                <th class="text-right">CPC</th>
+                                <th class="text-right">구매</th>
+                                <th class="text-right">ROAS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meta-ads-table">
+                            <tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- 메타 광고 성과 -->
-        <div id="m-meta-ads" class="p-2">
-            <h3 class="text-lg font-semibold mb-2">메타 광고 성과</h3>
-            <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-                <table class="w-full whitespace-nowrap">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="p-2 text-left text-sm w-1/6">캠페인</th>
-                            <th class="p-2 text-left text-sm w-1/6">광고</th>
-                            <th class="p-2 text-right text-sm w-1/6">지출</th>
-                            <th class="p-2 text-right text-sm w-1/6">CPC</th>
-                            <th class="p-2 text-right text-sm w-1/6">구매</th>
-                            <th class="p-2 text-right text-sm w-1/6">ROAS</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="6" class="skeleton h-12 bg-gray-200 rounded"></td></tr>
-                        <tr><td colspan="6" class="skeleton h-12 bg-gray-200 rounded"></td></tr>
-                        <tr><td colspan="6" class="skeleton h-12 bg-gray-200 rounded"></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- LIVE 광고 미리보기 (조건부 표시) -->
-        <div id="m-live-ads" class="p-2" style="display: none;">
-            <h3 class="text-lg font-semibold mb-2">LIVE 광고</h3>
-            <div class="flex overflow-x-scroll snap-x gap-2 pb-2">
-                <div class="skeleton w-64 h-48 bg-gray-200 rounded-xl flex-shrink-0"></div>
-                <div class="skeleton w-64 h-48 bg-gray-200 rounded-xl flex-shrink-0"></div>
-                <div class="skeleton w-64 h-48 bg-gray-200 rounded-xl flex-shrink-0"></div>
+        <!-- LIVE 광고 미리보기 -->
+        <div class="section" id="live-ads-section" style="display: none;">
+            <div class="section-header">LIVE 광고 미리보기</div>
+            <div class="live-ads-container">
+                <div class="live-ads-scroll" id="live-ads-scroll">
+                    <div class="text-center">광고 계정을 선택해주세요</div>
+                </div>
             </div>
         </div>
     </div>
@@ -186,14 +383,14 @@
         // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
         document.addEventListener('DOMContentLoaded', function() {
             const periodFilter = document.getElementById('period-filter');
-            const startDate = document.getElementById('start-date');
+            const dateRangeRow = document.getElementById('date-range-row');
             
-            if (periodFilter && startDate) {
+            if (periodFilter && dateRangeRow) {
                 periodFilter.addEventListener('change', function() {
                     if (this.value === 'custom') {
-                        startDate.style.display = 'block';
+                        dateRangeRow.style.display = 'flex';
                     } else {
-                        startDate.style.display = 'none';
+                        dateRangeRow.style.display = 'none';
                     }
                 });
             }

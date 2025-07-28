@@ -283,22 +283,25 @@
       loading.style.display = 'block';
       errorMessage.style.display = 'none';
       
-      fetch('/login', {
+      fetch('/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+        body: `user_id=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
       })
-      .then(response => response.json())
-      .then(data => {
+      .then(response => {
         loading.style.display = 'none';
         
-        if (data.success) {
-          // 모바일 대시보드로 리다이렉트
+        if (response.redirected) {
+          // 리다이렉트된 경우 (로그인 성공)
+          window.location.href = response.url;
+        } else if (response.ok) {
+          // 성공 응답
           window.location.href = '/?mobile=true';
         } else {
-          errorMessage.textContent = data.message || '로그인에 실패했습니다.';
+          // 에러 응답
+          errorMessage.textContent = '로그인에 실패했습니다.';
           errorMessage.style.display = 'block';
         }
       })

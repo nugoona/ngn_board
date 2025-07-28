@@ -32,7 +32,41 @@ function formatPercentage(num) {
 }
 
 // ─────────────────────────────────────────────
-// 3) API 호출 함수 (웹버전과 동일한 구조)
+// 3) 웹버전과 호환되는 함수들 (filters.js 호환)
+// ─────────────────────────────────────────────
+
+// 웹버전의 updateAllData 함수와 동일한 역할
+async function updateAllData() {
+    console.log('🔄 모바일 updateAllData() 호출');
+    await fetchMobileData();
+}
+
+// 웹버전의 fetchPerformanceSummaryData 함수와 동일한 역할
+async function fetchPerformanceSummaryData() {
+    console.log('🔄 모바일 fetchPerformanceSummaryData() 호출');
+    await fetchMobileData();
+}
+
+// 웹버전의 fetchCafe24SalesData 함수와 동일한 역할
+async function fetchCafe24SalesData() {
+    console.log('🔄 모바일 fetchCafe24SalesData() 호출');
+    await fetchMobileData();
+}
+
+// 웹버전의 fetchCafe24ProductSalesData 함수와 동일한 역할
+async function fetchCafe24ProductSalesData() {
+    console.log('🔄 모바일 fetchCafe24ProductSalesData() 호출');
+    await fetchMobileData();
+}
+
+// 웹버전의 fetchGa4SourceSummaryData 함수와 동일한 역할
+async function fetchGa4SourceSummaryData() {
+    console.log('🔄 모바일 fetchGa4SourceSummaryData() 호출');
+    await fetchMobileData();
+}
+
+// ─────────────────────────────────────────────
+// 4) API 호출 함수 (웹버전과 동일한 구조)
 // ─────────────────────────────────────────────
 async function fetchMobileData() {
     if (isLoading) return;
@@ -42,10 +76,10 @@ async function fetchMobileData() {
     
     try {
         // 현재 필터 값들 가져오기 (웹버전과 동일)
-        const companySelect = document.getElementById('company-select');
-        const startDate = document.getElementById('start-date');
-        const endDate = document.getElementById('end-date');
-        const periodSelect = document.getElementById('period-filter');
+        const companySelect = document.getElementById('accountFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const periodSelect = document.getElementById('periodFilter');
         
         const companyName = companySelect ? companySelect.value : 'all';
         const period = periodSelect ? periodSelect.value : 'today';
@@ -79,8 +113,8 @@ async function fetchMobileData() {
         mobileData = data;
         
         // 웹버전과 동일한 업데이트 시간 표시
-        const lastUpdated = document.getElementById('last-updated');
-        if (lastUpdated && data.latest_update) {
+        const updatedAtText = document.getElementById('updatedAtText');
+        if (updatedAtText && data.latest_update) {
             const date = new Date(data.latest_update.replace(/-/g, ':').replace('T', ' '));
             const timeString = date.toLocaleTimeString('ko-KR', {
                 hour: '2-digit',
@@ -88,7 +122,7 @@ async function fetchMobileData() {
                 second: '2-digit',
                 hour12: true
             });
-            lastUpdated.textContent = `업데이트: ${timeString}`;
+            updatedAtText.textContent = `업데이트: ${timeString}`;
         }
         
         // 웹버전과 동일한 데이터 렌더링
@@ -103,11 +137,11 @@ async function fetchMobileData() {
 }
 
 // ─────────────────────────────────────────────
-// 4) 메타 광고 계정 목록 조회
+// 5) 메타 광고 계정 목록 조회
 // ─────────────────────────────────────────────
 async function fetchMetaAccounts() {
     try {
-        const companySelect = document.getElementById('company-select');
+        const companySelect = document.getElementById('accountFilter');
         const companyName = companySelect ? companySelect.value : 'all';
         
         const response = await fetch('/m/get_meta_accounts', {
@@ -137,15 +171,15 @@ async function fetchMetaAccounts() {
 }
 
 // ─────────────────────────────────────────────
-// 5) 메타 광고별 성과 조회
+// 6) 메타 광고별 성과 조회
 // ─────────────────────────────────────────────
 async function fetchMetaAdsByAccount(accountId) {
     if (!accountId) return;
     
     try {
-        const periodSelect = document.getElementById('period-filter');
-        const startDate = document.getElementById('start-date');
-        const endDate = document.getElementById('end-date');
+        const periodSelect = document.getElementById('periodFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
         
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
@@ -181,7 +215,7 @@ async function fetchMetaAdsByAccount(accountId) {
 }
 
 // ─────────────────────────────────────────────
-// 6) LIVE 광고 미리보기 조회
+// 7) LIVE 광고 미리보기 조회
 // ─────────────────────────────────────────────
 async function fetchLiveAds(accountId) {
     if (!accountId) return;
@@ -214,21 +248,21 @@ async function fetchLiveAds(accountId) {
 }
 
 // ─────────────────────────────────────────────
-// 7) 에러 처리 함수
+// 8) 에러 처리 함수
 // ─────────────────────────────────────────────
 function showError(message) {
     console.error('🚨 에러:', message);
 }
 
 // ─────────────────────────────────────────────
-// 8) 필터 이벤트 핸들러 (웹버전과 동일)
+// 9) 필터 이벤트 핸들러 (웹버전과 동일)
 // ─────────────────────────────────────────────
 function setupFilters() {
-    const companySelect = document.getElementById('company-select');
-    const startDate = document.getElementById('start-date');
-    const endDate = document.getElementById('end-date');
-    const periodSelect = document.getElementById('period-filter');
-    const metaAccountSelect = document.getElementById('meta-account-select');
+    const companySelect = document.getElementById('accountFilter');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const periodSelect = document.getElementById('periodFilter');
+    const metaAccountSelect = document.getElementById('metaAccountSelector');
     
     // 기간 필터 변경 시
     if (periodSelect) {
@@ -236,12 +270,12 @@ function setupFilters() {
             console.log('📅 기간 변경:', periodSelect.value);
             
             // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
-            const dateRangeRow = document.getElementById('date-range-row');
-            if (dateRangeRow) {
-                if (periodSelect.value === 'custom') {
-                    dateRangeRow.style.display = 'flex';
+            const dateRangeContainer = document.getElementById('dateRangeContainer');
+            if (dateRangeContainer) {
+                if (periodSelect.value === 'manual') {
+                    dateRangeContainer.style.display = 'flex';
                 } else {
-                    dateRangeRow.style.display = 'none';
+                    dateRangeContainer.style.display = 'none';
                 }
             }
             
@@ -308,7 +342,7 @@ function setupFilters() {
 }
 
 // ─────────────────────────────────────────────
-// 9) 초기화 함수
+// 10) 초기화 함수
 // ─────────────────────────────────────────────
 function initMobileDashboard() {
     console.log('🚀 모바일 대시보드 초기화 시작...');
@@ -321,12 +355,12 @@ function initMobileDashboard() {
 }
 
 // ─────────────────────────────────────────────
-// 10) DOM 로드 시 초기화
+// 11) DOM 로드 시 초기화
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', initMobileDashboard);
 
 // ─────────────────────────────────────────────
-// 11) 데이터 렌더링 함수 (요구사항에 맞게 구현)
+// 12) 데이터 렌더링 함수 (요구사항에 맞게 구현)
 // ─────────────────────────────────────────────
 function renderMobileData(data) {
     console.log('🎨 모바일 데이터 렌더링 시작...');
@@ -451,7 +485,7 @@ function renderMetaAccountFilter(accounts) {
     console.log('🏢 메타 광고 계정 필터 렌더링:', accounts);
     
     const metaAccountFilter = document.getElementById('meta-account-filter');
-    const metaAccountSelect = document.getElementById('meta-account-select');
+    const metaAccountSelect = document.getElementById('metaAccountSelector');
     
     if (!metaAccountFilter || !metaAccountSelect) return;
     
@@ -567,7 +601,7 @@ function hideLiveAdsSection() {
 }
 
 // ─────────────────────────────────────────────
-// 12) 디버깅용 전역 함수 (개발용)
+// 13) 디버깅용 전역 함수 (개발용)
 // ─────────────────────────────────────────────
 window.mobileDashboard = {
     fetchData: fetchMobileData,

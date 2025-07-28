@@ -224,29 +224,29 @@
 </head>
 <body>
     <div id="m-dashboard">
-        <!-- 상단 필터 (웹버전과 동일) -->
+        <!-- 상단 필터 (웹버전과 동일한 ID 사용) -->
         <div class="filter-section">
             <div class="filter-row">
-                <select id="company-select" class="filter-select">
+                <select id="accountFilter" class="filter-select">
                     <option value="">업체 선택</option>
                     {% for company in company_names %}
                     <option value="{{ company }}">{{ company }}</option>
                     {% endfor %}
                 </select>
-                <select id="period-filter" class="filter-select">
+                <select id="periodFilter" class="filter-select">
                     <option value="today" selected>오늘</option>
                     <option value="yesterday">어제</option>
                     <option value="last7days">최근 7일</option>
                     <option value="current_month">이번 달</option>
                     <option value="last_month">지난 달</option>
-                    <option value="custom">직접 선택</option>
+                    <option value="manual">직접 선택</option>
                 </select>
             </div>
-            <div class="filter-row" id="date-range-row" style="display: none;">
-                <input type="date" id="start-date" class="date-input" value="{{ now.strftime('%Y-%m-%d') if now else '' }}">
-                <input type="date" id="end-date" class="date-input" value="{{ now.strftime('%Y-%m-%d') if now else '' }}">
+            <div class="filter-row" id="dateRangeContainer" style="display: none;">
+                <input type="text" id="startDate" class="date-input" placeholder="시작일" readonly>
+                <input type="text" id="endDate" class="date-input" placeholder="종료일" readonly>
             </div>
-            <div class="update-time" id="last-updated">업데이트: --</div>
+            <div class="update-time" id="updatedAtText">업데이트: --</div>
         </div>
 
         <!-- 사이트 성과 요약 (핵심 KPI) -->
@@ -337,7 +337,7 @@
 
         <!-- 메타 광고 계정 선택 (웹버전과 동일) -->
         <div class="meta-account-filter" id="meta-account-filter" style="display: none;">
-            <select id="meta-account-select" class="meta-account-select">
+            <select id="metaAccountSelector" class="meta-account-select">
                 <option value="">메타 광고 계정 선택</option>
             </select>
         </div>
@@ -377,24 +377,13 @@
         </div>
     </div>
 
+    <!-- 웹버전과 동일한 전역 변수 설정 -->
+    <script>
+        const userCompanyList = {{ session['company_names'] | tojson }};
+        const currentUserId = "{{ session['user_id'] }}";
+    </script>
+
     <!-- 모바일 전용 JS -->
     <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}"></script>
-    <script>
-        // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
-        document.addEventListener('DOMContentLoaded', function() {
-            const periodFilter = document.getElementById('period-filter');
-            const dateRangeRow = document.getElementById('date-range-row');
-            
-            if (periodFilter && dateRangeRow) {
-                periodFilter.addEventListener('change', function() {
-                    if (this.value === 'custom') {
-                        dateRangeRow.style.display = 'flex';
-                    } else {
-                        dateRangeRow.style.display = 'none';
-                    }
-                });
-            }
-        });
-    </script>
 </body>
 </html> 

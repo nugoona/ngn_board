@@ -46,6 +46,65 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
+    /* 모바일 최적화 */
+    @media (max-width: 768px) {
+      .login-container {
+        padding: 32px 24px;
+        margin: 20px;
+        max-width: calc(100% - 40px);
+        border-radius: 16px;
+      }
+      
+      .login-logo {
+        font-size: 24px;
+        margin-bottom: 24px;
+      }
+      
+      .login-logo img {
+        width: 32px;
+        height: 32px;
+      }
+      
+      input[type="text"],
+      input[type="password"] {
+        padding: 14px 16px;
+        font-size: 16px; /* iOS에서 줌 방지 */
+      }
+      
+      .login-btn,
+      .demo-btn {
+        padding: 14px;
+        font-size: 16px;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      label {
+        font-size: 13px;
+      }
+    }
+    
+    /* 작은 모바일 화면 */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 24px 20px;
+        margin: 16px;
+        max-width: calc(100% - 32px);
+      }
+      
+      .login-logo {
+        font-size: 22px;
+        margin-bottom: 20px;
+      }
+      
+      .login-logo img {
+        width: 28px;
+        height: 28px;
+      }
+    }
+
     .login-logo {
       text-align: center;
       font-size: 28px;

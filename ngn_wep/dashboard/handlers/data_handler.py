@@ -379,6 +379,9 @@ def get_dashboard_data_route():
             campaign_id = data.get("campaign_id")
             adset_id = data.get("adset_id")
             date_type = data.get("date_type", "summary")
+            # 페이지네이션 파라미터 (웹 UI에 영향 없도록 기본값 유지)
+            limit = data.get("limit", None)
+            page = data.get("page", 1)
 
             rows = get_meta_ads_insight_table(
                 level=level,
@@ -388,7 +391,9 @@ def get_dashboard_data_route():
                 account_id=account_id,
                 campaign_id=campaign_id,
                 adset_id=adset_id,
-                date_type=date_type
+                date_type=date_type,
+                limit=limit,
+                page=page
             )
             t2 = time.time()
             timing_log["meta_ads_insight_table"] = round(t2-t1, 3)

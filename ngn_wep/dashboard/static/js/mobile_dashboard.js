@@ -819,9 +819,9 @@ function renderMetaAdsByAccount(adsData) {
         tbody.appendChild(totalRow);
     }
     
-    // 페이지네이션 업데이트
-    metaAdsTotalCount = processedAdsData.length;
-    updatePagination('meta_ads', metaAdsCurrentPage, processedAdsData.length);
+    // 페이지네이션 업데이트 (전체 데이터 개수 사용)
+    metaAdsTotalCount = adsData.length; // 원본 데이터의 전체 개수
+    updatePagination('meta_ads', metaAdsCurrentPage, adsData.length);
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }

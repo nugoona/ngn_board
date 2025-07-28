@@ -47,7 +47,9 @@ def get_meta_ads_insight_table(
     account_id: Optional[str] = None,
     campaign_id: Optional[str] = None,
     adset_id: Optional[str] = None,
-    date_type: str = "summary"
+    date_type: str = "summary",
+    limit: int = None,
+    page: int = 1
 ):
     client = bigquery.Client()
     conditions = [f"A.date BETWEEN '{start_date}' AND '{end_date}'"]
@@ -220,11 +222,34 @@ def get_meta_ads_insight_table(
 
     if level == "ad":
         conditions.append(f"({latest_alias}.campaign_name IS NULL OR NOT LOWER({latest_alias}.campaign_name) LIKE '%instagram%')")
+        
+        # 광고 상태 필터링: 과거 기간이면 모든 광고, 최근 기간이면 ACTIVE만
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
+        
+        # 최근 7일 이내인지 확인
+        is_recent_period = (today - end_date_obj).days <= 7
+        
+        if is_recent_period:
+            # 최근 기간: ACTIVE 광고만
+            conditions.append(f"({latest_alias}.ad_status = 'ACTIVE' OR {latest_alias}.ad_status IS NULL)")
+        else:
+            # 과거 기간: 모든 광고 (ACTIVE, PAUSED, DELETED 등)
+            print(f"[INFO] 과거 기간 ({start_date} ~ {end_date}) - 모든 광고 상태 포함")
+            
     elif level != "account":
         conditions.append("(A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')")
 
     order_by = "ORDER BY date DESC" if date_type == "daily" else ""
 
+    # 페이지네이션 처리 (웹 UI에 영향 없도록 기본값 유지)
+    limit_clause = ""
+    if limit is not None and page > 0:
+        offset = (page - 1) * limit
+        limit_clause = f" LIMIT {limit} OFFSET {offset}"
+    
     query = f"""
       SELECT
         {select_date}
@@ -240,6 +265,7 @@ def get_meta_ads_insight_table(
       GROUP BY { (group_date + ', ' if group_date else '') + group_cols }
       HAVING SUM(A.spend) > 0
       {order_by}
+      {limit_clause}
     """
 
     try:

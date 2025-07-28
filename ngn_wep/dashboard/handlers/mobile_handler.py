@@ -267,10 +267,12 @@ def get_data():
             
             if result and "rows" in result:
                 response_data["cafe24_product_sales"] = result.get("rows", [])[:5]
-                print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개")
+                response_data["cafe24_product_sales_total_count"] = result.get("total_count", 0)
+                print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개 / 전체: {response_data['cafe24_product_sales_total_count']}개")
             else:
                 print(f"[MOBILE] ⚠️ Cafe24 Product Sales 결과가 비어있음")
                 response_data["cafe24_product_sales"] = []
+                response_data["cafe24_product_sales_total_count"] = 0
         except Exception as e:
             print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
             response_data["cafe24_product_sales"] = []
@@ -376,15 +378,21 @@ def get_meta_ads_by_account():
         else:
             company_name = str(raw_company_name).strip().lower()
         
+        # 페이지네이션 파라미터 추출
+        page = data.get("page", 1)
+        limit = data.get("limit", 10)
+        
         # 메타 광고별 성과 조회 (광고 탭 기준)
-        print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}")
+        print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}, page={page}, limit={limit}")
         
         ads_data = get_meta_ads_insight_table(
             level="ad",
             company_name=company_name,
             start_date=start_date,
             end_date=end_date,
-            account_id=account_id
+            account_id=account_id,
+            limit=limit,
+            page=page
         )
         
         print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")

@@ -34,6 +34,24 @@ auth_blueprint = Blueprint("auth", __name__, template_folder=template_dir)
 # ───────────────────────────────────────────────
 @auth_blueprint.route("/login", methods=["GET", "POST"])
 def login():
+    # 모바일 디바이스 감지
+    def is_mobile_device():
+        user_agent = request.headers.get('User-Agent', '').lower()
+        mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone']
+        
+        # 화면 크기 기반 추가 감지 (쿼리 파라미터로)
+        screen_width = request.args.get('screen_width')
+        if screen_width:
+            try:
+                width = int(screen_width)
+                if width <= 768:  # 모바일 기준 너비
+                    return True
+            except ValueError:
+                pass
+        
+        # User-Agent 기반 감지
+        return any(keyword in user_agent for keyword in mobile_keywords)
+    
     if request.method == "POST":
         user_id   = request.form["user_id"]
         password  = request.form["password"]
@@ -51,10 +69,18 @@ def login():
             result = list(client.query(query).result())
         except Exception as e:
             print(f"[ERROR] 유저 쿼리 실패: {e}")
+            # 모바일인 경우 모바일 로그인 페이지로 에러 표시
+            if is_mobile_device():
+                return render_template("mobile/login.html",
+                                       error="내부 오류가 발생했습니다.")
             return render_template("login.html",
                                    error="내부 오류가 발생했습니다.")
 
         if not result:
+            # 모바일인 경우 모바일 로그인 페이지로 에러 표시
+            if is_mobile_device():
+                return render_template("mobile/login.html",
+                                       error="아이디 또는 비밀번호가 올바르지 않습니다.")
             return render_template("login.html",
                                    error="아이디 또는 비밀번호가 올바르지 않습니다.")
 
@@ -93,6 +119,10 @@ def login():
 
         except Exception as e:
             print(f"[ERROR] 회사 목록 쿼리 실패: {e}")
+            # 모바일인 경우 모바일 로그인 페이지로 에러 표시
+            if is_mobile_device():
+                return render_template("mobile/login.html",
+                                       error="회사 목록을 불러올 수 없습니다.")
             return render_template("login.html",
                                    error="회사 목록을 불러올 수 없습니다.")
 
@@ -100,7 +130,10 @@ def login():
         print(f"[INFO] 로그인 성공: {user_id} / 업체 수: {len(company_names)}")
         return redirect("/")
 
-    # GET
+    # GET - 모바일인 경우 모바일 로그인 페이지 렌더링
+    if is_mobile_device():
+        return render_template("mobile/login.html")
+    
     return render_template("login.html")
 
 # ───────────────────────────────────────────────

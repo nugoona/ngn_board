@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NGN 대시보드 로그인</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      opacity: 0.3;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 32px 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      width: calc(100% - 32px);
+      max-width: 400px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .login-logo img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 12px;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .demo-btn {
+      width: 100%;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #667eea;
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .error-message {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 8px;
+      text-align: center;
+      display: none;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #667eea;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* 모바일 최적화 */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 28px 20px;
+        margin: 16px;
+        border-radius: 16px;
+      }
+      
+      .login-logo {
+        font-size: 22px;
+        margin-bottom: 28px;
+      }
+      
+      input[type="text"],
+      input[type="password"] {
+        padding: 14px 16px;
+        font-size: 16px;
+      }
+      
+      .login-btn,
+      .demo-btn {
+        padding: 14px;
+        font-size: 16px;
+      }
+    }
+
+    /* 작은 모바일 화면 */
+    @media (max-width: 360px) {
+      .login-container {
+        padding: 24px 16px;
+        margin: 12px;
+      }
+      
+      .login-logo {
+        font-size: 20px;
+        margin-bottom: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-logo">
+      <img src="{{ url_for('static', filename='img/favicon.ico') }}" alt="NGN">
+      NGN 대시보드
+    </div>
+    
+    <form id="loginForm" method="POST">
+      <div class="form-group">
+        <label for="username">아이디</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+      </div>
+      
+      <div class="form-group">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
+      </div>
+      
+      <button type="submit" class="login-btn">로그인</button>
+      <button type="button" class="demo-btn" onclick="loginAsDemo()">데모 로그인</button>
+      
+      <div class="error-message" id="errorMessage">{% if error %}{{ error }}{% endif %}</div>
+      <div class="loading" id="loading"></div>
+    </form>
+  </div>
+
+  <script>
+    // 페이지 로드 시 에러 메시지 표시
+    document.addEventListener('DOMContentLoaded', function() {
+      const errorMessage = document.getElementById('errorMessage');
+      if (errorMessage.textContent.trim()) {
+        errorMessage.style.display = 'block';
+      }
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorMessage = document.getElementById('errorMessage');
+      const loading = document.getElementById('loading');
+      
+      // 로딩 표시
+      loading.style.display = 'block';
+      errorMessage.style.display = 'none';
+      
+      fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        loading.style.display = 'none';
+        
+        if (data.success) {
+          // 모바일 대시보드로 리다이렉트
+          window.location.href = '/?mobile=true';
+        } else {
+          errorMessage.textContent = data.message || '로그인에 실패했습니다.';
+          errorMessage.style.display = 'block';
+        }
+      })
+      .catch(error => {
+        loading.style.display = 'none';
+        errorMessage.textContent = '네트워크 오류가 발생했습니다.';
+        errorMessage.style.display = 'block';
+        console.error('Login error:', error);
+      });
+    });
+
+    function loginAsDemo() {
+      document.getElementById('username').value = 'demo';
+      document.getElementById('password').value = 'demo123';
+      document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    }
+
+    // 자동 포커스
+    document.getElementById('username').focus();
+  </script>
+</body>
+</html> 

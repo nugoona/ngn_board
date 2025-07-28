@@ -72,15 +72,24 @@ else:
 # 6) 모바일 디바이스 감지 함수
 # ─────────────────────────────────────────────
 def is_mobile_device():
-    """모바일 디바이스인지 확인"""
+    """모바일 디바이스인지 확인 - 개선된 버전"""
     user_agent = request.headers.get('User-Agent', '').lower()
-    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone']
+    
+    # 확장된 모바일 키워드 목록
+    mobile_keywords = [
+        'mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone',
+        'opera mini', 'opera mobi', 'mobile safari', 'mobile chrome',
+        'samsung', 'lg', 'huawei', 'xiaomi', 'oneplus', 'motorola',
+        'nexus', 'pixel', 'galaxy', 'note', 'edge', 'plus',
+        'kindle', 'nook', 'tablet', 'phone', 'smartphone',
+        'chrome mobile', 'firefox mobile', 'safari mobile'
+    ]
     
     # 디버깅을 위한 로그 추가
     print(f"[MOBILE DETECTION] User-Agent: {user_agent}")
     print(f"[MOBILE DETECTION] Mobile keywords found: {[kw for kw in mobile_keywords if kw in user_agent]}")
     
-    # 화면 크기 기반 추가 감지 (쿼리 파라미터로)
+    # 1. 화면 크기 기반 감지 (쿼리 파라미터로)
     screen_width = request.args.get('screen_width')
     if screen_width:
         try:
@@ -91,9 +100,47 @@ def is_mobile_device():
         except ValueError:
             pass
     
-    # User-Agent 기반 감지
-    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
-    print(f"[MOBILE DETECTION] Result: {is_mobile}")
+    # 2. User-Agent 기반 감지 (개선된 키워드)
+    is_mobile_ua = any(keyword in user_agent for keyword in mobile_keywords)
+    
+    # 3. 추가 모바일 감지: Accept 헤더 확인
+    accept_header = request.headers.get('Accept', '').lower()
+    is_mobile_accept = 'application/vnd.wap.xhtml+xml' in accept_header or 'text/vnd.wap.wml' in accept_header
+    
+    # 4. 추가 모바일 감지: 특정 모바일 브라우저 패턴
+    mobile_patterns = [
+        r'mozilla/.*mobile',
+        r'mozilla/.*android.*mobile',
+        r'mozilla/.*iphone.*mobile',
+        r'mozilla/.*ipad.*mobile',
+        r'chrome/.*mobile',
+        r'firefox/.*mobile',
+        r'safari/.*mobile',
+        r'android.*mobile',
+        r'iphone.*mobile',
+        r'ipad.*mobile'
+    ]
+    
+    import re
+    is_mobile_pattern = any(re.search(pattern, user_agent, re.IGNORECASE) for pattern in mobile_patterns)
+    
+    # 5. 추가 모바일 감지: Viewport 확인 (클라이언트 사이드에서 전송된 경우)
+    viewport_width = request.args.get('viewport_width')
+    if viewport_width:
+        try:
+            width = int(viewport_width)
+            if width <= 768:
+                print(f"[MOBILE DETECTION] Viewport width detected: {width}px (mobile)")
+                return True
+        except ValueError:
+            pass
+    
+    # 6. 최종 모바일 판단
+    is_mobile = is_mobile_ua or is_mobile_accept or is_mobile_pattern
+    
+    print(f"[MOBILE DETECTION] UA-based: {is_mobile_ua}, Accept-based: {is_mobile_accept}, Pattern-based: {is_mobile_pattern}")
+    print(f"[MOBILE DETECTION] Final Result: {is_mobile}")
+    
     return is_mobile
 
 # ─────────────────────────────────────────────

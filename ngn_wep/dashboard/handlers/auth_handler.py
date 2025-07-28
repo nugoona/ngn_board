@@ -130,10 +130,11 @@ def login():
         print(f"[INFO] 로그인 성공: {user_id} / 업체 수: {len(company_names)}")
         return redirect("/")
 
-    # GET - 모바일인 경우 모바일 로그인 페이지 렌더링
+    # GET - 모바일인 경우에만 모바일 로그인 페이지 렌더링
     if is_mobile_device():
         return render_template("mobile/login.html")
     
+    # 웹은 원래 로그인 페이지 사용
     return render_template("login.html")
 
 # ───────────────────────────────────────────────

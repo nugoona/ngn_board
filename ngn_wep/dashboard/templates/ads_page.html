@@ -27,9 +27,10 @@
 </div>
 
 <script>
-  const userCompanyList = {{ session['company_names'] | tojson }};
-  const currentUserId = "{{ session['user_id'] }}";
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
 </script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
 <!-- ✅ 햄버거 메뉴 및 최종 업데이트 -->
 <div class="nav-buttons">

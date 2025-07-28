@@ -21,9 +21,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
 
   <script>
-    const userCompanyList = {{ session['company_names'] | tojson }};
-    const currentUserId = "{{ session['user_id'] }}";
+    var userCompanyList = {{ session['company_names'] | tojson }};
+    var currentUserId = "{{ session['user_id'] }}";
   </script>
+  <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 </head>
 
 <body>

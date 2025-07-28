@@ -530,8 +530,8 @@ function renderMobileData(data) {
         renderGa4SourceSummary(data.ga4_source_summary);
     }
     
-    // 4. 메타 광고 (기본 계정별 성과)
-    if (data.meta_ads) {
+    // 4. 메타 광고 (기본 계정별 성과) - 메타 광고 계정이 선택되지 않은 경우에만 렌더링
+    if (data.meta_ads && !selectedMetaAccount) {
         renderMetaAds(data.meta_ads);
     }
     
@@ -694,20 +694,28 @@ function renderMetaAdsByAccount(adsData) {
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
     
     const tbody = document.getElementById('meta-ads-table');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error('❌ meta-ads-table 요소를 찾을 수 없습니다');
+        return;
+    }
     
     tbody.innerHTML = '';
     
-    if (adsData.length === 0) {
+    if (!adsData || adsData.length === 0) {
+        console.log('⚠️ 메타 광고 데이터가 없습니다');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
+    console.log('📊 원본 메타 광고 데이터:', adsData);
+    
     // 모바일용 데이터 처리
     const processedAdsData = processMetaAdsForMobile(adsData);
+    console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
     
     // 광고별 성과 데이터 렌더링
-    processedAdsData.forEach(row => {
+    processedAdsData.forEach((row, index) => {
+        console.log(`📊 광고 ${index + 1}:`, row);
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
             <td class="text-truncate">${row.campaign_name || '-'}</td>
@@ -738,6 +746,8 @@ function renderMetaAdsByAccount(adsData) {
         `;
         tbody.appendChild(totalRow);
     }
+    
+    console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
 
 // LIVE 광고 미리보기 렌더링 (웹버전과 동일한 인스타그램 스타일)

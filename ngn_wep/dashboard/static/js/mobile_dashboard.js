@@ -758,27 +758,21 @@ function renderMetaAds(metaAds) {
 function renderMetaAccountFilter(accounts) {
     console.log('🏢 메타 광고 계정 필터 렌더링:', accounts);
     
-    const metaAccountFilter = document.getElementById('meta-account-filter');
     const metaAccountSelect = document.getElementById('metaAccountSelector');
     
-    if (!metaAccountFilter || !metaAccountSelect) return;
+    if (!metaAccountSelect) return;
     
-    // 계정이 있으면 필터 표시
+    // 기존 옵션 제거 (기본 옵션 제외)
+    metaAccountSelect.innerHTML = '<option value="">계정을 선택해주세요</option>';
+    
+    // 계정이 있으면 옵션 추가
     if (accounts && accounts.length > 0) {
-        metaAccountFilter.style.display = 'block';
-        
-        // 기존 옵션 제거 (기본 옵션 제외)
-        metaAccountSelect.innerHTML = '<option value="">메타 광고 계정 선택</option>';
-        
-        // 계정 옵션 추가
         accounts.forEach(account => {
             const option = document.createElement('option');
             option.value = account.account_id;
             option.textContent = account.account_name;
             metaAccountSelect.appendChild(option);
         });
-    } else {
-        metaAccountFilter.style.display = 'none';
     }
 }
 

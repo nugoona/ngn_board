@@ -1069,7 +1069,7 @@
         <div class="section">
             <div class="section-header">사이트 성과 요약</div>
             <div class="section-content">
-                <div class="kpi-grid">
+                <div class="kpi-grid" style="position: relative;">
                     <div class="kpi-card">
                         <div class="kpi-label">사이트 매출</div>
                         <div class="kpi-value" id="site-revenue">--</div>
@@ -1086,11 +1086,11 @@
                         <div class="kpi-label">매출대비 광고비</div>
                         <div class="kpi-value" id="ad-spend-ratio">--</div>
                     </div>
+                    <div id="loadingOverlaySitePerformance" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+                    </div>
                 </div>
-            </div>
-            <div id="loadingOverlaySitePerformance" class="loading-overlay">
-                <div class="spinner"></div>
-                <div class="loading-text">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
@@ -1098,7 +1098,7 @@
         <div class="section">
             <div class="section-header">광고 성과 요약</div>
             <div class="section-content">
-                <div class="kpi-grid">
+                <div class="kpi-grid" style="position: relative;">
                     <div class="kpi-card">
                         <div class="kpi-label">광고비</div>
                         <div class="kpi-value" id="ad-spend">--</div>
@@ -1115,11 +1115,11 @@
                         <div class="kpi-label">ROAS</div>
                         <div class="kpi-value" id="roas">--</div>
                     </div>
+                    <div id="loadingOverlayAdPerformance" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+                    </div>
                 </div>
-            </div>
-            <div id="loadingOverlayAdPerformance" class="loading-overlay">
-                <div class="spinner"></div>
-                <div class="loading-text">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
@@ -1127,7 +1127,7 @@
         <div class="section">
             <div class="section-header">카페24 상품판매</div>
             <div class="section-content">
-                <div class="table-container">
+                <div class="table-container" style="position: relative;">
                     <table class="data-table cafe24-products-table">
                         <thead>
                             <tr>
@@ -1140,13 +1140,13 @@
                             <tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>
                         </tbody>
                     </table>
+                    <div id="loadingOverlayCafe24Products" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+                    </div>
                 </div>
                 <!-- 카페24 상품판매 페이지네이션 -->
                 <div id="pagination_cafe24_product_sales" class="pagination-container"></div>
-            </div>
-            <div id="loadingOverlayCafe24Products" class="loading-overlay">
-                <div class="spinner"></div>
-                <div class="loading-text">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
@@ -1154,7 +1154,7 @@
         <div class="section">
             <div class="section-header">GA4 소스별 유입수</div>
             <div class="section-content">
-                <div class="table-container">
+                <div class="table-container" style="position: relative;">
                     <table class="data-table ga4-sources-table">
                         <thead>
                             <tr>
@@ -1166,11 +1166,11 @@
                             <tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>
                         </tbody>
                     </table>
+                    <div id="loadingOverlayGa4Sources" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+                    </div>
                 </div>
-            </div>
-            <div id="loadingOverlayGa4Sources" class="loading-overlay">
-                <div class="spinner"></div>
-                <div class="loading-text">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 
@@ -1205,7 +1205,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="table-container" style="overflow-x: auto;">
+                <div class="table-container" style="overflow-x: auto; position: relative;">
                     <table class="data-table" style="min-width: 600px;">
                         <thead>
                             <tr>
@@ -1221,13 +1221,13 @@
                             <tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>
                         </tbody>
                     </table>
+                    <div id="loadingOverlayMetaAds" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+                    </div>
                 </div>
                 <!-- 메타 광고 성과 페이지네이션 -->
                 <div id="pagination_meta_ads" class="pagination-container"></div>
-            </div>
-            <div id="loadingOverlayMetaAds" class="loading-overlay">
-                <div class="spinner"></div>
-                <div class="loading-text">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
 

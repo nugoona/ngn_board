@@ -203,7 +203,7 @@ def get_data():
             cache_buster = data.get('_cache_buster')
             ga4_data = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
             # not set 제외하고 상위 5개만
-            filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set"][:5]
+            filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set" and row.get("source", "").lower() != "(not set)"][:5]
             response_data["ga4_source_summary"] = filtered_sources
             print(f"[MOBILE] 📊 GA4 Source Summary 결과: {len(response_data['ga4_source_summary'])}개")
         except Exception as e:
@@ -291,7 +291,7 @@ def get_meta_ads_by_account():
         # 메타 광고별 성과 조회 (광고 탭 기준)
         ads_data = get_meta_ads_insight_table(
             level="ad",
-            company_name=account_id,
+            company_name=company_name,
             start_date=start_date,
             end_date=end_date,
             account_id=account_id

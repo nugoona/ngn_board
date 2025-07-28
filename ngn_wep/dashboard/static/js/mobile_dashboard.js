@@ -455,7 +455,7 @@ function renderCafe24ProductSales(products) {
     tbody.innerHTML = '';
     
     if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
@@ -464,6 +464,7 @@ function renderCafe24ProductSales(products) {
         row.innerHTML = `
             <td class="text-truncate">${product.item_product_name || '-'}</td>
             <td class="text-right">${formatNumber(product.item_qty || 0)}</td>
+            <td class="text-right">${formatNumber(product.item_orders || 0)}</td>
         `;
         tbody.appendChild(row);
     });
@@ -515,10 +516,10 @@ function renderMetaAds(metaAds) {
         tableRow.innerHTML = `
             <td class="text-truncate">${row.campaign_name || '-'}</td>
             <td class="text-truncate">${row.ad_name || '-'}</td>
-            <td class="text-right">${formatCurrency(row.total_spend || 0)}</td>
-            <td class="text-right">${formatCurrency(row.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(row.total_spend || 0)}</td>
+            <td class="text-right">${formatNumber(row.cpc || 0)}</td>
             <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
-            <td class="text-right">${formatPercentage(row.roas || 0)}</td>
+            <td class="text-right">${formatNumber(row.roas || 0)}</td>
         `;
         tbody.appendChild(tableRow);
     });
@@ -575,10 +576,10 @@ function renderMetaAdsByAccount(adsData) {
         tableRow.innerHTML = `
             <td class="text-truncate">${row.campaign_name || '-'}</td>
             <td class="text-truncate">${row.ad_name || '-'}</td>
-            <td class="text-right">${formatCurrency(row.spend || 0)}</td>
-            <td class="text-right">${formatCurrency(row.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(row.spend || 0)}</td>
+            <td class="text-right">${formatNumber(row.cpc || 0)}</td>
             <td class="text-right">${formatNumber(row.purchases || 0)}</td>
-            <td class="text-right">${formatPercentage(row.roas || 0)}</td>
+            <td class="text-right">${formatNumber(row.roas || 0)}</td>
         `;
         tbody.appendChild(tableRow);
     });
@@ -594,16 +595,16 @@ function renderMetaAdsByAccount(adsData) {
         totalRow.className = 'bg-gray-50 font-semibold';
         totalRow.innerHTML = `
             <td colspan="2" class="text-truncate">총합</td>
-            <td class="text-right">${formatCurrency(totalSpend)}</td>
-            <td class="text-right">${formatCurrency(totalCpc)}</td>
+            <td class="text-right">${formatNumber(totalSpend)}</td>
+            <td class="text-right">${formatNumber(totalCpc)}</td>
             <td class="text-right">${formatNumber(totalPurchases)}</td>
-            <td class="text-right">${formatPercentage(avgRoas)}</td>
+            <td class="text-right">${formatNumber(avgRoas)}</td>
         `;
         tbody.appendChild(totalRow);
     }
 }
 
-// LIVE 광고 미리보기 렌더링
+// LIVE 광고 미리보기 렌더링 (웹버전과 동일)
 function renderLiveAds(liveAds) {
     console.log('🖼️ LIVE 광고 미리보기 렌더링:', liveAds);
     
@@ -625,7 +626,7 @@ function renderLiveAds(liveAds) {
                 <img src="${ad.image_url || ''}" alt="광고" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
             </div>
             <div class="live-ad-content">
-                <div class="live-ad-title">${ad.headline || '광고 제목'}</div>
+                <div class="live-ad-title">${ad.headline || ad.ad_name || '광고 제목'}</div>
             </div>
         `;
         liveAdsScroll.appendChild(adCard);

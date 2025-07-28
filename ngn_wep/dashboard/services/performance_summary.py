@@ -44,35 +44,11 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
         COALESCE(ROUND(SUM(A.spend) / NULLIF(SUM(A.clicks), 0), 2), 0) AS avg_cpc,
         COALESCE(ROUND(SUM(A.clicks) / NULLIF(SUM(A.impressions), 0) * 100, 2), 0) AS click_through_rate,
         COALESCE(ROUND(SUM(A.purchases) / NULLIF(SUM(A.clicks), 0) * 100, 2), 0) AS conversion_rate,
-        COALESCE((
-            SELECT SUM(total_revenue)
-            FROM `winged-precept-443218-v8.ngn_dataset.cafe24_sales_summary` CS
-            WHERE CS.date BETWEEN '{start_date}' AND '{end_date}'
-              AND LOWER(CS.company_name) IN ({company_filter.replace(f"LOWER({latest_alias}.company_name)", "LOWER(CS.company_name)")})
-        ), 0) AS site_revenue,
-        COALESCE((
-            SELECT SUM(visitors)
-            FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_summary` GA
-            WHERE GA.date BETWEEN '{start_date}' AND '{end_date}'
-              AND LOWER(GA.company_name) IN ({company_filter.replace(f"LOWER({latest_alias}.company_name)", "LOWER(GA.company_name)")})
-        ), 0) AS total_visitors,
+        0 AS site_revenue,  -- 사이트 매출은 별도 조회 필요
+        0 AS total_visitors,  -- 방문자 수는 별도 조회 필요
         0 AS product_views,  -- 상품 조회는 별도 조회 필요
         0 AS views_per_visit,  -- 방문당 조회는 별도 조회 필요
-        CASE 
-            WHEN COALESCE((
-                SELECT SUM(total_revenue)
-                FROM `winged-precept-443218-v8.ngn_dataset.cafe24_sales_summary` CS
-                WHERE CS.date BETWEEN '{start_date}' AND '{end_date}'
-                  AND LOWER(CS.company_name) IN ({company_filter.replace(f"LOWER({latest_alias}.company_name)", "LOWER(CS.company_name)")})
-            ), 0) > 0 THEN
-                ROUND(SUM(A.spend) / COALESCE((
-                    SELECT SUM(total_revenue)
-                    FROM `winged-precept-443218-v8.ngn_dataset.cafe24_sales_summary` CS
-                    WHERE CS.date BETWEEN '{start_date}' AND '{end_date}'
-                      AND LOWER(CS.company_name) IN ({company_filter.replace(f"LOWER({latest_alias}.company_name)", "LOWER(CS.company_name)")})
-                ), 0) * 100, 2)
-            ELSE 0
-        END AS ad_spend_ratio,
+        0 AS ad_spend_ratio,  -- 광고비 비율은 별도 조회 필요
         CURRENT_TIMESTAMP() AS updated_at
       FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}` A
       LEFT JOIN (

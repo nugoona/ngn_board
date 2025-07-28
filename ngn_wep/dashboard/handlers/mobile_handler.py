@@ -252,6 +252,36 @@ def get_data():
             print(f"[MOBILE] ❌ Total Orders 오류: {e}")
             response_data["total_orders"] = 0
 
+        # 1-2. 모바일 전용: 사이트 매출과 방문자 데이터 가져오기
+        try:
+            print(f"[MOBILE] 🔄 사이트 매출과 방문자 데이터 호출 시작...")
+            
+            # 사이트 매출 가져오기
+            from ..services.cafe24_service import get_cafe24_sales_data
+            cafe24_sales = get_cafe24_sales_data(company_name, period, start_date, end_date, user_id=user_id)
+            site_revenue = sum(row.get('total_revenue', 0) for row in cafe24_sales) if cafe24_sales else 0
+            
+            # 방문자 수 가져오기
+            from ..services.ga4_source_summary import get_ga4_traffic_summary
+            ga4_traffic = get_ga4_traffic_summary(company_name, start_date, end_date, user_id=user_id)
+            total_visitors = sum(row.get('visitors', 0) for row in ga4_traffic) if ga4_traffic else 0
+            
+            # 광고비 비율 계산
+            ad_spend = first_row.get('ad_spend', 0) if performance_data else 0
+            ad_spend_ratio = round((ad_spend / site_revenue * 100), 2) if site_revenue > 0 else 0
+            
+            # Performance Summary 데이터 업데이트
+            if performance_data and len(performance_data) > 0:
+                performance_data[0]['site_revenue'] = site_revenue
+                performance_data[0]['total_visitors'] = total_visitors
+                performance_data[0]['ad_spend_ratio'] = ad_spend_ratio
+                response_data["performance_summary"] = [performance_data[0]]
+            
+            print(f"[MOBILE] ✅ 사이트 매출: {site_revenue}, 방문자: {total_visitors}, 광고비 비율: {ad_spend_ratio}%")
+        except Exception as e:
+            print(f"[MOBILE] ❌ 사이트 매출과 방문자 데이터 오류: {e}")
+            # 오류가 발생해도 기존 데이터는 유지
+
         # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
         try:
             print(f"[MOBILE] 🔄 Cafe24 Product Sales 호출 시작...")

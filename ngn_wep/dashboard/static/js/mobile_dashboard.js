@@ -338,6 +338,11 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         if (data.status === 'success' && data.meta_ads_insight_table) {
             console.log('📊 메타 광고별 성과 데이터:', data.meta_ads_insight_table);
             console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table_total_count);
+            
+            // 전체 데이터 저장 (페이지네이션과 관계없이)
+            metaAdsAllData = data.meta_ads_insight_table;
+            console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
+            
             renderMetaAdsByAccount(data.meta_ads_insight_table, data.meta_ads_insight_table_total_count);
         } else {
             console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
@@ -492,6 +497,8 @@ function setupFilters() {
             
             if (accountId) {
                 console.log('🔄 메타 광고 계정 선택으로 인한 데이터 로딩:', accountId);
+                // 전체 데이터 초기화
+                metaAdsAllData = [];
                 fetchMetaAdsByAccount(accountId);
                 fetchLiveAds(accountId);
                 showLiveAdsSection();
@@ -574,6 +581,7 @@ let cafe24ProductSalesCurrentPage = 1;
 let cafe24ProductSalesTotalCount = 0;
 let metaAdsCurrentPage = 1;
 let metaAdsTotalCount = 0;
+let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
 
 // ─────────────────────────────────────────────
 // 14) 데이터 렌더링 함수 (요구사항에 맞게 구현)
@@ -800,8 +808,8 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         const purchases = row.purchases || 0;
         const purchase_value = row.purchase_value || 0;
         
-        const cpc = clicks > 0 ? spend / clicks : 0;
-        const roas = spend > 0 ? (purchase_value / spend) * 100 : 0;
+        const cpc = clicks > 0 ? Math.round(spend / clicks) : 0;
+        const roas = spend > 0 ? Math.round((purchase_value / spend) * 100) : 0;
         
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
@@ -816,15 +824,25 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     });
     
     // 총합 로우 추가 (전체 데이터 기준)
-    if (processedAdsData.length > 0) {
-        const totalSpend = processedAdsData.reduce((sum, row) => sum + (row.spend || 0), 0);
-        const totalClicks = processedAdsData.reduce((sum, row) => sum + (row.clicks || 0), 0);
-        const totalPurchases = processedAdsData.reduce((sum, row) => sum + (row.purchases || 0), 0);
-        const totalPurchaseValue = processedAdsData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+    if (metaAdsAllData.length > 0) {
+        // 전체 데이터로 총합 계산 (페이지와 관계없이)
+        const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
+        const totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
+        const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
         
         // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
-        const totalCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
-        const totalRoas = totalSpend > 0 ? (totalPurchaseValue / totalSpend) * 100 : 0;
+        const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+        const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
+        
+        console.log('📊 전체 데이터 기준 총합:', {
+            totalSpend,
+            totalClicks,
+            totalPurchases,
+            totalPurchaseValue,
+            totalCpc,
+            totalRoas
+        });
         
         const totalRow = document.createElement('tr');
         totalRow.className = 'bg-gray-50 font-semibold';

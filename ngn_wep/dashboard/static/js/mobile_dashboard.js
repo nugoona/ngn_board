@@ -82,9 +82,52 @@ async function fetchCafe24SalesData() {
 }
 
 // 웹버전의 fetchCafe24ProductSalesData 함수와 동일한 역할
-async function fetchCafe24ProductSalesData() {
-    console.log('🔄 모바일 fetchCafe24ProductSalesData() 호출');
-    await fetchMobileData();
+async function fetchCafe24ProductSalesData(page = 1) {
+    console.log('🔄 모바일 fetchCafe24ProductSalesData() 호출 - 페이지:', page);
+    
+    cafe24ProductSalesCurrentPage = page;
+    
+    try {
+        const companySelect = document.getElementById('accountFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const periodSelect = document.getElementById('periodFilter');
+        
+        const companyName = companySelect ? companySelect.value : 'all';
+        const period = periodSelect ? periodSelect.value : 'today';
+        const startDateValue = startDate ? startDate.value : '';
+        const endDateValue = endDate ? endDate.value : '';
+        
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'cafe24_product_sales',
+                company_name: companyName,
+                period: period,
+                start_date: startDateValue,
+                end_date: endDateValue,
+                page: page,
+                limit: 5
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ 카페24 상품판매 데이터 로딩 성공:', data);
+        
+        if (data.status === 'success' && data.cafe24_product_sales) {
+            renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
+        }
+        
+    } catch (error) {
+        console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
+    }
 }
 
 // 웹버전의 fetchGa4SourceSummaryData 함수와 동일한 역할
@@ -238,7 +281,7 @@ async function fetchMetaAccounts() {
 // ─────────────────────────────────────────────
 // 7) 메타 광고별 성과 조회
 // ─────────────────────────────────────────────
-async function fetchMetaAdsByAccount(accountId) {
+async function fetchMetaAdsByAccount(accountId, page = 1) {
     if (!accountId) return;
     
     try {
@@ -252,6 +295,8 @@ async function fetchMetaAdsByAccount(accountId) {
         const endDateValue = endDate ? endDate.value : '';
         const companyName = companySelect ? companySelect.value : 'all';
         
+        metaAdsCurrentPage = page;
+        
         console.log('📊 메타 광고 데이터 요청 파라미터:', {
             data_type: 'meta_ads_insight_table',
             level: 'ad',
@@ -259,7 +304,9 @@ async function fetchMetaAdsByAccount(accountId) {
             company_name: companyName,
             period: period,
             start_date: startDateValue,
-            end_date: endDateValue
+            end_date: endDateValue,
+            page: page,
+            limit: 10
         });
         
         // 웹버전과 동일한 엔드포인트 사용
@@ -275,7 +322,9 @@ async function fetchMetaAdsByAccount(accountId) {
                 company_name: companyName,
                 period: period,
                 start_date: startDateValue,
-                end_date: endDateValue
+                end_date: endDateValue,
+                page: page,
+                limit: 10
             })
         });
         
@@ -515,7 +564,15 @@ function setupCompanyAutoSelection() {
 document.addEventListener('DOMContentLoaded', initMobileDashboard);
 
 // ─────────────────────────────────────────────
-// 13) 데이터 렌더링 함수 (요구사항에 맞게 구현)
+// 13) 페이지네이션 전역 변수
+// ─────────────────────────────────────────────
+let cafe24ProductSalesCurrentPage = 1;
+let cafe24ProductSalesTotalCount = 0;
+let metaAdsCurrentPage = 1;
+let metaAdsTotalCount = 0;
+
+// ─────────────────────────────────────────────
+// 14) 데이터 렌더링 함수 (요구사항에 맞게 구현)
 // ─────────────────────────────────────────────
 function renderMobileData(data) {
     console.log('🎨 모바일 데이터 렌더링 시작...');
@@ -527,7 +584,7 @@ function renderMobileData(data) {
     
     // 2. 카페24 상품판매
     if (data.cafe24_product_sales) {
-        renderCafe24ProductSales(data.cafe24_product_sales);
+        renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
     }
     
     // 3. GA4 소스별 유입수
@@ -575,7 +632,7 @@ function renderPerformanceSummary(performanceData, totalOrders) {
 }
 
 // 카페24 상품판매 렌더링
-function renderCafe24ProductSales(products) {
+function renderCafe24ProductSales(products, totalCount = 0) {
     console.log('📦 카페24 상품판매 렌더링:', products);
     
     const tbody = document.getElementById('cafe24-products');
@@ -588,7 +645,10 @@ function renderCafe24ProductSales(products) {
         return;
     }
     
-    products.forEach(product => {
+    // 첫 페이지 5개만 표시
+    const displayProducts = products.slice(0, 5);
+    
+    displayProducts.forEach(product => {
         const row = document.createElement('tr');
         const productName = product.product_name || '-';
         const salesAmount = product.item_product_sales || 0;
@@ -609,6 +669,10 @@ function renderCafe24ProductSales(products) {
         
         tbody.appendChild(row);
     });
+    
+    // 페이지네이션 업데이트
+    cafe24ProductSalesTotalCount = totalCount;
+    updatePagination('cafe24_product_sales', cafe24ProductSalesCurrentPage, totalCount);
 }
 
 // GA4 소스별 유입수 렌더링
@@ -718,8 +782,11 @@ function renderMetaAdsByAccount(adsData) {
     const processedAdsData = processMetaAdsForMobile(adsData);
     console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
     
+    // 첫 페이지 10개만 표시
+    const displayAdsData = processedAdsData.slice(0, 10);
+    
     // 광고별 성과 데이터 렌더링
-    processedAdsData.forEach((row, index) => {
+    displayAdsData.forEach((row, index) => {
         console.log(`📊 광고 ${index + 1}:`, row);
         const tableRow = document.createElement('tr');
         tableRow.innerHTML = `
@@ -751,6 +818,10 @@ function renderMetaAdsByAccount(adsData) {
         `;
         tbody.appendChild(totalRow);
     }
+    
+    // 페이지네이션 업데이트
+    metaAdsTotalCount = processedAdsData.length;
+    updatePagination('meta_ads', metaAdsCurrentPage, processedAdsData.length);
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
@@ -860,6 +931,57 @@ function hideLiveAdsSection() {
     if (liveAdsSection) {
         liveAdsSection.style.display = 'none';
     }
+}
+
+// ─────────────────────────────────────────────
+// 15) 페이지네이션 함수
+// ─────────────────────────────────────────────
+function updatePagination(table, currentPage, totalItems) {
+    let limit = table === 'cafe24_product_sales' ? 5 : 10; // 카페24는 5개, 메타광고는 10개
+    let totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 1;
+
+    console.log(`📄 ${table} 페이지네이션 업데이트`);
+    console.log(`📄 현재 페이지: ${currentPage}`);
+    console.log(`📄 전체 페이지 수: ${totalPages}`);
+    console.log(`📄 전체 데이터 개수: ${totalItems}`);
+
+    let paginationContainer = document.getElementById(`pagination_${table}`);
+
+    if (!paginationContainer) {
+        console.warn(`⚠️ 페이지네이션 컨테이너를 찾을 수 없음: #pagination_${table}`);
+        return;
+    }
+
+    paginationContainer.innerHTML = ''; // 기존 버튼 제거 후 다시 추가
+
+    let prevDisabled = currentPage <= 1 ? "disabled" : "";
+    let nextDisabled = currentPage >= totalPages ? "disabled" : "";
+
+    paginationContainer.innerHTML = `
+        <button class="pagination-btn prev-btn" data-table="${table}" data-page="${currentPage - 1}" ${prevDisabled}>이전</button>
+        <span class="pagination-info">${currentPage} / ${totalPages}</span>
+        <button class="pagination-btn next-btn" data-table="${table}" data-page="${currentPage + 1}" ${nextDisabled}>다음</button>
+    `;
+
+    // 이벤트 핸들러 제거 후 다시 추가 (중복 방지)
+    paginationContainer.querySelectorAll(".pagination-btn").forEach(btn => {
+        btn.addEventListener('click', function() {
+            let newPage = parseInt(this.dataset.page);
+            let tableName = this.dataset.table;
+
+            if (!this.hasAttribute("disabled") && newPage !== currentPage) {
+                console.log(`📄 ${tableName} 페이지 이동: ${newPage}`);
+
+                if (tableName === 'cafe24_product_sales') {
+                    fetchCafe24ProductSalesData(newPage);
+                } else if (tableName === 'meta_ads') {
+                    fetchMetaAdsByAccount(selectedMetaAccount, newPage);
+                }
+            } else {
+                console.log(`📄 ${tableName} 버튼 클릭 불가 (비활성화 상태 또는 현재 페이지)`);
+            }
+        });
+    });
 }
 
 // ─────────────────────────────────────────────

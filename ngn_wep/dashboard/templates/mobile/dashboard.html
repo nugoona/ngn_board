@@ -426,6 +426,45 @@
             line-height: 1.4;
             color: #262626;
         }
+
+        /* 페이지네이션 스타일 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 8px 0;
+        }
+
+        .pagination-btn {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+
+        .pagination-btn:disabled {
+            background: #f9fafb;
+            border-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -523,6 +562,8 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- 카페24 상품판매 페이지네이션 -->
+                <div id="pagination_cafe24_product_sales" class="pagination-container"></div>
             </div>
         </div>
 
@@ -574,6 +615,8 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- 메타 광고 성과 페이지네이션 -->
+                <div id="pagination_meta_ads" class="pagination-container"></div>
             </div>
         </div>
 

@@ -26,6 +26,50 @@ function formatPercentage(num) {
     return num.toFixed(1) + '%';
 }
 
+// ================================
+// 로딩 상태 관리 함수들 (웹버전과 동일)
+// ================================
+
+function showLoading(target) {
+    console.log("🔄 showLoading called for:", target);
+    
+    const element = document.querySelector(target);
+    console.log("Target element:", element);
+    
+    if (!element) {
+        console.error("❌ Target element not found:", target);
+        return;
+    }
+    
+    // 🔥 더 강력한 스타일 설정 - 다른 코드가 덮어쓰지 못하도록
+    element.style.display = 'flex';
+    element.style.visibility = 'visible';
+    element.style.opacity = '1';
+    element.style.pointerEvents = 'auto';
+    
+    console.log("✅ Loading started for:", target);
+    console.log("Final display style:", element.style.display);
+}
+
+function hideLoading(target) {
+    console.log("✅ hideLoading called for:", target);
+    
+    const element = document.querySelector(target);
+    
+    if (!element) {
+        console.error("❌ Target element not found:", target);
+        return;
+    }
+    
+    // 직접 스타일 설정
+    element.style.display = 'none';
+    element.style.visibility = 'hidden';
+    element.style.opacity = '0';
+    element.style.pointerEvents = 'none';
+    
+    console.log("✅ Loading completed for:", target);
+}
+
 // ─────────────────────────────────────────────
 // 3) 메타 광고 데이터 처리 함수 (모바일 전용)
 // ─────────────────────────────────────────────
@@ -145,6 +189,12 @@ async function fetchMobileData() {
     isLoading = true;
     console.log('🔄 모바일 데이터 로딩 시작...');
     
+    // 모든 로딩 오버레이 표시
+    showLoading("#loadingOverlaySitePerformance");
+    showLoading("#loadingOverlayAdPerformance");
+    showLoading("#loadingOverlayCafe24Products");
+    showLoading("#loadingOverlayGa4Sources");
+    
     try {
         // 현재 필터 값들 가져오기 (웹버전과 동일)
         const companySelect = document.getElementById('accountFilter');
@@ -240,6 +290,11 @@ async function fetchMobileData() {
         console.error('❌ 모바일 데이터 로딩 실패:', error);
         showError('데이터 로드 실패');
     } finally {
+        // 모든 로딩 오버레이 숨기기
+        hideLoading("#loadingOverlaySitePerformance");
+        hideLoading("#loadingOverlayAdPerformance");
+        hideLoading("#loadingOverlayCafe24Products");
+        hideLoading("#loadingOverlayGa4Sources");
         isLoading = false;
     }
 }
@@ -283,6 +338,9 @@ async function fetchMetaAccounts() {
 // ─────────────────────────────────────────────
 async function fetchMetaAdsByAccount(accountId, page = 1) {
     if (!accountId) return;
+    
+    // 메타 광고 로딩 오버레이 표시
+    showLoading("#loadingOverlayMetaAds");
     
     try {
         const periodSelect = document.getElementById('periodFilter');
@@ -362,6 +420,9 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         
     } catch (error) {
         console.error('❌ 메타 광고별 성과 로딩 실패:', error);
+    } finally {
+        // 메타 광고 로딩 오버레이 숨기기
+        hideLoading("#loadingOverlayMetaAds");
     }
 }
 

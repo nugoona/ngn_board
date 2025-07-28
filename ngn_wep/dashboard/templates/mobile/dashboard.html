@@ -78,16 +78,20 @@
             background: var(--bg-primary);
             min-height: 100vh;
             transition: all 0.3s ease;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         /* 모바일 전용 wrapper */
         #m-dashboard {
-            max-width: 100vw;
+            width: 100%;
+            max-width: 100%;
             overflow-x: hidden;
             padding: 0;
             margin: 0;
             box-sizing: border-box;
             padding-top: 140px; /* 헤더 높이만큼 상단 여백 */
+            background: var(--bg-primary);
         }
 
         /* 섹션 전체 너비 조정 */
@@ -216,12 +220,14 @@
         /* 섹션 스타일 - 모던한 카드 디자인 */
         .section {
             background: var(--bg-primary);
-            margin: 12px;
-            border-radius: 16px;
+            margin: 8px;
+            border-radius: 0;  /* 둥근 모서리 제거 */
             overflow: hidden;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
+            width: calc(100% - 16px);
+            box-sizing: border-box;
         }
 
         .section:hover {
@@ -790,7 +796,8 @@
             }
             
             .section {
-                margin: 8px;
+                margin: 4px;
+                width: calc(100% - 8px);
             }
             
             .section-content {

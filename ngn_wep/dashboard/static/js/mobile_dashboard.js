@@ -905,7 +905,14 @@ function renderGa4SourceSummary(sources) {
         return;
     }
     
-    sources.forEach(source => {
+    // (not set) 제외하고 상위 5개만 필터링
+    const filteredSources = sources
+        .filter(source => source.source && source.source !== '(not set)' && source.source !== 'not set')
+        .slice(0, 5);
+    
+    console.log('🔍 필터링된 GA4 소스:', filteredSources);
+    
+    filteredSources.forEach(source => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="text-truncate">${source.source || '-'}</td>

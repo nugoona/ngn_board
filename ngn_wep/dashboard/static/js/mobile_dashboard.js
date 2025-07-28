@@ -1319,10 +1319,11 @@ function sortTable(table, columnIndex) {
         metaAdsAllData = sortedData;
         console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
         
-        // 현재 페이지 데이터로 다시 렌더링
-        const startIndex = (metaAdsCurrentPage - 1) * 10;
-        const endIndex = startIndex + 10;
-        const pageData = metaAdsAllData.slice(startIndex, endIndex);
+        // 정렬 시 페이지를 1로 리셋
+        metaAdsCurrentPage = 1;
+        
+        // 첫 페이지 데이터로 다시 렌더링
+        const pageData = metaAdsAllData.slice(0, 10);
         
         renderMetaAdsByAccount(pageData, metaAdsAllData.length);
     }

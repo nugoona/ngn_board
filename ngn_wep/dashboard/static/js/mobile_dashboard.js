@@ -411,6 +411,51 @@ function showError(message) {
     console.error('🚨 에러:', message);
 }
 
+// 상품명 토스트 메시지 표시
+function showProductNameToast(productName) {
+    // 기존 토스트 제거
+    const existingToast = document.getElementById('product-name-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // 새 토스트 생성
+    const toast = document.createElement('div');
+    toast.id = 'product-name-toast';
+    toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 14px;
+        color: var(--text-primary);
+        max-width: 80%;
+        word-wrap: break-word;
+        z-index: 10000;
+        box-shadow: var(--shadow-xl);
+        text-align: center;
+    `;
+    toast.textContent = productName;
+    
+    document.body.appendChild(toast);
+    
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+    
+    // 터치 시 즉시 제거
+    toast.addEventListener('click', () => {
+        toast.remove();
+    });
+}
+
 // ─────────────────────────────────────────────
 // 10) 필터 이벤트 핸들러 (웹버전과 동일)
 // ─────────────────────────────────────────────
@@ -686,8 +731,12 @@ function renderCafe24ProductSales(products, totalCount = 0) {
         // 상품명 터치 시 전체 텍스트 표시 (모바일 전용)
         const productNameCell = row.querySelector('td[title]');
         if (productNameCell && productNameCell.title !== productNameCell.textContent) {
+            productNameCell.classList.add('product-name-cell');
+            productNameCell.setAttribute('data-full-text', productNameCell.title);
+            
             productNameCell.addEventListener('click', function() {
-                this.classList.toggle('expanded');
+                // 터치 시 전체 텍스트를 토스트로 표시
+                showProductNameToast(this.title);
             });
         }
         

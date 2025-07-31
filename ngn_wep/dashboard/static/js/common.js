@@ -26,13 +26,6 @@ function showLoading(target) {
     'pointer-events': 'auto !important'
   });
   
-  // 🔥 최소 1초 지속 시간 보장 (캐시된 데이터도 스피너 표시)
-  setTimeout(() => {
-    if ($target.css('display') === 'flex') {
-      $target.css('display', 'none');
-    }
-  }, 1000);
-  
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     console.log("✅ Loading started for:", target);
   }

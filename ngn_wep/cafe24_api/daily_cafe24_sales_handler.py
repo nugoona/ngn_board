@@ -34,6 +34,8 @@ def run_query(process_date):
           JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
           ON o.mall_id = c.mall_id  
           WHERE DATE(TIMESTAMP(r.refund_date)) = '{process_date}'
+          AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
+          AND o.mall_id = c.mall_id  -- 동일한 몰의 업체 정보만 매칭
           GROUP BY o.mall_id, c.company_name, refund_date
       ),
 

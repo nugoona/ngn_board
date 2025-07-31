@@ -112,6 +112,12 @@ def get_start_end_dates(period, start_date=None, end_date=None):
     if period in date_map:
         start_date, end_date = date_map[period]
 
+    # 🔥 '직접 선택' 모드에서는 날짜가 비어있으면 오류 발생
+    if period == "manual":
+        if not start_date or not end_date:
+            raise ValueError("직접 선택 모드에서는 시작일과 종료일이 모두 필요합니다.")
+    
+    # 🔥 미리 정의된 기간의 경우에만 기본값 설정
     if not start_date:
         start_date = now_kst.strftime("%Y-%m-%d")
     if not end_date:

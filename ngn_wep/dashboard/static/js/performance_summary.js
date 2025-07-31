@@ -58,15 +58,19 @@ async function fetchPerformanceSummaryData() {
         let startDate = $("#startDate").val()?.trim();
         let endDate = $("#endDate").val()?.trim();
 
-        if (period === "manual" && (!endDate || endDate === "")) {
-            console.log("[DEBUG] 직접 선택인데 종료일 없음 - 요청 중단");
-            hideLoading("#loadingOverlayPerformanceSummary");
-            return [];
+        // 🔥 '직접 선택' 모드에서는 날짜가 비어있으면 요청 중단
+        if (period === "manual") {
+            if (!startDate || startDate === "" || !endDate || endDate === "") {
+                console.log("[DEBUG] 직접 선택인데 날짜 누락 - 요청 중단");
+                hideLoading("#loadingOverlayPerformanceSummary");
+                return [];
+            }
+        } else {
+            // 🔥 미리 정의된 기간의 경우에만 기본값 설정
+            const today = new Date().toISOString().split("T")[0];
+            if (!startDate) startDate = today;
+            if (!endDate) endDate = today;
         }
-
-        const today = new Date().toISOString().split("T")[0];
-        if (!startDate) startDate = today;
-        if (!endDate) endDate = today;
         
         const response = await fetch('/dashboard/get_data', {
             method: 'POST',

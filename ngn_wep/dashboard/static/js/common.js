@@ -20,16 +20,17 @@ function showLoading(target) {
     return;
   }
   
-  // 🔥 로딩 스피너 강제 표시 - 더 명확한 스타일 적용
-  $target.css({
-    'display': 'flex !important',
-    'visibility': 'visible !important',
-    'opacity': '1 !important',
-    'pointer-events': 'auto !important',
-    'background': 'rgba(255, 255, 255, 0.95) !important',
-    'background-color': 'rgba(255, 255, 255, 0.95) !important',
-    'backdrop-filter': 'blur(4px) !important'
-  });
+  // 🔥 로딩 스피너 강제 표시 - 더 강력한 스타일 적용
+  $target.attr('style', `
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(4px) !important;
+    z-index: 1000 !important;
+  `);
   
   // 스피너와 텍스트가 보이도록 추가 스타일
   $target.find('.spinner').css({
@@ -60,12 +61,12 @@ function hideLoading(target) {
   }
   
   // 직접 스타일 설정 - 더 확실한 숨김
-  $target.css({
-    'display': 'none !important',
-    'visibility': 'hidden !important',
-    'opacity': '0 !important',
-    'pointer-events': 'none !important'
-  });
+  $target.attr('style', `
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  `);
   
   // 스피너와 텍스트도 숨김
   $target.find('.spinner, .loading-text').css({
@@ -86,12 +87,12 @@ function forceHideAllLoading() {
   
   // 모든 로딩 오버레이 숨김 - 더 확실한 방법
   $(".loading-overlay").each(function() {
-    $(this).css({
-      'display': 'none !important',
-      'visibility': 'hidden !important',
-      'opacity': '0 !important',
-      'pointer-events': 'none !important'
-    });
+    $(this).attr('style', `
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    `);
   });
   
   // 스피너와 텍스트도 숨김

@@ -30,7 +30,7 @@ def run_query(process_date):
           SELECT
               o.mall_id,  
               c.company_name,  
-              DATE(TIMESTAMP(r.refund_date)) AS refund_date,  
+              DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,  
               SUM(r.total_refund_amount) AS total_refund_amount  
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
           JOIN company_mall_ids c
@@ -54,7 +54,7 @@ def run_query(process_date):
 
       -- ✅ 최종 집계 쿼리
       SELECT
-          DATE(TIMESTAMP(o.payment_date)) AS payment_date,
+          DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
           o.mall_id,
           c.company_name,
           COUNT(DISTINCT o.order_id) AS total_orders,
@@ -81,11 +81,11 @@ def run_query(process_date):
       ON o.mall_id = c.mall_id  
       LEFT JOIN refund_summary AS r
       ON o.mall_id = r.mall_id
-      AND DATE(TIMESTAMP(o.payment_date)) = r.refund_date  
+      AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = r.refund_date  
       LEFT JOIN order_item_summary AS oi
       ON o.mall_id = oi.mall_id
       AND o.order_id = oi.order_id  
-      WHERE DATE(TIMESTAMP(o.payment_date)) = '{process_date}'
+      WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
       GROUP BY payment_date, o.mall_id, c.company_name, r.total_refund_amount
     ) AS source
 

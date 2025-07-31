@@ -14,10 +14,10 @@ export function fetchSlideCollectionAds(accountId = null) {
 
   console.log("[DEBUG] fetchSlideCollectionAds 호출됨 - accountId:", accountId);
 
-  showLoading("#slideCollectionLoading");
+  showLoading("#loadingOverlaySlideCollection");
 
   if (!accountId || accountId === "null" || accountId === "") {
-    hideLoading("#slideCollectionLoading");
+    hideLoading("#loadingOverlaySlideCollection");
     $("#slideCollectionTableBody").html('<tr><td colspan="2">계정이 선택되지 않았습니다.</td></tr>');
     return;
   }
@@ -31,7 +31,7 @@ export function fetchSlideCollectionAds(accountId = null) {
       account_id: accountId,
     }),
     success: function (res) {
-      hideLoading("#slideCollectionLoading");
+      hideLoading("#loadingOverlaySlideCollection");
       console.log("[DEBUG] 슬라이드/콜렉션 서버 응답:", res);
 
       if (res.slide_collection_ads && res.slide_collection_ads.length > 0) {
@@ -41,7 +41,7 @@ export function fetchSlideCollectionAds(accountId = null) {
       }
     },
     error: function (err, textStatus) {
-      hideLoading("#slideCollectionLoading");
+      hideLoading("#loadingOverlaySlideCollection");
     
       if (textStatus === "abort") {
         // ✅ 요청이 중단(abort)된 경우 무시 (다음 요청이 올 것이므로)
@@ -105,7 +105,7 @@ $(document).ready(function () {
           fetchSlideCollectionAds(selectedAccountId);
         } else {
           console.log("[DEBUG] 드롭다운 선택 없음 - 슬라이드 초기화");
-          hideLoading("#slideCollectionLoading");
+          hideLoading("#loadingOverlaySlideCollection");
           $("#slideCollectionTableBody").html('<tr><td colspan="2">계정이 선택되지 않았습니다.</td></tr>');
         }
       });

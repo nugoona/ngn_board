@@ -61,7 +61,7 @@ export function fetchMetaAdsPreviewList() {
     return;
   }
 
-  showLoading("#previewLoading");
+  showLoading("#loadingOverlayAdsPreview");
 
   latestAjaxRequest("meta_ads_preview_list", {
     url: "/dashboard/get_data",
@@ -77,11 +77,11 @@ export function fetchMetaAdsPreviewList() {
       } else {
         console.error("[PREVIEW] 데이터 불러오기 실패");
       }
-      hideLoading("#previewLoading");
+      hideLoading("#loadingOverlayAdsPreview");
     },
     error: function () {
       console.error("[PREVIEW] AJAX 오류");
-      hideLoading("#previewLoading");
+      hideLoading("#loadingOverlayAdsPreview");
     }
   }, () => {});
 }

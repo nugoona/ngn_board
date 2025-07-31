@@ -1,5 +1,10 @@
 $(document).ready(function () {
     console.log("[DEBUG] performance_summary.js 로드됨");
+    console.log("[DEBUG] fetchPerformanceSummaryData 함수 존재:", typeof fetchPerformanceSummaryData);
+    
+    // 🔥 페이지 로드 시 즉시 실행
+    console.log("[DEBUG] 페이지 로드 시 즉시 실행");
+    fetchPerformanceSummaryData();
 
     $("#accountFilter, #periodFilter, #startDate, #endDate").change(debounce(function () {
         const period = $("#periodFilter").val();
@@ -106,8 +111,16 @@ async function fetchPerformanceSummaryData() {
             return [];
         }
 
-        console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
-        updatePerformanceSummaryCards(data.performance_summary);
+            console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
+    
+    // 🔥 강제로 ad_media 요소 확인 및 업데이트
+    const adMediaElement = document.getElementById("ad_media");
+    console.log("[DEBUG] ad_media 요소 존재:", !!adMediaElement);
+    if (adMediaElement) {
+        console.log("[DEBUG] 현재 ad_media 텍스트:", adMediaElement.textContent);
+    }
+    
+    updatePerformanceSummaryCards(data.performance_summary);
         
         if (data.latest_update) {
             updateUpdatedAtText(data.latest_update);
@@ -216,6 +229,13 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
     if (rawValue === "없음" || rawValue === "none") {
         console.log(`[DEBUG] setCardValue - ${cardId}: '없음' 처리`);
         el.text("없음");
+        return;
+    }
+    
+    // 🔥 'meta' 상태 특별 처리
+    if (rawValue === "meta") {
+        console.log(`[DEBUG] setCardValue - ${cardId}: 'meta' 처리`);
+        el.text("meta");
         return;
     }
 

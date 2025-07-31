@@ -8,7 +8,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 
-@cached_query(func_name="cafe24_sales", ttl=180)  # 3분 캐싱
+# @cached_query(func_name="cafe24_sales", ttl=10)  # 캐시 임시 비활성화
 def get_cafe24_sales_data(company_name, period, start_date, end_date,
                            date_type="summary", date_sort="desc",
                            limit=1000, page=1, user_id=None):
@@ -94,7 +94,7 @@ def get_cafe24_sales_data(company_name, period, start_date, end_date,
             SUM(total_refund_amount) AS total_refund_amount,
             SUM(total_payment - total_refund_amount) AS net_sales
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-        WHERE payment_date BETWEEN @start_date AND @end_date
+        WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
           AND {company_filter}
         GROUP BY {group_by_expr}
         {order_by_clause}
@@ -106,7 +106,7 @@ def get_cafe24_sales_data(company_name, period, start_date, end_date,
         FROM (
             SELECT 1
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-            WHERE payment_date BETWEEN @start_date AND @end_date
+            WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
               AND {company_filter}
             GROUP BY {group_by_expr}
         )

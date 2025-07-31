@@ -778,16 +778,16 @@ html #loadingOverlayPerformanceSummary[style],
 body .performance-summary-wrapper.loading,
 html .performance-summary-wrapper.loading,
 .performance-summary-wrapper.loading {
-  backdrop-filter: blur(2px) !important; /* 가짜 로딩 시 약한 블러 */
-  -webkit-backdrop-filter: blur(2px) !important;
+  backdrop-filter: blur(1px) !important; /* 가짜 로딩 시 약한 블러 */
+  -webkit-backdrop-filter: blur(1px) !important;
   transition: backdrop-filter 0.3s ease !important;
 }
 
 body .performance-summary-wrapper.loading.real-loading,
 html .performance-summary-wrapper.loading.real-loading,
 .performance-summary-wrapper.loading.real-loading {
-  backdrop-filter: blur(4px) !important; /* 진짜 로딩 시 강한 블러 */
-  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(1px) !important; /* 진짜 로딩 시 약한 블러 */
+  -webkit-backdrop-filter: blur(1px) !important;
 }
 
 /* 🔥 로딩 완료 시 블러 제거 - 최고 우선순위 */

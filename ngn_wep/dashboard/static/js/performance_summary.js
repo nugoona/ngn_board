@@ -131,11 +131,11 @@ function toggleLoading(isLoading) {
             'opacity': '0.3 !important'
         });
         
-        // 🔥 로딩 텍스트도 강제 적용
+        // 🔥 로딩 텍스트 숨김 (이미 CSS에서 처리됨)
         $("#loadingOverlayPerformanceSummary .loading-text").css({
-            'background': 'rgba(255, 255, 255, 0.98) !important',
-            'backdrop-filter': 'none !important',
-            'opacity': '1 !important'
+            'display': 'none !important',
+            'visibility': 'hidden !important',
+            'opacity': '0 !important'
         });
         
         // 🔥 성과 요약 래퍼에 직접 backdrop-filter 적용

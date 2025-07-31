@@ -147,12 +147,22 @@ def insert_performance_summary(target_date):
 def run(mode="today"):
     if mode == "yesterday":
         target_date = datetime.now(KST).date() - timedelta(days=1)
+        print(f"[INFO] performance summary 삽입 실행 → {target_date}")
+        sys.stdout.flush()
+        insert_performance_summary(target_date)
+    elif mode == "last_7_days":
+        # 최근 7일간 일괄 실행
+        for i in range(7):
+            target_date = datetime.now(KST).date() - timedelta(days=i)
+            print(f"[INFO] performance summary 삽입 실행 → {target_date} ({i+1}/7)")
+            sys.stdout.flush()
+            insert_performance_summary(target_date)
+        print("[SUCCESS] 최근 7일간 performance summary 처리 완료!")
     else:
         target_date = datetime.now(KST).date()
-
-    print(f"[INFO] performance summary 삽입 실행 → {target_date}")
-    sys.stdout.flush()
-    insert_performance_summary(target_date)
+        print(f"[INFO] performance summary 삽입 실행 → {target_date}")
+        sys.stdout.flush()
+        insert_performance_summary(target_date)
 
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else "today"

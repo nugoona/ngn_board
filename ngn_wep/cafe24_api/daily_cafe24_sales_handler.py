@@ -22,19 +22,22 @@ def run_query(process_date):
     MERGE `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales` AS target
     USING (
       -- ✅ 환불 요약 테이블 (업체명 포함)
-      WITH refund_summary AS (
+      WITH company_mall_ids AS (
+          SELECT mall_id, company_name
+          FROM `winged-precept-443218-v8.ngn_dataset.company_info`
+      ),
+      refund_summary AS (
           SELECT
               o.mall_id,  
               c.company_name,  
               DATE(TIMESTAMP(r.refund_date)) AS refund_date,  
               SUM(r.total_refund_amount) AS total_refund_amount  
-          FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` AS r
-          JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
+          FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
+          JOIN company_mall_ids c
+              ON r.mall_id = c.mall_id  -- 먼저 업체별 mall_id로 환불 데이터 필터링
+          JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
               ON r.order_id = o.order_id
               AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
-          JOIN `winged-precept-443218-v8.ngn_dataset.company_info` c
-              ON o.mall_id = c.mall_id
-              AND r.mall_id = c.mall_id  -- 환불 데이터의 몰과 업체 정보 매칭
           WHERE DATE(TIMESTAMP(r.refund_date)) = '{process_date}'
           GROUP BY o.mall_id, c.company_name, refund_date
       ),

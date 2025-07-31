@@ -2933,8 +2933,8 @@ th.sortable.desc::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(4px) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(2px) !important;
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2952,9 +2952,9 @@ th.sortable.desc::after {
   visibility: visible !important;
   opacity: 1 !important;
   z-index: 1000 !important;
-  background: rgba(255, 255, 255, 0.95) !important;
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(4px) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(2px) !important;
 }
 
 /* 스피너 스타일 */
@@ -2972,22 +2972,11 @@ th.sortable.desc::after {
   opacity: 1 !important;
 }
 
-/* 로딩 텍스트 */
+/* 로딩 텍스트 - 숨김 처리 */
 .loading-text {
-  font-size: 16px;
-  color: #374151;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.98);
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 
 /* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */

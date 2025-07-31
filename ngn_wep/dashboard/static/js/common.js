@@ -32,17 +32,18 @@ function showLoading(target) {
     z-index: 1000 !important;
   `);
   
-  // 스피너와 텍스트가 보이도록 추가 스타일
+  // 스피너만 보이도록 설정 (텍스트는 숨김)
   $target.find('.spinner').css({
     'display': 'block !important',
     'visibility': 'visible !important',
     'opacity': '1 !important'
   });
   
+  // 로딩 텍스트 숨김
   $target.find('.loading-text').css({
-    'display': 'block !important',
-    'visibility': 'visible !important',
-    'opacity': '1 !important'
+    'display': 'none !important',
+    'visibility': 'hidden !important',
+    'opacity': '0 !important'
   });
   
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

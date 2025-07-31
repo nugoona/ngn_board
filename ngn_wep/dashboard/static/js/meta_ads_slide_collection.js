@@ -113,7 +113,13 @@ $(document).ready(function () {
         }
       });
 
-    console.log("[DEBUG] 초기 로딩시 change() 트리거!");
-    $("#metaAccountSelector").trigger("change");
+    // 모바일에서만 초기 로딩시 change() 트리거
+    const isMobile = window.screen.width <= 768 || window.innerWidth <= 768;
+    if (isMobile) {
+      console.log("[DEBUG] 모바일 - 초기 로딩시 change() 트리거!");
+      $("#metaAccountSelector").trigger("change");
+    } else {
+      console.log("[DEBUG] 웹 버전 - 초기 로딩시 change() 트리거 비활성화");
+    }
   }, 100);
 });

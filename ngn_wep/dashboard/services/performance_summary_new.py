@@ -130,7 +130,7 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
 
 def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     """
-    ✅ 메타 광고 요약 (성과 요약용 최적화) - meta_ads_insight.py와 동일한 로직 사용
+    ✅ 메타 광고 요약 (성과 요약용 최적화) - 계정 레벨만 조회
     """
     print(f"[DEBUG] get_meta_ads_summary_simple 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}")
     
@@ -152,30 +152,35 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 meta_ads_insight.py와 동일한 로직 사용
+    # 🔥 meta_ads_insight.py의 account level 쿼리와 완전히 동일
     query = f"""
-        WITH latest_accounts AS (
-          SELECT * EXCEPT(rn) FROM (
-            SELECT account_id,
-                   account_name,
-                   company_name,
-                   ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
-            FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
-          )
-          WHERE rn = 1
-        )
-        
-        SELECT 
-            COALESCE(SUM(A.spend), 0) AS total_spend,
-            COALESCE(SUM(A.clicks), 0) AS total_clicks,
-            COALESCE(SUM(A.purchases), 0) AS total_purchases,
-            COALESCE(SUM(A.purchase_value), 0) AS total_purchase_value,
-            MAX(A.updated_at) AS updated_at
+        SELECT
+            '2025-06-01 ~ 2025-06-30' AS report_date,
+            A.account_id,
+            MAX(acc_latest.account_name) AS account_name,
+            MAX(acc_latest.company_name) AS company_name,
+            (SELECT MAX(updated_at)
+             FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`) AS updated_at,
+            SUM(A.spend)          AS spend,
+            SUM(A.impressions)    AS impressions,
+            SUM(A.clicks)         AS clicks,
+            SUM(A.purchases)      AS purchases,
+            SUM(A.purchase_value) AS purchase_value
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` A
-        LEFT JOIN latest_accounts L ON A.account_id = L.account_id
+        LEFT JOIN (
+            SELECT * EXCEPT(rn) FROM (
+                SELECT account_id,
+                       account_name,
+                       company_name,
+                       ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
+                FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
+            )
+            WHERE rn = 1
+        ) AS acc_latest
+        ON A.account_id = acc_latest.account_id
         WHERE A.date BETWEEN @start_date AND @end_date
-          AND LOWER(L.company_name) = LOWER(@company_name)
-        GROUP BY L.company_name
+          AND LOWER(acc_latest.company_name) = LOWER(@company_name)
+        GROUP BY A.account_id
         HAVING SUM(A.spend) > 0
         LIMIT 1
     """
@@ -193,10 +198,10 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         if rows:
             row = rows[0]
             result_data = {
-                "total_spend": row.total_spend or 0,
-                "total_clicks": row.total_clicks or 0,
-                "total_purchases": row.total_purchases or 0,
-                "total_purchase_value": row.total_purchase_value or 0,
+                "total_spend": row.spend or 0,
+                "total_clicks": row.clicks or 0,
+                "total_purchases": row.purchases or 0,
+                "total_purchase_value": row.purchase_value or 0,
                 "updated_at": row.updated_at
             }
             print(f"[DEBUG] 메타 광고 결과 데이터: {result_data}")

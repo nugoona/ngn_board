@@ -264,7 +264,7 @@ def get_data():
 
 
         # 🚀 Meta Ads 데이터 처리 (웹버전과 동일한 별도 조건문)
-        if data_type == "meta_ads":
+        if data_type in ["meta_ads", "all"]:
             t1 = time.time()
             meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
             # 모바일용 데이터 처리

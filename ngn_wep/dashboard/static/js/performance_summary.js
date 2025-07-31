@@ -180,6 +180,8 @@ function updatePerformanceSummaryCards(data) {
     
     // 🔥 진행중인 광고 표시 로직 개선
     const adMedia = row.ad_media || "없음";
+    console.log("[DEBUG] ad_media 최종 값:", adMedia);
+    console.log("[DEBUG] row.ad_media 원본 값:", row.ad_media);
     setCardValue("ad_media", adMedia);
     
     setCardValue("ad_spend", row.ad_spend);
@@ -199,15 +201,18 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
     }
 
     console.log(`[DEBUG] setCardValue - ${cardId}:`, rawValue);
+    console.log(`[DEBUG] setCardValue - ${cardId} 타입:`, typeof rawValue);
 
     // null 또는 undefined → "-"
     if (rawValue === null || rawValue === undefined) {
+        console.log(`[DEBUG] setCardValue - ${cardId}: null/undefined 처리`);
         el.text("-");
         return;
     }
 
     // 🔥 '없음' 상태 특별 처리
     if (rawValue === "없음" || rawValue === "none") {
+        console.log(`[DEBUG] setCardValue - ${cardId}: '없음' 처리`);
         el.text("없음");
         return;
     }

@@ -236,6 +236,8 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
     # 광고비가 0보다 크면 'meta', 0이거나 null이면 '없음'
     ad_media = "meta" if ad_spend and ad_spend > 0 else "없음"
     print(f"[DEBUG] 진행중인 광고 판단 - 광고비: {ad_spend}, 결과: {ad_media}")
+    print(f"[DEBUG] ad_spend 타입: {type(ad_spend)}, 값: {ad_spend}")
+    print(f"[DEBUG] ad_spend > 0 조건: {ad_spend and ad_spend > 0}")
     
     # 결과 구성
     result = {

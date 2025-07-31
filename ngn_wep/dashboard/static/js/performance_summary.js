@@ -138,11 +138,17 @@ async function fetchPerformanceSummaryData() {
     
     updatePerformanceSummaryCards(data.performance_summary);
         
-        if (data.latest_update) {
-            updateUpdatedAtText(data.latest_update);
-        } else {
-            updateUpdatedAtText(null);
-        }
+    // 🔥 업데이트 시간 처리 개선
+    console.log("[DEBUG] latest_update 값:", data.latest_update);
+    console.log("[DEBUG] latest_update 타입:", typeof data.latest_update);
+    
+    if (data.latest_update && data.latest_update !== "None" && data.latest_update !== "null") {
+        console.log("[DEBUG] 업데이트 시간 설정:", data.latest_update);
+        updateUpdatedAtText(data.latest_update);
+    } else {
+        console.log("[DEBUG] 업데이트 시간 없음 - 기본값 설정");
+        updateUpdatedAtText(null);
+    }
         
         return data.performance_summary || [];
     } catch (error) {
@@ -297,6 +303,13 @@ function updateUpdatedAtText(updatedAtStr) {
 
     try {
         const utc = new Date(updatedAtStr);
+        
+        // 유효한 날짜인지 확인
+        if (isNaN(utc.getTime())) {
+            console.warn("[WARN] updateUpdatedAtText() - 유효하지 않은 날짜:", updatedAtStr);
+            updatedAtElement.text("최종 업데이트: -");
+            return;
+        }
 
         // 시간만 보정 (날짜는 그대로 유지)
         const hours = utc.getUTCHours() + 9;
@@ -312,9 +325,10 @@ function updateUpdatedAtText(updatedAtStr) {
 
         const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
         updatedAtElement.text(`최종 업데이트: ${formatted}`);
-        console.log(`[DEBUG] 업데이트 시간 설정: ${formatted} (${updatedAtStr})`);
+        
+        console.log("[DEBUG] updateUpdatedAtText() - 업데이트 완료:", formatted);
     } catch (error) {
-        console.error("[ERROR] 업데이트 시간 파싱 오류:", error);
+        console.error("[ERROR] updateUpdatedAtText() - 날짜 파싱 오류:", error);
         updatedAtElement.text("최종 업데이트: -");
     }
 }

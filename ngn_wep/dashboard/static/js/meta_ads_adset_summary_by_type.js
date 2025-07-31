@@ -2,8 +2,29 @@
 
 console.log("[DEBUG] 🔥 meta_ads_adset_summary_by_type.js 로드됨");
 
-import { resolveDateRange } from "./meta_ads_utils.js";
-import { metaAdsState } from "./meta_ads_state.js";
+// resolveDateRange를 전역에서 가져오거나 직접 정의
+const resolveDateRange = window.resolveDateRange || function(period) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  switch(period) {
+    case 'today':
+      return { start: today.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+    case 'yesterday':
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return { start: yesterday.toISOString().split('T')[0], end: yesterday.toISOString().split('T')[0] };
+    case 'last_7':
+      const last7 = new Date(today);
+      last7.setDate(last7.getDate() - 7);
+      return { start: last7.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+    default:
+      return { start: today.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+  }
+};
+
+// metaAdsState를 전역에서 가져오거나 직접 정의
+const metaAdsState = window.metaAdsState || {};
 
 const $ = window.$;
 let typePieChartInstance = null;
@@ -11,7 +32,7 @@ let adsetSummaryRequest = null;
 let adsetSummaryDebounceTimer = null;
 
 // ✅ 파라미터 기본값 추가: {} → undefined 방지
-export function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
+function fetchMetaAdsAdsetSummaryByType({ period, start_date, end_date, account_id } = {}) {
   // 디바운싱: 300ms 내에 중복 호출 방지
   if (adsetSummaryDebounceTimer) {
     clearTimeout(adsetSummaryDebounceTimer);
@@ -325,3 +346,6 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   };
   myChart.setOption(option);
 }
+
+/* ───────── 전역으로 함수 노출 ───────── */
+window.fetchMetaAdsAdsetSummaryByType = fetchMetaAdsAdsetSummaryByType;

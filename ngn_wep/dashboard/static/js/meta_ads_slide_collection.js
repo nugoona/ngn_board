@@ -6,7 +6,7 @@ const $ = window.$;
 
 let slideCollectionRequest = null;
 
-export function fetchSlideCollectionAds(accountId = null) {
+function fetchSlideCollectionAds(accountId = null) {
   // 순차 실행이므로 abort 제거
   // if (slideCollectionRequest) {
   //   slideCollectionRequest.abort();

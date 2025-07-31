@@ -197,7 +197,7 @@ function updatePerformanceSummaryCards(data) {
     if (!data || !data.length) {
         console.warn("[WARN] performance_summary 데이터 없음. '-'로 표시합니다.");
         const fields = [
-            "site_revenue", "total_visitors", "total_orders", "ad_spend_ratio", 
+            "site_revenue", "total_orders", "total_visitors", "product_views", "ad_spend_ratio", 
             "ad_media", "ad_spend", "roas_percentage", "avg_cpc", 
             "total_purchases", "total_purchase_value"
         ];
@@ -209,10 +209,11 @@ function updatePerformanceSummaryCards(data) {
     console.log("[DEBUG] 최종 반영할 데이터(row):", row);
     console.log("[DEBUG] ad_media 값:", row.ad_media);
 
-    // 🔥 방문당 조회 대신 주문수 사용
+    // ✅ 올바른 순서로 카드 값 설정
     setCardValue("site_revenue", row.site_revenue);
-    setCardValue("total_visitors", row.total_visitors);
     setCardValue("total_orders", row.total_orders); // ← 주문수
+    setCardValue("total_visitors", row.total_visitors);
+    setCardValue("product_views", row.product_views); // ← 상품 조회수
     setCardValue("ad_spend_ratio", row.ad_spend_ratio, 2, "%");
     
     // 🔥 진행중인 광고 표시 로직 개선

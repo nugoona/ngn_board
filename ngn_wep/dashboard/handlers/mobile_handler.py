@@ -6,6 +6,7 @@ import re
 from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 from functools import wraps
 from google.cloud import bigquery
+from concurrent.futures import ThreadPoolExecutor
 
 # 📦 웹버전과 동일한 서비스 함수 임포트
 from ..services.performance_summary_new import get_performance_summary_new
@@ -110,24 +111,22 @@ def dashboard():
                          now=datetime.datetime.now())
 
 # ─────────────────────────────────────────────
-# 6) 모바일 데이터 API (웹버전과 동일한 구조, 데이터만 축소)
+# 6) 모바일 데이터 API (웹버전과 동일한 병렬 처리)
 # ─────────────────────────────────────────────
 @mobile_blueprint.route("/get_data", methods=["POST"])
 @login_required
 def get_data():
-    """모바일 전용 데이터 API - 웹버전과 동일한 구조, 데이터만 축소"""
+    """모바일 대시보드 데이터 조회 - 웹버전과 동일한 병렬 처리"""
     t0 = time.time()
     try:
-        data = request.get_json() or {}
+        data = request.get_json()
         user_id = session.get("user_id")
-        
-        print(f"[MOBILE] 🔍 API 호출 시작 - user_id: {user_id}")
-        print(f"[MOBILE] 📊 요청 데이터: {data}")
-        
-        # ✅ 웹버전과 동일한 company_name 처리
         raw_company_name = data.get("company_name", "all")
-        print(f"[MOBILE] 🏢 raw_company_name: {raw_company_name}")
-        
+        data_type = (data.get("data_type", "all") or "").strip().lower()
+        data_type = data_type.replace("-", "_")
+        data_type = data_type.replace(" ", "_")
+
+        # ✅ company_name 처리 (웹버전과 동일)
         if raw_company_name == "all":
             company_name = ["demo"] if user_id == "demo" else [
                 name for name in session.get("company_names", []) if name.lower() != "demo"
@@ -139,121 +138,147 @@ def get_data():
         else:
             name = str(raw_company_name).strip().lower()
             if name == "demo" and user_id != "demo":
-                return jsonify({"status": "error", "message": "demo 업체 접근 불가"}), 403
+                return jsonify({
+                    "status": "success",
+                    "message": "demo 업체 접근 불가",
+                    "performance_summary": [],
+                    "cafe24_product_sales": [],
+                    "ga4_source_summary": []
+                }), 200
             company_name = name
-        
-        print(f"[MOBILE] 🏢 처리된 company_name: {company_name}")
 
-        # ✅ 웹버전과 동일한 기간 필터 처리
+        # ✅ 공통 파라미터 처리 (웹버전과 동일)
         period = str(data.get("period", "today")).strip()
         start_date = data.get("start_date")
         end_date = data.get("end_date")
-        start_date, end_date = get_start_end_dates(period, start_date, end_date)
-
-        print(f"[MOBILE] 📅 필터 값 - period: {period}, start_date: {start_date}, end_date: {end_date}")
-
-        # ✅ 웹버전과 동일한 서비스 함수 호출, 데이터만 축소
-        response_data = {
-            "status": "success",
-            "last_updated": datetime.datetime.now().isoformat()
-        }
-
-        # 1. Performance Summary (웹버전과 동일) - 모든 데이터 통합 조회
+        
+        # 안전한 int 변환
         try:
-            print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")
-            performance_data = get_performance_summary_new(
-                company_name=company_name,
-                start_date=start_date,
-                end_date=end_date,
-                user_id=user_id
-            )
+            page = int(data.get("page", 1)) if isinstance(data.get("page"), (int, str)) else 1
+        except (ValueError, TypeError):
+            page = 1
             
-            print(f"[MOBILE] 📊 Performance Summary 결과: {len(performance_data) if performance_data else 0}개")
-            
-            if performance_data:
-                first_row = performance_data[0]
-                response_data["performance_summary"] = [first_row]  # 첫 번째 행만
-                # 웹버전과 동일한 형식으로 latest_update 설정
-                latest_update = max([
-                    row.get("updated_at")
-                    for row in performance_data if row.get("updated_at")
-                ], default=None)
-                
-                # 디버깅: 실제 updated_at 값들 출력
-                print(f"[MOBILE] 🔍 Performance Data의 updated_at 값들:")
-                for i, row in enumerate(performance_data):
-                    print(f"  Row {i}: updated_at = {row.get('updated_at')} (type: {type(row.get('updated_at'))})")
-                
-                response_data["latest_update"] = latest_update
-                print(f"[MOBILE] ✅ Performance Summary 성공 - latest_update: {response_data['latest_update']} (type: {type(response_data['latest_update'])})")
-                
-                # 디버깅: 실제 데이터 값들 출력
-                print(f"[MOBILE] 🔍 Performance Summary 데이터 값들:")
-                print(f"  site_revenue: {first_row.get('site_revenue')}")
-                print(f"  total_visitors: {first_row.get('total_visitors')}")
-                print(f"  total_orders: {first_row.get('total_orders')}")
-                print(f"  ad_spend_ratio: {first_row.get('ad_spend_ratio')}")
-                print(f"  product_views: {first_row.get('product_views')}")
-                print(f"  views_per_visit: {first_row.get('views_per_visit')}")
+        try:
+            limit = int(data.get("limit", 5)) if isinstance(data.get("limit"), (int, str)) else 5
+        except (ValueError, TypeError):
+            limit = 5
+
+        # ✅ 기간 필터 처리 (웹버전과 동일)
+        if data_type not in ["monthly_net_sales_visitors", "platform_sales_monthly"]:
+            if not period:
+                period = "manual"
+            start_date, end_date = get_start_end_dates(period, start_date, end_date)
+
+        print(f"[MOBILE] 🔄 데이터 요청 시작 - company_name={company_name}, period={period}, "
+              f"start_date={start_date}, end_date={end_date}, data_type={data_type}")
+
+        response_data = {"status": "success"}
+        timing_log = {}
+        fetch_tasks = []
+        results_map = {}
+
+        # 🚀 웹버전과 동일한 ThreadPoolExecutor 사용
+        with ThreadPoolExecutor() as executor:
+            # 1. Performance Summary (모바일 최우선)
+            if data_type in ["performance_summary", "all"]:
+                def fetch_performance():
+                    t1 = time.time()
+                    performance_data = get_performance_summary_new(
+                        company_name=company_name,
+                        start_date=start_date,
+                        end_date=end_date,
+                        user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["performance_summary"] = round(t2-t1, 3)
+                    return ("performance_summary", performance_data)
+                fetch_tasks.append(executor.submit(fetch_performance))
+
+            # 2. Cafe24 Product Sales (모바일용 상위 5개)
+            if data_type in ["cafe24_product_sales", "all"]:
+                def fetch_cafe24_products():
+                    t1 = time.time()
+                    result = get_cafe24_product_sales(
+                        company_name, period, start_date, end_date,
+                        sort_by="item_product_sales", limit=5, page=1, user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["cafe24_product_sales"] = round(t2-t1, 3)
+                    return ("cafe24_product_sales", result)
+                fetch_tasks.append(executor.submit(fetch_cafe24_products))
+
+            # 3. GA4 Source Summary (모바일용 상위 5개)
+            if data_type in ["ga4_source_summary", "all"]:
+                def fetch_ga4_sources():
+                    t1 = time.time()
+                    cache_buster = data.get('_cache_buster')
+                    ga4_data = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
+                    # not set 제외하고 상위 5개만
+                    filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set" and row.get("source", "").lower() != "(not set)"][:5]
+                    t2 = time.time()
+                    timing_log["ga4_source_summary"] = round(t2-t1, 3)
+                    return ("ga4_source_summary", filtered_sources)
+                fetch_tasks.append(executor.submit(fetch_ga4_sources))
+
+            # 4. Meta Ads (모바일용 상위 10개)
+            if data_type in ["meta_ads", "all"]:
+                def fetch_meta_ads():
+                    t1 = time.time()
+                    meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
+                    # 모바일용 데이터 처리
+                    processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
+                    t2 = time.time()
+                    timing_log["meta_ads"] = round(t2-t1, 3)
+                    return ("meta_ads", processed_meta_data)
+                fetch_tasks.append(executor.submit(fetch_meta_ads))
+
+            # 🚀 모든 작업이 완료될 때까지 대기
+            for future in fetch_tasks:
+                try:
+                    result_type, result_data = future.result()
+                    results_map[result_type] = result_data
+                except Exception as e:
+                    print(f"[MOBILE] ❌ {result_type} 데이터 로딩 실패: {e}")
+                    results_map[result_type] = []
+
+        # 📊 결과 데이터 정리
+        if "performance_summary" in results_map:
+            performance_data = results_map["performance_summary"]
+            if performance_data and len(performance_data) > 0:
+                response_data["performance_summary"] = performance_data
+                print(f"[MOBILE] ✅ Performance Summary 성공: {len(performance_data)}개")
+                print(f"[MOBILE] 📊 Performance Summary 첫 번째 행: {performance_data[0] if performance_data else 'None'}")
             else:
                 response_data["performance_summary"] = []
                 print(f"[MOBILE] ⚠️ Performance Summary 데이터 없음")
-        except Exception as e:
-            print(f"[MOBILE] ❌ Performance Summary 오류: {e}")
+        else:
             response_data["performance_summary"] = []
 
-        # 1-1. Performance Summary에서 모든 데이터 조회 완료 (별도 total_orders 호출 제거)
-
-        # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
-        try:
-            print(f"[MOBILE] 🔄 Cafe24 Product Sales 호출 시작...")
-            print(f"[MOBILE] 📊 Cafe24 Product Sales 파라미터: company_name={company_name}, period={period}, start_date={start_date}, end_date={end_date}")
-            
-            # 웹버전과 동일한 파라미터 순서: company_name, period, start_date, end_date, sort_by, limit, page, user_id
-            result = get_cafe24_product_sales(
-                company_name, period, start_date, end_date,
-                sort_by="item_product_sales", limit=5, page=1, user_id=user_id
-            )
-            
-            print(f"[MOBILE] 📊 Cafe24 Product Sales 서비스 결과: {result}")
-            
-            if result and "rows" in result:
-                response_data["cafe24_product_sales"] = result.get("rows", [])[:5]
-                response_data["cafe24_product_sales_total_count"] = result.get("total_count", 0)
-                print(f"[MOBILE] 📊 Cafe24 Product Sales 결과: {len(response_data['cafe24_product_sales'])}개 / 전체: {response_data['cafe24_product_sales_total_count']}개")
+        if "cafe24_product_sales" in results_map:
+            cafe24_result = results_map["cafe24_product_sales"]
+            if cafe24_result and "rows" in cafe24_result:
+                response_data["cafe24_product_sales"] = cafe24_result.get("rows", [])[:5]
+                response_data["cafe24_product_sales_total_count"] = cafe24_result.get("total_count", 0)
+                print(f"[MOBILE] ✅ Cafe24 Product Sales 성공: {len(response_data['cafe24_product_sales'])}개")
             else:
-                print(f"[MOBILE] ⚠️ Cafe24 Product Sales 결과가 비어있음")
                 response_data["cafe24_product_sales"] = []
                 response_data["cafe24_product_sales_total_count"] = 0
-        except Exception as e:
-            print(f"[MOBILE] ❌ Cafe24 Product Sales 오류: {e}")
-            response_data["cafe24_product_sales"] = []
+                print(f"[MOBILE] ⚠️ Cafe24 Product Sales 데이터 없음")
 
-        # 3. GA4 Source Summary (웹버전과 동일한 호출 방식)
-        try:
-            print(f"[MOBILE] 🔄 GA4 Source Summary 호출 시작...")
-            # 웹버전과 동일한 파라미터: company_name, start_date, end_date, limit, _cache_buster
-            cache_buster = data.get('_cache_buster')
-            ga4_data = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
-            # not set 제외하고 상위 5개만
-            filtered_sources = [row for row in ga4_data if row.get("source", "").lower() != "not set" and row.get("source", "").lower() != "(not set)"][:5]
-            response_data["ga4_source_summary"] = filtered_sources
-            print(f"[MOBILE] 📊 GA4 Source Summary 결과: {len(response_data['ga4_source_summary'])}개")
-        except Exception as e:
-            print(f"[MOBILE] ❌ GA4 Source Summary 오류: {e}")
-            response_data["ga4_source_summary"] = []
+        if "ga4_source_summary" in results_map:
+            response_data["ga4_source_summary"] = results_map["ga4_source_summary"]
+            print(f"[MOBILE] ✅ GA4 Source Summary 성공: {len(response_data['ga4_source_summary'])}개")
 
-        # 4. Meta Ads (상위 10개만, 모바일용 처리)
-        try:
-            print(f"[MOBILE] 🔄 Meta Ads 호출 시작...")
-            meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
-            # 모바일용 데이터 처리
-            processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
-            response_data["meta_ads"] = processed_meta_data
-            print(f"[MOBILE] 📊 Meta Ads 결과: {len(response_data['meta_ads'])}개")
-        except Exception as e:
-            print(f"[MOBILE] ❌ Meta Ads 오류: {e}")
-            response_data["meta_ads"] = []
+        if "meta_ads" in results_map:
+            response_data["meta_ads"] = results_map["meta_ads"]
+            print(f"[MOBILE] ✅ Meta Ads 성공: {len(response_data['meta_ads'])}개")
+
+        # 🚀 성능 정보 추가
+        response_data["performance"] = {
+            "total_execution_time": round(time.time() - t0, 3),
+            "individual_times": timing_log,
+            "optimization_version": "mobile_parallel_v2"
+        }
 
         print(f"[MOBILE] ✅ 응답 완료 - 소요시간: {time.time() - t0:.3f}초")
         print(f"[MOBILE] 📊 최종 응답 데이터: {response_data}")

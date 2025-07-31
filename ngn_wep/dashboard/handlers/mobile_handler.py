@@ -222,17 +222,7 @@ def get_data():
                     return ("ga4_source_summary", filtered_sources)
                 fetch_tasks.append(executor.submit(fetch_ga4_sources))
 
-            # 4. Meta Ads (모바일용 상위 10개)
-            if data_type in ["meta_ads", "all"]:
-                def fetch_meta_ads():
-                    t1 = time.time()
-                    meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
-                    # 모바일용 데이터 처리
-                    processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
-                    t2 = time.time()
-                    timing_log["meta_ads"] = round(t2-t1, 3)
-                    return ("meta_ads", processed_meta_data)
-                fetch_tasks.append(executor.submit(fetch_meta_ads))
+
 
             # 🚀 모든 작업이 완료될 때까지 대기
             for future in fetch_tasks:
@@ -271,15 +261,24 @@ def get_data():
             response_data["ga4_source_summary"] = results_map["ga4_source_summary"]
             print(f"[MOBILE] ✅ GA4 Source Summary 성공: {len(response_data['ga4_source_summary'])}개")
 
-        if "meta_ads" in results_map:
-            response_data["meta_ads"] = results_map["meta_ads"]
-            print(f"[MOBILE] ✅ Meta Ads 성공: {len(response_data['meta_ads'])}개")
+
+
+        # 🚀 Meta Ads 데이터 처리 (웹버전과 동일한 별도 조건문)
+        if data_type == "meta_ads":
+            t1 = time.time()
+            meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
+            # 모바일용 데이터 처리
+            processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
+            response_data["meta_ads"] = processed_meta_data
+            t2 = time.time()
+            timing_log["meta_ads"] = round(t2-t1, 3)
+            print(f"[MOBILE] ✅ Meta Ads 성공: {len(processed_meta_data)}개")
 
         # 🚀 성능 정보 추가
         response_data["performance"] = {
             "total_execution_time": round(time.time() - t0, 3),
             "individual_times": timing_log,
-            "optimization_version": "mobile_parallel_v2"
+            "optimization_version": "mobile_web_aligned_v2"
         }
 
         print(f"[MOBILE] ✅ 응답 완료 - 소요시간: {time.time() - t0:.3f}초")

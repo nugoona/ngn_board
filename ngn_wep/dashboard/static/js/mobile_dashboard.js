@@ -210,16 +210,17 @@ async function fetchMobileData() {
         
         console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         
-        // 🔥 병렬 처리로 성능 최적화
-        console.log('🔄 병렬 처리로 데이터 로딩 시작...');
+        // 웹버전과 동일하게 순차 처리로 안정성 확보
+        console.log('🔄 순차 처리로 데이터 로딩 시작...');
         
-        const promises = [
-            fetchMobilePerformanceSummary(companyName, period, startDateValue, endDateValue),
-            fetchMobileCafe24Products(companyName, period, startDateValue, endDateValue),
-            fetchMobileGa4Sources(companyName, period, startDateValue, endDateValue)
-        ];
+        // 1. 성과 요약 데이터
+        await fetchMobilePerformanceSummary(companyName, period, startDateValue, endDateValue);
         
-        await Promise.all(promises);
+        // 2. 카페24 상품판매 데이터
+        await fetchMobileCafe24Products(companyName, period, startDateValue, endDateValue);
+        
+        // 3. GA4 소스별 유입수 데이터
+        await fetchMobileGa4Sources(companyName, period, startDateValue, endDateValue);
         
         console.log('✅ 모바일 데이터 로딩 완료');
         

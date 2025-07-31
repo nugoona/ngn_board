@@ -8,7 +8,7 @@ from functools import wraps
 from google.cloud import bigquery
 
 # 📦 웹버전과 동일한 서비스 함수 임포트
-from ..services.performance_summary import get_performance_summary
+from ..services.performance_summary_new import get_performance_summary_new
 from ..services.cafe24_service import get_cafe24_product_sales, get_cafe24_sales_data
 from ..services.ga4_source_summary import get_ga4_source_summary
 from ..services.meta_ads_service import get_meta_ads_data
@@ -206,7 +206,7 @@ def get_data():
         # 1. Performance Summary (웹버전과 동일)
         try:
             print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")
-            performance_data = get_performance_summary(
+            performance_data = get_performance_summary_new(
                 company_name=company_name,
                 start_date=start_date,
                 end_date=end_date,

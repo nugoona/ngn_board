@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, session
 # ✅ 서비스 함수 임포트
 from services.cafe24_service import get_cafe24_sales_data, get_cafe24_product_sales
 from services.meta_ads_service import get_meta_ads_data
-from services.performance_summary import get_performance_summary
+from services.performance_summary_new import get_performance_summary_new
 from services.viewitem_summary import get_viewitem_summary
 from services.monthly_net_sales_visitors import get_monthly_net_sales_visitors  # ✅ NEW
 from services.ga4_source_summary import get_ga4_source_summary
@@ -92,7 +92,7 @@ def get_dashboard_data_route():
 
         # ✅ 1) Performance Summary
         if data_type in ["performance_summary", "all"]:
-            performance_data = get_performance_summary(
+            performance_data = get_performance_summary_new(
                 company_name=company_name,
                 start_date=start_date,
                 end_date=end_date

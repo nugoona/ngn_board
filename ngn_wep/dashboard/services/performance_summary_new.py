@@ -7,7 +7,7 @@ from .meta_ads_insight import get_meta_ads_insight_table
 def get_bigquery_client():
     return bigquery.Client()
 
-@cached_query(func_name="performance_summary_new", ttl=300)  # 5분 캐싱
+@cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
 def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
@@ -21,20 +21,24 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         raise ValueError("start_date / end_date가 없습니다.")
 
     try:
-        # 🔥 순차 처리로 변경 (병렬 처리 오버헤드 제거)
-        print("[DEBUG] 순차 처리로 데이터 조회 시작")
+        # 🔥 병렬 처리로 변경 (3개 쿼리를 동시에 실행)
+        import time
+        start_time = time.time()
+        print("[DEBUG] 병렬 처리로 데이터 조회 시작")
         
-        # 1. 카페24 매출 데이터 조회
-        cafe24_data = get_cafe24_summary_simple(company_name, start_date, end_date, user_id)
-        print(f"[DEBUG] 카페24 데이터 조회 완료: {cafe24_data}")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            # 3개 작업을 동시에 실행
+            future_cafe24 = executor.submit(get_cafe24_summary_simple, company_name, start_date, end_date, user_id)
+            future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date)
+            future_ga4 = executor.submit(get_ga4_visitors_simple, company_name, start_date, end_date, user_id)
+            
+            # 결과 수집
+            cafe24_data = future_cafe24.result()
+            meta_ads_data = future_meta.result()
+            total_visitors = future_ga4.result()
         
-        # 2. 메타 광고 계정 단위 성과 조회
-        meta_ads_data = get_meta_ads_summary_simple(company_name, start_date, end_date)
-        print(f"[DEBUG] 메타 광고 데이터 조회 완료: {meta_ads_data}")
-        
-        # 3. GA4 방문자 데이터 조회
-        total_visitors = get_ga4_visitors_simple(company_name, start_date, end_date, user_id)
-        print(f"[DEBUG] GA4 방문자 데이터 조회 완료: {total_visitors}")
+        end_time = time.time()
+        print(f"[DEBUG] 병렬 처리 완료 ({end_time - start_time:.2f}초) - 카페24: {cafe24_data}, 메타: {meta_ads_data}, GA4: {total_visitors}")
         
         # 4. 데이터 조합 및 계산
         result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date)
@@ -85,6 +89,7 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
         WHERE payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
           AND total_payment > 0
+        LIMIT 1
     """
     
     try:
@@ -101,7 +106,7 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
 
 def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     """
-    ✅ 메타 광고 요약 (성과 요약용 최적화)
+    ✅ 메타 광고 요약 (성과 요약용 최적화) - 업데이트 시간 포함
     """
     query_params = []
     
@@ -121,17 +126,19 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 업데이트 시간 쿼리 최적화 - 별도 쿼리로 분리
+    # 🔥 업데이트 시간을 포함한 단일 쿼리로 최적화
     query = f"""
         SELECT 
             COALESCE(SUM(spend), 0) AS total_spend,
             COALESCE(SUM(clicks), 0) AS total_clicks,
             COALESCE(SUM(purchases), 0) AS total_purchases,
-            COALESCE(SUM(purchase_value), 0) AS total_purchase_value
+            COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
+            MAX(updated_at) AS updated_at
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
         WHERE date BETWEEN @start_date AND @end_date
           AND {company_filter}
           AND spend > 0
+        LIMIT 1
     """
     
     try:
@@ -139,15 +146,12 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         row = list(result)[0]
         
-        # 🔥 업데이트 시간은 별도로 간단하게 조회
-        updated_at = get_latest_updated_at_simple(company_name, start_date, end_date)
-        
         return {
             "total_spend": row.total_spend or 0,
             "total_clicks": row.total_clicks or 0,
             "total_purchases": row.total_purchases or 0,
             "total_purchase_value": row.total_purchase_value or 0,
-            "updated_at": updated_at
+            "updated_at": row.updated_at
         }
     except Exception as e:
         print(f"[ERROR] 메타 광고 요약 조회 오류: {e}")
@@ -158,48 +162,6 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
             "total_purchase_value": 0,
             "updated_at": None
         }
-
-def get_latest_updated_at_simple(company_name, start_date: str, end_date: str):
-    """
-    ✅ 최신 업데이트 시간 조회 (최적화)
-    """
-    query_params = []
-    
-    # 업체 필터 처리
-    if isinstance(company_name, list):
-        filtered_companies = [name.lower() for name in company_name]
-        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
-        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
-    else:
-        company_name = company_name.lower()
-        company_filter = "LOWER(company_name) = @company_name"
-        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
-    
-    # 날짜 파라미터
-    query_params.extend([
-        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
-    ])
-    
-    # 🔥 최적화된 업데이트 시간 쿼리
-    query = f"""
-        SELECT updated_at
-        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
-        WHERE date BETWEEN @start_date AND @end_date
-          AND {company_filter}
-          AND updated_at IS NOT NULL
-        ORDER BY updated_at DESC
-        LIMIT 1
-    """
-    
-    try:
-        client = get_bigquery_client()
-        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-        rows = list(result)
-        return rows[0].updated_at if rows else None
-    except Exception as e:
-        print(f"[ERROR] 업데이트 시간 조회 오류: {e}")
-        return None
 
 def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_id: str = None):
     """
@@ -238,6 +200,7 @@ def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_i
         WHERE {company_filter}
           AND event_date BETWEEN @start_date AND @end_date
           AND total_users > 0
+        LIMIT 1
     """
     
     try:

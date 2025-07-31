@@ -100,7 +100,8 @@ function getRequestData(page = 1, extra = {}) {
   return requestData;
 }
 
-async function updateAllData() {
+// updateAllData 함수를 전역으로 노출
+window.updateAllData = async function() {
   debugLog("🎯 updateAllData() 함수 시작");
   
   if (isLoading) {

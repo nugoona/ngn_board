@@ -18,7 +18,6 @@ from ..services.catalog_sidebar_service import create_or_update_product_set
 from ..services.ga4_source_summary import get_ga4_source_summary
 from ..services.meta_ads_insight import get_meta_account_list_filtered
 from ..services.meta_ads_service import get_meta_ads_data
-from ..services.performance_summary import get_performance_summary
 from ..services.performance_summary_new import get_performance_summary_new
 from ..services.platform_sales_summary import get_monthly_platform_sales
 from ..services.Fetch_Adset_Summary import get_meta_ads_adset_summary_by_type

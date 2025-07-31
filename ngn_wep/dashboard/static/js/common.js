@@ -18,8 +18,20 @@ function showLoading(target) {
     return;
   }
   
-  // 🔥 성능 최적화: 단순한 스타일 설정
-  $target.css('display', 'flex');
+  // 🔥 로딩 스피너 강제 표시 (최소 지속 시간 보장)
+  $target.css({
+    'display': 'flex !important',
+    'visibility': 'visible !important',
+    'opacity': '1 !important',
+    'pointer-events': 'auto !important'
+  });
+  
+  // 🔥 최소 500ms 지속 시간 보장
+  setTimeout(() => {
+    if ($target.css('display') === 'flex') {
+      $target.css('display', 'none');
+    }
+  }, 500);
   
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     console.log("✅ Loading started for:", target);

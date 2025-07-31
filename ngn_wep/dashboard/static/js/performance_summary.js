@@ -12,7 +12,7 @@ $(document).ready(function () {
 
         console.log("[DEBUG] 필터 변경 감지 → performance_summary 실행");
         fetchPerformanceSummaryData();
-    }, 500));
+    }, 300)); // 500ms → 300ms로 단축
 
     $("#applyFiltersBtn").click(function () {
         const period = $("#periodFilter").val();
@@ -53,8 +53,8 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // 🔥 사이트 성과 요약만 2중 로딩 스피너 (performance_summary.js에서 추가)
-    toggleLoading(true);
+    // 🔥 단순화된 로딩 스피너
+    showLoading("#loadingOverlayPerformanceSummary");
 
     const today = new Date().toISOString().split("T")[0];
     if (!startDate) startDate = today;
@@ -78,17 +78,17 @@ async function fetchPerformanceSummaryData() {
         });
 
         const data = await response.json();
-            console.log("[DEBUG] 서버 응답:", data);
-    console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
+        console.log("[DEBUG] 서버 응답:", data);
+        console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
 
-    if (!data || data.status !== "success" || !data.performance_summary) {
-        console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
-        console.error("[ERROR] 응답 상태:", data.status);
-        console.error("[ERROR] performance_summary 필드 존재:", !!data.performance_summary);
-        updatePerformanceSummaryCards([]);
-        updateUpdatedAtText(null);
-        return;
-    }
+        if (!data || data.status !== "success" || !data.performance_summary) {
+            console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
+            console.error("[ERROR] 응답 상태:", data.status);
+            console.error("[ERROR] performance_summary 필드 존재:", !!data.performance_summary);
+            updatePerformanceSummaryCards([]);
+            updateUpdatedAtText(null);
+            return;
+        }
 
         updatePerformanceSummaryCards(data.performance_summary);
 
@@ -98,63 +98,31 @@ async function fetchPerformanceSummaryData() {
             updateUpdatedAtText(null);
         }
     } catch (error) {
-        console.error("[ERROR] 데이터 요청 중 오류 발생:", error);
+        console.error("[ERROR] 성과 요약 데이터 로딩 실패:", error);
+        updatePerformanceSummaryCards([]);
         updateUpdatedAtText(null);
     } finally {
-        // 🔥 사이트 성과 요약만 2중 로딩 스피너 (performance_summary.js에서 추가)
-        toggleLoading(false);
-        // 🔥 dashboard.js의 로딩 스피너도 함께 숨김 (연계성 유지)
+        // 🔥 단순화된 로딩 완료
         hideLoading("#loadingOverlayPerformanceSummary");
     }
 }
 
-function toggleLoading(isLoading) {
-    if (isLoading) {
-        // 🔥 가짜 로딩 (약한 블러)
-        $("#performanceSummaryWrapper").addClass("loading");
-        showLoading("#loadingOverlayPerformanceSummary");
-        
-        // 🔥 진짜 로딩 (강한 블러) - 1초 후 적용
-        setTimeout(() => {
-            $("#performanceSummaryWrapper").addClass("real-loading");
-            // 🔥 진짜 로딩 시 강한 블러 직접 적용
-            $("#performanceSummaryWrapper").css({
-                'backdrop-filter': 'blur(4px)',
-                '-webkit-backdrop-filter': 'blur(4px)'
-            });
-        }, 1000);
-        
-        // 🔥 진짜 로딩 시 CSS 강제 적용
-        $("#loadingOverlayPerformanceSummary").css({
-            'background': 'transparent !important',
-            'backdrop-filter': 'none !important',
-            'opacity': '0.3 !important'
-        });
-        
-        // 🔥 로딩 텍스트 숨김 (이미 CSS에서 처리됨)
-        $("#loadingOverlayPerformanceSummary .loading-text").css({
-            'display': 'none !important',
-            'visibility': 'hidden !important',
-            'opacity': '0 !important'
-        });
-        
-        // 🔥 성과 요약 래퍼에 직접 backdrop-filter 적용
-        $("#performanceSummaryWrapper").css({
-            'backdrop-filter': 'blur(2px)',
-            '-webkit-backdrop-filter': 'blur(2px)'
-        });
-    } else {
-        // 🔥 로딩 완료 시 모든 클래스 제거
-        // 🔥 최소 500ms 로딩 스피너 표시 보장
-        setTimeout(() => {
-          hideLoading("#loadingOverlayPerformanceSummary");
-          $("#performanceSummaryWrapper").removeClass("loading real-loading");
-        }, 500);
-        // 🔥 로딩 완료 시 backdrop-filter 제거
-        $("#performanceSummaryWrapper").css({
-            'backdrop-filter': 'none',
-            '-webkit-backdrop-filter': 'none'
-        });
+// 🔥 단순화된 로딩 함수들 (기존 복잡한 로직 제거)
+function showLoading(target) {
+    const element = document.querySelector(target);
+    if (element) {
+        element.style.display = 'flex';
+        element.style.visibility = 'visible';
+        element.style.opacity = '1';
+    }
+}
+
+function hideLoading(target) {
+    const element = document.querySelector(target);
+    if (element) {
+        element.style.display = 'none';
+        element.style.visibility = 'hidden';
+        element.style.opacity = '0';
     }
 }
 
@@ -164,10 +132,9 @@ function updatePerformanceSummaryCards(data) {
     if (!data || !data.length) {
         console.warn("[WARN] performance_summary 데이터 없음. '-'로 표시합니다.");
         const fields = [
-            "site_revenue", "total_visitors", "product_views", "views_per_visit",
-            "ad_spend_ratio", "ad_media", "ad_spend", "roas_percentage",
-            "avg_cpc", "click_through_rate", "conversion_rate",
-            "avg_order_value", "total_purchases", "total_purchase_value"
+            "site_revenue", "total_visitors", "total_orders", "ad_spend_ratio", 
+            "ad_media", "ad_spend", "roas_percentage", "avg_cpc", 
+            "total_purchases", "total_purchase_value"
         ];
         fields.forEach(field => setCardValue(field, "-"));
         return;
@@ -176,18 +143,15 @@ function updatePerformanceSummaryCards(data) {
     const row = data[0];
     console.log("[DEBUG] 최종 반영할 데이터(row):", row);
 
+    // 🔥 방문당 조회 대신 주문수 사용
     setCardValue("site_revenue", row.site_revenue);
     setCardValue("total_visitors", row.total_visitors);
-    setCardValue("product_views", row.product_views);
-    setCardValue("views_per_visit", row.views_per_visit, 2);
+    setCardValue("total_orders", row.total_orders); // ← 주문수
     setCardValue("ad_spend_ratio", row.ad_spend_ratio, 2, "%");
     setCardValue("ad_media", row.ad_media);
     setCardValue("ad_spend", row.ad_spend);
     setCardValue("roas_percentage", row.roas_percentage, 2, "%");
     setCardValue("avg_cpc", row.avg_cpc, 0);
-    setCardValue("click_through_rate", row.click_through_rate, 2, "%");
-    setCardValue("conversion_rate", row.conversion_rate, 2, "%");
-    setCardValue("avg_order_value", row.avg_order_value);
     setCardValue("total_purchases", row.total_purchases);
     setCardValue("total_purchase_value", row.total_purchase_value);
 
@@ -208,52 +172,68 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
     }
 
     // 숫자처럼 보이는 문자열도 처리
-    const numericValue = parseFloat(String(rawValue).replace(/[^\d.-]/g, ""));
-    if (!isNaN(numericValue)) {
-        let val = numericValue.toFixed(decimal);
-        val = Number(val).toLocaleString(undefined, {
-            minimumFractionDigits: decimal,
-            maximumFractionDigits: decimal
-        });
-        el.text(val + suffix);
-    } else {
-        // 숫자가 아닌 값은 그대로 출력
-        el.text(rawValue + suffix);
+    let numValue = rawValue;
+    if (typeof rawValue === "string") {
+        numValue = parseFloat(rawValue);
+        if (isNaN(numValue)) {
+            el.text("-");
+            return;
+        }
     }
+
+    // 숫자 포맷팅
+    let formattedValue;
+    if (numValue === 0) {
+        formattedValue = "0";
+    } else if (numValue >= 1000000) {
+        formattedValue = (numValue / 1000000).toFixed(decimal) + "M";
+    } else if (numValue >= 1000) {
+        formattedValue = (numValue / 1000).toFixed(decimal) + "K";
+    } else {
+        formattedValue = numValue.toFixed(decimal);
+    }
+
+    // 천 단위 콤마 추가
+    if (numValue >= 1000) {
+        const parts = formattedValue.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        formattedValue = parts.join('.');
+    }
+
+    el.text(formattedValue + suffix);
 }
 
-
 function updateUpdatedAtText(updatedAtStr) {
-  const el = $("#updatedAtText");
-  if (!el.length) {
-    console.warn("[WARN] #updatedAtText 요소가 존재하지 않음");
-    return;
-  }
-
-  if (!updatedAtStr) {
-    el.text("최종 업데이트: 정보 없음");
-    return;
-  }
-
-  let kst = null;
-
-  // ✅ 형식이 "2025-05-11-19-11"일 경우 → 수동 파싱
-  const parts = updatedAtStr.split("-");
-  if (parts.length === 5) {
-    const [year, month, day, hour, minute] = parts.map(Number);
-    kst = new Date(year, month - 1, day, hour, minute);
-  } else {
-    // ✅ ISO 형식인 경우
-    const utc = new Date(updatedAtStr);
-    if (!isNaN(utc.getTime())) {
-      kst = new Date(utc.getTime() - 9 * 60 * 60 * 1000);  // UTC → KST
+    const updatedAtElement = $("#updatedAtText");
+    if (!updatedAtElement.length) {
+        console.warn("[WARN] updateUpdatedAtText() - #updatedAtText 요소 없음");
+        return;
     }
-  }
 
-  if (!kst || isNaN(kst.getTime())) {
-    el.text("최종 업데이트: " + updatedAtStr);
-  } else {
-    const formatted = `${kst.getFullYear()}년 ${kst.getMonth() + 1}월 ${kst.getDate()}일 ${kst.getHours()}시 ${kst.getMinutes().toString().padStart(2, '0')}분`;
-    el.text(`최종 업데이트: ${formatted}`);
-  }
+    if (!updatedAtStr) {
+        updatedAtElement.text("최종 업데이트: -");
+        return;
+    }
+
+    try {
+        const updatedAt = new Date(updatedAtStr);
+        const now = new Date();
+        const diffMs = now - updatedAt;
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+
+        let timeText;
+        if (diffMins < 1) {
+            timeText = "방금 전";
+        } else if (diffMins < 60) {
+            timeText = `${diffMins}분 전`;
+        } else {
+            const diffHours = Math.floor(diffMins / 60);
+            timeText = `${diffHours}시간 전`;
+        }
+
+        updatedAtElement.text(`최종 업데이트: ${timeText}`);
+    } catch (error) {
+        console.error("[ERROR] 업데이트 시간 파싱 오류:", error);
+        updatedAtElement.text("최종 업데이트: -");
+    }
 }

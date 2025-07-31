@@ -53,8 +53,19 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // 🔥 로딩 스피너 표시
-    showLoading("#loadingOverlayPerformanceSummary");
+    // 🔥 로딩 스피너 표시 (강제 스타일 적용)
+    const loadingElement = document.querySelector("#loadingOverlayPerformanceSummary");
+    if (loadingElement) {
+        loadingElement.style.cssText = `
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(4px) !important;
+        `;
+        console.log("[DEBUG] 로딩 스피너 강제 표시: #loadingOverlayPerformanceSummary");
+    }
 
     const today = new Date().toISOString().split("T")[0];
     if (!startDate) startDate = today;
@@ -102,8 +113,17 @@ async function fetchPerformanceSummaryData() {
         updatePerformanceSummaryCards([]);
         updateUpdatedAtText(null);
     } finally {
-        // 🔥 로딩 완료
-        hideLoading("#loadingOverlayPerformanceSummary");
+        // 🔥 로딩 완료 (강제 스타일 적용)
+        const loadingElement = document.querySelector("#loadingOverlayPerformanceSummary");
+        if (loadingElement) {
+            loadingElement.style.cssText = `
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            `;
+            console.log("[DEBUG] 로딩 스피너 강제 숨김: #loadingOverlayPerformanceSummary");
+        }
     }
 }
 
@@ -111,20 +131,28 @@ async function fetchPerformanceSummaryData() {
 function showLoading(target) {
     const element = document.querySelector(target);
     if (element) {
-        element.style.display = 'flex';
-        element.style.visibility = 'visible';
-        element.style.opacity = '1';
-        console.log(`[DEBUG] 로딩 스피너 표시: ${target}`);
+        element.style.cssText = `
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(4px) !important;
+        `;
+        console.log(`[DEBUG] 로딩 스피너 강제 표시: ${target}`);
     }
 }
 
 function hideLoading(target) {
     const element = document.querySelector(target);
     if (element) {
-        element.style.display = 'none';
-        element.style.visibility = 'hidden';
-        element.style.opacity = '0';
-        console.log(`[DEBUG] 로딩 스피너 숨김: ${target}`);
+        element.style.cssText = `
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        `;
+        console.log(`[DEBUG] 로딩 스피너 강제 숨김: ${target}`);
     }
 }
 
@@ -150,7 +178,7 @@ function updatePerformanceSummaryCards(data) {
     setCardValue("total_visitors", row.total_visitors);
     setCardValue("total_orders", row.total_orders); // ← 주문수
     setCardValue("ad_spend_ratio", row.ad_spend_ratio, 2, "%");
-    setCardValue("ad_media", row.ad_media);
+    setCardValue("ad_media", row.ad_media || "meta"); // ← 기본값 추가
     setCardValue("ad_spend", row.ad_spend);
     setCardValue("roas_percentage", row.roas_percentage, 2, "%");
     setCardValue("avg_cpc", row.avg_cpc, 0);
@@ -230,6 +258,7 @@ function updateUpdatedAtText(updatedAtStr) {
         }
 
         updatedAtElement.text(`최종 업데이트: ${timeText}`);
+        console.log(`[DEBUG] 업데이트 시간 설정: ${timeText} (${updatedAtStr})`);
     } catch (error) {
         console.error("[ERROR] 업데이트 시간 파싱 오류:", error);
         updatedAtElement.text("최종 업데이트: -");

@@ -104,6 +104,7 @@ async function fetchPerformanceSummaryData() {
             return [];
         }
 
+        console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
         updatePerformanceSummaryCards(data.performance_summary);
         
         if (data.latest_update) {
@@ -154,6 +155,7 @@ function hideLoading(target) {
 
 function updatePerformanceSummaryCards(data) {
     console.log("[DEBUG] updatePerformanceSummaryCards() 실행");
+    console.log("[DEBUG] 받은 데이터:", data);
 
     if (!data || !data.length) {
         console.warn("[WARN] performance_summary 데이터 없음. '-'로 표시합니다.");
@@ -168,6 +170,7 @@ function updatePerformanceSummaryCards(data) {
 
     const row = data[0];
     console.log("[DEBUG] 최종 반영할 데이터(row):", row);
+    console.log("[DEBUG] ad_media 값:", row.ad_media);
 
     // 🔥 방문당 조회 대신 주문수 사용
     setCardValue("site_revenue", row.site_revenue);
@@ -194,6 +197,8 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
         console.warn(`[WARN] setCardValue() - 요소 #${cardId} 없음`);
         return;
     }
+
+    console.log(`[DEBUG] setCardValue - ${cardId}:`, rawValue);
 
     // null 또는 undefined → "-"
     if (rawValue === null || rawValue === undefined) {

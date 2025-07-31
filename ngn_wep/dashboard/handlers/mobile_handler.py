@@ -183,6 +183,8 @@ def get_data():
             if data_type in ["performance_summary", "all"]:
                 def fetch_performance():
                     t1 = time.time()
+                    # 🚀 캐시 무효화 파라미터 처리
+                    cache_buster = data.get('_cache_buster')
                     performance_data = get_performance_summary_new(
                         company_name=company_name,
                         start_date=start_date,

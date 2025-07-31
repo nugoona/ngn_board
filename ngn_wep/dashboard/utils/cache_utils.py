@@ -38,7 +38,7 @@ except Exception as e:
 # 캐시 TTL 설정 (초)
 CACHE_TTL = {
     "performance_summary": 300,      # 5분
-    "performance_summary_new": 60,   # 1분 (임시로 단축)
+    "performance_summary_new": 60,   # 1분 (실시간 성능 개선)
     "cafe24_sales": 180,            # 3분
     "cafe24_product_sales": 180,    # 3분
     "viewitem_summary": 600,        # 10분

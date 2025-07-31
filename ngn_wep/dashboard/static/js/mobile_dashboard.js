@@ -11,6 +11,10 @@ let mobileData = null;
 let isLoading = false;
 let selectedMetaAccount = null;
 
+// 🚀 디바운싱을 위한 변수 추가
+let fetchMobileDataTimeout = null;
+const FETCH_DEBOUNCE_DELAY = 300; // 300ms 디바운스
+
 // ─────────────────────────────────────────────
 // 2) 유틸리티 함수 (웹버전과 동일)
 // ─────────────────────────────────────────────
@@ -27,6 +31,18 @@ function formatCurrency(num) {
 function formatPercentage(num) {
     if (num === null || num === undefined) return '--';
     return num.toFixed(1) + '%';
+}
+
+// 🚀 디바운싱 함수 추가
+function debounceFetchMobileData() {
+    if (fetchMobileDataTimeout) {
+        clearTimeout(fetchMobileDataTimeout);
+    }
+    
+    fetchMobileDataTimeout = setTimeout(() => {
+        console.log('🚀 디바운싱된 fetchMobileData 호출');
+        fetchMobileData();
+    }, FETCH_DEBOUNCE_DELAY);
 }
 
 // ================================
@@ -230,7 +246,8 @@ async function fetchMobileData() {
                 period: period,
                 start_date: startDateValue,
                 end_date: endDateValue,
-                limit: 5  // 모바일용 적은 데이터
+                limit: 5,  // 모바일용 적은 데이터
+                _cache_buster: Date.now()  // 🚀 캐시 무효화를 위한 타임스탬프 추가
             })
         });
         
@@ -585,7 +602,7 @@ function setupFilters() {
     const periodSelect = document.getElementById('periodFilter');
     const metaAccountSelect = document.getElementById('metaAccountSelector');
     
-    // 기간 필터 변경 시
+    // 기간 변경 시
     if (periodSelect) {
         periodSelect.addEventListener('change', () => {
             console.log('📅 기간 변경:', periodSelect.value);
@@ -600,7 +617,8 @@ function setupFilters() {
                 }
             }
             
-            fetchMobileData(); // API 재호출
+            // 🚀 디바운싱 적용
+            debounceFetchMobileData();
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
@@ -629,7 +647,8 @@ function setupFilters() {
                 metaAdsTable.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
             }
             
-            fetchMobileData(); // API 재호출
+            // 🚀 디바운싱 적용
+            debounceFetchMobileData();
             fetchMetaAccounts(); // 메타 광고 계정 목록 업데이트
         });
     }
@@ -638,7 +657,8 @@ function setupFilters() {
     if (startDate) {
         startDate.addEventListener('change', () => {
             console.log('📅 시작일 변경:', startDate.value);
-            fetchMobileData(); // API 재호출
+            // 🚀 디바운싱 적용
+            debounceFetchMobileData();
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
@@ -652,7 +672,8 @@ function setupFilters() {
     if (endDate) {
         endDate.addEventListener('change', () => {
             console.log('📅 종료일 변경:', endDate.value);
-            fetchMobileData(); // API 재호출
+            // 🚀 디바운싱 적용
+            debounceFetchMobileData();
             
             // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
             if (selectedMetaAccount) {
@@ -705,7 +726,12 @@ function initMobileDashboard() {
     setupCompanyAutoSelection();
     
     setupFilters();
-    fetchMobileData();
+    
+    // 🚀 초기 데이터 로딩 (중복 방지)
+    if (!isLoading) {
+        fetchMobileData();
+    }
+    
     fetchMetaAccounts(); // 메타 광고 계정 목록 로드
     
     console.log('✅ 모바일 대시보드 초기화 완료');

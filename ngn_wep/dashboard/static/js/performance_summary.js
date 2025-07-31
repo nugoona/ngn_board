@@ -44,15 +44,36 @@ async function fetchPerformanceSummaryData() {
     try {
         const startTime = performance.now();
         
-        const response = await fetch('/get_data', {
+        // 🔥 로딩 스피너 표시
+        showLoading("#loadingOverlayPerformanceSummary");
+        
+        // 🔥 기존 필터 값 사용
+        let companyName = $("#accountFilter").val() || "all";
+        let period = $("#periodFilter").val() || "today";
+        let startDate = $("#startDate").val()?.trim();
+        let endDate = $("#endDate").val()?.trim();
+
+        if (period === "manual" && (!endDate || endDate === "")) {
+            console.log("[DEBUG] 직접 선택인데 종료일 없음 - 요청 중단");
+            hideLoading("#loadingOverlayPerformanceSummary");
+            return [];
+        }
+
+        const today = new Date().toISOString().split("T")[0];
+        if (!startDate) startDate = today;
+        if (!endDate) endDate = today;
+        
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 data_type: 'performance_summary',
-                company_name: getCurrentCompany(),
-                period: getCurrentPeriod(),
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate,
                 limit: 100,
                 page: 1
             })
@@ -66,6 +87,7 @@ async function fetchPerformanceSummaryData() {
         }
 
         const data = await response.json();
+        console.log("[DEBUG] 서버 응답:", data);
         
         // 성능 정보 출력
         if (data.performance) {
@@ -76,10 +98,28 @@ async function fetchPerformanceSummaryData() {
             console.log(`- 최적화 버전: ${data.performance.optimization_version}`);
         }
         
-        return data.performance_summary?.data || [];
+        if (!data || data.status !== "success" || !data.performance_summary) {
+            console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
+            updatePerformanceSummaryCards([]);
+            return [];
+        }
+
+        updatePerformanceSummaryCards(data.performance_summary);
+        
+        if (data.latest_update) {
+            updateUpdatedAtText(data.latest_update);
+        } else {
+            updateUpdatedAtText(null);
+        }
+        
+        return data.performance_summary || [];
     } catch (error) {
         console.error('Error fetching performance summary data:', error);
+        updatePerformanceSummaryCards([]);
         return [];
+    } finally {
+        // 🔥 로딩 완료
+        hideLoading("#loadingOverlayPerformanceSummary");
     }
 }
 

@@ -6,7 +6,7 @@ def get_bigquery_client():
     return bigquery.Client()
 
 
-@cached_query(func_name="product_sales_ratio", ttl=0)  # 캐싱 비활성화 (디버깅용)
+@cached_query(func_name="product_sales_ratio", ttl=900)  # 캐싱 활성화 (15분)
 def get_product_sales_ratio(
     company_name,
     start_date: str,
@@ -28,9 +28,12 @@ def get_product_sales_ratio(
 
     # ---------- 기본 검증 ----------
     if not start_date or not end_date:
-        raise ValueError('start_date / end_date 값이 없습니다.')
+        print('[WARN] start_date 또는 end_date가 없습니다.')
+        return []
+        
     if not isinstance(limit, int) or limit <= 0:
-        raise ValueError('limit 값은 양의 정수여야 합니다.')
+        print('[WARN] limit 값이 유효하지 않습니다.')
+        return []
 
     # ---------- 업체 필터 ----------
     query_params_base = []
@@ -117,21 +120,6 @@ def get_product_sales_ratio(
     ORDER BY b.item_product_sales DESC
     LIMIT @limit
     """
-    # get_product_sales_ratio 안쪽 try 바로 위에 추가
-    print("[DEBUG] ★ 최종 SQL ★")
-    print(query)
-    print("[DEBUG] ★ 파라미터 목록 ★")
-    for p in query_params:
-        val = getattr(p, "value", getattr(p, "values", None))
-        # 안전한 타입 접근
-        if hasattr(p, 'parameter_type'):
-            param_type = p.parameter_type
-        elif hasattr(p, 'array_type'):
-            param_type = p.array_type
-        else:
-            param_type = 'UNKNOWN'
-        print(f"  - {p.name} ({param_type}): {val}")
-
 
     # ---------- 실행 ----------
     try:
@@ -160,7 +148,7 @@ def get_product_sales_ratio(
             SELECT COUNT(*) as total_count
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
             WHERE payment_date BETWEEN @start_date AND @end_date
-              AND LOWER(company_name) = 'piscess'
+              AND {company_filter}
               AND item_product_sales > 0
             """
             basic_result = client.query(basic_check, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
@@ -172,7 +160,7 @@ def get_product_sales_ratio(
             SELECT COUNT(*) as total_count
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
             WHERE payment_date BETWEEN @start_date AND @end_date
-              AND LOWER(company_name) = 'piscess'
+              AND {company_filter}
               AND item_product_sales > 0
               AND product_name IS NOT NULL
             """
@@ -185,7 +173,7 @@ def get_product_sales_ratio(
             SELECT product_name, item_product_sales, payment_date
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
             WHERE payment_date BETWEEN @start_date AND @end_date
-              AND LOWER(company_name) = 'piscess'
+              AND {company_filter}
               AND item_product_sales > 0
               AND product_name IS NOT NULL
             LIMIT 5
@@ -193,25 +181,6 @@ def get_product_sales_ratio(
             sample_result = client.query(sample_check, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
             sample_data = [dict(r) for r in sample_result]
             print(f'[DEBUG] 3. 샘플 데이터: {sample_data}')
-
-        # ---------- 데이터 없음 진단 ----------
-        if not data:
-            print('[DEBUG] ⚠️ 데이터 없음 → 조건 재확인')
-            check_query = f"""
-            SELECT COUNT(*) AS total_count
-            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
-            WHERE payment_date BETWEEN @start_date AND @end_date
-              AND {company_filter}
-              AND item_product_sales > 0
-              AND product_name IS NOT NULL
-            """
-            total_cnt = next(
-                client.query(
-                    check_query,
-                    job_config=bigquery.QueryJobConfig(query_parameters=query_params),
-                ).result()
-            ).total_count
-            print(f'  - 조건에 맞는 레코드: {total_cnt}')
 
         return data
 

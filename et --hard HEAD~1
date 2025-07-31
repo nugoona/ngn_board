@@ -1,0 +1,10 @@
+[33m931e29f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix performance_summary.js functionality - restore original data display logic
+[33m74700fb[m Remove unnecessary console debug/warn messages to clean up console output
+[33m0e4070f[m Fix button activation and loading spinner issues
+[33m904e316[m 웹 버전에서 메타 광고 계정 자동 선택 비활성화 - 모바일에서만 자동 선택 동작
+[33m888e111[m Fix JavaScript module export issues for meta ads functionality
+[33m9fd6ee2[m Fix JavaScript module loading errors - convert imports to global functions
+[33md83c901[m Fix catalog sidebar button - resolve module import issues
+[33m9a31d56[m Fix catalog sidebar button - expose loading functions globally
+[33mb5e98fc[m Remove white overlay background and fix duplicate table wrapper
+[33mad848e7[m Fix loading spinner issues: remove duplicate overlay, adjust blur effect, fix loading IDs

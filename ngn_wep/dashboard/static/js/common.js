@@ -26,17 +26,17 @@ function showLoading(target) {
     $tableWrapper.addClass('loading');
   }
   
-  // ✅ 로딩 스피너 표시 - 완전 투명하게 설정
+  // ✅ 로딩 스피너 표시 - 보이도록 설정
   $target.attr('style', `
     display: flex !important;
     visibility: visible !important;
-    opacity: 0 !important;
+    opacity: 1 !important;
     pointer-events: auto !important;
     z-index: 1000 !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
   `);
   
   // 스피너만 보이도록 설정 (텍스트는 숨김)

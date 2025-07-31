@@ -500,6 +500,8 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
     } finally {
         // 메타 광고 로딩 오버레이 숨기기
         hideLoading("#loadingOverlayMetaAds");
+        // 🔥 추가로 모든 로딩 오버레이 확인
+        hideAllLoadingOverlays();
     }
 }
 
@@ -539,6 +541,8 @@ async function fetchLiveAds(accountId) {
     } catch (error) {
         console.error('❌ LIVE 광고 미리보기 로딩 실패:', error);
         hideLiveAdsSection();
+        // 🔥 추가로 모든 로딩 오버레이 확인
+        hideAllLoadingOverlays();
     }
 }
 
@@ -724,6 +728,9 @@ function setupFilters() {
 function initMobileDashboard() {
     console.log('🚀 모바일 대시보드 초기화 시작...');
     
+    // 🔥 모든 로딩 오버레이 숨기기 (화이트 패널 문제 해결)
+    hideAllLoadingOverlays();
+    
     // 웹버전과 동일한 업체명 자동 선택 로직
     setupCompanyAutoSelection();
     
@@ -737,6 +744,22 @@ function initMobileDashboard() {
     fetchMetaAccounts(); // 메타 광고 계정 목록 로드
     
     console.log('✅ 모바일 대시보드 초기화 완료');
+}
+
+// 🔥 모든 로딩 오버레이 숨기기 함수
+function hideAllLoadingOverlays() {
+    console.log('🔧 모든 로딩 오버레이 숨기기 시작');
+    
+    const loadingOverlays = document.querySelectorAll('[id*="loadingOverlay"]');
+    loadingOverlays.forEach(overlay => {
+        console.log('🔧 로딩 오버레이 숨기기:', overlay.id);
+        overlay.style.display = 'none';
+        overlay.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+    });
+    
+    console.log('✅ 모든 로딩 오버레이 숨기기 완료');
 }
 
 // 웹버전과 동일한 업체명 자동 선택 로직
@@ -777,6 +800,12 @@ function setupCompanyAutoSelection() {
 // 12) DOM 로드 시 초기화
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', initMobileDashboard);
+
+// 🔥 추가 안전장치: 5초 후 모든 로딩 오버레이 강제 숨기기
+setTimeout(() => {
+    console.log('🔧 5초 후 모든 로딩 오버레이 강제 숨기기');
+    hideAllLoadingOverlays();
+}, 5000);
 
 // ─────────────────────────────────────────────
 // 13) 페이지네이션 전역 변수
@@ -965,6 +994,7 @@ function renderMetaAccountFilter(accounts) {
             metaAccountSelect.value = accountId;
             console.log('🏢 계정 1개 자동 선택:', accountId);
             fetchMetaAdsByAccount(accountId);
+            fetchLiveAds(accountId); // LIVE 광고 미리보기 로드
         } else if (accounts.length > 1) {
             // 계정이 여러 개인 경우 "공홈"이 포함된 계정 우선 선택
             let selectedAccount = accounts[0]; // 기본값은 첫 번째 계정
@@ -983,6 +1013,7 @@ function renderMetaAccountFilter(accounts) {
             
             metaAccountSelect.value = selectedAccount.account_id;
             fetchMetaAdsByAccount(selectedAccount.account_id);
+            fetchLiveAds(selectedAccount.account_id); // LIVE 광고 미리보기 로드
         }
     }
     
@@ -993,12 +1024,14 @@ function renderMetaAccountFilter(accounts) {
         
         if (selectedAccountId) {
             fetchMetaAdsByAccount(selectedAccountId);
+            fetchLiveAds(selectedAccountId); // LIVE 광고 미리보기 로드
         } else {
             // 계정이 선택되지 않은 경우 테이블 초기화
             const tbody = document.getElementById('meta-ads-table');
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
             }
+            hideLiveAdsSection(); // LIVE 광고 섹션 숨기기
         }
     });
 }

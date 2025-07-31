@@ -145,8 +145,11 @@ function toggleLoading(isLoading) {
         });
     } else {
         // 🔥 로딩 완료 시 모든 클래스 제거
-        hideLoading("#loadingOverlayPerformanceSummary");
-        $("#performanceSummaryWrapper").removeClass("loading real-loading");
+        // 🔥 최소 500ms 로딩 스피너 표시 보장
+        setTimeout(() => {
+          hideLoading("#loadingOverlayPerformanceSummary");
+          $("#performanceSummaryWrapper").removeClass("loading real-loading");
+        }, 500);
         // 🔥 로딩 완료 시 backdrop-filter 제거
         $("#performanceSummaryWrapper").css({
             'backdrop-filter': 'none',

@@ -22,7 +22,10 @@ function fetchGa4SourceSummaryData(page = 1) {
     contentType: "application/json",
     data: JSON.stringify(requestData),
     success: function (res) {
-      hideLoading("#loadingOverlayGa4Source");
+      // 🔥 최소 500ms 로딩 스피너 표시 보장
+      setTimeout(() => {
+        hideLoading("#loadingOverlayGa4Source");
+      }, 500);
 
       if (res.status === "success" && res.ga4_source_summary) {
         rawGa4SourceRows = res.ga4_source_summary;

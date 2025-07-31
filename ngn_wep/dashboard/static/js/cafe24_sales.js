@@ -134,9 +134,13 @@ function fetchCafe24SalesData(requestData) {
       contentType: "application/json",
       data: JSON.stringify(requestData),
       success: (response) => {
-        hideLoading("#loadingOverlayCafe24Sales");
         const elapsed = (performance.now() - startTime).toFixed(1);
         console.log(`[DEBUG] ✅ Cafe24 매출 응답 도착 (${elapsed}ms)`);
+        
+        // 🔥 최소 500ms 로딩 스피너 표시 보장
+        setTimeout(() => {
+          hideLoading("#loadingOverlayCafe24Sales");
+        }, Math.max(500 - elapsed, 100));
 
         if (!response || response.error) {
           console.error("[ERROR] Cafe24 매출 응답 오류:", response?.error || "알 수 없음");

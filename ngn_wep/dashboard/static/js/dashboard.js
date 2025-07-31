@@ -102,10 +102,10 @@ function getRequestData(page = 1, extra = {}) {
 
 // updateAllData 함수를 전역으로 노출
 window.updateAllData = async function() {
-  debugLog("🎯 updateAllData() 함수 시작");
+  console.log("🎯 dashboard.js의 updateAllData() 함수 시작");
   
   if (isLoading) {
-    debugLog("⚠️ 이미 로딩 중이므로 중단");
+    console.log("⚠️ 이미 로딩 중이므로 중단");
     return; // 이미 데이터 요청 중이면 중지
   }
 
@@ -137,10 +137,10 @@ window.updateAllData = async function() {
   loadingOverlays.forEach(overlayId => {
     const overlay = $(overlayId);
     if (overlay.length > 0) {
-      debugLog(`✅ ${overlayId} 로딩 스피너 표시`);
+      console.log(`✅ ${overlayId} 로딩 스피너 표시`);
       showLoading(overlayId);
     } else {
-      debugLog(`⚠️ ${overlayId} 로딩 오버레이를 찾을 수 없음`);
+      console.log(`⚠️ ${overlayId} 로딩 오버레이를 찾을 수 없음`);
     }
   });
 

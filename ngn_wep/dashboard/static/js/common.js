@@ -2,6 +2,8 @@
 
 // 로딩 상태 관리 함수들
 function showLoading(target) {
+  console.log("🔄 showLoading called for:", target);
+  
   // 🔥 성능 최적화: 프로덕션에서는 로그 비활성화
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     // 프로덕션에서는 로그 출력 안함

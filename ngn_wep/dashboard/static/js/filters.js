@@ -357,6 +357,8 @@ async function fetchFilteredDataWithoutPopup() {
       // updateAllData 함수가 정의되어 있는지 확인하고 호출
       if (typeof updateAllData === 'function') {
         console.log("🔄 filters.js에서 updateAllData() 호출 (팝업 없음)");
+        console.log("🔍 updateAllData 함수 타입:", typeof updateAllData);
+        console.log("🔍 updateAllData 함수:", updateAllData);
         await updateAllData();
       } else {
         console.warn("[WARN] updateAllData 함수가 정의되지 않음 - 개별 함수 호출로 대체");

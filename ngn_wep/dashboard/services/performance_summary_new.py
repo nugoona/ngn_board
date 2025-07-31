@@ -17,6 +17,9 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
     """
     print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
     
+    # 🔥 캐시 완전 비활성화
+    print("[DEBUG] 캐시 완전 비활성화 - 새로운 데이터 조회")
+    
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
 
@@ -129,6 +132,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     """
     ✅ 메타 광고 요약 (성과 요약용 최적화) - meta_ads_insight.py와 동일한 로직 사용
     """
+    print(f"[DEBUG] get_meta_ads_summary_simple 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}")
+    
     query_params = []
     
     # 업체 필터 처리
@@ -175,10 +180,15 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         LIMIT 1
     """
     
+    print(f"[DEBUG] 메타 광고 쿼리 파라미터: {query_params}")
+    print(f"[DEBUG] 메타 광고 쿼리: {query}")
+    
     try:
         client = get_bigquery_client()
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         rows = list(result)
+        
+        print(f"[DEBUG] 메타 광고 쿼리 결과: {len(rows)}행")
         
         if rows:
             row = rows[0]
@@ -189,6 +199,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
                 "total_purchase_value": row.total_purchase_value or 0,
                 "updated_at": row.updated_at
             }
+            print(f"[DEBUG] 메타 광고 결과 데이터: {result_data}")
         else:
             # 데이터가 없으면 기본값 반환
             result_data = {
@@ -198,6 +209,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
                 "total_purchase_value": 0,
                 "updated_at": None
             }
+            print(f"[DEBUG] 메타 광고 데이터 없음 - 기본값 반환: {result_data}")
         
         return result_data
         

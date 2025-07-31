@@ -41,89 +41,45 @@ function debounce(func, delay) {
 }
 
 async function fetchPerformanceSummaryData() {
-    console.log("[DEBUG] fetchPerformanceSummaryData() 시작");
-
-    let companyName = $("#accountFilter").val() || "all";
-    let period = $("#periodFilter").val() || "today";
-    let startDate = $("#startDate").val()?.trim();
-    let endDate = $("#endDate").val()?.trim();
-
-    if (period === "manual" && (!endDate || endDate === "")) {
-        console.log("[DEBUG] (performance_summary) 직접 선택인데 종료일 없음 - 요청 및 로딩 중단");
-        return;
-    }
-
-    // 🔥 로딩 스피너 표시 (강제 스타일 적용)
-    const loadingElement = document.querySelector("#loadingOverlayPerformanceSummary");
-    if (loadingElement) {
-        loadingElement.style.cssText = `
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            background: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(4px) !important;
-        `;
-        console.log("[DEBUG] 로딩 스피너 강제 표시: #loadingOverlayPerformanceSummary");
-    }
-
-    const today = new Date().toISOString().split("T")[0];
-    if (!startDate) startDate = today;
-    if (!endDate) endDate = today;
-
-    const requestData = {
-        data_type: "performance_summary",
-        company_name: companyName,
-        period: period,
-        start_date: startDate,
-        end_date: endDate
-    };
-
     try {
-        const response = await fetch("/dashboard/get_data", {
-            method: "POST",
+        const startTime = performance.now();
+        
+        const response = await fetch('/get_data', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify({
+                data_type: 'performance_summary',
+                company_name: getCurrentCompany(),
+                period: getCurrentPeriod(),
+                limit: 100,
+                page: 1
+            })
         });
 
+        const endTime = performance.now();
+        const clientTime = endTime - startTime;
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const data = await response.json();
-        console.log("[DEBUG] 서버 응답:", data);
-        console.log("[DEBUG] performance_summary 데이터:", data.performance_summary);
-
-        if (!data || data.status !== "success" || !data.performance_summary) {
-            console.error("[ERROR] 성과 요약 데이터 불러오기 실패:", data.error || "알 수 없는 오류");
-            console.error("[ERROR] 응답 상태:", data.status);
-            console.error("[ERROR] performance_summary 필드 존재:", !!data.performance_summary);
-            updatePerformanceSummaryCards([]);
-            updateUpdatedAtText(null);
-            return;
+        
+        // 성능 정보 출력
+        if (data.performance) {
+            console.log('🚀 성능 측정 결과:');
+            console.log(`- 클라이언트 측 시간: ${clientTime.toFixed(2)}ms`);
+            console.log(`- 서버 측 총 시간: ${data.performance.total_execution_time}s`);
+            console.log(`- 개별 함수 시간:`, data.performance.individual_times);
+            console.log(`- 최적화 버전: ${data.performance.optimization_version}`);
         }
-
-        updatePerformanceSummaryCards(data.performance_summary);
-
-        if (data.latest_update) {
-            updateUpdatedAtText(data.latest_update);
-        } else {
-            updateUpdatedAtText(null);
-        }
+        
+        return data.performance_summary?.data || [];
     } catch (error) {
-        console.error("[ERROR] 성과 요약 데이터 로딩 실패:", error);
-        updatePerformanceSummaryCards([]);
-        updateUpdatedAtText(null);
-    } finally {
-        // 🔥 로딩 완료 (강제 스타일 적용)
-        const loadingElement = document.querySelector("#loadingOverlayPerformanceSummary");
-        if (loadingElement) {
-            loadingElement.style.cssText = `
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            `;
-            console.log("[DEBUG] 로딩 스피너 강제 숨김: #loadingOverlayPerformanceSummary");
-        }
+        console.error('Error fetching performance summary data:', error);
+        return [];
     }
 }
 
@@ -178,7 +134,11 @@ function updatePerformanceSummaryCards(data) {
     setCardValue("total_visitors", row.total_visitors);
     setCardValue("total_orders", row.total_orders); // ← 주문수
     setCardValue("ad_spend_ratio", row.ad_spend_ratio, 2, "%");
-    setCardValue("ad_media", row.ad_media || "meta"); // ← 기본값 추가
+    
+    // 🔥 진행중인 광고 표시 로직 개선
+    const adMedia = row.ad_media || "없음";
+    setCardValue("ad_media", adMedia);
+    
     setCardValue("ad_spend", row.ad_spend);
     setCardValue("roas_percentage", row.roas_percentage, 2, "%");
     setCardValue("avg_cpc", row.avg_cpc, 0);
@@ -198,6 +158,12 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
     // null 또는 undefined → "-"
     if (rawValue === null || rawValue === undefined) {
         el.text("-");
+        return;
+    }
+
+    // 🔥 '없음' 상태 특별 처리
+    if (rawValue === "없음" || rawValue === "none") {
+        el.text("없음");
         return;
     }
 

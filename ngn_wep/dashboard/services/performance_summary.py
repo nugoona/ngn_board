@@ -46,10 +46,14 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
     ])
 
     # ✅ 백업 파일의 원래 쿼리 사용 (performance_summary_ngn 테이블)
+    # 🔥 광고비 조건 추가: 광고비가 0보다 크면 'meta', 아니면 '없음'
     query = f"""
         SELECT
           FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
-          ad_media,
+          CASE 
+            WHEN SUM(ad_spend) > 0 THEN 'meta'
+            ELSE '없음'
+          END AS ad_media,
           SUM(ad_spend) AS ad_spend,
           SUM(total_clicks) AS total_clicks,
           SUM(total_purchases) AS total_purchases,
@@ -68,7 +72,10 @@ def get_performance_summary(company_name, start_date: str, end_date: str, user_i
         FROM winged-precept-443218-v8.ngn_dataset.performance_summary_ngn
         WHERE {company_filter}
           AND DATE(date) BETWEEN @start_date AND @end_date
-        GROUP BY ad_media
+        GROUP BY CASE 
+          WHEN SUM(ad_spend) > 0 THEN 'meta'
+          ELSE '없음'
+        END
     """
 
     print("[DEBUG] performance_summary_ngn Query:\n", query)

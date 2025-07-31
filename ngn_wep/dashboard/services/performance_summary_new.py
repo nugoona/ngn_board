@@ -232,10 +232,15 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
     avg_cpc = (ad_spend / total_clicks) if total_clicks > 0 else 0
     ad_spend_ratio = (ad_spend / site_revenue * 100) if site_revenue > 0 else 0
     
+    # 🔥 진행중인 광고 판단 로직
+    # 광고비가 0보다 크면 'meta', 0이거나 null이면 '없음'
+    ad_media = "meta" if ad_spend and ad_spend > 0 else "없음"
+    print(f"[DEBUG] 진행중인 광고 판단 - 광고비: {ad_spend}, 결과: {ad_media}")
+    
     # 결과 구성
     result = {
         "date_range": f"{start_date} ~ {end_date}",
-        "ad_media": "meta",  # ← 진행중인 광고 정보
+        "ad_media": ad_media,  # ← 조건부 진행중인 광고 정보
         "ad_spend": round(ad_spend, 2),
         "total_clicks": total_clicks,
         "total_purchases": total_purchases,

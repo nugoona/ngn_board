@@ -1,3 +1,4 @@
+import concurrent.futures
 from google.cloud import bigquery
 from ..utils.cache_utils import cached_query
 from .cafe24_service import get_cafe24_sales_data

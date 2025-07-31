@@ -88,6 +88,8 @@ async function fetchPerformanceSummaryData() {
 
         const data = await response.json();
         console.log("[DEBUG] 서버 응답:", data);
+        console.log("[DEBUG] data.performance_summary 타입:", typeof data.performance_summary);
+        console.log("[DEBUG] data.performance_summary 길이:", data.performance_summary ? data.performance_summary.length : "undefined");
         
         // 성능 정보 출력
         if (data.performance) {

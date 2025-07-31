@@ -262,11 +262,8 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
         
         // 성과 요약 렌더링
         if (data.performance_summary) {
-            // 카페24 매출 데이터에서 주문수 가져오기
-            const cafe24Orders = data.cafe24_sales && data.cafe24_sales.length > 0 
-                ? data.cafe24_sales[0].total_orders || 0 
-                : 0;
-            renderPerformanceSummary(data.performance_summary, cafe24Orders);
+            // performance_summary_new.py에서 통합으로 가져온 데이터 사용
+            renderPerformanceSummary(data.performance_summary);
         }
         
         // 업데이트 시간 표시
@@ -811,7 +808,7 @@ let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 �
 
 
 // 사이트 성과 요약 렌더링 (핵심 KPI)
-function renderPerformanceSummary(performanceData, cafe24Orders = 0) {
+function renderPerformanceSummary(performanceData) {
     console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
     // 성과 데이터가 배열인 경우 첫 번째 요소 사용
@@ -822,8 +819,8 @@ function renderPerformanceSummary(performanceData, cafe24Orders = 0) {
     // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
     const visitors = data.total_visitors || 0;
     document.getElementById('total-visitors').textContent = visitors.toLocaleString();
-    // 웹과 동일하게 카페24 매출의 total_orders 사용
-    const ordersCount = cafe24Orders || 0;
+    // performance_summary_new.py에서 통합으로 가져온 total_orders 사용
+    const ordersCount = data.total_orders || 0;
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
     // 매출대비 광고비 (백분율로 표시)
     const adSpendRatio = data.ad_spend_ratio || 0;

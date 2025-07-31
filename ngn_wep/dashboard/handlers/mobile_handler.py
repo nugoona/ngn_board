@@ -15,52 +15,7 @@ from ..services.meta_ads_service import get_meta_ads_data
 from ..services.meta_ads_insight import get_meta_account_list_filtered, get_meta_ads_insight_table
 from ..services.meta_ads_preview import get_meta_ads_preview_list
 
-# 모바일 전용 함수 추가
-def get_total_orders_from_cafe24(company_name, start_date, end_date, user_id=None):
-    """모바일 전용: daily_cafe24_sales에서 total_orders 가져오기"""
-    from google.cloud import bigquery
-    
-    client = bigquery.Client()
-    query_params = []
-    
-    # 업체 필터 처리
-    if isinstance(company_name, list):
-        filtered_companies = [name.lower() for name in company_name]
-        filtered_companies = (
-            ["demo"] if user_id == "demo"
-            else [name for name in filtered_companies if name != "demo"]
-        )
-        if not filtered_companies:
-            return 0
-        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
-        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
-    else:
-        company_name = company_name.lower()
-        if company_name == "demo" and user_id != "demo":
-            return 0
-        company_filter = "LOWER(company_name) = @company_name"
-        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
-    
-    # 날짜 파라미터
-    query_params.extend([
-        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
-    ])
-    
-    query = f"""
-        SELECT SUM(total_orders) AS total_orders
-        FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-        WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
-          AND {company_filter}
-    """
-    
-    try:
-        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-        row = next(result)
-        return row.get("total_orders", 0) or 0
-    except Exception as e:
-        print(f"[MOBILE] ❌ total_orders 조회 실패: {e}")
-        return 0
+# 모바일 전용 함수 제거 - performance_summary_new.py에서 통합으로 가져옴
 
 # ─────────────────────────────────────────────
 # 1) 모바일 블루프린트 생성
@@ -203,7 +158,7 @@ def get_data():
             "last_updated": datetime.datetime.now().isoformat()
         }
 
-        # 1. Performance Summary (웹버전과 동일)
+        # 1. Performance Summary (웹버전과 동일) - 모든 데이터 통합 조회
         try:
             print(f"[MOBILE] 🔄 Performance Summary 호출 시작...")
             performance_data = get_performance_summary_new(
@@ -236,6 +191,7 @@ def get_data():
                 print(f"[MOBILE] 🔍 Performance Summary 데이터 값들:")
                 print(f"  site_revenue: {first_row.get('site_revenue')}")
                 print(f"  total_visitors: {first_row.get('total_visitors')}")
+                print(f"  total_orders: {first_row.get('total_orders')}")
                 print(f"  ad_spend_ratio: {first_row.get('ad_spend_ratio')}")
                 print(f"  product_views: {first_row.get('product_views')}")
                 print(f"  views_per_visit: {first_row.get('views_per_visit')}")
@@ -246,22 +202,7 @@ def get_data():
             print(f"[MOBILE] ❌ Performance Summary 오류: {e}")
             response_data["performance_summary"] = []
 
-        # 1-1. 모바일 전용: total_orders 가져오기
-        try:
-            print(f"[MOBILE] 🔄 Total Orders 호출 시작...")
-            total_orders = get_total_orders_from_cafe24(
-                company_name=company_name,
-                start_date=start_date,
-                end_date=end_date,
-                user_id=user_id
-            )
-            response_data["total_orders"] = total_orders
-            print(f"[MOBILE] ✅ Total Orders 성공: {total_orders}")
-        except Exception as e:
-            print(f"[MOBILE] ❌ Total Orders 오류: {e}")
-            response_data["total_orders"] = 0
-
-        # 1-2. Performance Summary에서 추가 데이터 조회 완료
+        # 1-1. Performance Summary에서 모든 데이터 조회 완료 (별도 total_orders 호출 제거)
 
         # 2. Cafe24 Product Sales (웹버전과 동일한 호출 방식)
         try:

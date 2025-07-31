@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NGN 대시보드</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+  <script>
+    const userCompanyList = {{ session['company_names'] | tojson }};
+    const currentUserId = "{{ session['user_id'] }}";
+  </script>
+</head>
+
+<body>
+
+  <!-- ✅ 햄버거 메뉴와 최종 업데이트를 분리해서 정렬 -->
+  <div class="nav-buttons">
+    <div class="nav-left">
+      <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
+    </div>
+    <div class="nav-right">
+      <div class="hamburger-menu-wrapper">
+        <div class="hamburger-icon" id="hamburgerIcon">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <div class="hamburger-dropdown" id="hamburgerDropdown">
+          <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+          <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+          <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 로딩 진행률 표시 -->
+  <div class="loading-progress">
+    <div class="loading-progress-bar" style="width: 0%"></div>
+  </div>
+
+  <!-- ✅ 필터 영역 -->
+  <section class="filter-wrapper">
+    <div class="filter-section">
+      {% include 'components/filters.html' %}
+    </div>
+  </section>
+
+  <!-- ✅ 성과 요약 -->
+  <section class="performance-summary-full-width">
+    <div class="performance-summary-wrapper" id="performanceSummaryWrapper">
+      <div id="loadingOverlayPerformanceSummary" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+      {% include 'components/performance_summary_table.html' %}
+      <div id="pagination_performance_summary" class="pagination"></div>
+    </div>
+  </section>
+
+  <!-- ✅ 매출 / 유입 구분선 -->
+  <div class="section-divider">매출 / 유입</div>
+
+  <!-- ✅ 카페24 매출 + GA4 유입 -->
+  <div class="container">
+    <div class="tables-row">
+      <section class="table-wrapper left-wide loading-check-wrapper" data-widget-id="cafe24-sales">
+        <h2>카페24 매출</h2>
+        <div id="loadingOverlayCafe24Sales" class="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="table-content-container">
+          {% include 'components/cafe24_sales_table.html' %}
+        </div>
+        <div id="pagination_cafe24_sales" class="pagination"></div>
+      </section>
+
+      <section class="table-wrapper right-narrow loading-check-wrapper" data-widget-id="ga4-source">
+        <h2>GA4 소스별 유입수</h2>
+        <div id="loadingOverlayGa4Source" class="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="table-content-container">
+          {% include 'components/ga4_source_summary_table.html' %}
+        </div>
+        <div id="pagination_ga4_source_summary" class="pagination"></div>
+      </section>
+    </div>
+
+    <section class="table-wrapper full-wide loading-check-wrapper">
+      <h2>[월별] 매출/유입</h2>
+      <div id="loadingOverlayMonthlyChart" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+      <div class="table-content-container">
+        {% include 'components/monthly_net_sales_visitors_chart.html' %}
+      </div>
+    </section>
+  </div>
+
+  <!-- ✅ 상품 판매 및 조회 -->
+  <div class="section-divider">상품 판매 및 조회</div>
+
+  <div class="container">
+    <div class="tables-row">
+      <section class="table-wrapper left-wide loading-check-wrapper">
+        <h2>카페24 상품 판매</h2>
+        <div id="loadingOverlayCafe24Products" class="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="table-content-container">
+          {% include 'components/cafe24_product_sales_table.html' %}
+        </div>
+        <div id="pagination_cafe24_product_sales" class="pagination"></div>
+      </section>
+
+      <section class="table-wrapper right-narrow loading-check-wrapper">
+        <h2>GA4 상품별 조회수</h2>
+        <div id="loadingOverlayViewitemSummary" class="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="table-content-container">
+          {% include 'components/viewitem_summary_table.html' %}
+        </div>
+        <div id="pagination_viewitem_summary" class="pagination"></div>
+      </section>
+    </div>
+
+    <section class="table-wrapper full-wide loading-check-wrapper">
+      <h2>주요 상품 매출 비중</h2>
+      <div id="loadingOverlayProductSalesRatio" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+      <!-- 이 부분은 내부에 테이블+차트 구조 있음 → 감싸기 불필요 -->
+      {% include 'components/product_sales_ratio.html' %}
+    </section>
+  </div>
+
+  <!-- ✅ 플랫폼 관련 데이터 -->
+  <div class="section-divider">커스텀 구글 시트 연결</div>
+
+  <div class="container">
+    <!-- ✅ 플랫폼 매출 요약 -->
+    <section class="table-wrapper full-wide loading-check-wrapper">
+      <h2>플랫폼별 매출 요약</h2>
+      {% include 'components/platform_sales_summary_table.html' %}
+    </section>
+
+    <!-- ✅ 월별 플랫폼 매출 -->
+    <section class="table-wrapper full-wide loading-check-wrapper">
+      <h2>월별 플랫폼 매출</h2>
+      {% include 'components/platform_sales_monthly.html' %}
+      <div id="pagination_platform_sales_monthly" class="pagination"></div>
+    </section>
+  </div>
+
+  <!-- ✅ JS 로딩 -->
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
+      <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.2"></script>
+    <script src="{{ url_for('static', filename='js/cafe24_sales.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/cafe24_product_sales.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/performance_summary.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/viewitem_summary.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ga4_source_summary.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/monthly_net_sales_visitors.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/product_sales_ratio.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/platform_sales_summary.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/platform_sales_ratio.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/platform_sales_monthly.js') }}?v=1.1"></script>
+  <script src="{{ url_for('static', filename='js/session_timeout.js') }}?v=1.1"></script>
+  <script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}?v=1.1"></script>
+  <script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}?v=1.1"></script>
+
+  <!-- ✅ 햄버거 메뉴 토글 -->
+  <script>
+    document.getElementById("hamburgerIcon").addEventListener("click", () => {
+      const dropdown = document.getElementById("hamburgerDropdown");
+      dropdown.style.display = (dropdown.style.display === "flex") ? "none" : "flex";
+    });
+  </script>
+
+    <!-- 보안 강화 스크립트 -->
+    <script>
+      // ✅ 배포 환경에서만 보안 기능 활성화
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+      
+      // 🔥 임시로 보안 기능 비활성화 (디버깅용)
+      if (false && isProduction) {
+        // 개발자 도구 단축키 비활성화 (완전히 막지는 못하지만 어느 정도 제한)
+        document.addEventListener('keydown', function(e) {
+          // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U 비활성화
+          if (e.key === 'F12' || 
+              (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+              (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            return false;
+          }
+        });
+        
+        // 우클릭 메뉴 제한
+        document.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          return false;
+        });
+        
+        // 개발자 도구 감지 (완전하지는 않음)
+        let devtools = { open: false, orientation: null };
+        setInterval(() => {
+          const threshold = 160;
+          if (window.outerHeight - window.innerHeight > threshold || 
+              window.outerWidth - window.innerWidth > threshold) {
+            if (!devtools.open) {
+              devtools.open = true;
+              // 개발자 도구가 열렸을 때의 처리 (선택사항)
+              // document.body.innerHTML = '개발자 도구 사용이 제한됩니다.';
+            }
+          } else {
+            devtools.open = false;
+          }
+        }, 500);
+      }
+    </script>
+</body>
+
+</html>

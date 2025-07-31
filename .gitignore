@@ -1,0 +1,7 @@
+__pycache__/
+*.pem
+*.env
+service-account.json
+*.pyc
+node_modules
+lh_report*.html

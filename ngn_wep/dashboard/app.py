@@ -1,0 +1,231 @@
+# File: ngn_wep/dashboard/app.py
+import time, logging
+_boot = time.time()                               # ─────────── 부팅 시간 측정 시작
+
+import os
+from pathlib import Path
+from datetime import timedelta
+from flask import Flask, render_template, session, redirect, url_for, request
+from dotenv import load_dotenv
+
+# ─────────────────────────────────────────────
+# 1) 환경변수(.env) 로딩  ─ 절대경로 자동 계산
+# ─────────────────────────────────────────────
+BASE_DIR  = Path(__file__).resolve().parents[2]   # ~/ngn_board
+ENV_PATH  = BASE_DIR / "config" / "ngn.env"       # ~/ngn_board/config/ngn.env
+
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)                         # ✅ 실제 파일 경로로 로드
+    print(f"[ENV] .env 로드 완료: {ENV_PATH}")
+else:
+    print(f"[ENV] ⚠️ .env 파일이 없습니다: {ENV_PATH}")
+
+# 시스템 토큰 존재 여부를 미리 로그
+TOKEN_LEN = len(os.getenv("META_SYSTEM_USER_TOKEN") or "")
+print(f"[ENV] META_SYSTEM_USER_TOKEN length: {TOKEN_LEN}")
+
+# ─────────────────────────────────────────────
+# 2) 로깅 설정 (INFO 이상)
+# ─────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO)
+LOG = logging.getLogger(__name__)
+
+# ─────────────────────────────────────────────
+# 3) 블루프린트 임포트
+# ─────────────────────────────────────────────
+from .handlers.accounts_handler   import accounts_blueprint
+from .handlers.data_handler       import data_blueprint
+from .handlers.auth_handler       import auth_blueprint
+from .services.meta_demo_handler  import meta_demo_blueprint
+from .handlers.mobile_handler     import mobile_blueprint
+
+# ─────────────────────────────────────────────
+# 4) Flask 앱 생성 & 기본 설정
+# ─────────────────────────────────────────────
+import os
+static_folder_path = os.path.join(os.path.dirname(__file__), 'static')
+app = Flask(__name__, 
+           static_folder=static_folder_path,
+           static_url_path='/static')
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
+app.permanent_session_lifetime = timedelta(hours=8)
+app.config["SESSION_PERMANENT"] = True
+
+# 정적 파일 경로 디버깅
+print(f"[DEBUG] Flask static folder: {static_folder_path}")
+print(f"[DEBUG] Static folder exists: {os.path.exists(static_folder_path)}")
+print(f"[DEBUG] x.png exists: {os.path.exists(os.path.join(static_folder_path, 'img', 'x.png'))}")
+print(f"[DEBUG] favicon.ico exists: {os.path.exists(os.path.join(static_folder_path, 'img', 'favicon.ico'))}")
+
+# 캐시 헤더 제거 - 버전 파라미터로 대체
+
+# ─────────────────────────────────────────────
+# 5) Google Cloud 인증 경로 확인
+# ─────────────────────────────────────────────
+gcp_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if gcp_path and os.path.exists(gcp_path):
+    LOG.info("GCP 인증 경로 적용됨: %s", gcp_path)
+else:
+    LOG.error("GCP 인증 파일이 존재하지 않거나 설정되지 않음: %s", gcp_path)
+
+# ─────────────────────────────────────────────
+# 6) 모바일 디바이스 감지 함수
+# ─────────────────────────────────────────────
+def is_mobile_device():
+    """모바일 디바이스인지 확인 - 개선된 버전"""
+    user_agent = request.headers.get('User-Agent', '').lower()
+    
+    # 확장된 모바일 키워드 목록
+    mobile_keywords = [
+        'mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone',
+        'opera mini', 'opera mobi', 'mobile safari', 'mobile chrome',
+        'samsung', 'lg', 'huawei', 'xiaomi', 'oneplus', 'motorola',
+        'nexus', 'pixel', 'galaxy', 'note', 'edge', 'plus',
+        'kindle', 'nook', 'tablet', 'phone', 'smartphone',
+        'chrome mobile', 'firefox mobile', 'safari mobile'
+    ]
+    
+    # 디버깅을 위한 로그 추가
+    print(f"[MOBILE DETECTION] User-Agent: {user_agent}")
+    print(f"[MOBILE DETECTION] Mobile keywords found: {[kw for kw in mobile_keywords if kw in user_agent]}")
+    
+    # 1. 화면 크기 기반 감지 (쿼리 파라미터로)
+    screen_width = request.args.get('screen_width')
+    if screen_width:
+        try:
+            width = int(screen_width)
+            if width <= 768:  # 모바일 기준 너비
+                print(f"[MOBILE DETECTION] Screen width detected: {width}px (mobile)")
+                return True
+        except ValueError:
+            pass
+    
+    # 2. User-Agent 기반 감지 (개선된 키워드)
+    is_mobile_ua = any(keyword in user_agent for keyword in mobile_keywords)
+    
+    # 3. 추가 모바일 감지: Accept 헤더 확인
+    accept_header = request.headers.get('Accept', '').lower()
+    is_mobile_accept = 'application/vnd.wap.xhtml+xml' in accept_header or 'text/vnd.wap.wml' in accept_header
+    
+    # 4. 추가 모바일 감지: 특정 모바일 브라우저 패턴
+    mobile_patterns = [
+        r'mozilla/.*mobile',
+        r'mozilla/.*android.*mobile',
+        r'mozilla/.*iphone.*mobile',
+        r'mozilla/.*ipad.*mobile',
+        r'chrome/.*mobile',
+        r'firefox/.*mobile',
+        r'safari/.*mobile',
+        r'android.*mobile',
+        r'iphone.*mobile',
+        r'ipad.*mobile'
+    ]
+    
+    import re
+    is_mobile_pattern = any(re.search(pattern, user_agent, re.IGNORECASE) for pattern in mobile_patterns)
+    
+    # 5. 추가 모바일 감지: Viewport 확인 (클라이언트 사이드에서 전송된 경우)
+    viewport_width = request.args.get('viewport_width')
+    if viewport_width:
+        try:
+            width = int(viewport_width)
+            if width <= 768:
+                print(f"[MOBILE DETECTION] Viewport width detected: {width}px (mobile)")
+                return True
+        except ValueError:
+            pass
+    
+    # 6. 최종 모바일 판단
+    is_mobile = is_mobile_ua or is_mobile_accept or is_mobile_pattern
+    
+    print(f"[MOBILE DETECTION] UA-based: {is_mobile_ua}, Accept-based: {is_mobile_accept}, Pattern-based: {is_mobile_pattern}")
+    print(f"[MOBILE DETECTION] Final Result: {is_mobile}")
+    
+    return is_mobile
+
+# ─────────────────────────────────────────────
+# 7) 라우트 정의
+# ─────────────────────────────────────────────
+@app.route("/")
+def index():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    # 강제 모바일 버전 요청 확인
+    force_mobile = request.args.get('mobile') == 'true'
+    
+    # 모바일 디바이스인 경우 또는 강제 모바일 요청인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device() or force_mobile:
+        return redirect(url_for("mobile.dashboard"))
+    
+    return render_template("index.html",
+                           company_names=session.get("company_names", []))
+
+@app.route("/ads")
+def ads_page():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    # 강제 모바일 버전 요청 확인
+    force_mobile = request.args.get('mobile') == 'true'
+    
+    # 모바일 디바이스인 경우 또는 강제 모바일 요청인 경우 모바일 버전으로 리다이렉트
+    if is_mobile_device() or force_mobile:
+        return redirect(url_for("mobile.dashboard"))
+    
+    return render_template("ads_page.html",
+                           company_names=session.get("company_names", []))
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.route("/delete-info")
+def delete_info():
+    return render_template("delete_info.html")
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+# 정적 파일 테스트 라우트
+@app.route("/test-static")
+def test_static():
+    return """
+    <h1>정적 파일 테스트</h1>
+    <p>favicon.ico: <img src="/static/img/favicon.ico" width="32" height="32"></p>
+    <p>x.png: <img src="/static/img/x.png" width="32" height="32"></p>
+    <p>favicon.ico 직접 링크: <a href="/static/img/favicon.ico">favicon.ico</a></p>
+    <p>x.png 직접 링크: <a href="/static/img/x.png">x.png</a></p>
+    """
+
+# /login, /logout → auth 블루프린트로 리디렉트
+@app.route("/login")
+def login_redirect():
+    return redirect(url_for("auth.login"))
+
+@app.route("/logout")
+def logout_redirect():
+    return redirect(url_for("auth.logout"))
+
+# ─────────────────────────────────────────────
+# 8) 블루프린트 등록
+# ─────────────────────────────────────────────
+app.register_blueprint(accounts_blueprint,  url_prefix="/accounts")
+app.register_blueprint(data_blueprint,      url_prefix="/dashboard")
+app.register_blueprint(auth_blueprint,      url_prefix="/auth")
+app.register_blueprint(meta_demo_blueprint, url_prefix="/meta-api")
+app.register_blueprint(mobile_blueprint,    url_prefix="/m")
+
+# ─────────────────────────────────────────────
+# 9) 부팅 완료 로그
+# ─────────────────────────────────────────────
+LOG.info("⭐ app import done in %.1fs", time.time() - _boot)
+
+# ─────────────────────────────────────────────
+# 10) 개발 모드 직접 실행 (로컬)
+# ─────────────────────────────────────────────
+if __name__ == "__main__":
+    debug_mode = os.getenv("FLASK_ENV", "production") == "development"
+    LOG.info("Flask 실행 - 디버그 모드: %s", debug_mode)
+    app.run(host="0.0.0.0", port=8080, debug=debug_mode)

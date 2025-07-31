@@ -1,0 +1,20 @@
+nohup: ignoring input
+[2025-07-24 09:00:55 +0000] [2323] [INFO] Starting gunicorn 21.2.0
+[2025-07-24 09:00:55 +0000] [2323] [INFO] Listening at: http://0.0.0.0:8080 (2323)
+[2025-07-24 09:00:55 +0000] [2323] [INFO] Using worker: gthread
+[2025-07-24 09:00:56 +0000] [2348] [INFO] Booting worker with pid: 2348
+[2025-07-24 09:00:56 +0000] [2349] [INFO] Booting worker with pid: 2349
+INFO:ngn_wep.dashboard.app:GCP 인증 경로 적용됨: /home/oscar/ngn_board/config/service-account.json
+INFO:ngn_wep.dashboard.app:GCP 인증 경로 적용됨: /home/oscar/ngn_board/config/service-account.json
+INFO:ngn_wep.dashboard.app:⭐ app import done in 6.3s
+INFO:ngn_wep.dashboard.app:⭐ app import done in 6.3s
+[2025-07-24 09:04:36 +0000] [2323] [INFO] Handling signal: term
+[2025-07-24 09:04:36 +0000] [2349] [INFO] Worker exiting (pid: 2349)
+[ENV] .env 로드 완료: /home/oscar/ngn_board/config/ngn.env
+[ENV] META_SYSTEM_USER_TOKEN length: 189
+[CACHE] Redis 연결 성공: localhost:6379
+[2025-07-24 09:04:36 +0000] [2348] [INFO] Worker exiting (pid: 2348)
+[ENV] .env 로드 완료: /home/oscar/ngn_board/config/ngn.env
+[ENV] META_SYSTEM_USER_TOKEN length: 189
+[CACHE] Redis 연결 성공: localhost:6379
+[2025-07-24 09:04:36 +0000] [2323] [INFO] Shutting down: Master

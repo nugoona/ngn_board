@@ -1,0 +1,20 @@
+# ✅ Python 3.9 slim 버전 사용
+FROM python:3.9-slim
+
+# ✅ 작업 디렉토리 설정
+WORKDIR /app
+
+# ✅ 필수 패키지 설치 (BigQuery 연동 및 데이터 처리)
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ✅ 프로젝트 관련 파일 복사
+COPY ./ngn_wep/GA4_API/ga4_viewitem_ngn_insert.py /app/ga4_viewitem_ngn_insert.py
+COPY ./config/ngn.env /app/ngn.env
+COPY ./config/service-account.json /app/service-account.json
+
+# ✅ 환경변수 설정
+ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
+
+# ✅ 실행 명령어 설정 (GA4 데이터 병합 실행)
+ENTRYPOINT ["python", "/app/ga4_viewitem_ngn_insert.py"]

@@ -1,0 +1,1011 @@
+Run started:2025-07-23 15:04:36.099490
+
+Test results:
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-605 (https://cwe.mitre.org/data/definitions/605.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b104_hardcoded_bind_all_interfaces.html
+   Location: ./app.py:115:17
+114	    LOG.info("Flask 실행 - 디버그 모드: %s", debug_mode)
+115	    app.run(host="0.0.0.0", port=8080, debug=debug_mode)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./handlers/auth_handler.py:44:24
+43	        try:
+44	            query = f"""
+45	                SELECT *
+46	                FROM `ngn_dataset.user_accounts`
+47	                WHERE user_id   = '{user_id}'
+48	                  AND password   = '{password}'
+49	                  AND status    IN ('approved', 'admin')
+50	            """
+51	            result = list(client.query(query).result())
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./handlers/auth_handler.py:71:36
+70	            else:
+71	                company_query = f"""
+72	                    SELECT company_name
+73	                    FROM `ngn_dataset.user_company_map`
+74	                    WHERE user_id = '{user_id}'
+75	                """
+76	                rows = client.query(company_query).result()
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'https://graph.facebook.com/v18.0/oauth/access_token'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b105_hardcoded_password_string.html
+   Location: ./handlers/auth_handler.py:128:16
+127	    # 1) Short-Lived Token
+128	    token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
+129	    params    = {
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./handlers/auth_handler.py:135:16
+134	    }
+135	    short_tok = requests.get(token_url, params=params).json()
+136	    if "access_token" not in short_tok:
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./handlers/auth_handler.py:146:15
+145	    }
+146	    long_tok = requests.get(token_url, params=long_params).json()
+147	    if "access_token" not in long_tok:
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/Fetch_Adset_Summary.py:14:16
+13	
+14	    query = f"""
+15	    WITH latest_names_by_day AS (
+16	      SELECT
+17	        adset_id,
+18	        DATE(date) AS dt,
+19	        LOWER(adset_name) AS latest_name,
+20	        ROW_NUMBER() OVER (PARTITION BY adset_id, DATE(date) ORDER BY updated_at DESC) AS rn
+21	      FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+22	    ),
+23	    deduped AS (
+24	      SELECT *
+25	      FROM (
+26	        SELECT
+27	          adset_id,
+28	          DATE(date) AS dt,
+29	          account_id,
+30	          spend,
+31	          impressions,
+32	          clicks,
+33	          purchases,
+34	          purchase_value,
+35	          ROW_NUMBER() OVER (PARTITION BY adset_id, DATE(date) ORDER BY updated_at DESC) AS rn
+36	        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+37	        WHERE DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+38	          AND account_id = '{account_id}'
+39	      )
+40	      WHERE rn = 1
+41	    ),
+42	    tagged AS (
+43	      SELECT
+44	        d.*,
+45	        CASE
+46	          WHEN REGEXP_CONTAINS(n.latest_name, r'유입') THEN '유입'
+47	          WHEN REGEXP_CONTAINS(n.latest_name, r'전환') THEN '전환'
+48	          WHEN REGEXP_CONTAINS(n.latest_name, r'도달') THEN '도달'
+49	          ELSE NULL
+50	        END AS type
+51	      FROM deduped d
+52	      LEFT JOIN (
+53	        SELECT adset_id, dt, latest_name
+54	        FROM latest_names_by_day
+55	        WHERE rn = 1
+56	      ) n
+57	      ON d.adset_id = n.adset_id AND d.dt = n.dt
+58	    )
+59	    SELECT
+60	      '{start_date} ~ {end_date}' AS period,
+61	      '{account_id}' AS account_id,
+62	      type,
+63	      SUM(spend) AS total_spend,
+64	      SUM(impressions) AS total_impressions,
+65	      SAFE_MULTIPLY(SAFE_DIVIDE(SUM(spend), SUM(impressions)), 1000) AS CPM,
+66	      SUM(clicks) AS total_clicks,
+67	      SAFE_DIVIDE(SUM(spend), SUM(clicks)) AS CPC,
+68	      SAFE_DIVIDE(SUM(clicks), SUM(impressions)) AS CTR,
+69	      SUM(purchases) AS total_purchases,
+70	      SUM(purchase_value) AS total_purchase_value,
+71	      SAFE_DIVIDE(SUM(purchase_value), SUM(spend)) AS ROAS,
+72	      SAFE_DIVIDE(SUM(spend), SUM(purchases)) AS CPA
+73	    FROM tagged
+74	    WHERE type IS NOT NULL
+75	    GROUP BY type
+76	    ORDER BY type
+77	    """
+78	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/Fetch_Adset_Summary.py:79:28
+78	
+79	    total_spend_query = f"""
+80	    SELECT
+81	      SUM(spend) AS total_spend
+82	    FROM
+83	      `winged-precept-443218-v8.ngn_dataset.meta_ads_adset_summary`
+84	    WHERE
+85	      DATE(date) BETWEEN '{start_date}' AND '{end_date}'
+86	      AND account_id = '{account_id}'
+87	    """
+88	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/cafe24_service.py:81:21
+80	
+81	    main_query = f"""
+82	        SELECT
+83	            {report_date_expr} AS report_date,
+84	            company_name,
+85	            SUM(total_orders) AS total_orders,
+86	            SUM(item_orders) AS item_orders,
+87	            SUM(item_product_price) AS item_product_price,
+88	            SUM(total_shipping_fee) AS total_shipping_fee,
+89	            SUM(item_product_price + total_shipping_fee - total_payment - total_coupon_discount) AS total_discount,
+90	            SUM(total_coupon_discount) AS total_coupon_discount,
+91	            SUM(total_payment) AS total_payment,
+92	            SUM(total_refund_amount) AS total_refund_amount,
+93	            SUM(total_payment - total_refund_amount) AS net_sales
+94	        FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
+95	        WHERE payment_date BETWEEN @start_date AND @end_date
+96	          AND {company_filter}
+97	        GROUP BY {group_by_expr}
+98	        {order_by_clause}
+99	        LIMIT @limit OFFSET @offset
+100	    """
+101	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/cafe24_service.py:102:22
+101	
+102	    count_query = f"""
+103	        SELECT COUNT(*) AS total_count
+104	        FROM (
+105	            SELECT 1
+106	            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
+107	            WHERE payment_date BETWEEN @start_date AND @end_date
+108	              AND {company_filter}
+109	            GROUP BY {group_by_expr}
+110	        )
+111	    """
+112	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/cafe24_service.py:192:21
+191	
+192	    data_query = f"""
+193	        SELECT
+194	            CONCAT(@start_date, ' ~ ', @end_date) AS report_date,
+195	            i.company_name,
+196	            i.product_name,
+197	            MAX(i.product_price) AS product_price,
+198	            SUM(i.total_quantity) AS total_quantity,
+199	            SUM(i.total_canceled) AS total_canceled,
+200	            SUM(i.item_quantity) AS item_quantity,
+201	            SUM(i.item_product_sales) AS item_product_sales,
+202	            SUM(i.total_first_order) AS total_first_order,
+203	            CONCAT(
+204	                'https://', MAX(info.main_url),
+205	                '/product/',
+206	                REPLACE(LOWER(REGEXP_REPLACE(MAX(i.product_name), r'[^\\w]+', '-')), '--', '-'),
+207	                '/',
+208	                CAST(i.product_no AS STRING),
+209	                '/category/',
+210	                CAST(MAX(prod.category_no) AS STRING),
+211	                '/display/1/'
+212	            ) AS product_url,
+213	            MAX(i.updated_at) AS updated_at
+214	        FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
+215	        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS info
+216	          ON i.mall_id = info.mall_id
+217	        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS prod
+218	          ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
+219	        WHERE i.payment_date BETWEEN @start_date AND @end_date
+220	          AND {company_filter}
+221	        GROUP BY i.company_name, i.product_name, i.product_no
+222	        ORDER BY {order_by_column} DESC, i.company_name, i.product_name
+223	        LIMIT @limit OFFSET @offset
+224	    """
+225	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/cafe24_service.py:226:22
+225	
+226	    count_query = f"""
+227	        SELECT COUNT(*) AS total_count
+228	        FROM (
+229	            SELECT 1
+230	            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
+231	            WHERE i.payment_date BETWEEN @start_date AND @end_date
+232	              AND {company_filter}
+233	            GROUP BY i.company_name, i.product_name, i.product_no
+234	        )
+235	    """
+236	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/catalog_sidebar_service.py:72:19
+71	    def _top_query(days: int, limit: int) -> str:
+72	        return f"""
+73	            SELECT product_name,
+74	                   product_no,
+75	                   SUM(total_quantity) AS total_quantity
+76	            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+77	            WHERE company_name = @cmp
+78	              AND payment_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)
+79	                                   AND CURRENT_DATE()
+80	              AND total_quantity > 0
+81	            GROUP BY product_name, product_no
+82	            ORDER BY total_quantity DESC
+83	            LIMIT {limit}
+84	        """
+85	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/catalog_sidebar_service.py:230:21
+229	
+230	    sql_search = f"""
+231	        SELECT DISTINCT company_name, product_name, product_no
+232	        FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+233	        WHERE company_name = @cmp
+234	          AND {where_clause}
+235	        ORDER BY product_name
+236	        LIMIT {limit}
+237	    """
+238	    rows = bq_client.query(
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/ga4_source_summary.py:32:16
+31	
+32	    query = f"""
+33	    SELECT
+34	      company_name,
+35	      CASE
+36	        WHEN LOWER(first_user_source) IN ('insta_linktree', 'linktr.ee', 'ig', 'l.instagram.com', 'instagram.com', 'lookbook') THEN 'instagram'
+37	        WHEN LOWER(first_user_source) = '인트로 mdgt' THEN 'from madgoat'
+38	        WHEN LOWER(first_user_source) = 'naver' THEN 'naver.com'
+39	        WHEN LOWER(first_user_source) IN ('파이시스', 'piscess') THEN '(direct)'
+40	        ELSE LOWER(first_user_source)
+41	      END AS source,
+42	      SUM(total_users) AS total_users
+43	    FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
+44	    WHERE
+45	      event_date BETWEEN @start_date AND @end_date
+46	      AND {company_filter}
+47	    GROUP BY company_name, source
+48	    ORDER BY total_users DESC
+49	    """
+50	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/insert_performance_summary.py:26:28
+25	
+26	    create_temp_query = f"""
+27	    CREATE OR REPLACE TABLE `{PROJECT_ID}.{temp_table}` AS
+28	
+29	    WITH excluded_campaigns AS (
+30	      SELECT DISTINCT campaign_id
+31	      FROM `{PROJECT_ID}.{DATASET_ID}.meta_ads_campaign_summary`
+32	      WHERE campaign_name IS NOT NULL
+33	        AND LOWER(campaign_name) LIKE '%instagram%'
+34	    ),
+35	
+36	    filtered_ads AS (
+37	      SELECT *
+38	      FROM `{PROJECT_ID}.{DATASET_ID}.meta_ads_campaign_summary`
+39	      WHERE campaign_name IS NOT NULL
+40	        AND campaign_id NOT IN (SELECT campaign_id FROM excluded_campaigns)
+41	        AND company_name IS NOT NULL
+42	    ),
+43	
+44	    base AS (
+45	      SELECT DISTINCT company_name, DATE(payment_date) AS date
+46	      FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
+47	      WHERE DATE(payment_date) = DATE('{date_str}') AND company_name IS NOT NULL
+48	      UNION DISTINCT
+49	      SELECT DISTINCT company_name, DATE(event_date)
+50	      FROM `{PROJECT_ID}.{DATASET_ID}.ga4_traffic_ngn`
+51	      WHERE DATE(event_date) = DATE('{date_str}') AND company_name IS NOT NULL
+52	      UNION DISTINCT
+53	      SELECT DISTINCT company_name, DATE(event_date)
+54	      FROM `{PROJECT_ID}.{DATASET_ID}.ga4_viewitem_ngn`
+55	      WHERE DATE(event_date) = DATE('{date_str}') AND company_name IS NOT NULL
+56	    )
+57	
+58	    SELECT
+59	      b.date,
+60	      b.company_name,
+61	      'meta' AS ad_media,
+62	      COALESCE(SUM(a.spend), 0) AS ad_spend,
+63	      COALESCE(SUM(a.clicks), 0) AS total_clicks,
+64	      COALESCE(SUM(a.purchases), 0) AS total_purchases,
+65	      COALESCE(SUM(a.purchase_value), 0) AS total_purchase_value,
+66	      AVG(a.ROAS) AS roas_percentage,
+67	      AVG(a.CPC) AS avg_cpc,
+68	      AVG(a.CTR) AS click_through_rate,
+69	      AVG(a.CVR) AS conversion_rate,
+70	      COALESCE(s.site_revenue, 0) AS site_revenue,
+71	      COALESCE(t.total_visitors, 0) AS total_visitors,
+72	      COALESCE(v.product_views, 0) AS product_views,
+73	      ROUND(COALESCE(v.product_views, 0) / NULLIF(COALESCE(t.total_visitors, 0), 0), 2) AS views_per_visit,
+74	      CASE WHEN COALESCE(s.site_revenue, 0) = 0 THEN 0
+75	           ELSE ROUND(COALESCE(SUM(a.spend), 0) / s.site_revenue * 100, 2)
+76	      END AS ad_spend_ratio,
+77	      CASE WHEN COALESCE(SUM(a.purchases), 0) = 0 THEN 0
+78	           ELSE ROUND(COALESCE(SUM(a.purchase_value), 0) / SUM(a.purchases), 2)
+79	      END AS avg_order_value,
+80	      '{now_str}' AS updated_at
+81	    
+82	    FROM base b
+83	    LEFT JOIN filtered_ads a
+84	      ON b.company_name = a.company_name AND b.date = a.date
+85	    LEFT JOIN (
+86	      SELECT company_name, DATE(payment_date) AS date, SUM(net_sales) AS site_revenue
+87	      FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
+88	      WHERE company_name IS NOT NULL
+89	      GROUP BY company_name, date
+90	    ) s ON b.company_name = s.company_name AND b.date = s.date
+91	    LEFT JOIN (
+92	      SELECT company_name, DATE(event_date) AS date, SUM(total_users) AS total_visitors
+93	      FROM `{PROJECT_ID}.{DATASET_ID}.ga4_traffic_ngn`
+94	      WHERE company_name IS NOT NULL
+95	      GROUP BY company_name, date
+96	    ) t ON b.company_name = t.company_name AND b.date = t.date
+97	    LEFT JOIN (
+98	      SELECT company_name, DATE(event_date) AS date, SUM(view_item) AS product_views
+99	      FROM `{PROJECT_ID}.{DATASET_ID}.ga4_viewitem_ngn`
+100	      WHERE company_name IS NOT NULL
+101	      GROUP BY company_name, date
+102	    ) v ON b.company_name = v.company_name AND b.date = v.date
+103	    -- ✅ demo 제외
+104	    WHERE LOWER(b.company_name) != 'demo'
+105	    GROUP BY b.date, b.company_name, s.site_revenue, t.total_visitors, v.product_views
+106	
+107	    """
+108	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/insert_performance_summary.py:113:22
+112	
+113	    merge_query = f"""
+114	    MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` AS main
+115	    USING `{PROJECT_ID}.{temp_table}` AS temp
+116	    ON main.date = temp.date AND main.company_name = temp.company_name AND main.ad_media = temp.ad_media
+117	    WHEN MATCHED THEN
+118	      UPDATE SET
+119	        ad_spend = temp.ad_spend,
+120	        total_clicks = temp.total_clicks,
+121	        total_purchases = temp.total_purchases,
+122	        total_purchase_value = temp.total_purchase_value,
+123	        roas_percentage = temp.roas_percentage,
+124	        avg_cpc = temp.avg_cpc,
+125	        click_through_rate = temp.click_through_rate,
+126	        conversion_rate = temp.conversion_rate,
+127	        site_revenue = temp.site_revenue,
+128	        total_visitors = temp.total_visitors,
+129	        product_views = temp.product_views,
+130	        views_per_visit = temp.views_per_visit,
+131	        ad_spend_ratio = temp.ad_spend_ratio,
+132	        avg_order_value = temp.avg_order_value,
+133	        updated_at = temp.updated_at
+134	    WHEN NOT MATCHED THEN
+135	      INSERT ROW
+136	    """
+137	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_insight.py:70:26
+69	        latest_alias = "acc_latest"
+70	        latest_join = f"""
+71	          LEFT JOIN (
+72	              SELECT * EXCEPT(rn) FROM (
+73	                  SELECT account_id,
+74	                         account_name,
+75	                         company_name,
+76	                         ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
+77	                  FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}`
+78	              )
+79	              WHERE rn = 1
+80	          ) AS {latest_alias}
+81	          ON A.account_id = {latest_alias}.account_id
+82	        """
+83	        select_cols = f"""
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_insight.py:94:26
+93	        base_tbl, latest_alias = "meta_ads_campaign_summary", "camp_latest"
+94	        latest_join = f"""
+95	          LEFT JOIN (
+96	              SELECT * EXCEPT(rn) FROM (
+97	                  SELECT account_id,
+98	                         campaign_id,
+99	                         account_name,
+100	                         company_name,
+101	                         campaign_name,
+102	                         ROW_NUMBER() OVER (PARTITION BY campaign_id ORDER BY updated_at DESC) AS rn
+103	                  FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}`
+104	              )
+105	              WHERE rn = 1
+106	          ) AS {latest_alias}
+107	          ON A.campaign_id = {latest_alias}.campaign_id
+108	        """
+109	        select_cols = f"""
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_insight.py:122:26
+121	        base_tbl, latest_alias = "meta_ads_adset_summary", "adset_latest"
+122	        latest_join = f"""
+123	          LEFT JOIN (
+124	              SELECT * EXCEPT(rn) FROM (
+125	                  SELECT adset_id,
+126	                         campaign_id,
+127	                         account_id,
+128	                         account_name,
+129	                         company_name,
+130	                         campaign_name,
+131	                         adset_name,
+132	                         ROW_NUMBER() OVER (PARTITION BY adset_id ORDER BY updated_at DESC) AS rn
+133	                  FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}`
+134	              )
+135	              WHERE rn = 1
+136	          ) AS {latest_alias}
+137	          ON A.adset_id = {latest_alias}.adset_id
+138	        """
+139	        select_cols = f"""
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_insight.py:154:26
+153	        base_tbl, latest_alias = "meta_ads_ad_summary", "ad_latest"
+154	        latest_join = f"""
+155	          LEFT JOIN (
+156	              SELECT * EXCEPT(rn) FROM (
+157	                  SELECT ad_id,
+158	                         adset_id,
+159	                         campaign_id,
+160	                         account_id,
+161	                         account_name,
+162	                         company_name,
+163	                         campaign_name,
+164	                         adset_name,
+165	                         ad_name,
+166	                         ad_status,
+167	                         ROW_NUMBER() OVER (PARTITION BY ad_id ORDER BY updated_at DESC) AS rn
+168	                  FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}`
+169	              )
+170	              WHERE rn = 1
+171	          ) AS {latest_alias}
+172	          ON A.ad_id = {latest_alias}.ad_id
+173	
+174	          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` C
+175	          ON LOWER({latest_alias}.company_name) = LOWER(C.company_name)
+176	        """
+177	        select_cols = f"""
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_insight.py:228:16
+227	
+228	    query = f"""
+229	      SELECT
+230	        {select_date}
+231	        {select_cols},
+232	        SUM(A.spend)          AS spend,
+233	        SUM(A.impressions)    AS impressions,
+234	        SUM(A.clicks)         AS clicks,
+235	        SUM(A.purchases)      AS purchases,
+236	        SUM(A.purchase_value) AS purchase_value
+237	      FROM `winged-precept-443218-v8.ngn_dataset.{base_tbl}` A
+238	      {latest_join}
+239	      WHERE {" AND ".join(conditions)}
+240	      GROUP BY { (group_date + ', ' if group_date else '') + group_cols }
+241	      HAVING SUM(A.spend) > 0
+242	      {order_by}
+243	    """
+244	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_preview.py:16:30
+15	    # ✅ 먼저 해당 account_id의 company_name이 demo인지 확인
+16	    company_check_query = f"""
+17	        SELECT company_name
+18	        FROM `winged-precept-443218-v8.ngn_dataset.metaAds_acc`
+19	        WHERE meta_acc_id = '{account_id}'
+20	        LIMIT 1
+21	    """
+22	    company_result = client.query(company_check_query).result()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_preview.py:46:16
+45	    # ✅ 일반 계정일 경우 실제 광고 가져오기
+46	    query = f"""
+47	        WITH today_ads AS (
+48	          SELECT
+49	            A.date,
+50	            C.company_name,
+51	            CI.instagram_acc_name,
+52	            A.account_id,
+53	            A.ad_name,
+54	            A.ad_id,
+55	            A.ad_status,
+56	            A.spend
+57	          FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level` A
+58	          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.metaAds_acc` C
+59	            ON A.account_id = C.meta_acc_id
+60	          LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` CI
+61	            ON C.company_name = CI.company_name
+62	          WHERE
+63	            A.date = CURRENT_DATE('Asia/Seoul')
+64	            AND A.ad_status = 'ACTIVE'
+65	            AND A.spend > 0
+66	            AND (LOWER(A.ad_name) LIKE '%단일%' OR LOWER(A.ad_name) LIKE '%영상%')
+67	        )
+68	        SELECT
+69	          FORMAT_DATE('%Y-%m-%d', ANY_VALUE(date)) AS date,
+70	          ANY_VALUE(company_name) AS company_name,
+71	          ANY_VALUE(instagram_acc_name) AS instagram_acc_name,
+72	          ANY_VALUE(account_id) AS account_id,
+73	          ad_name,
+74	          ANY_VALUE(ad_id) AS ad_id,
+75	          ANY_VALUE(ad_status) AS ad_status,
+76	          SUM(spend) AS total_spend
+77	        FROM today_ads
+78	        GROUP BY ad_name
+79	        ORDER BY total_spend DESC
+80	    """
+81	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_ads_preview.py:96:27
+95	            creative_url = f"https://graph.facebook.com/v22.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+96	            creative_res = requests.get(creative_url)
+97	            creative_data = creative_res.json()
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_ads_preview.py:104:25
+103	            detail_url = f"https://graph.facebook.com/v22.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
+104	            detail_res = requests.get(detail_url)
+105	            detail_data = detail_res.json()
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_ads_preview.py:122:28
+121	                thumb_url = f"https://graph.facebook.com/v22.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
+122	                thumb_res = requests.get(thumb_url)
+123	                thumb_data = thumb_res.json()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/meta_ads_service.py:36:16
+35	
+36	    query = f"""
+37	    WITH ranked_data AS (
+38	        SELECT
+39	            ap.*,
+40	            COALESCE(LOWER(ci.company_name), LOWER(ap.account_name), 'unknown') AS company_name,
+41	            ROW_NUMBER() OVER (PARTITION BY ap.account_name, ap.date ORDER BY ap.spend DESC) AS row_num
+42	        FROM `winged-precept-443218-v8.ngn_dataset.ads_performance` ap
+43	        LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_info` ci
+44	            ON ap.account_name = ci.meta_acc
+45	    ),
+46	
+47	    daily_data AS (
+48	        SELECT 
+49	            company_name,
+50	            FORMAT_DATE('%Y-%m-%d', DATE(TIMESTAMP(date), 'UTC')) AS report_date,
+51	            COALESCE(SUM(spend), 0) AS total_spend,
+52	            COALESCE(SUM(impressions), 0) AS total_impressions,
+53	            COALESCE(SUM(clicks), 0) AS total_clicks,
+54	            COALESCE(SUM(purchases), 0) AS total_purchases,
+55	            COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
+56	            COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(purchases), 0), 2), 0.00) AS average_order_value,
+57	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0.00) AS cpc,
+58	            COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(spend), 0) * 100, 2), 0.00) AS roas,
+59	            CAST(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2) AS FLOAT64) AS conversion_rate,
+60	            CAST(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2) AS FLOAT64) AS ctr,
+61	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(impressions), 0) * 1000, 2), 0.00) AS cpm,
+62	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(purchases), 0), 2), 0.00) AS cost_per_purchase
+63	        FROM ranked_data
+64	        WHERE row_num = 1
+65	            AND date BETWEEN @start_date AND @end_date
+66	            AND {company_filter}
+67	            AND date IS NOT NULL
+68	        GROUP BY company_name, report_date
+69	    ),
+70	
+71	    summary_data AS (
+72	        SELECT 
+73	            company_name,
+74	            @start_date || ' ~ ' || @end_date AS report_date,
+75	            COALESCE(SUM(spend), 0) AS total_spend,
+76	            COALESCE(SUM(impressions), 0) AS total_impressions,
+77	            COALESCE(SUM(clicks), 0) AS total_clicks,
+78	            COALESCE(SUM(purchases), 0) AS total_purchases,
+79	            COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
+80	            COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(purchases), 0), 2), 0.00) AS average_order_value,
+81	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2), 0.00) AS cpc,
+82	            COALESCE(ROUND(SUM(purchase_value) / NULLIF(SUM(spend), 0) * 100, 2), 0.00) AS roas,
+83	            CAST(ROUND(SUM(purchases) / NULLIF(SUM(clicks), 0) * 100, 2) AS FLOAT64) AS conversion_rate,
+84	            CAST(ROUND(SUM(clicks) / NULLIF(SUM(impressions), 0) * 100, 2) AS FLOAT64) AS ctr,
+85	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(impressions), 0) * 1000, 2), 0.00) AS cpm,
+86	            COALESCE(ROUND(SUM(spend) / NULLIF(SUM(purchases), 0), 2), 0.00) AS cost_per_purchase
+87	        FROM ranked_data
+88	        WHERE row_num = 1
+89	            AND date BETWEEN @start_date AND @end_date
+90	            AND {company_filter}
+91	            AND date IS NOT NULL
+92	        GROUP BY company_name
+93	    )
+94	
+95	    SELECT * FROM { "daily_data" if date_type == "daily" else "summary_data" }
+96	    {order_by_clause};
+97	    """
+98	
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: '/home/oscar/ngn_board/config/meta_long_token.json'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b105_hardcoded_password_string.html
+   Location: ./services/meta_demo_handler.py:10:17
+9	def load_access_token():
+10	    token_path = "/home/oscar/ngn_board/config/meta_long_token.json"
+11	    if not os.path.exists(token_path):
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: '/home/oscar/ngn_board/config/meta_long_token.json'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b105_hardcoded_password_string.html
+   Location: ./services/meta_demo_service.py:6:17
+5	def load_access_token():
+6	    token_path = "/home/oscar/ngn_board/config/meta_long_token.json"
+7	    if not os.path.exists(token_path):
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:19:11
+18	    params = {"access_token": token, "fields": "name,account_id"}
+19	    return requests.get(url, params=params).json()
+20	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:27:11
+26	    params = {"access_token": token, "fields": "name,id"}
+27	    return requests.get(url, params=params).json()
+28	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:35:11
+34	    params = {"access_token": token, "fields": "name,id"}
+35	    return requests.get(url, params=params).json()
+36	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:43:11
+42	    params = {"access_token": token, "fields": "name,id"}
+43	    return requests.get(url, params=params).json()
+44	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:51:11
+50	    params = {"access_token": token, "fields": "message,created_time,id"}
+51	    return requests.get(url, params=params).json()
+52	
+
+--------------------------------------------------
+>> Issue: [B113:request_without_timeout] Call to requests without timeout
+   Severity: Medium   Confidence: Low
+   CWE: CWE-400 (https://cwe.mitre.org/data/definitions/400.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b113_request_without_timeout.html
+   Location: ./services/meta_demo_service.py:59:11
+58	    params = {"access_token": token}
+59	    return requests.get(url, params=params).json()
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/monthly_net_sales_visitors.py:25:16
+24	
+25	    query = f"""
+26	    WITH
+27	      monthly_sales AS (
+28	        SELECT
+29	          company_name,
+30	          FORMAT_DATE('%Y-%m', payment_date) AS month,
+31	          SUM(net_sales) AS net_sales
+32	        FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
+33	        WHERE payment_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 13 MONTH)
+34	                               AND CURRENT_DATE()
+35	        GROUP BY company_name, month
+36	      ),
+37	      monthly_traffic AS (
+38	        SELECT
+39	          company_name,
+40	          FORMAT_DATE('%Y-%m', event_date) AS month,
+41	          SUM(total_users) AS total_visitors
+42	        FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
+43	        WHERE event_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 13 MONTH)
+44	                             AND CURRENT_DATE()  -- ✅ 오늘 포함되도록 수정
+45	        GROUP BY company_name, month
+46	      )
+47	    SELECT
+48	      s.company_name,
+49	      s.month AS date,
+50	      s.net_sales,
+51	      COALESCE(t.total_visitors, 0) AS total_visitors
+52	    FROM monthly_sales s
+53	    LEFT JOIN monthly_traffic t
+54	      ON s.company_name = t.company_name
+55	      AND s.month = t.month
+56	    WHERE {company_filter}
+57	    ORDER BY s.month ASC
+58	    """
+59	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/performance_summary.py:46:16
+45	    # ✅ 쿼리문 구성
+46	    query = f"""
+47	        SELECT
+48	          FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS date_range,
+49	          ad_media,
+50	          SUM(ad_spend) AS ad_spend,
+51	          SUM(total_clicks) AS total_clicks,
+52	          SUM(total_purchases) AS total_purchases,
+53	          SUM(total_purchase_value) AS total_purchase_value,
+54	          ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(total_purchases)), 2) AS avg_order_value,
+55	          ROUND(SAFE_DIVIDE(SUM(total_purchase_value), SUM(ad_spend)) * 100, 2) AS roas_percentage,
+56	          ROUND(AVG(avg_cpc), 2) AS avg_cpc,
+57	          ROUND(AVG(click_through_rate), 2) AS click_through_rate,
+58	          ROUND(AVG(conversion_rate), 2) AS conversion_rate,
+59	          SUM(site_revenue) AS site_revenue,
+60	          SUM(total_visitors) AS total_visitors,
+61	          SUM(product_views) AS product_views,
+62	          ROUND(SAFE_DIVIDE(SUM(product_views), SUM(total_visitors)), 2) AS views_per_visit,
+63	          ROUND(SAFE_DIVIDE(SUM(ad_spend), SUM(site_revenue)) * 100, 2) AS ad_spend_ratio,
+64	          MAX(updated_at) AS updated_at
+65	        FROM winged-precept-443218-v8.ngn_dataset.{table}
+66	        WHERE {company_filter}
+67	          AND DATE(date) BETWEEN @start_date AND @end_date
+68	        GROUP BY ad_media
+69	    """
+70	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/platform_sales_summary.py:74:24
+73	    final_query = base_query + (
+74	        summary_query + "\nSELECT * FROM summary_row ORDER BY company_name"
+75	        if date_type == "summary"
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/platform_sales_summary.py:76:29
+75	        if date_type == "summary"
+76	        else daily_query + f"\nSELECT * FROM daily_rows {order_clause}"
+77	    )
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/product_sales_ratio.py:33:16
+32	
+33	    query = f"""
+34	    SELECT
+35	      FORMAT_DATE('%Y-%m-%d', @start_date) || ' ~ ' || FORMAT_DATE('%Y-%m-%d', @end_date) AS report_period,
+36	      company_name,
+37	      REGEXP_REPLACE(
+38	        REGEXP_REPLACE(
+39	          REGEXP_REPLACE(product_name, r'^\\[[^\\]]+\\]\\s*', ''),  -- [브랜드] 제거
+40	          r'_[^_]+$',                                                -- _컬러 제거
+41	          ''
+42	        ),
+43	        r'["\\'“”‘’]', ''                                            -- 따옴표 제거
+44	      ) AS cleaned_product_name,
+45	      SUM(item_quantity) AS item_quantity,
+46	      SUM(item_product_sales) AS item_product_sales,
+47	      ROUND(SUM(item_product_sales) * 100.0 / SUM(SUM(item_product_sales)) OVER (), 1) AS sales_ratio_percent
+48	    FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
+49	    WHERE payment_date BETWEEN @start_date AND @end_date
+50	      AND {company_filter}
+51	    GROUP BY report_period, company_name, cleaned_product_name
+52	    ORDER BY item_product_sales DESC
+53	    """
+54	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./services/viewitem_summary.py:28:16
+27	
+28	    query = f"""
+29	    SELECT
+30	      LOWER(c.company_name) AS company_name,
+31	      REGEXP_REPLACE(t.item_name, r'^\\[[^\\]]+\\]\\s*', '') AS product_name_cleaned,
+32	
+33	      CASE
+34	        WHEN t.first_user_source IN ('insta_linktree', 'linktr.ee', 'ig', 'l.instagram.com', 'instagram.com', 'LOOKBOOK') THEN 'instagram'
+35	        WHEN t.first_user_source = '인트로 MDGT' THEN 'from madgoat'
+36	        WHEN t.first_user_source = 'naver' THEN 'naver.com'
+37	        WHEN LOWER(t.first_user_source) IN ('파이시스', 'piscess', 'piscess') THEN '(direct)'
+38	        ELSE t.first_user_source
+39	      END AS source_raw,
+40	
+41	      t.country,
+42	      SUM(t.view_item) AS total_view_item
+43	
+44	    FROM `winged-precept-443218-v8.ngn_dataset.ga4_viewitem_ngn` t
+45	    JOIN `winged-precept-443218-v8.ngn_dataset.company_info` c
+46	      ON t.ga4_property_id = c.ga4_property_id
+47	    WHERE DATE(t.event_date) BETWEEN @start_date AND @end_date
+48	      AND {company_filter}
+49	      AND REGEXP_REPLACE(t.item_name, r'^\\[[^\\]]+\\]\\s*', '') IS NOT NULL
+50	      AND REGEXP_REPLACE(t.item_name, r'^\\[[^\\]]+\\]\\s*', '') != ''
+51	      AND REGEXP_REPLACE(t.item_name, r'^\\[[^\\]]+\\]\\s*', '') != '(not set)'
+52	
+53	    GROUP BY company_name, product_name_cleaned, source_raw, t.country
+54	    ORDER BY total_view_item DESC
+55	    """
+56	
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 2631
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 3
+		Medium: 39
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 38
+		Medium: 4
+		High: 0
+Files skipped (0):

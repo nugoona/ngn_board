@@ -1,0 +1,40 @@
+<section class="table-wrapper full-wide loading-check-wrapper">
+  <h2 class="summary-section-title">캠페인 목표별 성과 요약</h2>
+
+  <!-- ✅ 로딩 스피너 -->
+  <div id="loadingOverlayTypeSummary" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">데이터를 불러오는 중입니다...</div>
+  </div>
+
+  <!-- ✅ 테이블 + 차트 통합 wrapper -->
+  <div class="campaign-summary-layout">
+    
+    <!-- ✅ 왼쪽: 테이블 영역 -->
+    <div class="campaign-summary-table">
+      <table id="metaAdsAdsetSummaryTable" class="data-table" style="text-align: center;">
+        <thead>
+          <tr>
+            <th style="text-align: center;">캠페인 목표</th>
+            <th style="text-align: center;">지출</th>
+            <th style="text-align: center;">노출당비용</th>
+            <th style="text-align: center;">클릭당비용</th>
+            <th style="text-align: center;">구매</th>
+            <th style="text-align: center;">ROAS</th>
+          </tr>
+        </thead>
+        <tbody style="text-align: center;">
+          <!-- JS로 데이터 렌더링됨 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ✅ 오른쪽: 파이 차트 영역 (위로 정렬) -->
+    <div class="campaign-summary-chart" style="align-self: flex-start; margin-top: 0;">
+      <div id="metaAdsAdsetSummaryChart" style="width:100%;height:350px;"></div>
+    </div>
+
+  </div>
+</section>
+
+

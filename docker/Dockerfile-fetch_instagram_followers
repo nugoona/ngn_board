@@ -1,0 +1,20 @@
+# ✅ Python 3.9 slim 기반 이미지 사용
+FROM python:3.9-slim
+
+# ✅ 작업 디렉토리 설정
+WORKDIR /app
+
+# ✅ requirements.txt 복사 및 설치
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ✅ Python 코드 및 GCP 서비스 계정 키 복사
+COPY ./ngn_wep/meta_api/fetch_instagram_followers.py /app/fetch_instagram_followers.py
+COPY ./config/service-account.json /app/service-account.json
+
+# ✅ 환경변수 설정
+ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
+ENV PYTHONUNBUFFERED=1
+
+# ✅ 실행
+ENTRYPOINT ["python", "/app/fetch_instagram_followers.py"]

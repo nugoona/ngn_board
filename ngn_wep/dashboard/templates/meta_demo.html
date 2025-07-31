@@ -1,0 +1,60 @@
+<!-- File: templates/meta_demo.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta 권한 검수 데모</title>
+  <style>
+    body { font-family: "Noto Sans KR", sans-serif; margin: 30px; background-color: #f9f9f9; }
+    h1 { color: #333; margin-bottom: 20px; }
+    .section { background: #fff; padding: 20px; margin-bottom: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .section h2 { font-size: 20px; margin-bottom: 10px; color: #444; }
+    .loading { color: #999; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #f2f2f2; }
+    select, button { padding: 8px; margin-top: 5px; margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <h1>✅ Meta 권한 검수 데모 페이지</h1>
+
+  <div class="section">
+    <h2>📘 광고 계정 (Ad Accounts)</h2>
+    <div id="adaccounts" class="loading">로딩 중...</div>
+    <select id="adAccountSelect"></select>
+  </div>
+
+  <div class="section">
+    <h2>🏢 비즈니스 (Businesses)</h2>
+    <div id="businesses" class="loading">로딩 중...</div>
+  </div>
+
+  <div class="section">
+    <h2>📄 페이지 목록 (Pages)</h2>
+    <div id="pages" class="loading">로딩 중...</div>
+    <select id="pageSelect"></select>
+  </div>
+
+  <div class="section">
+    <h2>📊 캠페인 목록 (Campaigns)</h2>
+    <button id="loadCampaignsBtn">캠페인 불러오기</button>
+    <div id="campaigns" class="loading">광고 계정 선택 후 불러오기</div>
+  </div>
+
+  <div class="section">
+    <h2>📝 게시물 (Posts)</h2>
+    <button id="loadPostsBtn">게시물 불러오기</button>
+    <div id="posts" class="loading">페이지 선택 후 불러오기</div>
+  </div>
+
+  <div class="section">
+    <h2>💬 인게이지먼트 (Engagement)</h2>
+    <button id="loadEngagementBtn">인게이지먼트 불러오기</button>
+    <div id="engagement" class="loading">페이지 선택 후 불러오기</div>
+  </div>
+
+  <script src="/static/js/meta_demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Python 베이스 이미지
+FROM python:3.9-slim
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 의존성 파일 복사 및 설치
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 프로젝트 복사
+COPY ../ngn_board /app
+
+# Python 캐시 파일 제거 (선택 사항)
+RUN find . -type d -name "__pycache__" -exec rm -r {} + && \
+    find . -type f -name "*.pyc" -delete
+
+# PYTHONPATH 설정 (ngn_wep 디렉토리를 Python 경로에 추가)
+ENV PYTHONPATH=/app:/app/ngn_wep
+
+# 포트 설정
+EXPOSE 8080
+
+# Gunicorn을 사용하여 Flask 앱 실행
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "ngn_wep.app:app"]

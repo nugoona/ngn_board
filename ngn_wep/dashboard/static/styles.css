@@ -862,8 +862,8 @@ html .performance-summary-wrapper:not(.loading),
   /* 브라우저 호환성을 위한 추가 스타일 */
   filter: blur(0.5px) !important;
   opacity: 0.9 !important;
-  /* 로딩 시 배경색 추가로 블러 효과 강화 */
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  /* 로딩 시 배경색 제거 - 하얀 판 문제 해결 */
+  background-color: transparent !important;
 }
 
 /* ✅ 로딩 완료 시 블러 제거 */

@@ -62,38 +62,44 @@ function initializeFlatpickr() {
   };
 
   // 기존 인스턴스가 있으면 제거
-  if (startDatePicker) {
+  if (startDatePicker && typeof startDatePicker.destroy === 'function') {
     startDatePicker.destroy();
   }
-  if (endDatePicker) {
+  if (endDatePicker && typeof endDatePicker.destroy === 'function') {
     endDatePicker.destroy();
   }
 
-  // 시작일 Flatpickr
-  startDatePicker = flatpickr("#startDate", {
-    ...commonConfig,
-    maxDate: new Date(),
-    onOpen: function(selectedDates, dateStr, instance) {
-      // 종료일이 선택되어 있으면 최대 날짜 제한
-      const endDate = endDatePicker?.selectedDates[0];
-      if (endDate) {
-        instance.set('maxDate', endDate);
+  try {
+    // 시작일 Flatpickr
+    startDatePicker = flatpickr("#startDate", {
+      ...commonConfig,
+      maxDate: new Date(),
+      onOpen: function(selectedDates, dateStr, instance) {
+        // 종료일이 선택되어 있으면 최대 날짜 제한
+        const endDate = endDatePicker?.selectedDates[0];
+        if (endDate) {
+          instance.set('maxDate', endDate);
+        }
       }
-    }
-  });
+    });
 
-  // 종료일 Flatpickr
-  endDatePicker = flatpickr("#endDate", {
-    ...commonConfig,
-    maxDate: new Date(),
-    onOpen: function(selectedDates, dateStr, instance) {
-      // 시작일이 선택되어 있으면 최소 날짜 제한
-      const startDate = startDatePicker?.selectedDates[0];
-      if (startDate) {
-        instance.set('minDate', startDate);
+    // 종료일 Flatpickr
+    endDatePicker = flatpickr("#endDate", {
+      ...commonConfig,
+      maxDate: new Date(),
+      onOpen: function(selectedDates, dateStr, instance) {
+        // 시작일이 선택되어 있으면 최소 날짜 제한
+        const startDate = startDatePicker?.selectedDates[0];
+        if (startDate) {
+          instance.set('minDate', startDate);
+        }
       }
-    }
-  });
+    });
+
+    console.log("[DEBUG] Flatpickr 초기화 완료");
+  } catch (error) {
+    console.error("[ERROR] Flatpickr 초기화 실패:", error);
+  }
 }
 
 function initializeFilters() {
@@ -173,13 +179,21 @@ function initializeFilters() {
 
   if (selectedValue === "manual") {
     $("#dateRangeContainer").fadeIn().css("display", "flex");
-    // Flatpickr 인스턴스 재활성화
-    startDatePicker?.enable();
-    endDatePicker?.enable();
+    // Flatpickr 인스턴스 재활성화 (안전한 호출)
+    if (startDatePicker && typeof startDatePicker.enable === 'function') {
+      startDatePicker.enable();
+    }
+    if (endDatePicker && typeof endDatePicker.enable === 'function') {
+      endDatePicker.enable();
+    }
   } else {
     $("#dateRangeContainer").fadeOut();
-    startDatePicker?.clear();
-    endDatePicker?.clear();
+    if (startDatePicker && typeof startDatePicker.clear === 'function') {
+      startDatePicker.clear();
+    }
+    if (endDatePicker && typeof endDatePicker.clear === 'function') {
+      endDatePicker.clear();
+    }
     $("#startDate").val("");
     $("#endDate").val("");
 
@@ -225,9 +239,9 @@ function initializeFilters() {
     const endDate = $("#endDate").val()?.trim();
     const selectedPeriod = $("#periodFilter").val();
 
-    if (selectedPeriod === "manual" && (!startDate || !endDate)) {
-      console.warn("[BLOCKED] 직접 선택: 시작일 누락 → 실행 안함");
-      return;
+    // 🔥 직접 선택 모드에서는 날짜가 비어있어도 일단 실행 (서버에서 처리)
+    if (selectedPeriod === "manual") {
+      console.log("[DEBUG] 직접 선택 모드 - 시작일:", startDate, "종료일:", endDate);
     }
 
     if (window.location.pathname === "/ads") {
@@ -252,8 +266,12 @@ function initializeFilters() {
     }
 
     // Flatpickr 인스턴스 초기화
-    startDatePicker?.clear();
-    endDatePicker?.clear();
+    if (startDatePicker && typeof startDatePicker.clear === 'function') {
+      startDatePicker.clear();
+    }
+    if (endDatePicker && typeof endDatePicker.clear === 'function') {
+      endDatePicker.clear();
+    }
     
     $("#startDate").val("");
     $("#endDate").val("");

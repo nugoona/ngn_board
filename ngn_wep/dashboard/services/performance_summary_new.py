@@ -26,16 +26,35 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         start_time = time.time()
         print("[DEBUG] 병렬 처리로 데이터 조회 시작")
         
+        # 기본값 설정
+        default_cafe24 = {"total_revenue": 0, "total_orders": 0}
+        default_meta = {"total_spend": 0, "total_clicks": 0, "total_purchases": 0, "total_purchase_value": 0, "updated_at": None}
+        default_ga4 = 0
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             # 3개 작업을 동시에 실행
             future_cafe24 = executor.submit(get_cafe24_summary_simple, company_name, start_date, end_date, user_id)
             future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date)
             future_ga4 = executor.submit(get_ga4_visitors_simple, company_name, start_date, end_date, user_id)
             
-            # 결과 수집
-            cafe24_data = future_cafe24.result()
-            meta_ads_data = future_meta.result()
-            total_visitors = future_ga4.result()
+            # 결과 수집 (개별 오류 처리)
+            try:
+                cafe24_data = future_cafe24.result(timeout=30)
+            except Exception as e:
+                print(f"[ERROR] 카페24 데이터 조회 실패: {e}")
+                cafe24_data = default_cafe24
+                
+            try:
+                meta_ads_data = future_meta.result(timeout=30)
+            except Exception as e:
+                print(f"[ERROR] 메타 광고 데이터 조회 실패: {e}")
+                meta_ads_data = default_meta
+                
+            try:
+                total_visitors = future_ga4.result(timeout=30)
+            except Exception as e:
+                print(f"[ERROR] GA4 방문자 데이터 조회 실패: {e}")
+                total_visitors = default_ga4
         
         end_time = time.time()
         print(f"[DEBUG] 병렬 처리 완료 ({end_time - start_time:.2f}초) - 카페24: {cafe24_data}, 메타: {meta_ads_data}, GA4: {total_visitors}")
@@ -216,44 +235,65 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
     """
     카페24 매출과 메타 광고 데이터를 조합하여 성과 요약 생성
     """
-    # 카페24 데이터 집계
-    site_revenue = cafe24_data.get('total_revenue', 0)
-    total_orders = cafe24_data.get('total_orders', 0)
-    
-    # 메타 광고 데이터 집계
-    ad_spend = meta_ads_data.get('total_spend', 0)
-    total_purchases = meta_ads_data.get('total_purchases', 0)
-    total_purchase_value = meta_ads_data.get('total_purchase_value', 0)
-    total_clicks = meta_ads_data.get('total_clicks', 0)
-    updated_at = meta_ads_data.get('updated_at')
-    
-    # 계산된 값들
-    roas_percentage = (total_purchase_value / ad_spend * 100) if ad_spend > 0 else 0
-    avg_cpc = (ad_spend / total_clicks) if total_clicks > 0 else 0
-    ad_spend_ratio = (ad_spend / site_revenue * 100) if site_revenue > 0 else 0
-    
-    # 🔥 진행중인 광고 판단 로직
-    # 광고비가 0보다 크면 'meta', 0이거나 null이면 '없음'
-    ad_media = "meta" if ad_spend and ad_spend > 0 else "없음"
-    print(f"[DEBUG] 진행중인 광고 판단 - 광고비: {ad_spend}, 결과: {ad_media}")
-    print(f"[DEBUG] ad_spend 타입: {type(ad_spend)}, 값: {ad_spend}")
-    print(f"[DEBUG] ad_spend > 0 조건: {ad_spend and ad_spend > 0}")
-    
-    # 결과 구성
-    result = {
-        "date_range": f"{start_date} ~ {end_date}",
-        "ad_media": ad_media,  # ← 조건부 진행중인 광고 정보
-        "ad_spend": round(ad_spend, 2),
-        "total_clicks": total_clicks,
-        "total_purchases": total_purchases,
-        "total_purchase_value": round(total_purchase_value, 2),
-        "roas_percentage": round(roas_percentage, 2),
-        "avg_cpc": round(avg_cpc, 2),
-        "site_revenue": round(site_revenue, 2),
-        "total_orders": total_orders,  # 카페24에서 가져온 주문수
-        "total_visitors": total_visitors,
-        "ad_spend_ratio": round(ad_spend_ratio, 2),
-        "updated_at": updated_at  # ← 업데이트 시간 정보
-    }
-    
-    return [result] 
+    try:
+        # 카페24 데이터 집계 (안전한 타입 변환)
+        site_revenue = float(cafe24_data.get('total_revenue', 0) or 0)
+        total_orders = int(cafe24_data.get('total_orders', 0) or 0)
+        
+        # 메타 광고 데이터 집계 (안전한 타입 변환)
+        ad_spend = float(meta_ads_data.get('total_spend', 0) or 0)
+        total_purchases = int(meta_ads_data.get('total_purchases', 0) or 0)
+        total_purchase_value = float(meta_ads_data.get('total_purchase_value', 0) or 0)
+        total_clicks = int(meta_ads_data.get('total_clicks', 0) or 0)
+        updated_at = meta_ads_data.get('updated_at')
+        
+        # 계산된 값들 (0으로 나누기 방지)
+        roas_percentage = (total_purchase_value / ad_spend * 100) if ad_spend > 0 else 0
+        avg_cpc = (ad_spend / total_clicks) if total_clicks > 0 else 0
+        ad_spend_ratio = (ad_spend / site_revenue * 100) if site_revenue > 0 else 0
+        
+        # 🔥 진행중인 광고 판단 로직 개선
+        # 광고비가 0보다 크면 'meta', 0이거나 null이면 '없음'
+        ad_media = "meta" if ad_spend > 0 else "없음"
+        
+        print(f"[DEBUG] 진행중인 광고 판단 - 광고비: {ad_spend}, 결과: {ad_media}")
+        print(f"[DEBUG] ad_spend 타입: {type(ad_spend)}, 값: {ad_spend}")
+        print(f"[DEBUG] ad_spend > 0 조건: {ad_spend > 0}")
+        
+        # 결과 구성
+        result = {
+            "date_range": f"{start_date} ~ {end_date}",
+            "ad_media": ad_media,  # ← 조건부 진행중인 광고 정보
+            "ad_spend": round(ad_spend, 2),
+            "total_clicks": total_clicks,
+            "total_purchases": total_purchases,
+            "total_purchase_value": round(total_purchase_value, 2),
+            "roas_percentage": round(roas_percentage, 2),
+            "avg_cpc": round(avg_cpc, 2),
+            "site_revenue": round(site_revenue, 2),
+            "total_orders": total_orders,  # 카페24에서 가져온 주문수
+            "total_visitors": int(total_visitors or 0),
+            "ad_spend_ratio": round(ad_spend_ratio, 2),
+            "updated_at": updated_at  # ← 업데이트 시간 정보
+        }
+        
+        return [result]
+        
+    except Exception as e:
+        print(f"[ERROR] 데이터 조합 중 오류 발생: {e}")
+        # 오류 발생 시 기본값으로 반환
+        return [{
+            "date_range": f"{start_date} ~ {end_date}",
+            "ad_media": "없음",
+            "ad_spend": 0,
+            "total_clicks": 0,
+            "total_purchases": 0,
+            "total_purchase_value": 0,
+            "roas_percentage": 0,
+            "avg_cpc": 0,
+            "site_revenue": 0,
+            "total_orders": 0,
+            "total_visitors": 0,
+            "ad_spend_ratio": 0,
+            "updated_at": None
+        }] 

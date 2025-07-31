@@ -42,17 +42,17 @@ def insert_performance_summary(target_date):
     ),
 
     base AS (
-      SELECT DISTINCT company_name, DATE(payment_date) AS date
+      SELECT DISTINCT company_name, DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) AS date
       FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
-      WHERE DATE(payment_date) = DATE('{date_str}') AND company_name IS NOT NULL
+      WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) = DATE('{date_str}') AND company_name IS NOT NULL
       UNION DISTINCT
-      SELECT DISTINCT company_name, DATE(event_date)
+      SELECT DISTINCT company_name, DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul'))
       FROM `{PROJECT_ID}.{DATASET_ID}.ga4_traffic_ngn`
-      WHERE DATE(event_date) = DATE('{date_str}') AND company_name IS NOT NULL
+      WHERE DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul')) = DATE('{date_str}') AND company_name IS NOT NULL
       UNION DISTINCT
-      SELECT DISTINCT company_name, DATE(event_date)
+      SELECT DISTINCT company_name, DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul'))
       FROM `{PROJECT_ID}.{DATASET_ID}.ga4_viewitem_ngn`
-      WHERE DATE(event_date) = DATE('{date_str}') AND company_name IS NOT NULL
+      WHERE DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul')) = DATE('{date_str}') AND company_name IS NOT NULL
     )
 
     SELECT
@@ -83,19 +83,19 @@ def insert_performance_summary(target_date):
     LEFT JOIN filtered_ads a
       ON b.company_name = a.company_name AND b.date = a.date
     LEFT JOIN (
-      SELECT company_name, DATE(payment_date) AS date, SUM(net_sales) AS site_revenue
+      SELECT company_name, DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) AS date, SUM(net_sales) AS site_revenue
       FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
       WHERE company_name IS NOT NULL
       GROUP BY company_name, date
     ) s ON b.company_name = s.company_name AND b.date = s.date
     LEFT JOIN (
-      SELECT company_name, DATE(event_date) AS date, SUM(total_users) AS total_visitors
+      SELECT company_name, DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul')) AS date, SUM(total_users) AS total_visitors
       FROM `{PROJECT_ID}.{DATASET_ID}.ga4_traffic_ngn`
       WHERE company_name IS NOT NULL
       GROUP BY company_name, date
     ) t ON b.company_name = t.company_name AND b.date = t.date
     LEFT JOIN (
-      SELECT company_name, DATE(event_date) AS date, SUM(view_item) AS product_views
+      SELECT company_name, DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul')) AS date, SUM(view_item) AS product_views
       FROM `{PROJECT_ID}.{DATASET_ID}.ga4_viewitem_ngn`
       WHERE company_name IS NOT NULL
       GROUP BY company_name, date

@@ -31,11 +31,12 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         default_meta = {"total_spend": 0, "total_clicks": 0, "total_purchases": 0, "total_purchase_value": 0, "updated_at": None}
         default_ga4 = 0
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            # 3개 작업을 동시에 실행
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            # 4개 작업을 동시에 실행
             future_cafe24 = executor.submit(get_cafe24_summary_simple, company_name, start_date, end_date, user_id)
             future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date)
             future_ga4 = executor.submit(get_ga4_visitors_simple, company_name, start_date, end_date, user_id)
+            future_product_views = executor.submit(get_ga4_product_views_simple, company_name, start_date, end_date, user_id)
             
             # 결과 수집 (개별 오류 처리)
             try:
@@ -55,12 +56,18 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
             except Exception as e:
                 print(f"[ERROR] GA4 방문자 데이터 조회 실패: {e}")
                 total_visitors = default_ga4
+                
+            try:
+                product_views = future_product_views.result(timeout=30)
+            except Exception as e:
+                print(f"[ERROR] GA4 상품 조회수 데이터 조회 실패: {e}")
+                product_views = 0
         
         end_time = time.time()
         print(f"[DEBUG] 병렬 처리 완료 ({end_time - start_time:.2f}초) - 카페24: {cafe24_data}, 메타: {meta_ads_data}, GA4: {total_visitors}")
         
         # 4. 데이터 조합 및 계산
-        result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date)
+        result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date)
         
         print(f"[DEBUG] performance_summary_new 결과: {len(result)}개")
         if result:
@@ -277,7 +284,56 @@ def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_i
         print(f"[ERROR] GA4 방문자 조회 오류: {e}")
         return 0
 
-def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date):
+def get_ga4_product_views_simple(company_name, start_date: str, end_date: str, user_id: str = None):
+    """
+    ✅ GA4 상품 조회수 조회 (성과 요약용 최적화)
+    """
+    query_params = []
+    
+    # 업체 필터 처리
+    if isinstance(company_name, list):
+        filtered_companies = [name.lower() for name in company_name]
+        filtered_companies = (
+            ["demo"] if user_id == "demo"
+            else [name for name in filtered_companies if name != "demo"]
+        )
+        if not filtered_companies:
+            return 0
+        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
+    else:
+        company_name = company_name.lower()
+        if company_name == "demo" and user_id != "demo":
+            return 0
+        company_filter = "LOWER(company_name) = @company_name"
+        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
+    
+    # 날짜 파라미터
+    query_params.extend([
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
+    ])
+    
+    # 🔥 상품 조회수 쿼리
+    query = f"""
+        SELECT COALESCE(SUM(view_item), 0) AS product_views
+        FROM `winged-precept-443218-v8.ngn_dataset.ga4_viewitem_ngn`
+        WHERE {company_filter}
+          AND event_date BETWEEN @start_date AND @end_date
+          AND view_item > 0
+        LIMIT 1
+    """
+    
+    try:
+        client = get_bigquery_client()
+        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
+        row = list(result)[0]
+        return row.product_views or 0
+    except Exception as e:
+        print(f"[ERROR] GA4 상품 조회수 조회 오류: {e}")
+        return 0
+
+def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date):
     """
     카페24 매출과 메타 광고 데이터를 조합하여 성과 요약 생성
     """
@@ -319,6 +375,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
             "site_revenue": round(site_revenue, 2),
             "total_orders": total_orders,  # 카페24에서 가져온 주문수
             "total_visitors": int(total_visitors or 0),
+            "product_views": int(product_views or 0),  # ← 상품 조회수 추가
             "ad_spend_ratio": round(ad_spend_ratio, 2),
             "updated_at": updated_at  # ← 업데이트 시간 정보
         }
@@ -340,6 +397,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
             "site_revenue": 0,
             "total_orders": 0,
             "total_visitors": 0,
+            "product_views": 0,  # ← 상품 조회수 기본값 추가
             "ad_spend_ratio": 0,
             "updated_at": None
         }] 

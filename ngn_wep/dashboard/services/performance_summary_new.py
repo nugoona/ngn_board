@@ -145,7 +145,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 업데이트 시간을 포함한 단일 쿼리로 최적화
+    # 🔥 meta_ads_account_summary 테이블 사용 (meta_ads_insight.py와 동일)
+    # Instagram 캠페인 제외 로직 추가
     query = f"""
         SELECT 
             COALESCE(SUM(spend), 0) AS total_spend,
@@ -156,7 +157,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
         WHERE date BETWEEN @start_date AND @end_date
           AND {company_filter}
-          AND spend > 0
+          AND (campaign_name IS NULL OR NOT LOWER(campaign_name) LIKE '%instagram%')
         LIMIT 1
     """
     
@@ -165,13 +166,16 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         row = list(result)[0]
         
-        return {
+        result_data = {
             "total_spend": row.total_spend or 0,
             "total_clicks": row.total_clicks or 0,
             "total_purchases": row.total_purchases or 0,
             "total_purchase_value": row.total_purchase_value or 0,
             "updated_at": row.updated_at
         }
+        
+        return result_data
+        
     except Exception as e:
         print(f"[ERROR] 메타 광고 요약 조회 오류: {e}")
         return {

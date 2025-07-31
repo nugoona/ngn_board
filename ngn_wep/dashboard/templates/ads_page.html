@@ -138,6 +138,7 @@
 <!-- ✅ JS 로딩 -->
 <!-- 🔥 common.js를 가장 먼저 로드 (showLoading/hideLoading 함수 정의) -->
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
 <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
@@ -146,7 +147,7 @@
 <script src="{{ url_for('static', filename='js/meta_ads_preview.js') }}"></script>
 <script src="{{ url_for('static', filename='js/meta_ads_slide_collection.js') }}"></script>
 <script src="{{ url_for('static', filename='js/meta_ads_adset_summary_by_type.js') }}"></script>
-<script src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/session_timeout.js') }}?v=1.1"></script>
 <script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}?v=1.1"></script>
 <script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}?v=1.1"></script>

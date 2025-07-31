@@ -10,9 +10,9 @@ $(document).ready(function () {
         const period = $("#periodFilter").val();
         const endDate = $("#endDate").val()?.trim();
 
-        if (period === "manual" && (!endDate || endDate === "")) {
-            console.log("[DEBUG] 필터 변경 감지 - 직접 선택인데 종료일 없음 → fetch 중단");
-            return;
+        // 🔥 직접 선택 모드에서는 날짜가 비어있어도 일단 실행 (서버에서 처리)
+        if (period === "manual") {
+            console.log("[DEBUG] 필터 변경 감지 - 직접 선택 모드:", startDate, endDate);
         }
 
         console.log("[DEBUG] 필터 변경 감지 → performance_summary 실행");
@@ -23,9 +23,9 @@ $(document).ready(function () {
         const period = $("#periodFilter").val();
         const endDate = $("#endDate").val()?.trim();
 
-        if (period === "manual" && (!endDate || endDate === "")) {
-            console.log("[DEBUG] 적용 버튼 클릭 - 직접 선택인데 종료일 없음 → fetch 중단");
-            return;
+        // 🔥 직접 선택 모드에서는 날짜가 비어있어도 일단 실행 (서버에서 처리)
+        if (period === "manual") {
+            console.log("[DEBUG] 적용 버튼 클릭 - 직접 선택 모드:", startDate, endDate);
         }
 
         console.log("[DEBUG] 적용 버튼 클릭 → performance_summary 실행");
@@ -85,6 +85,9 @@ async function fetchPerformanceSummaryData() {
         // period가 "manual"이 아닐 때만 period 파라미터 추가
         if (period !== "manual") {
             requestBody.period = period;
+        } else {
+            // 직접 선택 모드에서는 period를 manual로 명시적으로 설정
+            requestBody.period = "manual";
         }
         
         console.log("[DEBUG] 요청 데이터:", requestBody);

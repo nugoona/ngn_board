@@ -163,19 +163,28 @@ def merge_temp_to_main_table():
         SELECT *
         FROM (
             SELECT
-                mall_id,
-                order_id,
-                order_item_code,
-                order_date,
-                refund_date,
-                actual_refund_amount,
-                quantity,
-                used_points,
-                used_credits,
-                total_refund_amount,
-                refund_code,
-                ROW_NUMBER() OVER (PARTITION BY refund_code ORDER BY refund_date DESC) AS rn
-            FROM {PROJECT_ID}.{DATASET_ID}.{TEMP_REFUNDS_TABLE_ID}
+                t.mall_id,
+                t.order_id,
+                t.order_item_code,
+                t.order_date,
+                t.refund_date,
+                t.actual_refund_amount,
+                t.quantity,
+                t.used_points,
+                t.used_credits,
+                t.total_refund_amount,
+                t.refund_code,
+                c.company_name,
+                ROW_NUMBER() OVER (
+                    PARTITION BY t.refund_code, t.mall_id, c.company_name 
+                    ORDER BY t.refund_date DESC
+                ) AS rn
+            FROM {PROJECT_ID}.{DATASET_ID}.{TEMP_REFUNDS_TABLE_ID} t
+            JOIN `{PROJECT_ID}.{DATASET_ID}.cafe24_orders` o
+                ON t.order_id = o.order_id
+                AND t.mall_id = o.mall_id
+            JOIN `{PROJECT_ID}.{DATASET_ID}.company_info` c
+                ON o.mall_id = c.mall_id
         )
         WHERE rn = 1
     ) AS source

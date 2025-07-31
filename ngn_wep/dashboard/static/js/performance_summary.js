@@ -72,20 +72,29 @@ async function fetchPerformanceSummaryData() {
             if (!endDate) endDate = today;
         }
         
+        // 🔥 '직접 선택' 모드에서는 period를 빈 문자열로 전송하여 서버에서 start_date/end_date를 사용하도록 함
+        const requestBody = {
+            data_type: 'performance_summary',
+            company_name: companyName,
+            start_date: startDate,
+            end_date: endDate,
+            limit: 100,
+            page: 1
+        };
+        
+        // period가 "manual"이 아닐 때만 period 파라미터 추가
+        if (period !== "manual") {
+            requestBody.period = period;
+        }
+        
+        console.log("[DEBUG] 요청 데이터:", requestBody);
+        
         const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                data_type: 'performance_summary',
-                company_name: companyName,
-                period: period,
-                start_date: startDate,
-                end_date: endDate,
-                limit: 100,
-                page: 1
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const endTime = performance.now();

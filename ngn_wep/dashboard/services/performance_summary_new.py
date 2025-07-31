@@ -7,7 +7,7 @@ from .meta_ads_insight import get_meta_ads_insight_table
 def get_bigquery_client():
     return bigquery.Client()
 
-@cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
+# @cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
 def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
@@ -16,6 +16,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
     - 계산: 매출 대비 광고비 실시간 계산
     """
     print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
+    print(f"[DEBUG] 캐시 비활성화됨 - 새로운 데이터 조회")
     
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
@@ -63,6 +64,8 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date)
         
         print(f"[DEBUG] performance_summary_new 결과: {len(result)}개")
+        if result:
+            print(f"[DEBUG] 최종 결과 - 날짜범위: {result[0].get('date_range')}, 광고비: {result[0].get('ad_spend')}, 매출: {result[0].get('site_revenue')}")
         return result
         
     except Exception as e:

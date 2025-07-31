@@ -58,7 +58,7 @@ def run_query(process_date):
           o.mall_id,
           c.company_name,
           COUNT(DISTINCT o.order_id) AS total_orders,
-          COALESCE(SUM(oi.total_sold_quantity), 0) AS item_orders,
+          0 AS item_orders,  -- 임시로 0으로 설정
           SUM(
               CASE 
                   WHEN o.order_price_amount = 0 THEN o.payment_amount + o.naverpay_point
@@ -82,9 +82,9 @@ def run_query(process_date):
       LEFT JOIN refund_summary AS r
       ON o.mall_id = r.mall_id
       AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = r.refund_date  
-      LEFT JOIN order_item_summary AS oi
-      ON o.mall_id = oi.mall_id
-      AND o.order_id = oi.order_id  
+      -- LEFT JOIN order_item_summary AS oi
+      -- ON o.mall_id = oi.mall_id
+      -- AND o.order_id = oi.order_id  
       WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
       GROUP BY payment_date, o.mall_id, c.company_name, r.total_refund_amount
     ) AS source

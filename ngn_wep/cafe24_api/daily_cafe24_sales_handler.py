@@ -169,5 +169,12 @@ if __name__ == "__main__":
         run_query(today)
     elif process_type == "yesterday":
         run_query(yesterday)
+    elif process_type == "last_7_days":
+        # 최근 7일간 일괄 실행
+        for i in range(7):
+            target_date = (current_time - timedelta(days=i)).strftime("%Y-%m-%d")
+            logging.info(f"📅 {target_date} 처리 중... ({i+1}/7)")
+            run_query(target_date)
+        logging.info("✅ 최근 7일간 데이터 처리 완료!")
     else:
-        logging.error("❌ 잘못된 파라미터입니다. 'today' 또는 'yesterday'만 지원됩니다.")
+        logging.error("❌ 잘못된 파라미터입니다. 'today', 'yesterday', 또는 'last_7_days'만 지원됩니다.")

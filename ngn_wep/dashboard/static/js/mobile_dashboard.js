@@ -1,6 +1,9 @@
 // File: ngn_wep/dashboard/static/js/mobile_dashboard.js
 // 모바일 대시보드 JavaScript - 웹버전과 동일한 구조, 데이터만 축소
 
+// 🔥 성능 최적화: 요청 중복 방지
+const requestRegistry = {};
+
 // ─────────────────────────────────────────────
 // 1) 전역 변수 (웹버전과 동일)
 // ─────────────────────────────────────────────
@@ -207,20 +210,17 @@ async function fetchMobileData() {
         
         console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         
-        // 웹버전처럼 개별 API 호출로 병렬 처리
-        const promises = [];
+        // 웹버전과 동일하게 순차 처리로 변경
+        console.log('🔄 순차 처리로 데이터 로딩 시작...');
         
         // 1. 성과 요약 데이터
-        promises.push(fetchMobilePerformanceSummary(companyName, period, startDateValue, endDateValue));
+        await fetchMobilePerformanceSummary(companyName, period, startDateValue, endDateValue);
         
         // 2. 카페24 상품판매 데이터
-        promises.push(fetchMobileCafe24Products(companyName, period, startDateValue, endDateValue));
+        await fetchMobileCafe24Products(companyName, period, startDateValue, endDateValue);
         
         // 3. GA4 소스별 유입수 데이터
-        promises.push(fetchMobileGa4Sources(companyName, period, startDateValue, endDateValue));
-        
-        // 병렬로 모든 데이터 로딩
-        await Promise.all(promises);
+        await fetchMobileGa4Sources(companyName, period, startDateValue, endDateValue);
         
         console.log('✅ 모바일 데이터 로딩 완료');
         
@@ -234,6 +234,14 @@ async function fetchMobileData() {
 
 // 개별 API 호출 함수들
 async function fetchMobilePerformanceSummary(companyName, period, startDate, endDate) {
+    // 🔥 요청 중복 방지
+    const requestKey = `performance_summary_${companyName}_${period}_${startDate}_${endDate}`;
+    if (requestRegistry[requestKey]) {
+        console.log('🔄 이미 진행 중인 요청이 있습니다:', requestKey);
+        return;
+    }
+    
+    requestRegistry[requestKey] = true;
     showLoading("#loadingOverlaySitePerformance");
     showLoading("#loadingOverlayAdPerformance");
     
@@ -272,10 +280,19 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
     } finally {
         hideLoading("#loadingOverlaySitePerformance");
         hideLoading("#loadingOverlayAdPerformance");
+        delete requestRegistry[requestKey]; // 🔥 요청 완료 후 레지스트리 정리
     }
 }
 
 async function fetchMobileCafe24Products(companyName, period, startDate, endDate) {
+    // 🔥 요청 중복 방지
+    const requestKey = `cafe24_products_${companyName}_${period}_${startDate}_${endDate}`;
+    if (requestRegistry[requestKey]) {
+        console.log('🔄 이미 진행 중인 요청이 있습니다:', requestKey);
+        return;
+    }
+    
+    requestRegistry[requestKey] = true;
     showLoading("#loadingOverlayCafe24Products");
     
     try {
@@ -310,6 +327,7 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
         console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
     } finally {
         hideLoading("#loadingOverlayCafe24Products");
+        delete requestRegistry[requestKey]; // 🔥 요청 완료 후 레지스트리 정리
     }
 }
 

@@ -515,30 +515,12 @@ async function fetchFilteredData() {
         }
       }
     } else if (pathname === "/ads") {
-      metaAdsState.period = selectedPeriod;
-
-      if (selectedPeriod !== "manual") {
-        const resolved = resolveDateRange(selectedPeriod);  // ✅ 구조 분해 대신 객체로 접근
-        metaAdsState.startDate = resolved.start;
-        metaAdsState.endDate = resolved.end;
+      // ✅ 광고 성과 페이지에서는 fetchData 함수 사용
+      console.log("🔄 filters.js에서 fetchData() 호출 (광고 성과 페이지)");
+      if (typeof fetchData === 'function') {
+        fetchData(1);
       } else {
-        metaAdsState.startDate = startDate || "";
-        metaAdsState.endDate = endDate || "";
-      }
-
-      const accountId = metaAdsState.accountId;
-      await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
-
-      if (accountId) {
-        await fetchMetaAdsAdsetSummaryByType({
-          account_id: accountId,
-          period: metaAdsState.period,
-          start_date: metaAdsState.startDate,
-          end_date: metaAdsState.endDate
-        });
-
-        await fetchMetaAdsPreviewList();
-        await fetchSlideCollectionAds(accountId);
+        console.warn("[WARN] fetchData 함수가 정의되지 않음");
       }
     }
   } catch (e) {

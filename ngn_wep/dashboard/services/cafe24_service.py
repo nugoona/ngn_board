@@ -223,7 +223,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             ON i.mall_id = info.mall_id
         LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS prod
             ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
-        WHERE i.payment_date BETWEEN @start_date AND @end_date
+        WHERE DATE(DATETIME(TIMESTAMP(i.payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
           AND {company_filter}
           AND i.item_product_sales > 0
         GROUP BY i.company_name, i.product_name, i.product_no
@@ -236,7 +236,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
         FROM (
             SELECT 1
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
-            WHERE i.payment_date BETWEEN @start_date AND @end_date
+            WHERE DATE(DATETIME(TIMESTAMP(i.payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
               AND {company_filter}
               AND i.item_product_sales > 0
             GROUP BY i.company_name, i.product_name, i.product_no

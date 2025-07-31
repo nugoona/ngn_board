@@ -42,7 +42,7 @@ def execute_bigquery(process_type="today"):
     FilteredOrders AS (
       SELECT
         o.order_id,
-        DATE(o.payment_date) AS payment_date,
+        DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
         m.company_name,
         m.main_url,
         CAST(o.mall_id AS STRING) AS mall_id,

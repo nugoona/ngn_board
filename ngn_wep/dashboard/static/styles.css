@@ -239,32 +239,16 @@ body {
   /* 폭 자체는 .left-wide / .right-narrow에서 결정 */
 }
 
-/* 🔥 로딩 중일 때 table-wrapper 배경을 투명하게 */
-.table-wrapper.loading,
-.table-wrapper:has(.loading-overlay[style*="display: flex"]),
-.table-wrapper:has(.loading-overlay[style*="display:flex"]) {
-  background: transparent !important;
-  backdrop-filter: blur(2px) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
-}
-
-/* 🔥 로딩 오버레이가 있는 모든 table-wrapper에 대해 배경 투명화 */
-.table-wrapper:has(.loading-overlay) {
-  background: transparent !important;
-  backdrop-filter: blur(2px) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
-}
-
-/* 🔥 더 강력한 블러 효과 적용 */
+/* 🔥 모든 table-wrapper 로딩 시 배경 투명화 및 블러 효과 - 최고 우선순위 */
 .table-wrapper.loading,
 .table-wrapper:has(.loading-overlay[style*="display: flex"]),
 .table-wrapper:has(.loading-overlay[style*="display:flex"]),
 .table-wrapper:has(.loading-overlay) {
   background: transparent !important;
   background-color: transparent !important;
-  backdrop-filter: blur(3px) !important;
-  -webkit-backdrop-filter: blur(3px) !important;
-  filter: blur(0.5px) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  filter: blur(0.8px) !important;
 }
 
 /* ✅ 기존 테이블 스타일 (호환성 유지) */
@@ -611,11 +595,12 @@ th {
   border: 1px solid var(--border-light);
 }
 
-/* 🔥 성과 요약 섹션 로딩 시 배경 투명화 */
+/* 🔥 성과 요약 섹션 로딩 시 배경 투명화 - 최고 우선순위 */
 .performance-summary-wrapper.loading .performance-summary-section {
   background: transparent !important;
-  backdrop-filter: blur(2px) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
+  background-color: transparent !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 /* ✅ 제목 스타일 */
@@ -721,11 +706,12 @@ th {
   overflow: hidden;
 }
 
-/* 🔥 성과 요약 카드 로딩 시 배경 투명화 */
+/* 🔥 성과 요약 카드 로딩 시 배경 투명화 - 최고 우선순위 */
 .performance-summary-wrapper.loading .summary-card {
   background: transparent !important;
-  backdrop-filter: blur(2px) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
+  background-color: transparent !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 .summary-card::before {

@@ -75,9 +75,25 @@ export function updateUpdatedAtText(text) {
   const date = utc.getUTCDate();  // 날짜는 그대로 유지
   const finalDate = date + carryDate;
 
+  // 🔥 날짜 유효성 검사 및 수정
+  let finalYear = year;
+  let finalMonth = month;
+  let finalDay = finalDate;
+  
+  // 월별 최대 일수 확인
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (finalDay > daysInMonth) {
+    finalDay = finalDay - daysInMonth;
+    finalMonth = finalMonth + 1;
+    if (finalMonth > 12) {
+      finalMonth = 1;
+      finalYear = finalYear + 1;
+    }
+  }
+
   const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
 
-  const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+  const formatted = `${finalYear}년 ${finalMonth}월 ${finalDay}일 ${adjustedHour}시 ${minutes}분`;
   $("#updatedAtText").text(`최종 업데이트: ${formatted}`);
 }
 

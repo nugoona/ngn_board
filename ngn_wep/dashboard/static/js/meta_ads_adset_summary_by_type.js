@@ -347,5 +347,8 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
   myChart.setOption(option);
 }
 
-/* ───────── 전역으로 함수 노출 ───────── */
+/* ───────── ES6 모듈로 함수 노출 ───────── */
+export { fetchMetaAdsAdsetSummaryByType };
+
+/* ───────── 전역으로도 함수 노출 (하위 호환성) ───────── */
 window.fetchMetaAdsAdsetSummaryByType = fetchMetaAdsAdsetSummaryByType;

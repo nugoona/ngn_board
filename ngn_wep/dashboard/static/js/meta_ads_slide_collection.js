@@ -62,6 +62,9 @@ function fetchSlideCollectionAds(accountId = null) {
 
 window.fetchSlideCollectionAds = fetchSlideCollectionAds;
 
+/* ───────── ES6 모듈로 함수 노출 ───────── */
+export { fetchSlideCollectionAds };
+
 function renderSlideCollectionTable(data) {
   const $tbody = $("#slideCollectionTableBody");
   $tbody.empty();

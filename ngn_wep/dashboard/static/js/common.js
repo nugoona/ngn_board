@@ -20,6 +20,12 @@ function showLoading(target) {
     return;
   }
   
+  // 🔥 table-wrapper에 loading 클래스 추가
+  const $tableWrapper = $target.closest('.table-wrapper');
+  if ($tableWrapper.length > 0) {
+    $tableWrapper.addClass('loading');
+  }
+  
   // ✅ 로딩 스피너 표시 - 완전 투명하게 설정
   $target.attr('style', `
     display: flex !important;
@@ -77,6 +83,12 @@ function hideLoading(target) {
     'opacity': '0 !important'
   });
   
+  // 🔥 table-wrapper에서 loading 클래스 제거
+  const $tableWrapper = $target.closest('.table-wrapper');
+  if ($tableWrapper.length > 0) {
+    $tableWrapper.removeClass('loading');
+  }
+  
   console.log("✅ Loading completed for:", target);
 }
 
@@ -86,6 +98,9 @@ function forceHideAllLoading() {
   
   // 모든 로딩 클래스 제거
   $(".loading").removeClass("loading");
+  
+  // 🔥 모든 table-wrapper에서 loading 클래스 제거
+  $(".table-wrapper").removeClass("loading");
   
   // 모든 로딩 오버레이 숨김 - 완전 투명하게 설정
   $(".loading-overlay").each(function() {

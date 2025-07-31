@@ -20,30 +20,45 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         raise ValueError("start_date / end_date가 없습니다.")
 
     try:
-        # 1. 카페24 매출 데이터 조회 (사이트 성과)
-        cafe24_data = get_cafe24_sales_data(
-            company_name=company_name,
-            period="manual",
-            start_date=start_date,
-            end_date=end_date,
-            date_type="payment_date",
-            date_sort="desc",
-            limit=1000,
-            page=1,
-            user_id=user_id
-        )
+        # 병렬로 데이터 조회
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            # 1. 카페24 매출 데이터 조회 (사이트 성과)
+            cafe24_future = executor.submit(get_cafe24_sales_data,
+                company_name=company_name,
+                period="manual",
+                start_date=start_date,
+                end_date=end_date,
+                date_type="payment_date",
+                date_sort="desc",
+                limit=1000,
+                page=1,
+                user_id=user_id
+            )
+            
+            # 2. 메타 광고 계정 단위 성과 조회
+            meta_ads_future = executor.submit(get_meta_ads_insight_table,
+                level="account",
+                company_name=company_name,
+                start_date=start_date,
+                end_date=end_date,
+                date_type="summary"
+            )
+            
+            # 3. GA4 방문자 데이터 조회
+            ga4_future = executor.submit(get_ga4_visitors,
+                company_name=company_name,
+                start_date=start_date,
+                end_date=end_date,
+                user_id=user_id
+            )
+            
+            # 결과 수집
+            cafe24_data = cafe24_future.result()
+            meta_ads_data = meta_ads_future.result()
+            total_visitors = ga4_future.result()
         
-        # 2. 메타 광고 계정 단위 성과 조회
-        meta_ads_data = get_meta_ads_insight_table(
-            level="account",
-            company_name=company_name,
-            start_date=start_date,
-            end_date=end_date,
-            date_type="summary"
-        )
-        
-        # 3. 데이터 조합 및 계산
-        result = combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date, company_name, user_id)
+        # 4. 데이터 조합 및 계산
+        result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date)
         
         print(f"[DEBUG] performance_summary_new 결과: {len(result)}개")
         return result
@@ -52,7 +67,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         print("[ERROR] performance_summary_new 오류:", e)
         return []
 
-def combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date, company_name, user_id):
+def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, start_date, end_date):
     """
     카페24 매출과 메타 광고 데이터를 조합하여 성과 요약 생성
     """
@@ -60,8 +75,7 @@ def combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date, c
     site_revenue = sum(row.get('net_sales', 0) for row in cafe24_data.get('rows', []))
     total_orders = sum(row.get('order_count', 0) for row in cafe24_data.get('rows', []))
     
-    # GA4 방문자 데이터 조회
-    total_visitors = get_ga4_visitors(company_name, start_date, end_date, user_id)
+    # GA4 방문자 데이터는 이미 병렬로 조회됨
     
     # 메타 광고 데이터 집계 (insight_table은 딕셔너리 형태로 반환)
     meta_ads_rows = meta_ads_data.get('rows', meta_ads_data) if isinstance(meta_ads_data, dict) else meta_ads_data

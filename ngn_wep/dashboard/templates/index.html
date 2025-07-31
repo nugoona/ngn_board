@@ -179,11 +179,13 @@
   </div>
 
   <!-- ✅ JS 로딩 -->
+  <!-- 🔥 common.js를 가장 먼저 로드 (showLoading/hideLoading 함수 정의) -->
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
-      <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.2"></script>
+  <script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+  <!-- 🔥 dashboard.js는 common.js 로드 후에 실행 -->
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.2"></script>
     <script src="{{ url_for('static', filename='js/cafe24_sales.js') }}"></script>
   <script src="{{ url_for('static', filename='js/cafe24_product_sales.js') }}"></script>
   <script src="{{ url_for('static', filename='js/performance_summary.js') }}"></script>

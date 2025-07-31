@@ -2948,8 +2948,13 @@ th.sortable.desc::after {
 /* 로딩 오버레이가 표시될 때의 스타일 */
 .loading-overlay[style*="display: flex"],
 .loading-overlay[style*="display:flex"] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1000 !important;
   background: rgba(255, 255, 255, 0.95) !important;
   background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 /* 스피너 스타일 */

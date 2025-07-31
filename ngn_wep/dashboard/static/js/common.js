@@ -20,15 +20,12 @@ function showLoading(target) {
     return;
   }
   
-  // 🔥 로딩 스피너 강제 표시 - 더 투명한 배경
+  // ✅ 로딩 스피너 표시 - CSS와 충돌 방지
   $target.attr('style', `
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(1px) !important;
     z-index: 1000 !important;
   `);
   

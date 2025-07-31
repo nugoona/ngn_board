@@ -803,6 +803,25 @@ html .performance-summary-wrapper:not(.loading),
   opacity: 0.95 !important; /* 🔥 0.6 → 0.95로 증가하여 덜 뿌연 효과 */
 }
 
+/* ✅ 다른 위젯들도 loading 클래스 처리 */
+.table-wrapper.loading,
+.monthly-sales-traffic-wrapper.loading,
+.product-sales-ratio-wrapper.loading,
+.platform-sales-summary-wrapper.loading {
+  backdrop-filter: blur(1px) !important;
+  -webkit-backdrop-filter: blur(1px) !important;
+  transition: backdrop-filter 0.3s ease !important;
+}
+
+/* ✅ 로딩 완료 시 블러 제거 */
+.table-wrapper:not(.loading),
+.monthly-sales-traffic-wrapper:not(.loading),
+.product-sales-ratio-wrapper:not(.loading),
+.platform-sales-summary-wrapper:not(.loading) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 
 
 /* ================================

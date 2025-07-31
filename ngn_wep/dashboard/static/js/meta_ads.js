@@ -67,6 +67,8 @@ function fetchMetaAdsData(page) {
     }
 
     showLoading("#loadingOverlayMetaAds");
+    // ✅ 로딩 시 wrapper에 loading 클래스 추가
+    document.querySelector('.meta-ads-wrapper')?.classList.add("loading");
 
     $.ajax({
         url: "/dashboard/get_data",
@@ -89,6 +91,8 @@ function fetchMetaAdsData(page) {
         },
         complete: function () {
             hideLoading("#loadingOverlayMetaAds");
+            // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
+            document.querySelector('.meta-ads-wrapper')?.classList.remove("loading");
         }
     });
 }

@@ -15,6 +15,8 @@ function fetchGa4SourceSummaryData(page = 1) {
   console.log("[DEBUG] GA4 소스별 유입수 요청 - 기간:", requestData.start_date, "~", requestData.end_date);
 
   showLoading("#loadingOverlayGa4Source");
+  // ✅ 로딩 시 wrapper에 loading 클래스 추가
+  document.querySelector('[data-widget-id="ga4-source"]')?.classList.add("loading");
 
   $.ajax({
     url: "/dashboard/get_data",
@@ -25,6 +27,8 @@ function fetchGa4SourceSummaryData(page = 1) {
       // 🔥 최소 500ms 로딩 스피너 표시 보장
       setTimeout(() => {
         hideLoading("#loadingOverlayGa4Source");
+        // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
+        document.querySelector('[data-widget-id="ga4-source"]')?.classList.remove("loading");
       }, 500);
 
       if (res.status === "success" && res.ga4_source_summary) {
@@ -43,6 +47,8 @@ function fetchGa4SourceSummaryData(page = 1) {
     },
     error: function (jqXHR, textStatus, errorThrown) {
       hideLoading("#loadingOverlayGa4Source");
+      // ✅ 에러 시에도 wrapper에서 loading 클래스 제거
+      document.querySelector('[data-widget-id="ga4-source"]')?.classList.remove("loading");
       console.error(`[ERROR] GA4 Source Summary 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
     }
   });

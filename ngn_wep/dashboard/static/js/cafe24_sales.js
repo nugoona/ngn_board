@@ -125,6 +125,8 @@ function fetchCafe24SalesData(requestData) {
   // }
 
   showLoading("#loadingOverlayCafe24Sales");
+  // ✅ 로딩 시 wrapper에 loading 클래스 추가
+  document.querySelector('[data-widget-id="cafe24-sales"]')?.classList.add("loading");
   const startTime = performance.now();
 
   return new Promise((resolve, reject) => {
@@ -140,6 +142,8 @@ function fetchCafe24SalesData(requestData) {
         // 🔥 최소 500ms 로딩 스피너 표시 보장
         setTimeout(() => {
           hideLoading("#loadingOverlayCafe24Sales");
+          // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
+          document.querySelector('[data-widget-id="cafe24-sales"]')?.classList.remove("loading");
         }, Math.max(500 - elapsed, 100));
 
         if (!response || response.error) {
@@ -165,6 +169,8 @@ function fetchCafe24SalesData(requestData) {
       },
       error: (xhr, textStatus, errorThrown) => {
         hideLoading("#loadingOverlayCafe24Sales");
+        // ✅ 에러 시에도 wrapper에서 loading 클래스 제거
+        document.querySelector('[data-widget-id="cafe24-sales"]')?.classList.remove("loading");
         if (textStatus !== "abort") {
           console.warn("[ERROR] Ajax 오류:", textStatus, errorThrown);
           reject(errorThrown);

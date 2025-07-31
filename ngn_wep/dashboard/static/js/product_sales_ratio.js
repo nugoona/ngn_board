@@ -55,6 +55,8 @@ function fetchProductSalesRatio() {
   const loadingOverlay = $("#loadingOverlayProductSalesRatio");
   if (loadingOverlay.length > 0) {
     showLoading("#loadingOverlayProductSalesRatio");
+    // ✅ 로딩 시 wrapper에 loading 클래스 추가
+    document.querySelector('.product-sales-ratio-wrapper')?.classList.add("loading");
   }
 
   latestAjaxRequest("product_sales_ratio", {
@@ -65,12 +67,16 @@ function fetchProductSalesRatio() {
     error: function (xhr, status, error) {
       if (loadingOverlay.length > 0) {
         hideLoading("#loadingOverlayProductSalesRatio");
+        // ✅ 에러 시에도 wrapper에서 loading 클래스 제거
+        document.querySelector('.product-sales-ratio-wrapper')?.classList.remove("loading");
       }
       console.error("[ERROR] 상품 매출 비중 오류:", status, error);
     }
   }, function (res) {
     if (loadingOverlay.length > 0) {
       hideLoading("#loadingOverlayProductSalesRatio");
+      // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
+      document.querySelector('.product-sales-ratio-wrapper')?.classList.remove("loading");
     }
 
     if (res.status === "success") {

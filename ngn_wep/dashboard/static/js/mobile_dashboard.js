@@ -382,12 +382,14 @@ async function fetchMetaAccounts() {
         const companySelect = document.getElementById('accountFilter');
         const companyName = companySelect ? companySelect.value : 'all';
         
-        const response = await fetch('/mobile/get_meta_accounts', {
+        // 웹버전과 동일한 엔드포인트 사용
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                data_type: 'meta_account_list',
                 company_name: companyName
             })
         });
@@ -956,7 +958,37 @@ function renderMetaAccountFilter(accounts) {
             option.textContent = account.account_name;
             metaAccountSelect.appendChild(option);
         });
+        
+        // 계정이 1개면 자동 선택
+        if (accounts.length === 1) {
+            const accountId = accounts[0].account_id;
+            metaAccountSelect.value = accountId;
+            console.log('🏢 계정 1개 자동 선택:', accountId);
+            fetchMetaAdsByAccount(accountId);
+        } else if (accounts.length > 1) {
+            // 계정이 여러 개인 경우 첫 번째 계정 자동 선택
+            const accountId = accounts[0].account_id;
+            metaAccountSelect.value = accountId;
+            console.log('🏢 계정 여러 개 - 첫 번째 계정 자동 선택:', accountId);
+            fetchMetaAdsByAccount(accountId);
+        }
     }
+    
+    // 계정 선택 이벤트 추가
+    metaAccountSelect.addEventListener('change', function() {
+        const selectedAccountId = this.value;
+        console.log('🏢 선택된 메타 계정:', selectedAccountId);
+        
+        if (selectedAccountId) {
+            fetchMetaAdsByAccount(selectedAccountId);
+        } else {
+            // 계정이 선택되지 않은 경우 테이블 초기화
+            const tbody = document.getElementById('meta-ads-table');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
+            }
+        }
+    });
 }
 
 // 메타 광고별 성과 렌더링 (광고 탭 기준)

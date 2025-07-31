@@ -308,8 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!accountId) return showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
 
     // 전체 페이지 로딩 오버레이 표시
-    if (typeof showFullPageLoading === 'function') {
-      showFullPageLoading();
+    if (typeof window.showFullPageLoading === 'function') {
+      window.showFullPageLoading();
     }
 
     toggleCatalogSidebarLoading(true);
@@ -327,8 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       toggleCatalogSidebarLoading(false);
       // 전체 페이지 로딩 오버레이 숨김
-      if (typeof hideFullPageLoading === 'function') {
-        hideFullPageLoading();
+      if (typeof window.hideFullPageLoading === 'function') {
+        window.hideFullPageLoading();
       }
     }
   });

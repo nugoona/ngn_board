@@ -143,6 +143,10 @@ function hideFullPageLoading() {
   }
 }
 
+// 전역으로 함수 노출
+window.showFullPageLoading = showFullPageLoading;
+window.hideFullPageLoading = hideFullPageLoading;
+
 // 디버깅용 함수 - 로딩 오버레이 상태 확인
 function debugLoadingOverlays() {
   console.log("🔍 현재 로딩 오버레이 상태:");

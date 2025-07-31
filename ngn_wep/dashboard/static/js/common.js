@@ -18,12 +18,28 @@ function showLoading(target) {
     return;
   }
   
-  // 🔥 로딩 스피너 강제 표시
+  // 🔥 로딩 스피너 강제 표시 - 더 명확한 스타일 적용
   $target.css({
     'display': 'flex !important',
     'visibility': 'visible !important',
     'opacity': '1 !important',
-    'pointer-events': 'auto !important'
+    'pointer-events': 'auto !important',
+    'background': 'rgba(255, 255, 255, 0.95) !important',
+    'background-color': 'rgba(255, 255, 255, 0.95) !important',
+    'backdrop-filter': 'blur(4px) !important'
+  });
+  
+  // 스피너와 텍스트가 보이도록 추가 스타일
+  $target.find('.spinner').css({
+    'display': 'block !important',
+    'visibility': 'visible !important',
+    'opacity': '1 !important'
+  });
+  
+  $target.find('.loading-text').css({
+    'display': 'block !important',
+    'visibility': 'visible !important',
+    'opacity': '1 !important'
   });
   
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -41,12 +57,19 @@ function hideLoading(target) {
     return;
   }
   
-  // 직접 스타일 설정
+  // 직접 스타일 설정 - 더 확실한 숨김
   $target.css({
-    'display': 'none',
-    'visibility': 'hidden',
-    'opacity': '0',
-    'pointer-events': 'none'
+    'display': 'none !important',
+    'visibility': 'hidden !important',
+    'opacity': '0 !important',
+    'pointer-events': 'none !important'
+  });
+  
+  // 스피너와 텍스트도 숨김
+  $target.find('.spinner, .loading-text').css({
+    'display': 'none !important',
+    'visibility': 'hidden !important',
+    'opacity': '0 !important'
   });
   
   console.log("✅ Loading completed for:", target);
@@ -59,8 +82,22 @@ function forceHideAllLoading() {
   // 모든 로딩 클래스 제거
   $(".loading").removeClass("loading");
   
-  // 모든 로딩 오버레이 숨김
-  $(".loading-overlay").attr('style', 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;');
+  // 모든 로딩 오버레이 숨김 - 더 확실한 방법
+  $(".loading-overlay").each(function() {
+    $(this).css({
+      'display': 'none !important',
+      'visibility': 'hidden !important',
+      'opacity': '0 !important',
+      'pointer-events': 'none !important'
+    });
+  });
+  
+  // 스피너와 텍스트도 숨김
+  $(".spinner, .loading-text").css({
+    'display': 'none !important',
+    'visibility': 'hidden !important',
+    'opacity': '0 !important'
+  });
   
   console.log("✅ All loading overlays force-hidden");
 }
@@ -92,9 +129,22 @@ function debugLoadingOverlays() {
     const visibility = $overlay.css('visibility');
     const opacity = $overlay.css('opacity');
     const style = $overlay.attr('style');
+    const background = $overlay.css('background');
+    const backgroundColor = $overlay.css('background-color');
     
     console.log(`  ${id}: display=${display}, visibility=${visibility}, opacity=${opacity}`);
+    console.log(`    background: ${background}, background-color: ${backgroundColor}`);
     console.log(`    style attribute: ${style}`);
+    
+    // 스피너와 텍스트 상태도 확인
+    const $spinner = $overlay.find('.spinner');
+    const $text = $overlay.find('.loading-text');
+    if ($spinner.length > 0) {
+      console.log(`    spinner: display=${$spinner.css('display')}, visibility=${$spinner.css('visibility')}`);
+    }
+    if ($text.length > 0) {
+      console.log(`    text: display=${$text.css('display')}, visibility=${$text.css('visibility')}`);
+    }
   });
 }
 
@@ -112,6 +162,42 @@ function forceRefreshCache() {
     // fallback
     window.location.href = window.location.href + '?t=' + new Date().getTime();
   }
+}
+
+// 로딩 스피너 테스트 함수
+function testLoadingSpinner() {
+  console.log("🧪 로딩 스피너 테스트 시작");
+  
+  // 모든 로딩 오버레이를 강제로 표시
+  $(".loading-overlay").each(function() {
+    const $overlay = $(this);
+    const id = $overlay.attr('id') || 'unknown';
+    
+    console.log(`🧪 테스트: ${id} 로딩 스피너 표시`);
+    
+    $overlay.css({
+      'display': 'flex !important',
+      'visibility': 'visible !important',
+      'opacity': '1 !important',
+      'pointer-events': 'auto !important',
+      'background': 'rgba(255, 255, 255, 0.95) !important',
+      'background-color': 'rgba(255, 255, 255, 0.95) !important',
+      'backdrop-filter': 'blur(4px) !important'
+    });
+    
+    // 스피너와 텍스트도 강제 표시
+    $overlay.find('.spinner, .loading-text').css({
+      'display': 'block !important',
+      'visibility': 'visible !important',
+      'opacity': '1 !important'
+    });
+  });
+  
+  // 3초 후 자동으로 숨김
+  setTimeout(() => {
+    console.log("🧪 테스트 완료 - 로딩 스피너 숨김");
+    forceHideAllLoading();
+  }, 3000);
 }
 
 // 페이지 로드 시 자동으로 모든 로딩 오버레이 제거 (백업용)
@@ -151,6 +237,14 @@ $(document).ready(function() {
       if (e.ctrlKey && e.shiftKey && e.keyCode === 82) { // Ctrl+Shift+R
         console.log("🔄 Ctrl+Shift+R 감지 - 캐시 강제 새로고침");
         forceRefreshCache();
+      }
+    });
+    
+    // 로딩 스피너 테스트를 위한 키보드 단축키 (Ctrl+Shift+T)
+    $(document).keydown(function(e) {
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 84) { // Ctrl+Shift+T
+        console.log("🧪 Ctrl+Shift+T 감지 - 로딩 스피너 테스트");
+        testLoadingSpinner();
       }
     });
   }

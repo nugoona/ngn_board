@@ -2920,12 +2920,7 @@ th.sortable.desc::after {
   100% { transform: rotate(360deg); }
 }
 
-/* 로딩 텍스트 */
-.loading-text {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
+
 
 /* ================================
  통합 로딩 오버레이 스타일 (최종 버전)
@@ -2938,8 +2933,8 @@ th.sortable.desc::after {
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(4px) !important; /* 원래 값으로 복원 */
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(4px) !important;
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2950,36 +2945,26 @@ th.sortable.desc::after {
   border-radius: var(--radius-lg) !important;
 }
 
-/* 🔥 모든 로딩 오버레이 강제 투명화 (캐시 문제 해결) */
-.loading-overlay,
-.loading-overlay *,
-[class*="loading-overlay"],
-[id*="loadingOverlay"] {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-/* 🔥 추가 강제 투명화 (브라우저 캐시 문제 해결) */
-div[id*="loadingOverlay"],
-div[class*="loading-overlay"],
-.loading-overlay,
-.loading-overlay::before,
-.loading-overlay::after {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
+/* 로딩 오버레이가 표시될 때의 스타일 */
+.loading-overlay[style*="display: flex"],
+.loading-overlay[style*="display:flex"] {
+  background: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
 }
 
 /* 스피너 스타일 */
 .spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid var(--border-light);
-  border-top: 3px solid var(--primary);
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #6366f1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: var(--spacing-md);
-  box-shadow: var(--shadow-md);
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* 로딩 텍스트 */
@@ -2987,14 +2972,17 @@ div[class*="loading-overlay"],
   font-size: 16px;
   color: #374151;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   padding: 12px 20px;
   border-radius: 8px;
   border: 1px solid rgba(99, 102, 241, 0.2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(4px); /* 원래 값으로 복원 */
+  backdrop-filter: blur(4px);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */

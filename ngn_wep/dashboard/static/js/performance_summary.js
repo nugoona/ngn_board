@@ -49,8 +49,9 @@ async function fetchPerformanceSummaryData() {
     try {
         const startTime = performance.now();
         
-        // 🔥 로딩 스피너 표시
+        // ✅ 로딩 스피너 표시 및 블러 효과 활성화
         showLoading("#loadingOverlayPerformanceSummary");
+        document.querySelector(".performance-summary-wrapper")?.classList.add("loading");
         
         // 🔥 기존 필터 값 사용
         let companyName = $("#accountFilter").val() || "all";
@@ -156,24 +157,24 @@ async function fetchPerformanceSummaryData() {
         updatePerformanceSummaryCards([]);
         return [];
     } finally {
-        // 🔥 로딩 완료
+        // ✅ 로딩 완료 및 블러 효과 제거
         hideLoading("#loadingOverlayPerformanceSummary");
+        document.querySelector(".performance-summary-wrapper")?.classList.remove("loading");
     }
 }
 
-// 🔥 단순화된 로딩 함수들
+// ✅ 개선된 로딩 함수들 - CSS와 충돌 방지
 function showLoading(target) {
     const element = document.querySelector(target);
     if (element) {
+        // CSS의 블러 효과를 활용하도록 수정
         element.style.cssText = `
             display: flex !important;
             visibility: visible !important;
             opacity: 1 !important;
             pointer-events: auto !important;
-            background: rgba(255, 255, 255, 0.95) !important;
-            backdrop-filter: blur(4px) !important;
         `;
-        console.log(`[DEBUG] 로딩 스피너 강제 표시: ${target}`);
+        console.log(`[DEBUG] 로딩 스피너 표시: ${target}`);
     }
 }
 
@@ -186,7 +187,7 @@ function hideLoading(target) {
             opacity: 0 !important;
             pointer-events: none !important;
         `;
-        console.log(`[DEBUG] 로딩 스피너 강제 숨김: ${target}`);
+        console.log(`[DEBUG] 로딩 스피너 숨김: ${target}`);
     }
 }
 

@@ -261,7 +261,7 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
         
         // 성과 요약 렌더링
         if (data.performance_summary) {
-            renderPerformanceSummary(data.performance_summary, null);
+            renderPerformanceSummary(data.performance_summary, data.total_orders);
         }
         
         // 업데이트 시간 표시
@@ -817,8 +817,8 @@ function renderPerformanceSummary(performanceData, totalOrders) {
     // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
     const visitors = data.total_visitors || 0;
     document.getElementById('total-visitors').textContent = visitors.toLocaleString();
-    // 웹버전과 동일하게 total_purchases 사용
-    const ordersCount = data.total_purchases || 0;
+    // 모바일 전용: total_orders 사용 (카페24 주문수)
+    const ordersCount = totalOrders || data.total_purchases || 0;
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
     // 매출대비 광고비 (백분율로 표시)
     const adSpendRatio = data.ad_spend_ratio || 0;

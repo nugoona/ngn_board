@@ -1,4 +1,5 @@
-# File: ngn_wep/dashboard/handlers/mobile_handler.py
+
+응응# File: ngn_wep/dashboard/handlers/mobile_handler.py
 import time
 import datetime
 import re
@@ -49,7 +50,7 @@ def get_total_orders_from_cafe24(company_name, start_date, end_date, user_id=Non
     query = f"""
         SELECT SUM(total_orders) AS total_orders
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-        WHERE payment_date BETWEEN @start_date AND @end_date
+        WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
           AND {company_filter}
     """
     

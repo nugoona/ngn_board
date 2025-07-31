@@ -181,9 +181,9 @@ function testLoadingSpinner() {
       'visibility': 'visible !important',
       'opacity': '1 !important',
       'pointer-events': 'auto !important',
-      'background': 'rgba(255, 255, 255, 0.95) !important',
-      'background-color': 'rgba(255, 255, 255, 0.95) !important',
-      'backdrop-filter': 'blur(4px) !important'
+      'background': 'transparent !important',
+      'background-color': 'transparent !important',
+      'backdrop-filter': 'none !important'
     });
     
     // 스피너와 텍스트도 강제 표시

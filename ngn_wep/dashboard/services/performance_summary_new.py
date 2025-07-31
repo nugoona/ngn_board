@@ -121,14 +121,13 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 더 간단한 쿼리로 최적화
+    # 🔥 업데이트 시간 쿼리 최적화 - 별도 쿼리로 분리
     query = f"""
         SELECT 
             COALESCE(SUM(spend), 0) AS total_spend,
             COALESCE(SUM(clicks), 0) AS total_clicks,
             COALESCE(SUM(purchases), 0) AS total_purchases,
-            COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
-            MAX(updated_at) AS updated_at
+            COALESCE(SUM(purchase_value), 0) AS total_purchase_value
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
         WHERE date BETWEEN @start_date AND @end_date
           AND {company_filter}
@@ -139,12 +138,16 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         client = get_bigquery_client()
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         row = list(result)[0]
+        
+        # 🔥 업데이트 시간은 별도로 간단하게 조회
+        updated_at = get_latest_updated_at_simple(company_name, start_date, end_date)
+        
         return {
             "total_spend": row.total_spend or 0,
             "total_clicks": row.total_clicks or 0,
             "total_purchases": row.total_purchases or 0,
             "total_purchase_value": row.total_purchase_value or 0,
-            "updated_at": row.updated_at
+            "updated_at": updated_at
         }
     except Exception as e:
         print(f"[ERROR] 메타 광고 요약 조회 오류: {e}")
@@ -155,6 +158,48 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
             "total_purchase_value": 0,
             "updated_at": None
         }
+
+def get_latest_updated_at_simple(company_name, start_date: str, end_date: str):
+    """
+    ✅ 최신 업데이트 시간 조회 (최적화)
+    """
+    query_params = []
+    
+    # 업체 필터 처리
+    if isinstance(company_name, list):
+        filtered_companies = [name.lower() for name in company_name]
+        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
+    else:
+        company_name = company_name.lower()
+        company_filter = "LOWER(company_name) = @company_name"
+        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
+    
+    # 날짜 파라미터
+    query_params.extend([
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
+    ])
+    
+    # 🔥 최적화된 업데이트 시간 쿼리
+    query = f"""
+        SELECT updated_at
+        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
+        WHERE date BETWEEN @start_date AND @end_date
+          AND {company_filter}
+          AND updated_at IS NOT NULL
+        ORDER BY updated_at DESC
+        LIMIT 1
+    """
+    
+    try:
+        client = get_bigquery_client()
+        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
+        rows = list(result)
+        return rows[0].updated_at if rows else None
+    except Exception as e:
+        print(f"[ERROR] 업데이트 시간 조회 오류: {e}")
+        return None
 
 def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_id: str = None):
     """

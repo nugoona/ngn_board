@@ -66,9 +66,8 @@ function fetchMetaAdsData(page) {
         requestData.date_sort = $("#metaDateSort").val();
     }
 
-    showLoading("#loadingOverlayMetaAds");
-    // ✅ 로딩 시 wrapper에 loading 클래스 추가
-    document.querySelector('.meta-ads-wrapper')?.classList.add("loading");
+    // ✅ 모든 로딩 애니메이션 표시
+    $(".loading-overlay").show();
 
     $.ajax({
         url: "/dashboard/get_data",
@@ -90,9 +89,8 @@ function fetchMetaAdsData(page) {
             console.error(`[ERROR] Meta Ads 서버 오류: ${textStatus}, ${errorThrown}`, jqXHR);
         },
         complete: function () {
-            hideLoading("#loadingOverlayMetaAds");
-            // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
-            document.querySelector('.meta-ads-wrapper')?.classList.remove("loading");
+            // ✅ 모든 로딩 애니메이션 숨김
+            $(".loading-overlay").hide();
         }
     });
 }

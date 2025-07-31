@@ -61,38 +61,68 @@
 
 <!-- ✅ 메타 광고 성과 테이블 -->
 <div class="container meta-ads-wrapper">
-  {% include 'components/meta_ads_insight_table.html' %}
+  <section class="table-wrapper full-wide loading-check-wrapper" data-widget-id="meta-ads-insight">
+    <h2 class="summary-section-title">META 광고 성과</h2>
+    
+    <!-- ✅ 로딩 스피너 -->
+    <div id="loadingOverlayMetaAdsInsight" class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">데이터를 불러오는 중입니다...</div>
+    </div>
+    
+    <div class="table-content-container">
+      {% include 'components/meta_ads_insight_table.html' %}
+    </div>
+  </section>
 </div>
 
 <!-- ✅ 캠페인 목표별 요약 테이블 (토글) -->
 <div id="typeSummaryContainer" class="container" style="display: none;">
-  {% include 'components/meta_ads_adset_summary_by_type_table.html' %}
+  <section class="table-wrapper full-wide loading-check-wrapper" data-widget-id="meta-ads-type-summary">
+    <h2 class="summary-section-title">캠페인 목표별 성과 요약</h2>
+    
+    <!-- ✅ 로딩 스피너 -->
+    <div id="loadingOverlayTypeSummary" class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">데이터를 불러오는 중입니다...</div>
+    </div>
+    
+    <div class="table-content-container">
+      {% include 'components/meta_ads_adset_summary_by_type_table.html' %}
+    </div>
+  </section>
 </div>
 
 <!-- ✅ 광고 미리보기 + 슬라이드/콜렉션 광고 -->
 <div class="container">
   <div class="tables-row">
     <!-- 좌측: 단일 이미지/영상 -->
-    <section class="table-wrapper left-wide">
-      <div class="preview-wrapper">
-        <h2 class="summary-section-title">LIVE 광고 미리보기 - 단일 이미지/영상</h2>
-        <div id="previewLoading" class="loading-overlay" style="display: none;">
-          <div class="spinner"></div>
-          <div class="loading-text">로딩 중...</div>
-        </div>
+    <section class="table-wrapper left-wide loading-check-wrapper" data-widget-id="ads-preview">
+      <h2 class="summary-section-title">LIVE 광고 미리보기 - 단일 이미지/영상</h2>
+      
+      <!-- ✅ 로딩 스피너 -->
+      <div id="loadingOverlayAdsPreview" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+      
+      <div class="table-content-container">
         <div id="previewCardContainer" style="margin-top: 20px;"></div>
         {% include 'components/meta_ads_preview_cards.html' %}
       </div>
     </section>
 
     <!-- 우측: 슬라이드/콜렉션 광고 -->
-    <section class="table-wrapper right-narrow">
-      <div class="preview-wrapper">
-        <h2 class="summary-section-title">LIVE 광고 미리보기 - 슬라이드/콜렉션[실계정]</h2>
-        <div id="slideCollectionLoading" class="loading-overlay" style="display: none;">
-          <div class="spinner"></div>
-          <div class="loading-text">로딩 중...</div>
-        </div>
+    <section class="table-wrapper right-narrow loading-check-wrapper" data-widget-id="slide-collection">
+      <h2 class="summary-section-title">LIVE 광고 미리보기 - 슬라이드/콜렉션[실계정]</h2>
+      
+      <!-- ✅ 로딩 스피너 -->
+      <div id="loadingOverlaySlideCollection" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+      
+      <div class="table-content-container">
         <div id="slideCollectionContainer" class="table-content-container" style="margin-top: 20px; overflow-x: auto;">
           {% include 'components/meta_ads_slide_collection_table.html' %}
         </div>
@@ -105,24 +135,23 @@
 {% include "components/catalog_sidebar.html" %}
 
 <!-- ✅ 공통 유틸 (캐시 버전 통일) -->
-<script src="{{ url_for('static', filename='js/common.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}?v=2.2"></script>
-
-<!-- ✅ JS 모듈 (캐시 버전 통일) -->
-<script type="module" src="{{ url_for('static', filename='js/dashboard.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_state.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_tags.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_preview.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_slide_collection.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/meta_ads_adset_summary_by_type.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/catalog_sidebar.js') }}?v=2.2"></script>
-<script type="module" src="{{ url_for('static', filename='js/filters.js') }}?v=2.2"></script>
-
-<!-- ✅ 기타 공통 JS -->
-<script src="{{ url_for('static', filename='js/pagination.js') }}?v=2.2"></script>
-<script src="{{ url_for('static', filename='js/session_timeout.js') }}?v=2.2"></script>
+<!-- ✅ JS 로딩 -->
+<!-- 🔥 common.js를 가장 먼저 로드 (showLoading/hideLoading 함수 정의) -->
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/meta_ads_insight_table.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/filters.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+<!-- 🔥 dashboard.js는 common.js 로드 후에 실행 -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=1.2"></script>
+<script src="{{ url_for('static', filename='js/meta_ads.js') }}"></script>
+<script src="{{ url_for('static', filename='js/meta_ads_preview.js') }}"></script>
+<script src="{{ url_for('static', filename='js/meta_ads_slide_collection.js') }}"></script>
+<script src="{{ url_for('static', filename='js/meta_ads_adset_summary_by_type.js') }}"></script>
+<script src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/session_timeout.js') }}?v=1.1"></script>
+<script type="module" src="{{ url_for('static', filename='js/loading_utils.js') }}?v=1.1"></script>
+<script type="module" src="{{ url_for('static', filename='js/request_utils.js') }}?v=1.1"></script>
+<script type="module" src="{{ url_for('static', filename='js/fetch_data.js') }}?v=1.1"></script>
 
 </body>
 </html>

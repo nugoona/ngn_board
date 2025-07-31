@@ -210,7 +210,7 @@ async function fetchMobileData() {
         
         console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         
-        // 웹버전과 동일하게 순차 처리로 변경
+        // 웹버전과 동일하게 순차 처리로 최적화
         console.log('🔄 순차 처리로 데이터 로딩 시작...');
         
         // 1. 성과 요약 데이터

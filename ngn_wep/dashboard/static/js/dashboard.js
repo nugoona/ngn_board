@@ -123,20 +123,20 @@ async function updateAllData() {
   // 🔥 즉시 의존성 로딩 스피너 시작 - 필터 변경 시에도 작동
   debugLog("🔄 의존성 로딩 스피너 시작 - 필터 변경 감지");
   
-  // 🔥 모든 위젯의 로딩 스피너 즉시 표시
+  // 🔥 모든 위젯의 로딩 스피너 표시 (사용자 경험 개선)
   const loadingOverlays = [
-    "#loadingOverlayPerformanceSummary",  // 🔥 복구 - 연계성 유지
-    "#loadingOverlayCafe24Sales", 
-    "#loadingOverlayCafe24Products",
-    "#loadingOverlayGa4Source",
-    "#loadingOverlayViewitemSummary",
-    "#loadingOverlayProductSalesRatio"
+    "#loadingOverlayPerformanceSummary",  // 성과 요약
+    "#loadingOverlayCafe24Sales",        // 카페24 매출
+    "#loadingOverlayCafe24Products",     // 카페24 상품판매
+    "#loadingOverlayGa4Source",          // GA4 소스별 유입
+    "#loadingOverlayViewitemSummary",    // 상품 조회 요약
+    "#loadingOverlayProductSalesRatio"   // 상품 판매 비율
   ];
   
   loadingOverlays.forEach(overlayId => {
     const overlay = $(overlayId);
     if (overlay.length > 0) {
-      debugLog(`✅ ${overlayId} 로딩 스피너 즉시 표시`);
+      debugLog(`✅ ${overlayId} 로딩 스피너 표시`);
       showLoading(overlayId);
     } else {
       debugLog(`⚠️ ${overlayId} 로딩 오버레이를 찾을 수 없음`);

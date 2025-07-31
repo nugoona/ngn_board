@@ -2,30 +2,28 @@
 
 // 로딩 상태 관리 함수들
 function showLoading(target) {
-  console.log("🔄 showLoading called for:", target);
+  // 🔥 성능 최적화: 프로덕션에서는 로그 비활성화
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // 프로덕션에서는 로그 출력 안함
+  } else {
+    console.log("🔄 showLoading called for:", target);
+  }
   
   const $target = $(target);
-  console.log("Target element:", $target);
-  console.log("Target length:", $target.length);
   
   if ($target.length === 0) {
-    console.error("❌ Target element not found:", target);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.error("❌ Target element not found:", target);
+    }
     return;
   }
   
-  // 🔥 더 강력한 스타일 설정 - 다른 코드가 덮어쓰지 못하도록
-  $target.css({
-    'display': 'flex !important',
-    'visibility': 'visible !important',
-    'opacity': '1 !important',
-    'pointer-events': 'auto !important'
-  });
+  // 🔥 성능 최적화: 단순한 스타일 설정
+  $target.css('display', 'flex');
   
-  // 🔥 인라인 스타일로도 강제 설정
-  $target.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;');
-  
-  console.log("✅ Loading started for:", target);
-  console.log("Final display style:", $target.css('display'));
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log("✅ Loading started for:", target);
+  }
 }
 
 function hideLoading(target) {

@@ -296,23 +296,23 @@ function updateUpdatedAtText(updatedAtStr) {
     }
 
     try {
-        const updatedAt = new Date(updatedAtStr);
-        const now = new Date();
-        const diffMs = now - updatedAt;
-        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const utc = new Date(updatedAtStr);
 
-        let timeText;
-        if (diffMins < 1) {
-            timeText = "방금 전";
-        } else if (diffMins < 60) {
-            timeText = `${diffMins}분 전`;
-        } else {
-            const diffHours = Math.floor(diffMins / 60);
-            timeText = `${diffHours}시간 전`;
-        }
+        // 시간만 보정 (날짜는 그대로 유지)
+        const hours = utc.getUTCHours() + 9;
+        const adjustedHour = hours % 24;
+        const carryDate = hours >= 24 ? 1 : 0;
 
-        updatedAtElement.text(`최종 업데이트: ${timeText}`);
-        console.log(`[DEBUG] 업데이트 시간 설정: ${timeText} (${updatedAtStr})`);
+        const year = utc.getUTCFullYear();
+        const month = utc.getUTCMonth() + 1;
+        const date = utc.getUTCDate();  // 날짜는 그대로 유지
+        const finalDate = date + carryDate;
+
+        const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
+
+        const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+        updatedAtElement.text(`최종 업데이트: ${formatted}`);
+        console.log(`[DEBUG] 업데이트 시간 설정: ${formatted} (${updatedAtStr})`);
     } catch (error) {
         console.error("[ERROR] 업데이트 시간 파싱 오류:", error);
         updatedAtElement.text("최종 업데이트: -");

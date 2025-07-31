@@ -30,12 +30,12 @@ def run_query(process_date):
               SUM(r.total_refund_amount) AS total_refund_amount  
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` AS r
           JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
-          ON r.order_id = o.order_id  
-          JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
-          ON o.mall_id = c.mall_id  
+              ON r.order_id = o.order_id
+              AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
+          JOIN `winged-precept-443218-v8.ngn_dataset.company_info` c
+              ON o.mall_id = c.mall_id
+              AND r.mall_id = c.mall_id  -- 환불 데이터의 몰과 업체 정보 매칭
           WHERE DATE(TIMESTAMP(r.refund_date)) = '{process_date}'
-          AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
-          AND o.mall_id = c.mall_id  -- 동일한 몰의 업체 정보만 매칭
           GROUP BY o.mall_id, c.company_name, refund_date
       ),
 

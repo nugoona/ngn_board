@@ -255,6 +255,18 @@ body {
   -webkit-backdrop-filter: blur(2px) !important;
 }
 
+/* 🔥 더 강력한 블러 효과 적용 */
+.table-wrapper.loading,
+.table-wrapper:has(.loading-overlay[style*="display: flex"]),
+.table-wrapper:has(.loading-overlay[style*="display:flex"]),
+.table-wrapper:has(.loading-overlay) {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  filter: blur(0.5px) !important;
+}
+
 /* ✅ 기존 테이블 스타일 (호환성 유지) */
 thead th {
   position: sticky;
@@ -599,6 +611,13 @@ th {
   border: 1px solid var(--border-light);
 }
 
+/* 🔥 성과 요약 섹션 로딩 시 배경 투명화 */
+.performance-summary-wrapper.loading .performance-summary-section {
+  background: transparent !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}
+
 /* ✅ 제목 스타일 */
 .summary-header {
   font-size: 20px;
@@ -700,6 +719,13 @@ th {
   border: 1px solid var(--border-light);
   position: relative;
   overflow: hidden;
+}
+
+/* 🔥 성과 요약 카드 로딩 시 배경 투명화 */
+.performance-summary-wrapper.loading .summary-card {
+  background: transparent !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
 }
 
 .summary-card::before {

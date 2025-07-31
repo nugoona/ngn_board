@@ -207,10 +207,20 @@ def get_dashboard_data_route():
                     )
                     t2 = time.time()
                     timing_log["performance_summary"] = round(t2-t1, 3)
-                    return ("performance_summary", performance_data[offset:offset + limit], len(performance_data), max([
-                        str(row.get("updated_at"))[:16].replace(" ", "-").replace(":", "-")
-                        for row in performance_data if row.get("updated_at")
-                    ], default=None))
+                    
+                    # 🔥 ISO 형식으로 날짜 변환 (JavaScript에서 파싱 가능)
+                    latest_update = None
+                    if performance_data:
+                        for row in performance_data:
+                            if row.get("updated_at"):
+                                # datetime 객체를 ISO 형식 문자열로 변환
+                                if hasattr(row["updated_at"], 'isoformat'):
+                                    latest_update = row["updated_at"].isoformat()
+                                else:
+                                    latest_update = str(row["updated_at"])
+                                break
+                    
+                    return ("performance_summary", performance_data[offset:offset + limit], len(performance_data), latest_update)
                 fetch_tasks.append(executor.submit(fetch_performance))
             
             # Cafe24 Sales

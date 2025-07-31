@@ -1,0 +1,482 @@
+/* Base styles */
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: rgb(234, 234, 234);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+:root {
+    --header-height: 56px;
+    --header-bg: rgba(234, 234, 234, 0.98);
+    --header-border: rgba(34, 34, 34, 0.05);
+    --text-color: rgb(17, 17, 17);
+}
+
+/* Navigation */
+.site-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--header-height);
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    z-index: 1000;
+}
+
+.nav-inner {
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-brand a {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--text-color);
+    letter-spacing: -0.02em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 32px;
+    margin: 0 auto;
+    padding: 0 32px;
+}
+
+.nav-links a {
+    font-family: 'Pretendard', sans-serif;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    opacity: 0.65;
+    transition: opacity 0.2s ease;
+    padding: 4px 0;
+}
+
+.nav-links a:hover {
+    opacity: 1;
+}
+
+.nav-links a.active {
+    opacity: 1;
+    font-weight: 600;
+}
+
+/* Hero Section */
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(400px, 35%) 1fr;
+    overflow: hidden;
+    margin-top: var(--header-height);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 3;
+    text-align: left;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hero-video-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - var(--header-height));
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-video {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+.text-group {
+    position: relative;
+    max-width: 32rem;
+    padding-left: 3rem;
+    border-left: 2px solid rgba(17, 17, 17, 0.2);
+}
+
+.mega-text {
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-family: 'Pretendard', sans-serif;
+}
+
+.mega-text .main-title {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 4.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: rgb(17, 17, 17);
+    margin-bottom: 1.5rem;
+    white-space: nowrap;
+}
+
+.sub-list {
+    list-style: none;
+    padding: 0;
+    margin: -0.5rem 0 0 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sub-list li {
+    display: flex;
+    align-items: center;
+}
+
+.sub-list li:first-child:after {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background-color: rgba(17, 17, 17, 0.4);
+    border-radius: 50%;
+    margin-left: 1rem;
+}
+
+.mega-text .sub-title {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: rgba(17, 17, 17, 0.9);
+    white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .mega-text .main-title {
+        font-size: 3.75rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .mega-text .sub-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-inner {
+        padding: 0 16px;
+    }
+
+    .nav-brand a {
+        font-size: 20px;
+    }
+
+    .nav-links {
+        gap: 16px;
+        padding: 0 16px;
+    }
+
+    .nav-links a {
+        font-size: 13px;
+    }
+
+    .mega-text .main-title {
+        font-size: 2.75rem;
+        margin-bottom: 1rem;
+        white-space: normal;
+    }
+    
+    .mega-text .sub-title {
+        font-size: 1.5rem;
+    }
+    
+    .hero-content {
+        padding: 2rem;
+    }
+    
+    .text-group {
+        padding-left: 2rem;
+    }
+
+    .sub-list {
+        margin: 0;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .sub-list li:first-child:after {
+        display: none;
+    }
+} 
+
+/* Advantages Section */
+.advantages-section {
+    padding: 12rem 2rem;
+    background-color: rgb(234, 234, 234);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.section-header {
+    margin-bottom: 8rem;
+    position: relative;
+}
+
+.section-header h2 {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 7rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: rgb(17, 17, 17);
+    line-height: 1;
+    margin: 0;
+}
+
+.advantages-grid {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    position: relative;
+}
+
+.advantage-card {
+    position: relative;
+    background: rgb(245, 245, 245);
+    aspect-ratio: 3/4;
+    overflow: hidden;
+    border-radius: 24px;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+}
+
+.advantage-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.08);
+}
+
+.card-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.5s ease;
+}
+
+.card-image::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        180deg,
+        rgba(17, 17, 17, 0) 0%,
+        rgba(17, 17, 17, 0.85) 70%,
+        rgba(17, 17, 17, 0.95) 100%
+    );
+    z-index: 1;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.advantage-card:hover .card-image::before {
+    opacity: 1;
+}
+
+.card-number {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 4rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.15);
+    line-height: 1;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: linear-gradient(
+        180deg,
+        rgba(17, 17, 17, 0.4) 0%,
+        rgba(17, 17, 17, 0.85) 50%,
+        rgba(17, 17, 17, 0.95) 100%
+    );
+}
+
+.advantage-card:hover .card-content {
+    opacity: 1;
+}
+
+.content-wrapper {
+    padding: 2rem;
+    width: 100%;
+    text-align: center;
+    transform: translateY(20px);
+    transition: transform 0.5s ease;
+}
+
+.advantage-card:hover .content-wrapper {
+    transform: translateY(0);
+}
+
+.card-content h3 {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.card-content p {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 auto;
+    max-width: 280px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .section-header h2 {
+        font-size: 5rem;
+    }
+    
+    .advantages-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+
+    .card-number {
+        font-size: 3rem;
+        top: 1.5rem;
+        left: 1.5rem;
+    }
+
+    .card-content {
+        padding: 2rem;
+    }
+    
+    .content-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .card-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .advantages-section {
+        padding: 6rem 1rem;
+    }
+
+    .section-header {
+        margin-bottom: 4rem;
+    }
+
+    .section-header h2 {
+        font-size: 3rem;
+    }
+
+    .advantages-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .card-content {
+        opacity: 1;
+        background: linear-gradient(
+            180deg,
+            rgba(17, 17, 17, 0.7) 0%,
+            rgba(17, 17, 17, 0.9) 100%
+        );
+    }
+    
+    .content-wrapper {
+        transform: translateY(0);
+        padding: 1.25rem;
+    }
+    
+    .card-content p {
+        font-size: 0.9rem;
+        max-width: 240px;
+    }
+
+    .card-image::before {
+        opacity: 1;
+    }
+
+    .advantage-card {
+        border-radius: 16px;
+    }
+
+    .sub-list {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .sub-list li:first-child:after {
+        display: none;
+    }
+    
+    .mega-text .sub-title {
+        font-size: 1.75rem;
+        white-space: normal;
+    }
+} 

@@ -1,5 +1,5 @@
 
-응응# File: ngn_wep/dashboard/handlers/mobile_handler.py
+# File: ngn_wep/dashboard/handlers/mobile_handler.py
 import time
 import datetime
 import re

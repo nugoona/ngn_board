@@ -17,9 +17,6 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
     """
     print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
     
-    # 🔥 캐시 완전 비활성화
-    print("[DEBUG] 캐시 완전 비활성화 - 새로운 데이터 조회")
-    
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
 
@@ -136,12 +133,20 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     
     query_params = []
     
-    # 업체 필터 처리
+    # 업체 필터 처리 - 리스트와 단일 값 모두 처리
     if isinstance(company_name, list):
-        filtered_companies = [name.lower() for name in company_name]
-        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
-        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
+        if len(company_name) == 1:
+            # 단일 값 리스트인 경우 문자열로 변환
+            company_name = company_name[0]
+            company_filter = "LOWER(company_name) = @company_name"
+            query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name.lower()))
+        else:
+            # 복수 값 리스트인 경우
+            filtered_companies = [name.lower() for name in company_name]
+            company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+            query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
     else:
+        # 단일 문자열인 경우
         company_name = company_name.lower()
         company_filter = "LOWER(company_name) = @company_name"
         query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))

@@ -51,7 +51,7 @@ def execute_bigquery(process_type="today"):
       JOIN `winged-precept-443218-v8.ngn_dataset.mall_mapping` AS m
         ON o.mall_id = m.mall_id
       WHERE o.mall_id IN (SELECT mall_id FROM valid_mall_ids)
-        AND DATE(o.payment_date) BETWEEN DATE('{start_date}') AND DATE('{end_date}')
+        AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) BETWEEN DATE('{start_date}') AND DATE('{end_date}')
         AND m.company_name IS NOT NULL 
     ),
     CanceledOrders AS (

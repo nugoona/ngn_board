@@ -966,11 +966,23 @@ function renderMetaAccountFilter(accounts) {
             console.log('🏢 계정 1개 자동 선택:', accountId);
             fetchMetaAdsByAccount(accountId);
         } else if (accounts.length > 1) {
-            // 계정이 여러 개인 경우 첫 번째 계정 자동 선택
-            const accountId = accounts[0].account_id;
-            metaAccountSelect.value = accountId;
-            console.log('🏢 계정 여러 개 - 첫 번째 계정 자동 선택:', accountId);
-            fetchMetaAdsByAccount(accountId);
+            // 계정이 여러 개인 경우 "공홈"이 포함된 계정 우선 선택
+            let selectedAccount = accounts[0]; // 기본값은 첫 번째 계정
+            
+            // "공홈"이 포함된 계정 찾기
+            const gonghomAccount = accounts.find(account => 
+                account.account_name && account.account_name.includes('공홈')
+            );
+            
+            if (gonghomAccount) {
+                selectedAccount = gonghomAccount;
+                console.log('🏢 "공홈" 포함 계정 자동 선택:', selectedAccount.account_id, selectedAccount.account_name);
+            } else {
+                console.log('🏢 "공홈" 포함 계정이 없어 첫 번째 계정 자동 선택:', selectedAccount.account_id);
+            }
+            
+            metaAccountSelect.value = selectedAccount.account_id;
+            fetchMetaAdsByAccount(selectedAccount.account_id);
         }
     }
     

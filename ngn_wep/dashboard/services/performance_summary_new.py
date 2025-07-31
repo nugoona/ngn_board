@@ -140,7 +140,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
             SUM(spend) AS total_spend,
             SUM(clicks) AS total_clicks,
             SUM(purchases) AS total_purchases,
-            SUM(purchase_value) AS total_purchase_value
+            SUM(purchase_value) AS total_purchase_value,
+            MAX(updated_at) AS updated_at
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
         WHERE date BETWEEN @start_date AND @end_date
           AND {company_filter}
@@ -155,7 +156,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
             "total_spend": row.total_spend or 0,
             "total_clicks": row.total_clicks or 0,
             "total_purchases": row.total_purchases or 0,
-            "total_purchase_value": row.total_purchase_value or 0
+            "total_purchase_value": row.total_purchase_value or 0,
+            "updated_at": row.updated_at
         }
     except Exception as e:
         print(f"[ERROR] 메타 광고 요약 조회 오류: {e}")
@@ -163,7 +165,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
             "total_spend": 0,
             "total_clicks": 0,
             "total_purchases": 0,
-            "total_purchase_value": 0
+            "total_purchase_value": 0,
+            "updated_at": None
         }
 
 def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_id: str = None):
@@ -226,6 +229,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
     total_purchases = meta_ads_data.get('total_purchases', 0)
     total_purchase_value = meta_ads_data.get('total_purchase_value', 0)
     total_clicks = meta_ads_data.get('total_clicks', 0)
+    updated_at = meta_ads_data.get('updated_at')
     
     # 계산된 값들
     roas_percentage = (total_purchase_value / ad_spend * 100) if ad_spend > 0 else 0
@@ -235,7 +239,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
     # 결과 구성
     result = {
         "date_range": f"{start_date} ~ {end_date}",
-        "ad_media": "meta",
+        "ad_media": "meta",  # ← 진행중인 광고 정보
         "ad_spend": round(ad_spend, 2),
         "total_clicks": total_clicks,
         "total_purchases": total_purchases,
@@ -246,7 +250,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
         "total_orders": total_orders,  # 카페24에서 가져온 주문수
         "total_visitors": total_visitors,
         "ad_spend_ratio": round(ad_spend_ratio, 2),
-        "updated_at": None  # 실시간 데이터이므로 None
+        "updated_at": updated_at  # ← 업데이트 시간 정보
     }
     
     return [result] 

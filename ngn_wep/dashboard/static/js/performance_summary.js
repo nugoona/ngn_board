@@ -53,7 +53,7 @@ async function fetchPerformanceSummaryData() {
         return;
     }
 
-    // 🔥 단순화된 로딩 스피너
+    // 🔥 로딩 스피너 표시
     showLoading("#loadingOverlayPerformanceSummary");
 
     const today = new Date().toISOString().split("T")[0];
@@ -102,18 +102,19 @@ async function fetchPerformanceSummaryData() {
         updatePerformanceSummaryCards([]);
         updateUpdatedAtText(null);
     } finally {
-        // 🔥 단순화된 로딩 완료
+        // 🔥 로딩 완료
         hideLoading("#loadingOverlayPerformanceSummary");
     }
 }
 
-// 🔥 단순화된 로딩 함수들 (기존 복잡한 로직 제거)
+// 🔥 단순화된 로딩 함수들
 function showLoading(target) {
     const element = document.querySelector(target);
     if (element) {
         element.style.display = 'flex';
         element.style.visibility = 'visible';
         element.style.opacity = '1';
+        console.log(`[DEBUG] 로딩 스피너 표시: ${target}`);
     }
 }
 
@@ -123,6 +124,7 @@ function hideLoading(target) {
         element.style.display = 'none';
         element.style.visibility = 'hidden';
         element.style.opacity = '0';
+        console.log(`[DEBUG] 로딩 스피너 숨김: ${target}`);
     }
 }
 
@@ -181,14 +183,10 @@ function setCardValue(cardId, rawValue, decimal = 0, suffix = "") {
         }
     }
 
-    // 숫자 포맷팅
+    // 🔥 K 표시 제거하고 실제 숫자 그대로 표시
     let formattedValue;
     if (numValue === 0) {
         formattedValue = "0";
-    } else if (numValue >= 1000000) {
-        formattedValue = (numValue / 1000000).toFixed(decimal) + "M";
-    } else if (numValue >= 1000) {
-        formattedValue = (numValue / 1000).toFixed(decimal) + "K";
     } else {
         formattedValue = numValue.toFixed(decimal);
     }

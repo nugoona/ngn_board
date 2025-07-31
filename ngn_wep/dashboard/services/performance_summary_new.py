@@ -169,7 +169,6 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         LEFT JOIN latest_accounts L ON A.account_id = L.account_id
         WHERE A.date BETWEEN @start_date AND @end_date
           AND LOWER(L.company_name) = LOWER(@company_name)
-          AND (A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')
         GROUP BY L.company_name
         HAVING SUM(A.spend) > 0
         LIMIT 1

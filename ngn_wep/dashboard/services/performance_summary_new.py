@@ -7,7 +7,7 @@ from .meta_ads_insight import get_meta_ads_insight_table
 def get_bigquery_client():
     return bigquery.Client()
 
-@cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
+# @cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
 def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
@@ -145,34 +145,59 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 meta_ads_account_summary 테이블 사용 (meta_ads_insight.py와 동일)
-    # Instagram 캠페인 제외 로직 추가
+    # 🔥 meta_ads_insight.py와 동일한 로직 사용
+    # latest join과 spend > 0 조건 추가
     query = f"""
+        WITH latest_accounts AS (
+          SELECT * EXCEPT(rn) FROM (
+            SELECT account_id,
+                   account_name,
+                   company_name,
+                   ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY updated_at DESC) AS rn
+            FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
+          )
+          WHERE rn = 1
+        )
+        
         SELECT 
-            COALESCE(SUM(spend), 0) AS total_spend,
-            COALESCE(SUM(clicks), 0) AS total_clicks,
-            COALESCE(SUM(purchases), 0) AS total_purchases,
-            COALESCE(SUM(purchase_value), 0) AS total_purchase_value,
-            MAX(updated_at) AS updated_at
-        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary`
-        WHERE date BETWEEN @start_date AND @end_date
+            COALESCE(SUM(A.spend), 0) AS total_spend,
+            COALESCE(SUM(A.clicks), 0) AS total_clicks,
+            COALESCE(SUM(A.purchases), 0) AS total_purchases,
+            COALESCE(SUM(A.purchase_value), 0) AS total_purchase_value,
+            MAX(A.updated_at) AS updated_at
+        FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` A
+        LEFT JOIN latest_accounts L ON A.account_id = L.account_id
+        WHERE A.date BETWEEN @start_date AND @end_date
           AND {company_filter}
-          AND (campaign_name IS NULL OR NOT LOWER(campaign_name) LIKE '%instagram%')
+          AND (A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')
+        GROUP BY L.company_name
+        HAVING SUM(A.spend) > 0
         LIMIT 1
     """
     
     try:
         client = get_bigquery_client()
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-        row = list(result)[0]
+        rows = list(result)
         
-        result_data = {
-            "total_spend": row.total_spend or 0,
-            "total_clicks": row.total_clicks or 0,
-            "total_purchases": row.total_purchases or 0,
-            "total_purchase_value": row.total_purchase_value or 0,
-            "updated_at": row.updated_at
-        }
+        if rows:
+            row = rows[0]
+            result_data = {
+                "total_spend": row.total_spend or 0,
+                "total_clicks": row.total_clicks or 0,
+                "total_purchases": row.total_purchases or 0,
+                "total_purchase_value": row.total_purchase_value or 0,
+                "updated_at": row.updated_at
+            }
+        else:
+            # 데이터가 없으면 기본값 반환
+            result_data = {
+                "total_spend": 0,
+                "total_clicks": 0,
+                "total_purchases": 0,
+                "total_purchase_value": 0,
+                "updated_at": None
+            }
         
         return result_data
         

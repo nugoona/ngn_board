@@ -7,7 +7,7 @@ from .meta_ads_insight import get_meta_ads_insight_table
 def get_bigquery_client():
     return bigquery.Client()
 
-@cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
+# @cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
 def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
@@ -170,7 +170,6 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         LEFT JOIN latest_accounts L ON A.account_id = L.account_id
         WHERE A.date BETWEEN @start_date AND @end_date
           AND LOWER(L.company_name) = LOWER(@company_name)
-          AND (A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')
         GROUP BY L.company_name
         HAVING SUM(A.spend) > 0
         LIMIT 1

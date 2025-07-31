@@ -7,7 +7,7 @@ from .meta_ads_insight import get_meta_ads_insight_table
 def get_bigquery_client():
     return bigquery.Client()
 
-# @cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
+@cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
 def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
@@ -16,7 +16,6 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
     - 계산: 매출 대비 광고비 실시간 계산
     """
     print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
-    print(f"[DEBUG] 캐시 비활성화됨 - 새로운 데이터 조회")
     
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
@@ -128,7 +127,7 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
 
 def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     """
-    ✅ 메타 광고 요약 (성과 요약용 최적화) - 업데이트 시간 포함
+    ✅ 메타 광고 요약 (성과 요약용 최적화) - meta_ads_insight.py와 동일한 로직 사용
     """
     query_params = []
     
@@ -149,7 +148,6 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
     ])
     
     # 🔥 meta_ads_insight.py와 동일한 로직 사용
-    # latest join과 spend > 0 조건 추가
     query = f"""
         WITH latest_accounts AS (
           SELECT * EXCEPT(rn) FROM (
@@ -172,6 +170,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         LEFT JOIN latest_accounts L ON A.account_id = L.account_id
         WHERE A.date BETWEEN @start_date AND @end_date
           AND LOWER(L.company_name) = LOWER(@company_name)
+          AND (A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')
         GROUP BY L.company_name
         HAVING SUM(A.spend) > 0
         LIMIT 1

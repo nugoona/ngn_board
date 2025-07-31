@@ -26,17 +26,17 @@ function showLoading(target) {
     $tableWrapper.addClass('loading');
   }
   
-  // ✅ 로딩 스피너 표시 - 살짝 블러 효과만 적용
+  // ✅ 로딩 스피너 표시 - 완전 투명 배경
   $target.attr('style', `
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
     z-index: 1000 !important;
-    background: rgba(255, 255, 255, 0.3) !important;
-    background-color: rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(2px) !important;
-    -webkit-backdrop-filter: blur(2px) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   `);
   
   // 스피너만 보이도록 설정 (텍스트는 숨김)

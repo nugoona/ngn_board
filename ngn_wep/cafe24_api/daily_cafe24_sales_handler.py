@@ -38,7 +38,7 @@ def run_query(process_date):
           JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
               ON r.order_id = o.order_id
               AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
-          WHERE DATE(TIMESTAMP(r.refund_date)) = '{process_date}'
+          WHERE DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) = '{process_date}'
           GROUP BY o.mall_id, c.company_name, refund_date
       ),
 

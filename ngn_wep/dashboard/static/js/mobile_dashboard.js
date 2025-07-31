@@ -382,7 +382,7 @@ async function fetchMetaAccounts() {
         const companySelect = document.getElementById('accountFilter');
         const companyName = companySelect ? companySelect.value : 'all';
         
-        const response = await fetch('/dashboard/get_meta_accounts', {
+        const response = await fetch('/mobile/get_meta_accounts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

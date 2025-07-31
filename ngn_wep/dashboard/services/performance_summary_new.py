@@ -1,7 +1,7 @@
 from google.cloud import bigquery
 from ..utils.cache_utils import cached_query
-from .cafe24_sales import get_cafe24_sales_data
-from .meta_ads_account_summary import get_meta_ads_account_summary
+from .cafe24_service import get_cafe24_sales_data
+from .meta_ads_insight import get_meta_ads_insight_table
 
 def get_bigquery_client():
     return bigquery.Client()
@@ -34,15 +34,16 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         )
         
         # 2. 메타 광고 계정 단위 성과 조회
-        meta_ads_data = get_meta_ads_account_summary(
+        meta_ads_data = get_meta_ads_insight_table(
+            level="account",
             company_name=company_name,
             start_date=start_date,
             end_date=end_date,
-            user_id=user_id
+            date_type="summary"
         )
         
         # 3. 데이터 조합 및 계산
-        result = combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date)
+        result = combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date, company_name, user_id)
         
         print(f"[DEBUG] performance_summary_new 결과: {len(result)}개")
         return result
@@ -51,7 +52,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         print("[ERROR] performance_summary_new 오류:", e)
         return []
 
-def combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date):
+def combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date, company_name, user_id):
     """
     카페24 매출과 메타 광고 데이터를 조합하여 성과 요약 생성
     """
@@ -62,11 +63,12 @@ def combine_performance_data(cafe24_data, meta_ads_data, start_date, end_date):
     # GA4 방문자 데이터 조회
     total_visitors = get_ga4_visitors(company_name, start_date, end_date, user_id)
     
-    # 메타 광고 데이터 집계
-    ad_spend = sum(row.get('spend', 0) for row in meta_ads_data)
-    total_purchases = sum(row.get('purchases', 0) for row in meta_ads_data)
-    total_purchase_value = sum(row.get('purchase_value', 0) for row in meta_ads_data)
-    total_clicks = sum(row.get('clicks', 0) for row in meta_ads_data)
+    # 메타 광고 데이터 집계 (insight_table은 딕셔너리 형태로 반환)
+    meta_ads_rows = meta_ads_data.get('rows', meta_ads_data) if isinstance(meta_ads_data, dict) else meta_ads_data
+    ad_spend = sum(row.get('spend', 0) for row in meta_ads_rows)
+    total_purchases = sum(row.get('purchases', 0) for row in meta_ads_rows)
+    total_purchase_value = sum(row.get('purchase_value', 0) for row in meta_ads_rows)
+    total_clicks = sum(row.get('clicks', 0) for row in meta_ads_rows)
     
     # 계산된 값들
     roas_percentage = (total_purchase_value / ad_spend * 100) if ad_spend > 0 else 0

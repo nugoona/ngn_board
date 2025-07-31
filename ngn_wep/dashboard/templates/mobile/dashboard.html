@@ -811,9 +811,6 @@
             line-height: 1.4;
             color: #262626;
         }
-            gap: 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
 
         .insta-avatar {
             width: 32px;
@@ -982,8 +979,10 @@
             left: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            backdrop-filter: blur(2px) !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
             display: none !important;
             justify-content: center !important;
             align-items: center !important;
@@ -994,14 +993,42 @@
             border-radius: 12px !important;
         }
 
-        /* 로딩 오버레이 강제 표시 (다른 스타일 덮어쓰기) */
+        /* 로딩 오버레이 강제 표시 (완전 투명하게) */
         .loading-overlay[style*="display: flex"] {
             display: flex !important;
             visibility: visible !important;
-            opacity: 1 !important;
+            opacity: 0 !important;
             z-index: 9999 !important;
-            background: rgba(255, 255, 255, 0.05) !important;
-            backdrop-filter: blur(2px) !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        /* 🔥 모든 로딩 오버레이에 대한 강력한 투명도 강제 적용 */
+        .loading-overlay,
+        .loading-overlay[style],
+        .loading-overlay[style*="background"],
+        .loading-overlay[style*="background-color"],
+        .loading-overlay[style*="backdrop-filter"],
+        .loading-overlay[style*="-webkit-backdrop-filter"] {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            opacity: 0 !important;
+        }
+
+        /* 모든 로딩 오버레이 ID에 대한 강력한 투명도 강제 적용 */
+        [id*="loadingOverlay"],
+        [id*="LoadingOverlay"],
+        [id*="loading-overlay"],
+        [id*="Loading-Overlay"] {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            opacity: 0 !important;
         }
 
         /* 스피너 스타일 */

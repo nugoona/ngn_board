@@ -746,6 +746,9 @@ th {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important; /* 투명 배경 */
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -756,12 +759,18 @@ th {
 /* ✅ 로딩 활성화 시 스피너 표시 */
 .performance-summary-wrapper.loading #loadingOverlayPerformanceSummary {
   display: flex !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 🔥 로딩 전환 시 하얀 배경 방지 - 성과 요약 전용 */
 #loadingOverlayPerformanceSummary {
   background: transparent !important; /* 항상 투명 배경 유지 */
+  background-color: transparent !important;
   backdrop-filter: none !important; /* backdrop-filter 제거 */
+  -webkit-backdrop-filter: none !important;
   opacity: 0 !important; /* 로딩 오버레이 완전 투명 */
 }
 
@@ -770,7 +779,9 @@ body #loadingOverlayPerformanceSummary[style],
 html #loadingOverlayPerformanceSummary[style],
 #loadingOverlayPerformanceSummary[style] {
   background: transparent !important;
+  background-color: transparent !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   opacity: 0 !important;
 }
 
@@ -778,16 +789,25 @@ html #loadingOverlayPerformanceSummary[style],
 body .performance-summary-wrapper.loading,
 html .performance-summary-wrapper.loading,
 .performance-summary-wrapper.loading {
-  backdrop-filter: blur(1px) !important; /* 가짜 로딩 시 약한 블러 */
-  -webkit-backdrop-filter: blur(1px) !important;
+  backdrop-filter: blur(2px) !important; /* 가짜 로딩 시 더 강한 블러 */
+  -webkit-backdrop-filter: blur(2px) !important;
   transition: backdrop-filter 0.3s ease !important;
+  /* 브라우저 호환성을 위한 추가 스타일 */
+  filter: blur(0.5px) !important;
+  opacity: 0.9 !important;
+  /* 하얀 배경 제거 */
+  background-color: transparent !important;
 }
 
 body .performance-summary-wrapper.loading.real-loading,
 html .performance-summary-wrapper.loading.real-loading,
 .performance-summary-wrapper.loading.real-loading {
-  backdrop-filter: blur(1px) !important; /* 진짜 로딩 시 약한 블러 */
-  -webkit-backdrop-filter: blur(1px) !important;
+  backdrop-filter: blur(2px) !important; /* 진짜 로딩 시 더 강한 블러 */
+  -webkit-backdrop-filter: blur(2px) !important;
+  filter: blur(0.5px) !important;
+  opacity: 0.9 !important;
+  /* 하얀 배경 제거 */
+  background-color: transparent !important;
 }
 
 /* 🔥 로딩 완료 시 블러 제거 - 최고 우선순위 */
@@ -796,21 +816,38 @@ html .performance-summary-wrapper:not(.loading),
 .performance-summary-wrapper:not(.loading) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  background-color: transparent !important;
 }
 
 /* 🔥 사이트 성과 요약만을 위한 특별한 배경 투명도 조정 */
 .performance-summary-wrapper.loading .summary-grid .summary-card {
-  opacity: 0.95 !important; /* 🔥 0.6 → 0.95로 증가하여 덜 뿌연 효과 */
+  opacity: 0.85 !important; /* 🔥 더 뿌연 효과로 변경 */
 }
 
-/* ✅ 다른 위젯들도 loading 클래스 처리 */
+/* ✅ 로딩 시 테이블 내용도 더 뿌연 효과 */
+.table-wrapper.loading .table-content-container,
+.monthly-sales-traffic-wrapper.loading .table-content-container,
+.product-sales-ratio-wrapper.loading .table-content-container,
+.platform-sales-summary-wrapper.loading .table-content-container {
+  opacity: 0.85 !important;
+  filter: blur(0.3px) !important;
+}
+
+/* ✅ 다른 위젯들도 loading 클래스 처리 - 더 강한 블러 효과 */
 .table-wrapper.loading,
 .monthly-sales-traffic-wrapper.loading,
 .product-sales-ratio-wrapper.loading,
 .platform-sales-summary-wrapper.loading {
-  backdrop-filter: blur(1px) !important;
-  -webkit-backdrop-filter: blur(1px) !important;
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
   transition: backdrop-filter 0.3s ease !important;
+  /* 브라우저 호환성을 위한 추가 스타일 */
+  filter: blur(0.5px) !important;
+  opacity: 0.9 !important;
+  /* 로딩 시 배경색 추가로 블러 효과 강화 */
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* ✅ 로딩 완료 시 블러 제거 */
@@ -820,6 +857,18 @@ html .performance-summary-wrapper:not(.loading),
 .platform-sales-summary-wrapper:not(.loading) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  background-color: transparent !important;
+}
+
+/* ✅ 로딩 완료 시 테이블 내용도 명확하게 */
+.table-wrapper:not(.loading) .table-content-container,
+.monthly-sales-traffic-wrapper:not(.loading) .table-content-container,
+.product-sales-ratio-wrapper:not(.loading) .table-content-container,
+.platform-sales-summary-wrapper:not(.loading) .table-content-container {
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 
@@ -2953,7 +3002,9 @@ th.sortable.desc::after {
   width: 100% !important;
   height: 100% !important;
   background: transparent !important;
+  background-color: transparent !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   display: none !important;
   justify-content: center !important;
   align-items: center !important;
@@ -2964,16 +3015,85 @@ th.sortable.desc::after {
   border-radius: var(--radius-lg) !important;
 }
 
+/* 🔥 모든 로딩 오버레이에 대한 강력한 투명도 강제 적용 */
+.loading-overlay,
+.loading-overlay[style],
+.loading-overlay[style*="background"],
+.loading-overlay[style*="background-color"],
+.loading-overlay[style*="backdrop-filter"],
+.loading-overlay[style*="-webkit-backdrop-filter"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
+/* 모든 로딩 오버레이 ID에 대한 강력한 투명도 강제 적용 */
+[id*="loadingOverlay"],
+[id*="LoadingOverlay"],
+[id*="loading-overlay"],
+[id*="Loading-Overlay"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
+/* 🔥 모든 구체적인 로딩 오버레이 ID에 대한 강력한 투명도 강제 적용 */
+#loadingOverlayPerformanceSummary,
+#loadingOverlayCafe24Sales,
+#loadingOverlayGa4Source,
+#loadingOverlayMonthlyChart,
+#loadingOverlayCafe24Products,
+#loadingOverlayViewitemSummary,
+#loadingOverlayProductSalesRatio,
+#loadingOverlayPlatformSalesSummary,
+#loadingOverlayPlatformSalesRatio,
+#loadingOverlayPlatformSalesMonthly,
+#loadingOverlayMetaAdsInsight,
+#loadingOverlayTypeSummary,
+#previewLoading,
+#slideCollectionLoading,
+#fullPageLoadingOverlay,
+#loadingOverlaySitePerformance,
+#loadingOverlayAdPerformance,
+#loadingOverlayGa4Sources,
+#loadingOverlayMetaAds {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
+/* 🔥 모든 로딩 오버레이의 인라인 스타일 무시 */
+.loading-overlay[style],
+[id*="loadingOverlay"][style],
+[id*="LoadingOverlay"][style] {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 0 !important;
+}
+
 /* 로딩 오버레이가 표시될 때의 스타일 */
 .loading-overlay[style*="display: flex"],
-.loading-overlay[style*="display:flex"] {
+.loading-overlay[style*="display:flex"],
+.loading-overlay[style*="display: flex"][style*="background"],
+.loading-overlay[style*="display:flex"][style*="background"],
+.loading-overlay[style*="display: flex"][style*="background-color"],
+.loading-overlay[style*="display:flex"][style*="background-color"] {
   display: flex !important;
   visibility: visible !important;
-  opacity: 1 !important;
+  opacity: 0 !important;
   z-index: 1000 !important;
   background: transparent !important;
   background-color: transparent !important;
   backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 스피너 스타일 */
@@ -3000,9 +3120,9 @@ th.sortable.desc::after {
 
 /* 🔥 사이트 성과 요약 전용 로딩 텍스트 최적화 */
 #loadingOverlayPerformanceSummary .loading-text {
-  background: rgba(255, 255, 255, 0.98) !important; /* 더 불투명한 배경 */
+  background: transparent !important; /* 하얀 배경 제거 */
   backdrop-filter: none !important; /* 블러 효과 제거 */
-  opacity: 1 !important; /* 완전 불투명 */
+  opacity: 0 !important; /* 완전 투명 */
 }
 
 /* ================================

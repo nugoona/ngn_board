@@ -20,13 +20,17 @@ function showLoading(target) {
     return;
   }
   
-  // ✅ 로딩 스피너 표시 - CSS와 충돌 방지
+  // ✅ 로딩 스피너 표시 - 완전 투명하게 설정
   $target.attr('style', `
     display: flex !important;
     visibility: visible !important;
-    opacity: 1 !important;
+    opacity: 0 !important;
     pointer-events: auto !important;
     z-index: 1000 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   `);
   
   // 스피너만 보이도록 설정 (텍스트는 숨김)
@@ -83,13 +87,17 @@ function forceHideAllLoading() {
   // 모든 로딩 클래스 제거
   $(".loading").removeClass("loading");
   
-  // 모든 로딩 오버레이 숨김 - 더 확실한 방법
+  // 모든 로딩 오버레이 숨김 - 완전 투명하게 설정
   $(".loading-overlay").each(function() {
     $(this).attr('style', `
       display: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
       pointer-events: none !important;
+      background: transparent !important;
+      background-color: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
     `);
   });
   

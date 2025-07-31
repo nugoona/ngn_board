@@ -239,7 +239,7 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
     showLoading("#loadingOverlayAdPerformance");
     
     try {
-        const response = await fetch('/m/get_data', {
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
     showLoading("#loadingOverlayCafe24Products");
     
     try {
-        const response = await fetch('/m/get_data', {
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -318,7 +318,7 @@ async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
     showLoading("#loadingOverlayGa4Sources");
     
     try {
-        const response = await fetch('/m/get_data', {
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -409,7 +409,7 @@ async function fetchMetaAccounts() {
         const companySelect = document.getElementById('accountFilter');
         const companyName = companySelect ? companySelect.value : 'all';
         
-        const response = await fetch('/m/get_meta_accounts', {
+        const response = await fetch('/dashboard/get_meta_accounts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -134,10 +134,17 @@
 <!-- ✅ 카탈로그 사이드바 (슬라이드 방식 + 닫기 버튼 포함) -->
 {% include "components/catalog_sidebar.html" %}
 
-<!-- ✅ 카탈로그 로딩 오버레이 -->
-<div id="loadingOverlayCatalog" class="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-text">카탈로그 데이터를 불러오는 중...</div>
+<!-- ✅ 카탈로그 로딩 모달 -->
+<div id="catalogLoadingModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>카탈로그 데이터 로딩</span>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+      <div class="spinner" style="margin: 0 auto 20px; width: 48px; height: 48px;"></div>
+      <div style="font-size: 16px; color: #333; font-family: inherit;">카탈로그 페이지를 불러오는 중...</div>
+    </div>
+  </div>
 </div>
 
 <!-- ✅ 공통 유틸 (캐시 버전 통일) -->

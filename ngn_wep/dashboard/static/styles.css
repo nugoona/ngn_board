@@ -2683,12 +2683,43 @@ th.sortable.desc::after {
 }
 
 .catalog-loading-popup .loading-text {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 16px !important;
+  font-weight: 500 !important;
   color: white !important;
-  margin: 0;
+  margin: 0 !important;
   display: block !important;
   text-align: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+  z-index: 10001 !important;
+}
+
+/* 추가 보강 규칙 */
+#catalogLoadingPopup .catalog-loading-content .loading-text {
+  color: white !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  margin-top: 20px !important;
+}
+
+/* 최강 보강 규칙 */
+div#catalogLoadingPopup div.catalog-loading-content div.loading-text {
+  color: white !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+  margin-top: 20px !important;
+  position: relative !important;
+  z-index: 10001 !important;
 }
 
 /* ======================= 1. 모달 ======================= */

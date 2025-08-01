@@ -417,7 +417,7 @@ async function fetchMetaAccounts() {
         const companyName = companySelect ? companySelect.value : 'all';
         
         // 모바일 전용 엔드포인트 사용
-        const response = await fetch('/mobile/get_meta_accounts', {
+        const response = await fetch('/m/get_meta_accounts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -480,7 +480,7 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         });
         
         // 모바일 전용 엔드포인트 사용 (전체 데이터 요청)
-        const response = await fetch('/mobile/get_meta_ads_by_account', {
+        const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -546,7 +546,7 @@ async function fetchLiveAds(accountId) {
     if (!accountId) return;
     
     try {
-        const response = await fetch('/mobile/get_live_ads', {
+        const response = await fetch('/m/get_live_ads', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

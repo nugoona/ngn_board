@@ -180,7 +180,7 @@ export function fetchMetaAccountList() {
       console.log("[DEBUG] 계정 선택 이벤트 바인딩 시작");
       $selector
         .off("change.metaInsight")
-        .on("change.metaInsight", function () {
+        .on("change.metaInsight", function (event) {
           console.log("[DEBUG] 🔥 계정 change 이벤트 발생!");
           const selId = $(this).val() || null;
           const selName = $(this).find("option:selected").text();
@@ -258,67 +258,66 @@ export function fetchMetaAccountList() {
       // 계정이 선택되었을 때 버튼 활성화
       console.log("[DEBUG] 🔥 버튼 활성화 시작");
       
-      // 버튼 요소들을 직접 찾기 (여러 번 시도)
-      let $toggleBtn = $("#toggleTypeSummary");
-      let $catalogBtn = $("#openCatalogSidebarBtn");
+      // 버튼 활성화 함수
+      const activateButtons = () => {
+        const $toggleBtn = $("#toggleTypeSummary");
+        const $catalogBtn = $("#openCatalogSidebarBtn");
+        
+        console.log("[DEBUG] 버튼 요소 확인:");
+        console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $toggleBtn.length);
+        console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $catalogBtn.length);
+        
+        if ($toggleBtn.length > 0) {
+          console.log("[DEBUG] toggleTypeSummary 버튼 활성화 전 상태:");
+          console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
+          console.log("[DEBUG] has disabled class:", $toggleBtn.hasClass("disabled"));
+          
+          // 모든 비활성화 상태 제거
+          $toggleBtn.removeClass("disabled");
+          $toggleBtn.prop("disabled", false);
+          $toggleBtn.removeAttr("disabled");
+          $toggleBtn.css({
+            "opacity": "1",
+            "pointer-events": "auto",
+            "cursor": "pointer"
+          });
+          
+          console.log("[DEBUG] toggleTypeSummary 버튼 활성화 후 상태:");
+          console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
+          console.log("[DEBUG] has disabled class:", $toggleBtn.hasClass("disabled"));
+        }
+        
+        if ($catalogBtn.length > 0) {
+          console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 전 상태:");
+          console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));
+          console.log("[DEBUG] has disabled class:", $catalogBtn.hasClass("disabled"));
+          
+          // 모든 비활성화 상태 제거
+          $catalogBtn.removeClass("disabled");
+          $catalogBtn.prop("disabled", false);
+          $catalogBtn.removeAttr("disabled");
+          $catalogBtn.css({
+            "opacity": "1",
+            "pointer-events": "auto",
+            "cursor": "pointer"
+          });
+          
+          console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 후 상태:");
+          console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));
+          console.log("[DEBUG] has disabled class:", $catalogBtn.hasClass("disabled"));
+        }
+        
+        console.log("[DEBUG] ✅ 버튼 활성화 완료");
+      };
       
-      console.log("[DEBUG] 버튼 요소 확인:");
-      console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $toggleBtn.length);
-      console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $catalogBtn.length);
+      // 즉시 시도
+      activateButtons();
       
-      // 버튼이 없으면 잠시 후 다시 시도
-      if ($toggleBtn.length === 0 || $catalogBtn.length === 0) {
+      // 버튼이 없으면 100ms 후 재시도
+      if ($("#toggleTypeSummary").length === 0 || $("#openCatalogSidebarBtn").length === 0) {
         console.log("[DEBUG] 버튼을 찾을 수 없음, 100ms 후 재시도");
-        setTimeout(() => {
-          $toggleBtn = $("#toggleTypeSummary");
-          $catalogBtn = $("#openCatalogSidebarBtn");
-          
-          if ($toggleBtn.length > 0) {
-            console.log("[DEBUG] toggleTypeSummary 버튼 활성화 (지연)");
-            $toggleBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
-            $toggleBtn.css("opacity", "1").css("pointer-events", "auto").css("cursor", "pointer");
-          }
-          
-          if ($catalogBtn.length > 0) {
-            console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 (지연)");
-            $catalogBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
-            $catalogBtn.css("opacity", "1").css("pointer-events", "auto").css("cursor", "pointer");
-          }
-        }, 100);
-        return;
+        setTimeout(activateButtons, 100);
       }
-      
-      if ($toggleBtn.length > 0) {
-        console.log("[DEBUG] toggleTypeSummary 버튼 활성화 전 상태:");
-        console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
-        console.log("[DEBUG] has disabled class:", $toggleBtn.hasClass("disabled"));
-        
-        // 강제로 버튼 활성화 (여러 방법 시도)
-        $toggleBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
-        $toggleBtn.css("opacity", "1").css("pointer-events", "auto").css("cursor", "pointer");
-        $toggleBtn.attr("disabled", false);
-        
-        console.log("[DEBUG] toggleTypeSummary 버튼 활성화 후 상태:");
-        console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
-        console.log("[DEBUG] has disabled class:", $toggleBtn.hasClass("disabled"));
-      }
-      
-      if ($catalogBtn.length > 0) {
-        console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 전 상태:");
-        console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));
-        console.log("[DEBUG] has disabled class:", $catalogBtn.hasClass("disabled"));
-        
-        // 강제로 버튼 활성화 (여러 방법 시도)
-        $catalogBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
-        $catalogBtn.css("opacity", "1").css("pointer-events", "auto").css("cursor", "pointer");
-        $catalogBtn.attr("disabled", false);
-        
-        console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 후 상태:");
-        console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));
-        console.log("[DEBUG] has disabled class:", $catalogBtn.hasClass("disabled"));
-      }
-      
-      console.log("[DEBUG] ✅ 버튼 활성화 완료");
     } else {
       $("#previewCardContainer").html(
         '<p style="text-align:center; color:#999;">계정을 선택하면 광고 미리보기를 볼 수 있습니다.</p>'

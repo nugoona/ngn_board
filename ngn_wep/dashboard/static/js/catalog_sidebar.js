@@ -334,12 +334,14 @@ document.addEventListener("DOMContentLoaded", () => {
       sidebar.classList.remove("hidden");
       sidebar.classList.add("active");
       console.log("[DEBUG] 사이드바 표시됨");
+      
+      // 사이드바가 표시된 후 로딩 시작 (약간의 지연으로 애니메이션이 보이도록)
+      setTimeout(() => {
+        console.log("[DEBUG] 로딩 시작");
+        toggleCatalogSidebarLoading(true);
+      }, 50);
     }
 
-    // 로딩 시작
-    console.log("[DEBUG] 로딩 시작");
-    toggleCatalogSidebarLoading(true);
-    
     try {
       if (!catalogAuthOk) {
         const { allowed } = await checkCatalogAccess();

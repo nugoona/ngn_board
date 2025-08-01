@@ -8,29 +8,7 @@ import {
   renderMetaAdsInsightTable,
   bindCampaignAdsetCheckboxEvents,
 } from "./meta_ads_utils.js";
-// showInlinePopup 함수를 전역에서 가져오거나 직접 정의
-const showInlinePopup = window.showInlinePopup || function(message = "알 수 없는 오류입니다") {
-  // 기존 팝업이 있으면 제거
-  const existing = document.querySelector(".custom-popup");
-  if (existing) existing.remove();
-
-  // 팝업 생성
-  const popup = document.createElement("div");
-  popup.className = "custom-popup";
-  popup.innerText = message;
-
-  // body에 추가
-  document.body.appendChild(popup);
-
-  // 클릭 시 즉시 제거
-  popup.addEventListener("click", () => popup.remove());
-
-  // 3초 후 페이드아웃 및 제거
-  setTimeout(() => {
-    popup.style.opacity = "0";
-    setTimeout(() => popup.remove(), 500);
-  }, 3000);
-};
+import { showInlinePopup } from "./common_ui.js";
 import { fetchMetaAdsPreviewList } from "./meta_ads_preview.js";
 import { fetchMetaAdsAdsetSummaryByType } from "./meta_ads_adset_summary_by_type.js";
 
@@ -191,24 +169,16 @@ export function fetchMetaAccountList() {
         });
       console.log("[DEBUG] 계정 선택 이벤트 바인딩 완료");
 
-      /* ---------- 5) 모바일에서만 자동 선택 ---------- */
-      const isMobile = window.screen.width <= 768 || window.innerWidth <= 768;
-      
-      if (isMobile) {
-        if (list.length === 1) {
-          const onlyId = list[0].meta_acc_id || list[0].account_id;
-          console.log("[DEBUG] 모바일 - 계정 1개 자동 선택:", onlyId);
-          $selector.val(onlyId).trigger("change");
-        } else if (list.length > 1) {
-          // 모바일에서 계정이 여러 개인 경우 첫 번째 계정을 자동 선택
-          const firstId = list[0].meta_acc_id || list[0].account_id;
-          console.log("[DEBUG] 모바일 - 계정 여러 개 - 첫 번째 계정 자동 선택:", firstId);
-          $selector.val(firstId).trigger("change");
-        }
-      } else {
-        // 웹에서는 자동 선택하지 않음
-        console.log("[DEBUG] 웹 버전 - 자동 계정 선택 비활성화");
-        $selector.val(""); // 빈 값으로 설정
+      /* ---------- 5) 계정 1개면 자동 선택 ---------- */
+      if (list.length === 1) {
+        const onlyId = list[0].meta_acc_id || list[0].account_id;
+        console.log("[DEBUG] 계정 1개 자동 선택:", onlyId);
+        $selector.val(onlyId).trigger("change");
+      } else if (list.length > 1) {
+        // 계정이 여러 개인 경우에도 첫 번째 계정을 자동 선택 (임시 해결책)
+        const firstId = list[0].meta_acc_id || list[0].account_id;
+        console.log("[DEBUG] 계정 여러 개 - 첫 번째 계정 자동 선택:", firstId);
+        $selector.val(firstId).trigger("change");
       }
 
       /* ---------- 6) 최초 테이블 표시 ---------- */

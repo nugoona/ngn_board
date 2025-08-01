@@ -1,29 +1,7 @@
 /* ****************************************
  * catalog_sidebar.js  (v6.3.2 – FB 권한검사 제거 · 풀 버전)
  *****************************************/
-// showInlinePopup 함수를 전역에서 가져오거나 직접 정의
-const showInlinePopup = window.showInlinePopup || function(message = "알 수 없는 오류입니다") {
-  // 기존 팝업이 있으면 제거
-  const existing = document.querySelector(".custom-popup");
-  if (existing) existing.remove();
-
-  // 팝업 생성
-  const popup = document.createElement("div");
-  popup.className = "custom-popup";
-  popup.innerText = message;
-
-  // body에 추가
-  document.body.appendChild(popup);
-
-  // 클릭 시 즉시 제거
-  popup.addEventListener("click", () => popup.remove());
-
-  // 3초 후 페이드아웃 및 제거
-  setTimeout(() => {
-    popup.style.opacity = "0";
-    setTimeout(() => popup.remove(), 500);
-  }, 3000);
-};
+import { showInlinePopup } from "./common_ui.js";
 
 /* ───────── 전역 상태 ───────── */
 let isLoadingCatalog      = false;
@@ -330,8 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!accountId) return showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
 
     // 전체 페이지 로딩 오버레이 표시
-    if (typeof window.showFullPageLoading === 'function') {
-      window.showFullPageLoading();
+    if (typeof showFullPageLoading === 'function') {
+      showFullPageLoading();
     }
 
     toggleCatalogSidebarLoading(true);
@@ -349,8 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } finally {
       toggleCatalogSidebarLoading(false);
       // 전체 페이지 로딩 오버레이 숨김
-      if (typeof window.hideFullPageLoading === 'function') {
-        window.hideFullPageLoading();
+      if (typeof hideFullPageLoading === 'function') {
+        hideFullPageLoading();
       }
     }
   });

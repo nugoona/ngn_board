@@ -6,7 +6,7 @@ const $ = window.$;
 
 let slideCollectionRequest = null;
 
-function fetchSlideCollectionAds(accountId = null) {
+export function fetchSlideCollectionAds(accountId = null) {
   // 순차 실행이므로 abort 제거
   // if (slideCollectionRequest) {
   //   slideCollectionRequest.abort();
@@ -14,10 +14,10 @@ function fetchSlideCollectionAds(accountId = null) {
 
   console.log("[DEBUG] fetchSlideCollectionAds 호출됨 - accountId:", accountId);
 
-  showLoading("#loadingOverlaySlideCollection");
+  showLoading("#slideCollectionLoading");
 
   if (!accountId || accountId === "null" || accountId === "") {
-    hideLoading("#loadingOverlaySlideCollection");
+    hideLoading("#slideCollectionLoading");
     $("#slideCollectionTableBody").html('<tr><td colspan="2">계정이 선택되지 않았습니다.</td></tr>');
     return;
   }
@@ -31,7 +31,7 @@ function fetchSlideCollectionAds(accountId = null) {
       account_id: accountId,
     }),
     success: function (res) {
-      hideLoading("#loadingOverlaySlideCollection");
+      hideLoading("#slideCollectionLoading");
       console.log("[DEBUG] 슬라이드/콜렉션 서버 응답:", res);
 
       if (res.slide_collection_ads && res.slide_collection_ads.length > 0) {
@@ -41,7 +41,7 @@ function fetchSlideCollectionAds(accountId = null) {
       }
     },
     error: function (err, textStatus) {
-      hideLoading("#loadingOverlaySlideCollection");
+      hideLoading("#slideCollectionLoading");
     
       if (textStatus === "abort") {
         // ✅ 요청이 중단(abort)된 경우 무시 (다음 요청이 올 것이므로)
@@ -61,9 +61,6 @@ function fetchSlideCollectionAds(accountId = null) {
 }
 
 window.fetchSlideCollectionAds = fetchSlideCollectionAds;
-
-/* ───────── ES6 모듈로 함수 노출 ───────── */
-export { fetchSlideCollectionAds };
 
 function renderSlideCollectionTable(data) {
   const $tbody = $("#slideCollectionTableBody");
@@ -108,18 +105,12 @@ $(document).ready(function () {
           fetchSlideCollectionAds(selectedAccountId);
         } else {
           console.log("[DEBUG] 드롭다운 선택 없음 - 슬라이드 초기화");
-          hideLoading("#loadingOverlaySlideCollection");
+          hideLoading("#slideCollectionLoading");
           $("#slideCollectionTableBody").html('<tr><td colspan="2">계정이 선택되지 않았습니다.</td></tr>');
         }
       });
 
-    // 모바일에서만 초기 로딩시 change() 트리거
-    const isMobile = window.screen.width <= 768 || window.innerWidth <= 768;
-    if (isMobile) {
-      console.log("[DEBUG] 모바일 - 초기 로딩시 change() 트리거!");
-      $("#metaAccountSelector").trigger("change");
-    } else {
-      console.log("[DEBUG] 웹 버전 - 초기 로딩시 change() 트리거 비활성화");
-    }
+    console.log("[DEBUG] 초기 로딩시 change() 트리거!");
+    $("#metaAccountSelector").trigger("change");
   }, 100);
 });

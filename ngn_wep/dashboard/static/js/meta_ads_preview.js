@@ -1,14 +1,8 @@
 // File: static/js/meta_ads_preview.js
 
-// metaAdsState를 전역에서 가져오거나 직접 정의
-const metaAdsState = window.metaAdsState || {};
-
+import { metaAdsState } from "./meta_ads_state.js";
 // showLoading/hideLoading 함수는 common.js에서 정의됨
-// latestAjaxRequest를 전역에서 가져오거나 직접 정의
-const latestAjaxRequest = window.latestAjaxRequest || function(key, options, onCancel) {
-  // 기본 구현
-  $.ajax(options);
-};
+import { latestAjaxRequest } from "./request_utils.js";
 
 // ✅ 미리보기 카드 렌더링
 function renderMetaAdsPreviewCards(adList) {
@@ -67,7 +61,7 @@ export function fetchMetaAdsPreviewList() {
     return;
   }
 
-  showLoading("#loadingOverlayAdsPreview");
+  showLoading("#previewLoading");
 
   latestAjaxRequest("meta_ads_preview_list", {
     url: "/dashboard/get_data",
@@ -83,14 +77,11 @@ export function fetchMetaAdsPreviewList() {
       } else {
         console.error("[PREVIEW] 데이터 불러오기 실패");
       }
-      hideLoading("#loadingOverlayAdsPreview");
+      hideLoading("#previewLoading");
     },
     error: function () {
       console.error("[PREVIEW] AJAX 오류");
-      hideLoading("#loadingOverlayAdsPreview");
+      hideLoading("#previewLoading");
     }
   }, () => {});
 }
-
-/* ───────── 전역으로 함수 노출 ───────── */
-window.fetchMetaAdsPreviewList = fetchMetaAdsPreviewList;

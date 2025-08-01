@@ -408,7 +408,8 @@ async function fetchFilteredDataWithoutPopup() {
           end_date: metaAdsState.endDate
         });
 
-        await fetchMetaAdsPreviewList();
+        // LIVE 광고 미리보기는 기간 필터와 무관하므로 제외
+        // await fetchMetaAdsPreviewList();
         await fetchSlideCollectionAds(accountId);
       }
     }
@@ -521,7 +522,8 @@ async function fetchFilteredData() {
           end_date: metaAdsState.endDate
         });
 
-        await fetchMetaAdsPreviewList();
+        // LIVE 광고 미리보기는 기간 필터와 무관하므로 제외
+        // await fetchMetaAdsPreviewList();
         await fetchSlideCollectionAds(accountId);
       }
     }
@@ -558,9 +560,9 @@ function fetchMetaAccountList() {
           $selector.append(`<option value="${acc.account_id}" selected>${acc.account_name}</option>`);
           $("#accountSelectorDropdown .selected-text").text(acc.account_name);
 
-          // ✅ 계정이 1개일 경우에도 데이터 호출 강제 실행
-          fetchFilteredData();
-
+          // 계정이 1개일 경우에도 데이터 호출 강제 실행
+          fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+          
           fetchMetaAdsAdsetSummaryByType({
             account_id: acc.account_id,
             period: metaAdsState.period,
@@ -568,6 +570,7 @@ function fetchMetaAccountList() {
             end_date: metaAdsState.endDate
           });
 
+          // LIVE 광고 미리보기는 계정 변경 시에만 호출
           fetchMetaAdsPreviewList();
           fetchSlideCollectionAds(acc.account_id);
         } else if (accounts.length > 1) {
@@ -591,10 +594,10 @@ function fetchMetaAccountList() {
           metaAdsState.accountId = accountId;
           $("#accountSelectorDropdown .selected-text").text(accountName);
 
-          fetchFilteredData();
-
-          // ✅ account_id만 필요한 데이터 호출
+          // 계정 변경 시에만 LIVE 광고 미리보기 호출
           if (accountId) {
+            fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+            
             fetchMetaAdsAdsetSummaryByType({
               account_id: accountId,
               period: metaAdsState.period,
@@ -602,8 +605,12 @@ function fetchMetaAccountList() {
               end_date: metaAdsState.endDate
             });
 
+            // LIVE 광고 미리보기는 계정 변경 시에만 호출
             fetchMetaAdsPreviewList();
             fetchSlideCollectionAds(accountId);
+          } else {
+            // 계정이 선택되지 않은 경우
+            fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
           }
         });
 

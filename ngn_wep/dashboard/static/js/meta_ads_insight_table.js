@@ -177,12 +177,19 @@ export function fetchMetaAccountList() {
       } else if (list.length > 1) {
         // 계정이 여러 개인 경우 "모든 계정" 선택 (자동 선택하지 않음)
         console.log("[DEBUG] 계정 여러 개 - 모든 계정 선택 (자동 선택 안함)");
-        $selector.val("").trigger("change");
+        $selector.val("");
+        // 계정이 선택되지 않은 상태로 초기화
+        metaAdsState.accountId = null;
+        metaAdsState.catalogId = null;
+        metaAdsState.company = "all";
+        updateAfterAccountChange();
       }
 
-      /* ---------- 6) 최초 테이블 표시 ---------- */
+      /* ---------- 6) 최초 테이블 표시 (계정이 선택된 경우에만) ---------- */
       showMetaAdsTableHeader(metaAdsState.tabLevel);
-      fetchMetaAdsInsight(metaAdsState.tabLevel);
+      if (metaAdsState.accountId) {
+        fetchMetaAdsInsight(metaAdsState.tabLevel);
+      }
     },
     error() {
       console.error("[ERROR] Meta 광고 계정 목록 불러오기 실패");
@@ -244,6 +251,9 @@ export function fetchMetaAccountList() {
       // 캠페인 목표별 성과 컨테이너 숨기기
       $("#typeSummaryContainer").hide();
       $("#toggleTypeSummary").text("캠페인 목표별 성과 보기");
+      
+      // 테이블 초기화 (계정이 선택되지 않았을 때)
+      $("#metaAdsInsightBody").html('<tr><td colspan="13" class="text-center">계정을 선택해주세요</td></tr>');
     }
 
     // 태그·필터 상태 초기화

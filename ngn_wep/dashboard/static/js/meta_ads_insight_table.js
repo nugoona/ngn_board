@@ -294,18 +294,13 @@ export function fetchMetaAccountList() {
           $toggleBtn.prop("disabled", false);
           $toggleBtn.removeAttr("disabled");
           $toggleBtn.attr("disabled", false);
-          $toggleBtn.css({
-            "opacity": "1 !important",
-            "pointer-events": "auto !important",
-            "cursor": "pointer !important",
-            "background-color": "initial",
-            "color": "initial"
-          });
           
-          // 인라인 스타일로 강제 활성화
+          // 인라인 스타일로 강제 활성화 (투명도 문제 해결)
           $toggleBtn[0].style.opacity = "1";
           $toggleBtn[0].style.pointerEvents = "auto";
           $toggleBtn[0].style.cursor = "pointer";
+          $toggleBtn[0].style.backgroundColor = "";
+          $toggleBtn[0].style.color = "";
           $toggleBtn[0].disabled = false;
           
           console.log("[DEBUG] toggleTypeSummary 버튼 활성화 후 상태:");
@@ -323,18 +318,13 @@ export function fetchMetaAccountList() {
           $catalogBtn.prop("disabled", false);
           $catalogBtn.removeAttr("disabled");
           $catalogBtn.attr("disabled", false);
-          $catalogBtn.css({
-            "opacity": "1 !important",
-            "pointer-events": "auto !important",
-            "cursor": "pointer !important",
-            "background-color": "initial",
-            "color": "initial"
-          });
           
-          // 인라인 스타일로 강제 활성화
+          // 인라인 스타일로 강제 활성화 (투명도 문제 해결)
           $catalogBtn[0].style.opacity = "1";
           $catalogBtn[0].style.pointerEvents = "auto";
           $catalogBtn[0].style.cursor = "pointer";
+          $catalogBtn[0].style.backgroundColor = "";
+          $catalogBtn[0].style.color = "";
           $catalogBtn[0].disabled = false;
           
           console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 후 상태:");

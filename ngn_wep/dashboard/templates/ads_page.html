@@ -134,6 +134,12 @@
 <!-- ✅ 카탈로그 사이드바 (슬라이드 방식 + 닫기 버튼 포함) -->
 {% include "components/catalog_sidebar.html" %}
 
+<!-- ✅ 카탈로그 로딩 오버레이 -->
+<div id="loadingOverlayCatalog" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">카탈로그 데이터를 불러오는 중...</div>
+</div>
+
 <!-- ✅ 공통 유틸 (캐시 버전 통일) -->
 <!-- ✅ JS 로딩 -->
 <!-- 🔥 common.js를 가장 먼저 로드 (showLoading/hideLoading 함수 정의) -->

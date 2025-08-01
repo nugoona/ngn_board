@@ -1,5 +1,5 @@
 // File: common_ui.js
-function showInlinePopup(message = "알 수 없는 오류입니다") {
+export function showInlinePopup(message = "알 수 없는 오류입니다") {
   // 기존 팝업이 있으면 제거
   const existing = document.querySelector(".custom-popup");
   if (existing) existing.remove();
@@ -21,6 +21,3 @@ function showInlinePopup(message = "알 수 없는 오류입니다") {
     setTimeout(() => popup.remove(), 500);
   }, 3000);
 }
-
-// 전역으로 함수 노출
-window.showInlinePopup = showInlinePopup;

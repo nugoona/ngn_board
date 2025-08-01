@@ -62,44 +62,38 @@ function initializeFlatpickr() {
   };
 
   // 기존 인스턴스가 있으면 제거
-  if (startDatePicker && typeof startDatePicker.destroy === 'function') {
+  if (startDatePicker) {
     startDatePicker.destroy();
   }
-  if (endDatePicker && typeof endDatePicker.destroy === 'function') {
+  if (endDatePicker) {
     endDatePicker.destroy();
   }
 
-  try {
-    // 시작일 Flatpickr
-    startDatePicker = flatpickr("#startDate", {
-      ...commonConfig,
-      maxDate: new Date(),
-      onOpen: function(selectedDates, dateStr, instance) {
-        // 종료일이 선택되어 있으면 최대 날짜 제한
-        const endDate = endDatePicker?.selectedDates[0];
-        if (endDate) {
-          instance.set('maxDate', endDate);
-        }
+  // 시작일 Flatpickr
+  startDatePicker = flatpickr("#startDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 종료일이 선택되어 있으면 최대 날짜 제한
+      const endDate = endDatePicker?.selectedDates[0];
+      if (endDate) {
+        instance.set('maxDate', endDate);
       }
-    });
+    }
+  });
 
-    // 종료일 Flatpickr
-    endDatePicker = flatpickr("#endDate", {
-      ...commonConfig,
-      maxDate: new Date(),
-      onOpen: function(selectedDates, dateStr, instance) {
-        // 시작일이 선택되어 있으면 최소 날짜 제한
-        const startDate = startDatePicker?.selectedDates[0];
-        if (startDate) {
-          instance.set('minDate', startDate);
-        }
+  // 종료일 Flatpickr
+  endDatePicker = flatpickr("#endDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 시작일이 선택되어 있으면 최소 날짜 제한
+      const startDate = startDatePicker?.selectedDates[0];
+      if (startDate) {
+        instance.set('minDate', startDate);
       }
-    });
-
-    console.log("[DEBUG] Flatpickr 초기화 완료");
-  } catch (error) {
-    console.error("[ERROR] Flatpickr 초기화 실패:", error);
-  }
+    }
+  });
 }
 
 function initializeFilters() {
@@ -179,21 +173,13 @@ function initializeFilters() {
 
   if (selectedValue === "manual") {
     $("#dateRangeContainer").fadeIn().css("display", "flex");
-    // Flatpickr 인스턴스 재활성화 (안전한 호출)
-    if (startDatePicker && typeof startDatePicker.enable === 'function') {
-      startDatePicker.enable();
-    }
-    if (endDatePicker && typeof endDatePicker.enable === 'function') {
-      endDatePicker.enable();
-    }
+    // Flatpickr 인스턴스 재활성화
+    startDatePicker?.enable();
+    endDatePicker?.enable();
   } else {
     $("#dateRangeContainer").fadeOut();
-    if (startDatePicker && typeof startDatePicker.clear === 'function') {
-      startDatePicker.clear();
-    }
-    if (endDatePicker && typeof endDatePicker.clear === 'function') {
-      endDatePicker.clear();
-    }
+    startDatePicker?.clear();
+    endDatePicker?.clear();
     $("#startDate").val("");
     $("#endDate").val("");
 
@@ -239,9 +225,9 @@ function initializeFilters() {
     const endDate = $("#endDate").val()?.trim();
     const selectedPeriod = $("#periodFilter").val();
 
-    // 🔥 직접 선택 모드에서는 날짜가 비어있어도 일단 실행 (서버에서 처리)
-    if (selectedPeriod === "manual") {
-      console.log("[DEBUG] 직접 선택 모드 - 시작일:", startDate, "종료일:", endDate);
+    if (selectedPeriod === "manual" && (!startDate || !endDate)) {
+      console.warn("[BLOCKED] 직접 선택: 시작일 누락 → 실행 안함");
+      return;
     }
 
     if (window.location.pathname === "/ads") {
@@ -266,12 +252,8 @@ function initializeFilters() {
     }
 
     // Flatpickr 인스턴스 초기화
-    if (startDatePicker && typeof startDatePicker.clear === 'function') {
-      startDatePicker.clear();
-    }
-    if (endDatePicker && typeof endDatePicker.clear === 'function') {
-      endDatePicker.clear();
-    }
+    startDatePicker?.clear();
+    endDatePicker?.clear();
     
     $("#startDate").val("");
     $("#endDate").val("");
@@ -375,8 +357,6 @@ async function fetchFilteredDataWithoutPopup() {
       // updateAllData 함수가 정의되어 있는지 확인하고 호출
       if (typeof updateAllData === 'function') {
         console.log("🔄 filters.js에서 updateAllData() 호출 (팝업 없음)");
-        console.log("🔍 updateAllData 함수 타입:", typeof updateAllData);
-        console.log("🔍 updateAllData 함수:", updateAllData);
         await updateAllData();
       } else {
         console.warn("[WARN] updateAllData 함수가 정의되지 않음 - 개별 함수 호출로 대체");
@@ -515,12 +495,30 @@ async function fetchFilteredData() {
         }
       }
     } else if (pathname === "/ads") {
-      // ✅ 광고 성과 페이지에서는 fetchData 함수 사용
-      console.log("🔄 filters.js에서 fetchData() 호출 (광고 성과 페이지)");
-      if (typeof fetchData === 'function') {
-        fetchData(1);
+      metaAdsState.period = selectedPeriod;
+
+      if (selectedPeriod !== "manual") {
+        const resolved = resolveDateRange(selectedPeriod);  // ✅ 구조 분해 대신 객체로 접근
+        metaAdsState.startDate = resolved.start;
+        metaAdsState.endDate = resolved.end;
       } else {
-        console.warn("[WARN] fetchData 함수가 정의되지 않음");
+        metaAdsState.startDate = startDate || "";
+        metaAdsState.endDate = endDate || "";
+      }
+
+      const accountId = metaAdsState.accountId;
+      await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+
+      if (accountId) {
+        await fetchMetaAdsAdsetSummaryByType({
+          account_id: accountId,
+          period: metaAdsState.period,
+          start_date: metaAdsState.startDate,
+          end_date: metaAdsState.endDate
+        });
+
+        await fetchMetaAdsPreviewList();
+        await fetchSlideCollectionAds(accountId);
       }
     }
   } catch (e) {

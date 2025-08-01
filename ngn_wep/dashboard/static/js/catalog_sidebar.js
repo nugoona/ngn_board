@@ -218,7 +218,6 @@ const hideManualSearchLoading  = () => qs("#manualSearchLoadingSpinner")?.classL
 /* ───────── 서버 통신 – 사이드바 / 수동 상품 / 검색 ───────── */
 async function fetchCatalogSidebar(accountId) {
   if (!accountId) return null;
-  toggleCatalogSidebarLoading(true);
   try {
     const res  = await fetch("/dashboard/get_data", {
       method : "POST",
@@ -237,8 +236,6 @@ async function fetchCatalogSidebar(accountId) {
     console.error(err);
     showInlinePopup("카탈로그 정보를 불러오는 중 오류가 발생했습니다.");
     return null;
-  } finally {
-    toggleCatalogSidebarLoading(false);
   }
 }
 
@@ -326,28 +323,10 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DEBUG] 카탈로그 사이드바 열기 시작");
     console.log("[DEBUG] accountId:", accountId);
 
-    // 먼저 사이드바를 표시하고 hidden 클래스 제거
-    const sidebar = qs("#catalogSidebar");
-    console.log("[DEBUG] sidebar element:", sidebar);
-    
-    if (sidebar) {
-      // 사이드바를 즉시 표시
-      sidebar.classList.remove("hidden");
-      sidebar.classList.add("active");
-      console.log("[DEBUG] 사이드바 표시됨");
-      
-      // 로딩 애니메이션을 즉시 시작
-      console.log("[DEBUG] 로딩 시작");
-      toggleCatalogSidebarLoading(true);
-      
-      // 로딩 스피너가 보이도록 강제로 스타일 적용
-      const spinner = sidebar.querySelector(".loading-spinner");
-      if (spinner) {
-        spinner.style.display = "block";
-        spinner.style.visibility = "visible";
-        spinner.style.opacity = "1";
-        console.log("[DEBUG] 로딩 스피너 강제 표시");
-      }
+    // 전체 페이지 로딩 팝업 표시
+    console.log("[DEBUG] 전체 페이지 로딩 팝업 표시");
+    if (typeof showLoading === "function") {
+      showLoading("#loadingOverlayCatalog", "카탈로그 데이터를 불러오는 중...");
     }
 
     try {
@@ -356,13 +335,28 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!allowed) throw new Error("카탈로그 권한이 없습니다.");
         catalogAuthOk = true;
       }
+      
+      // 데이터 로딩
       await fetchCatalogSidebar(accountId);
+      
+      // 로딩 완료 후 사이드바 열기
+      console.log("[DEBUG] 데이터 로딩 완료, 사이드바 열기");
+      const sidebar = qs("#catalogSidebar");
+      if (sidebar) {
+        sidebar.classList.remove("hidden");
+        sidebar.classList.add("active");
+        console.log("[DEBUG] 사이드바 표시됨");
+      }
+      
     } catch (err) {
       console.warn(err);
       showInlinePopup(err.message || "카탈로그 열기 실패");
     } finally {
-      console.log("[DEBUG] 로딩 완료");
-      toggleCatalogSidebarLoading(false);
+      // 전체 페이지 로딩 팝업 숨기기
+      console.log("[DEBUG] 전체 페이지 로딩 팝업 숨기기");
+      if (typeof hideLoading === "function") {
+        hideLoading("#loadingOverlayCatalog");
+      }
     }
   });
 

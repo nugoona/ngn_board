@@ -316,8 +316,12 @@ document.addEventListener("DOMContentLoaded", () => {
       showFullPageLoading();
     }
 
-    // 먼저 사이드바를 표시한 후 로딩 시작
-    openCatalogSidebar();
+    // 먼저 사이드바를 표시하고 hidden 클래스 제거
+    const sidebar = qs("#catalogSidebar");
+    sidebar?.classList.remove("hidden");
+    sidebar?.classList.add("active");
+    
+    // 로딩 시작
     toggleCatalogSidebarLoading(true);
     
     try {

@@ -664,6 +664,15 @@ function setupFilters() {
                 console.log('🔄 기간 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
                 fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 기간 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
             }
         });
     }
@@ -704,6 +713,15 @@ function setupFilters() {
                 console.log('🔄 시작일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
                 fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 시작일 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
             }
         });
     }
@@ -719,6 +737,15 @@ function setupFilters() {
                 console.log('🔄 종료일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
                 fetchMetaAdsByAccount(selectedMetaAccount);
                 fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 종료일 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
             }
         });
     }

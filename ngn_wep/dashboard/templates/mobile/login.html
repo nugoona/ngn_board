@@ -222,47 +222,73 @@
       </div>
       
       <button type="submit" class="login-btn">로그인</button>
-      <button type="button" class="demo-btn" onclick="loginAsDemo()">데모 로그인</button>
-      
-      <div class="error-message" id="errorMessage">{% if error %}{{ error }}{% endif %}</div>
-      <div class="loading" id="loading"></div>
     </form>
+
+    <div class="divider">
+      <span>또는</span>
+    </div>
+
+    <button class="demo-btn" onclick="fillDemoCredentials()">데모 계정 접속</button>
     
-    <!-- 하단 링크들 -->
-    <div class="footer-links">
-      <a href="/privacy">개인정보 처리방침</a>
-      <span class="separator">|</span>
-      <a href="/delete-info">데이터 삭제 안내</a>
-      <span class="separator">|</span>
-      <a href="/terms">서비스 이용약관</a>
+    <div class="error-message" id="errorMessage">{% if error %}{{ error }}{% endif %}</div>
+    <div class="loading" id="loading"></div>
+    
+    <!-- 하단 링크들 - 웹 버전과 동일한 스타일 -->
+    <div class="footer-link">
+      <a href="/privacy" target="_blank">개인정보 처리방침</a> |
+      <a href="/delete-info" target="_blank">데이터 삭제 안내</a> |
+      <a href="/terms" target="_blank">서비스 이용약관</a>
     </div>
   </div>
 
   <style>
-    .footer-links {
+    .divider {
+      text-align: center;
+      margin: 20px 0;
+      position: relative;
+    }
+    
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .divider span {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 0 15px;
+      color: white;
+      font-size: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .footer-link {
       text-align: center;
       margin-top: 24px;
       font-size: 12px;
       color: rgba(255, 255, 255, 0.8);
     }
     
-    .footer-links a {
+    .footer-link a {
       color: rgba(255, 255, 255, 0.8);
       text-decoration: none;
       transition: color 0.3s ease;
     }
     
-    .footer-links a:hover {
+    .footer-link a:hover {
       color: white;
-    }
-    
-    .footer-links .separator {
-      margin: 0 8px;
-      color: rgba(255, 255, 255, 0.5);
     }
   </style>
 
   <script>
+    // ✅ 로그인 시 세션스토리지 초기화
+    sessionStorage.clear();
+
     // 페이지 로드 시 에러 메시지 표시
     document.addEventListener('DOMContentLoaded', function() {
       const errorMessage = document.getElementById('errorMessage');
@@ -313,9 +339,10 @@
       });
     });
 
-    function loginAsDemo() {
+    // 웹 버전과 동일한 데모 로그인 기능
+    function fillDemoCredentials() {
       document.getElementById('username').value = 'demo';
-      document.getElementById('password').value = 'demo123';
+      document.getElementById('password').value = 'Nugoona';
       document.getElementById('loginForm').dispatchEvent(new Event('submit'));
     }
 

@@ -2650,6 +2650,45 @@ th.sortable.desc::after {
 
 .set-created-popup.error { background:#ffecec; border:1px solid #ff6b6b; }
 
+/* ✅ 카탈로그 로딩 팝업 - 모던 디자인 */
+.catalog-loading-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  background: #003366;
+  border-radius: 16px;
+  padding: 40px 60px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 280px;
+}
+
+.catalog-loading-content {
+  text-align: center;
+  color: white;
+}
+
+.catalog-loading-popup .spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.catalog-loading-popup .loading-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+  margin: 0;
+}
+
 /* ======================= 1. 모달 ======================= */
 
 /* 모달 덮개 */

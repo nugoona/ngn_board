@@ -8,7 +8,7 @@ import {
   renderMetaAdsInsightTable,
   bindCampaignAdsetCheckboxEvents,
 } from "./meta_ads_utils.js";
-import { showInlinePopup } from "./common_ui.js";
+// showInlinePopup 함수는 common_ui.js에서 전역으로 정의됨
 import { fetchMetaAdsPreviewList } from "./meta_ads_preview.js";
 import { fetchMetaAdsAdsetSummaryByType } from "./meta_ads_adset_summary_by_type.js";
 
@@ -264,7 +264,11 @@ export function fetchMetaAccountList() {
 
     renderSelectedTags();
     showMetaAdsTableHeader(metaAdsState.tabLevel);
-    fetchMetaAdsInsight(metaAdsState.tabLevel);
+    
+    // 계정이 선택된 경우에만 데이터 로딩
+    if (metaAdsState.accountId) {
+      fetchMetaAdsInsight(metaAdsState.tabLevel);
+    }
   }
 }
 

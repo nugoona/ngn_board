@@ -316,7 +316,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showFullPageLoading();
     }
 
+    // 먼저 사이드바를 표시한 후 로딩 시작
+    openCatalogSidebar();
     toggleCatalogSidebarLoading(true);
+    
     try {
       if (!catalogAuthOk) {
         const { allowed } = await checkCatalogAccess();
@@ -324,7 +327,6 @@ document.addEventListener("DOMContentLoaded", () => {
         catalogAuthOk = true;
       }
       await fetchCatalogSidebar(accountId);
-      openCatalogSidebar();
     } catch (err) {
       console.warn(err);
       showInlinePopup(err.message || "카탈로그 열기 실패");

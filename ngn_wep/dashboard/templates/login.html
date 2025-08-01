@@ -191,14 +191,11 @@
     }
 
     .divider {
-      margin: 32px 0 24px;
-      position: relative;
       text-align: center;
-      color: #6b7280;
-      font-size: 14px;
-      font-weight: 500;
+      margin: 20px 0;
+      position: relative;
     }
-
+    
     .divider::before {
       content: '';
       position: absolute;
@@ -206,13 +203,16 @@
       left: 0;
       right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+      background: rgba(0, 0, 0, 0.1);
     }
-
+    
     .divider span {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 0 16px;
+      background: transparent;
+      padding: 0 15px;
+      color: #666;
+      font-size: 14px;
       position: relative;
+      z-index: 1;
     }
 
     .demo-btn {

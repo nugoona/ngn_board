@@ -1,7 +1,7 @@
 /* ****************************************
  * catalog_sidebar.js  (v6.3.2 – FB 권한검사 제거 · 풀 버전)
  *****************************************/
-import { showInlinePopup } from "./common_ui.js";
+// showInlinePopup 함수는 common_ui.js에서 전역으로 정의됨
 
 /* ───────── 전역 상태 ───────── */
 let isLoadingCatalog      = false;

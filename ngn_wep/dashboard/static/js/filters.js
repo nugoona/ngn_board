@@ -396,9 +396,11 @@ async function fetchFilteredDataWithoutPopup() {
       }
 
       const accountId = metaAdsState.accountId;
-      await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
-
+      
+      // 계정이 선택된 경우에만 Meta Ads 데이터 로딩
       if (accountId) {
+        await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+        
         await fetchMetaAdsAdsetSummaryByType({
           account_id: accountId,
           period: metaAdsState.period,
@@ -507,9 +509,11 @@ async function fetchFilteredData() {
       }
 
       const accountId = metaAdsState.accountId;
-      await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
-
+      
+      // 계정이 선택된 경우에만 Meta Ads 데이터 로딩
       if (accountId) {
+        await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+        
         await fetchMetaAdsAdsetSummaryByType({
           account_id: accountId,
           period: metaAdsState.period,

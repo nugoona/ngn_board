@@ -227,8 +227,13 @@ export function fetchMetaAccountList() {
       console.log("[DEBUG] openCatalogSidebarBtn disabled:", $catalogBtn.prop("disabled"));
       console.log("[DEBUG] openCatalogSidebarBtn has disabled class:", $catalogBtn.hasClass("disabled"));
       
-      $toggleBtn.removeClass("disabled").prop("disabled", false);
-      $catalogBtn.removeClass("disabled").prop("disabled", false);
+      // 강제로 버튼 활성화
+      $toggleBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
+      $catalogBtn.removeClass("disabled").prop("disabled", false).removeAttr("disabled");
+      
+      // CSS 스타일도 제거
+      $toggleBtn.css("opacity", "1").css("pointer-events", "auto");
+      $catalogBtn.css("opacity", "1").css("pointer-events", "auto");
       
       console.log("[DEBUG] 버튼 활성화 후 상태:");
       console.log("[DEBUG] toggleTypeSummary disabled:", $toggleBtn.prop("disabled"));

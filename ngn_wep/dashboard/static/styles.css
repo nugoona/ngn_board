@@ -2657,7 +2657,7 @@ th.sortable.desc::after {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10000;
-  background: #003366;
+  background: var(--primary);
   border-radius: 16px;
   padding: 40px 60px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -2685,8 +2685,10 @@ th.sortable.desc::after {
 .catalog-loading-popup .loading-text {
   font-size: 16px;
   font-weight: 500;
-  color: white;
+  color: white !important;
   margin: 0;
+  display: block !important;
+  text-align: center !important;
 }
 
 /* ======================= 1. 모달 ======================= */

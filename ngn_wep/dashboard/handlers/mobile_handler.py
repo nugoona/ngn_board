@@ -315,6 +315,8 @@ def get_meta_accounts():
         # 메타 광고 계정 목록 조회 (웹버전과 동일)
         accounts = get_meta_account_list_filtered(company_name)
         
+        print(f"[MOBILE] 📊 메타 광고 계정 목록 조회: {len(accounts) if accounts else 0}개")
+        
         return jsonify({
             "status": "success",
             "meta_accounts": accounts

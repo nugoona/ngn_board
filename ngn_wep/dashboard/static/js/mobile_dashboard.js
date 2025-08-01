@@ -416,14 +416,13 @@ async function fetchMetaAccounts() {
         const companySelect = document.getElementById('accountFilter');
         const companyName = companySelect ? companySelect.value : 'all';
         
-        // 웹버전과 동일한 엔드포인트 사용
-        const response = await fetch('/dashboard/get_data', {
+        // 모바일 전용 엔드포인트 사용
+        const response = await fetch('/mobile/get_meta_accounts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                data_type: 'meta_account_list',
                 company_name: companyName
             })
         });
@@ -436,7 +435,10 @@ async function fetchMetaAccounts() {
         console.log('✅ 메타 광고 계정 목록 로딩 성공:', data);
         
         if (data.status === 'success' && data.meta_accounts) {
+            console.log('📊 메타 광고 계정 목록:', data.meta_accounts);
             renderMetaAccountFilter(data.meta_accounts);
+        } else {
+            console.warn('⚠️ 메타 광고 계정 목록 데이터 없음');
         }
         
     } catch (error) {
@@ -477,15 +479,13 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             end_date: endDateValue
         });
         
-        // 웹버전과 동일한 엔드포인트 사용 (전체 데이터 요청)
-        const response = await fetch('/dashboard/get_data', {
+        // 모바일 전용 엔드포인트 사용 (전체 데이터 요청)
+        const response = await fetch('/mobile/get_meta_ads_by_account', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                data_type: 'meta_ads_insight_table',
-                level: 'ad',
                 account_id: accountId,
                 company_name: companyName,
                 period: period,
@@ -502,12 +502,12 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const data = await response.json();
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_insight_table) {
-            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_insight_table);
-            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table.length);
+        if (data.status === 'success' && data.meta_ads_by_account) {
+            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_by_account.length);
             
             // 전체 데이터 저장
-            metaAdsAllData = data.meta_ads_insight_table;
+            metaAdsAllData = data.meta_ads_by_account;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
             // 초기 로딩 시 지출 내림차순으로 정렬
@@ -546,13 +546,12 @@ async function fetchLiveAds(accountId) {
     if (!accountId) return;
     
     try {
-        const response = await fetch('/dashboard/get_data', {
+        const response = await fetch('/mobile/get_live_ads', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                data_type: 'meta_ads_preview_list',
                 account_id: accountId
             })
         });
@@ -564,8 +563,8 @@ async function fetchLiveAds(accountId) {
         const data = await response.json();
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_preview_list) {
-            renderLiveAds(data.meta_ads_preview_list);
+        if (data.status === 'success' && data.live_ads) {
+            renderLiveAds(data.live_ads);
             showLiveAdsSection();
         } else {
             console.warn('🔍 LIVE 광고 미리보기 데이터 없음');

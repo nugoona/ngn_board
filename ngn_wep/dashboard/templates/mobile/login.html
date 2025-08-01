@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NGN 대시보드 로그인</title>
+  <title>NGN 모바일 대시보드 로그인</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
   <style>
@@ -37,149 +37,38 @@
     .login-container {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
-      border-radius: 20px;
-      padding: 32px 24px;
+      border-radius: 24px;
+      padding: 48px 40px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      width: calc(100% - 32px);
-      max-width: 400px;
+      width: 100%;
+      max-width: 420px;
       position: relative;
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .login-logo {
-      text-align: center;
-      margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      font-size: 24px;
-      font-weight: 700;
-      color: #333;
-    }
-
-    .login-logo img {
-      width: 32px;
-      height: 32px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #333;
-    }
-
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 16px;
-      border: 2px solid #e1e5e9;
-      border-radius: 12px;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.8);
-    }
-
-    input[type="text"]:focus,
-    input[type="password"]:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      background: rgba(255, 255, 255, 0.95);
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 12px;
-    }
-
-    .login-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-
-    .demo-btn {
-      width: 100%;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.9);
-      color: #667eea;
-      border: 2px solid #667eea;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .demo-btn:hover {
-      background: #667eea;
-      color: white;
-      transform: translateY(-2px);
-    }
-
-    .error-message {
-      color: #e74c3c;
-      font-size: 14px;
-      margin-top: 8px;
-      text-align: center;
-      display: none;
-    }
-
-    .loading {
-      display: none;
-      text-align: center;
-      margin-top: 16px;
-    }
-
-    .loading::after {
-      content: '';
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid #667eea;
-      border-radius: 50%;
-      border-top-color: transparent;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
     /* 모바일 최적화 */
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
       .login-container {
-        padding: 28px 20px;
-        margin: 16px;
+        padding: 32px 24px;
+        margin: 20px;
+        max-width: calc(100% - 40px);
         border-radius: 16px;
       }
       
       .login-logo {
-        font-size: 22px;
-        margin-bottom: 28px;
+        font-size: 24px;
+        margin-bottom: 24px;
+      }
+      
+      .login-logo img {
+        width: 32px;
+        height: 32px;
       }
       
       input[type="text"],
       input[type="password"] {
         padding: 14px 16px;
-        font-size: 16px;
+        font-size: 16px; /* iOS에서 줌 방지 */
       }
       
       .login-btn,
@@ -187,61 +76,120 @@
         padding: 14px;
         font-size: 16px;
       }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      label {
+        font-size: 13px;
+      }
     }
-
+    
     /* 작은 모바일 화면 */
-    @media (max-width: 360px) {
+    @media (max-width: 480px) {
       .login-container {
-        padding: 24px 16px;
-        margin: 12px;
+        padding: 24px 20px;
+        margin: 16px;
+        max-width: calc(100% - 32px);
       }
       
       .login-logo {
-        font-size: 20px;
-        margin-bottom: 24px;
+        font-size: 22px;
+        margin-bottom: 20px;
+      }
+      
+      .login-logo img {
+        width: 28px;
+        height: 28px;
       }
     }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    <div class="login-logo">
-      <img src="{{ url_for('static', filename='img/favicon.ico') }}" alt="NGN">
-      NGN 대시보드
-    </div>
-    
-    <form id="loginForm" method="POST">
-      <div class="form-group">
-        <label for="username">아이디</label>
-        <input type="text" id="username" name="username" required autocomplete="username">
-      </div>
-      
-      <div class="form-group">
-        <label for="password">비밀번호</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
-      </div>
-      
-      <button type="submit" class="login-btn">로그인</button>
-    </form>
 
-    <div class="divider">
-      <span>또는</span>
-    </div>
+    .login-logo {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
 
-    <button class="demo-btn" onclick="fillDemoCredentials()">데모 계정 접속</button>
-    
-    <div class="error-message" id="errorMessage">{% if error %}{{ error }}{% endif %}</div>
-    <div class="loading" id="loading"></div>
-    
-    <!-- 하단 링크들 - 웹 버전과 동일한 스타일 -->
-    <div class="footer-link">
-      <a href="/privacy" target="_blank">개인정보 처리방침</a> |
-      <a href="/delete-info" target="_blank">데이터 삭제 안내</a> |
-      <a href="/terms" target="_blank">서비스 이용약관</a>
-    </div>
-  </div>
+    .login-logo img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
 
-  <style>
+    .error-message {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: block;
+      color: #374151;
+      font-weight: 600;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
+
     .divider {
       text-align: center;
       margin: 20px 0;
@@ -255,61 +203,103 @@
       left: 0;
       right: 0;
       height: 1px;
-      background: rgba(255, 255, 255, 0.3);
+      background: rgba(0, 0, 0, 0.1);
     }
     
     .divider span {
       background: transparent;
       padding: 0 15px;
-      color: rgba(255, 255, 255, 0.8);
+      color: #666;
       font-size: 14px;
       position: relative;
       z-index: 1;
     }
-    
-    /* 웹 버전과 동일한 하단 링크 스타일 */
+
+    .demo-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.8);
+      color: #6366f1;
+      border: 2px solid #6366f1;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+      background: #6366f1;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+
     .footer-link {
       margin-top: 32px;
       text-align: center;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
+      color: #6b7280;
     }
-    
+
     .footer-link a {
-      color: rgba(255, 255, 255, 0.9);
+      color: #6366f1;
       text-decoration: none;
       font-weight: 500;
       transition: color 0.3s ease;
     }
     
     .footer-link a:hover {
-      color: white;
+      color: #4f46e5;
       text-decoration: underline;
     }
-    
-    /* 로그인 입력 박스 스타일 개선 */
-    .form-group input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 16px;
-      transition: all 0.3s ease;
-    }
-    
-    .form-group input:focus {
-      outline: none;
-      border-color: rgba(255, 255, 255, 0.6);
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-    }
-    
-    .form-group input::placeholder {
-      color: rgba(255, 255, 255, 0.6);
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 16px;
+      color: #6366f1;
+      font-size: 14px;
     }
   </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-logo">
+      <img src="{{ url_for('static', filename='img/favicon.ico') }}" alt="NGN">
+      NGN 대시보드
+    </div>
+    
+    <form id="loginForm" method="POST">
+      <div class="form-group">
+        <label for="username">아이디</label>
+        <input type="text" id="username" name="username" required autocomplete="username" placeholder="아이디를 입력하세요">
+      </div>
+      
+      <div class="form-group">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="비밀번호를 입력하세요">
+      </div>
+      
+      <button type="submit" class="login-btn">로그인</button>
+    </form>
+
+    <div class="divider">
+      <span>또는</span>
+    </div>
+
+    <button class="demo-btn" onclick="fillDemoCredentials()">데모 계정 접속</button>
+    
+    <div class="error-message" id="errorMessage">{% if error %}{{ error }}{% endif %}</div>
+    <div class="loading" id="loading">로그인 중...</div>
+    
+    <!-- 하단 링크들 - 웹 버전과 동일한 스타일 -->
+    <div class="footer-link">
+      <a href="/privacy" target="_blank">개인정보 처리방침</a> |
+      <a href="/delete-info" target="_blank">데이터 삭제 안내</a> |
+      <a href="/terms" target="_blank">서비스 이용약관</a>
+    </div>
+  </div>
 
   <script>
     // ✅ 로그인 시 세션스토리지 초기화

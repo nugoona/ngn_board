@@ -97,8 +97,24 @@ function initializeFlatpickr() {
 }
 
 function initializeFilters() {
-  const savedCompany = sessionStorage.getItem("selectedCompany") || "all";
-  const savedPeriod = sessionStorage.getItem("selectedPeriod") || "today";
+  const currentPath = window.location.pathname;
+  
+  // ✅ 페이지별 필터 상태 분리
+  let savedCompany, savedPeriod;
+  
+  if (currentPath === "/" || currentPath === "/dashboard") {
+    // 사이트 성과 페이지 - 항상 "오늘"로 초기화
+    savedCompany = sessionStorage.getItem("siteSelectedCompany") || "all";
+    savedPeriod = "today"; // 항상 "오늘"로 초기화
+  } else if (currentPath === "/ads") {
+    // 광고 성과 페이지 - 저장된 값 사용
+    savedCompany = sessionStorage.getItem("adsSelectedCompany") || "all";
+    savedPeriod = sessionStorage.getItem("adsSelectedPeriod") || "today";
+  } else {
+    // 기본값
+    savedCompany = "all";
+    savedPeriod = "today";
+  }
 
   // ✅ Flatpickr 초기화
   initializeFlatpickr();
@@ -126,12 +142,22 @@ function initializeFilters() {
     $("#accountDropdown .selected-text").text(selectedText);
   }
 
+  // ✅ 기간 필터 초기화 - 페이지별로 다르게 처리
+  const $periodFilter = $("#periodFilter");
+  $periodFilter.val(savedPeriod);
+  
+  // 드롭다운 텍스트 업데이트
+  const periodText = $periodFilter.find("option:selected").text() || "오늘";
+  $("#periodDropdown .selected-text").text(periodText);
+
   // ✅ 업체 필터
   $("#accountFilter").off("change").on("change", function () {
     if (isRestoringFilter) return;
 
     if (isLoading) {
-      const prevValue = sessionStorage.getItem("selectedCompany") || "all";
+      const prevValue = currentPath === "/" || currentPath === "/dashboard" 
+        ? sessionStorage.getItem("siteSelectedCompany") || "all"
+        : sessionStorage.getItem("adsSelectedCompany") || "all";
       showBlockingAlert(() => {
         safelyRestoreSelect($(this), prevValue);
       });
@@ -142,7 +168,14 @@ function initializeFilters() {
     const selectedText = $("#accountFilter option:selected").text() || "모든 업체";
 
     metaAdsState.company = selectedValue;
-    sessionStorage.setItem("selectedCompany", selectedValue);
+    
+    // ✅ 페이지별로 다른 키로 저장
+    if (currentPath === "/" || currentPath === "/dashboard") {
+      sessionStorage.setItem("siteSelectedCompany", selectedValue);
+    } else if (currentPath === "/ads") {
+      sessionStorage.setItem("adsSelectedCompany", selectedValue);
+    }
+    
     $("#accountDropdown .selected-text").text(selectedText);
 
     metaAdsState.accountId = null;
@@ -154,44 +187,54 @@ function initializeFilters() {
 
   // ✅ 기간 필터
   $("#periodFilter").off("change").on("change", function () {
-  if (isRestoringFilter) return;
+    if (isRestoringFilter) return;
 
-  if (isLoading) {
-    const prevValue = sessionStorage.getItem("selectedPeriod") || "today";
-    showBlockingAlert(() => {
-      safelyRestoreSelect($(this), prevValue);
-    });
-    return;
-  }
-
-  const selectedValue = $(this).val();
-  const selectedText = $("#periodFilter option:selected").text() || "기간";
-
-  metaAdsState.period = selectedValue;
-  sessionStorage.setItem("selectedPeriod", selectedValue);
-  $("#periodDropdown .selected-text").text(selectedText);
-
-  if (selectedValue === "manual") {
-    $("#dateRangeContainer").fadeIn().css("display", "flex");
-    // Flatpickr 인스턴스 재활성화
-    startDatePicker?.enable();
-    endDatePicker?.enable();
-  } else {
-    $("#dateRangeContainer").fadeOut();
-    startDatePicker?.clear();
-    endDatePicker?.clear();
-    $("#startDate").val("");
-    $("#endDate").val("");
-
-    // ✅ 카페24 테이블 대상일 경우, 항상 "기간합"으로 되돌리기
-    if (window.location.pathname === "/" || window.location.pathname === "/dashboard") {
-      $("input[name='dateType'][value='summary']").prop("checked", true).trigger("change");
+    if (isLoading) {
+      const prevValue = currentPath === "/" || currentPath === "/dashboard" 
+        ? "today"
+        : sessionStorage.getItem("adsSelectedPeriod") || "today";
+      showBlockingAlert(() => {
+        safelyRestoreSelect($(this), prevValue);
+      });
+      return;
     }
-  }
 
-  // 로딩 팝업 없이 데이터 요청
-  fetchFilteredDataWithoutPopup();
-});
+    const selectedValue = $(this).val();
+    const selectedText = $("#periodFilter option:selected").text() || "기간";
+
+    metaAdsState.period = selectedValue;
+    
+    // ✅ 페이지별로 다른 키로 저장
+    if (currentPath === "/" || currentPath === "/dashboard") {
+      // 사이트 성과 페이지는 항상 "today"로 저장
+      sessionStorage.setItem("siteSelectedPeriod", "today");
+    } else if (currentPath === "/ads") {
+      sessionStorage.setItem("adsSelectedPeriod", selectedValue);
+    }
+    
+    $("#periodDropdown .selected-text").text(selectedText);
+
+    if (selectedValue === "manual") {
+      $("#dateRangeContainer").fadeIn().css("display", "flex");
+      // Flatpickr 인스턴스 재활성화
+      startDatePicker?.enable();
+      endDatePicker?.enable();
+    } else {
+      $("#dateRangeContainer").fadeOut();
+      startDatePicker?.clear();
+      endDatePicker?.clear();
+      $("#startDate").val("");
+      $("#endDate").val("");
+
+      // ✅ 카페24 테이블 대상일 경우, 항상 "기간합"으로 되돌리기
+      if (window.location.pathname === "/" || window.location.pathname === "/dashboard") {
+        $("input[name='dateType'][value='summary']").prop("checked", true).trigger("change");
+      }
+    }
+
+    // 로딩 팝업 없이 데이터 요청
+    fetchFilteredDataWithoutPopup();
+  });
 
 
   // ✅ 시작일
@@ -316,10 +359,22 @@ async function fetchFilteredDataWithoutPopup() {
   console.log("[DEBUG] 로딩 시작 (팝업 없음) - isLoading = true");
 
   const pathname = window.location.pathname;
-  const selectedPeriod = $("#periodFilter").val();
   const selectedCompany = $("#accountFilter").val() || "all";
-  const startDate = $("#startDate").val()?.trim();
-  const endDate = $("#endDate").val()?.trim();
+  
+  // ✅ 페이지별 기간 필터 처리
+  let selectedPeriod, startDate, endDate;
+  
+  if (pathname === "/" || pathname === "/dashboard") {
+    // 사이트 성과 페이지 - 항상 "today" 사용
+    selectedPeriod = "today";
+    startDate = "";
+    endDate = "";
+  } else {
+    // 광고 성과 페이지 - 실제 선택된 값 사용
+    selectedPeriod = $("#periodFilter").val();
+    startDate = $("#startDate").val()?.trim();
+    endDate = $("#endDate").val()?.trim();
+  }
 
   // ✅ company_name 가공
   let companyName;
@@ -430,10 +485,22 @@ async function fetchFilteredData() {
   console.log("[DEBUG] 로딩 시작 - isLoading = true");
 
   const pathname = window.location.pathname;
-  const selectedPeriod = $("#periodFilter").val();
   const selectedCompany = $("#accountFilter").val() || "all";
-  const startDate = $("#startDate").val()?.trim();
-  const endDate = $("#endDate").val()?.trim();
+  
+  // ✅ 페이지별 기간 필터 처리
+  let selectedPeriod, startDate, endDate;
+  
+  if (pathname === "/" || pathname === "/dashboard") {
+    // 사이트 성과 페이지 - 항상 "today" 사용
+    selectedPeriod = "today";
+    startDate = "";
+    endDate = "";
+  } else {
+    // 광고 성과 페이지 - 실제 선택된 값 사용
+    selectedPeriod = $("#periodFilter").val();
+    startDate = $("#startDate").val()?.trim();
+    endDate = $("#endDate").val()?.trim();
+  }
 
   // ✅ company_name 가공
   let companyName;

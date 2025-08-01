@@ -323,11 +323,11 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DEBUG] 카탈로그 사이드바 열기 시작");
     console.log("[DEBUG] accountId:", accountId);
 
-    // 카탈로그 로딩 모달 표시
-    console.log("[DEBUG] 카탈로그 로딩 모달 표시");
-    const loadingModal = qs("#catalogLoadingModal");
-    if (loadingModal) {
-      loadingModal.classList.remove("hidden");
+    // 카탈로그 로딩 팝업 표시
+    console.log("[DEBUG] 카탈로그 로딩 팝업 표시");
+    const loadingPopup = qs("#catalogLoadingPopup");
+    if (loadingPopup) {
+      loadingPopup.classList.remove("hidden");
     }
 
     try {
@@ -353,11 +353,11 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn(err);
       showInlinePopup(err.message || "카탈로그 열기 실패");
     } finally {
-      // 카탈로그 로딩 모달 숨기기
-      console.log("[DEBUG] 카탈로그 로딩 모달 숨기기");
-      const loadingModal = qs("#catalogLoadingModal");
-      if (loadingModal) {
-        loadingModal.classList.add("hidden");
+      // 카탈로그 로딩 팝업 숨기기
+      console.log("[DEBUG] 카탈로그 로딩 팝업 숨기기");
+      const loadingPopup = qs("#catalogLoadingPopup");
+      if (loadingPopup) {
+        loadingPopup.classList.add("hidden");
       }
     }
   });

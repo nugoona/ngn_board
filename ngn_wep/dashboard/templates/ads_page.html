@@ -134,15 +134,20 @@
 <!-- ✅ 카탈로그 사이드바 (슬라이드 방식 + 닫기 버튼 포함) -->
 {% include "components/catalog_sidebar.html" %}
 
-<!-- ✅ 카탈로그 로딩 모달 -->
-<div id="catalogLoadingModal" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <span>카탈로그 데이터 로딩</span>
+<!-- ✅ 카탈로그 로딩 팝업 -->
+<div id="catalogLoadingPopup" class="set-created-popup-wrapper hidden">
+  <div class="set-created-popup">
+    <div class="popup-header">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      카탈로그 데이터 로딩
     </div>
-    <div class="modal-body" style="text-align: center; padding: 40px 20px;">
-      <div class="spinner" style="margin: 0 auto 20px; width: 48px; height: 48px;"></div>
-      <div style="font-size: 16px; color: #333; font-family: inherit;">카탈로그 페이지를 불러오는 중...</div>
+    <div class="popup-row">
+      <div class="popup-text" style="text-align: center;">
+        <div class="spinner" style="margin: 0 auto 16px; width: 32px; height: 32px;"></div>
+        카탈로그 페이지를 불러오는 중...
+      </div>
     </div>
   </div>
 </div>

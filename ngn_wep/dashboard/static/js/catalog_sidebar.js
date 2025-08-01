@@ -21,8 +21,20 @@ const toggleCatalogSidebarLoading = on => {
   console.log("[DEBUG] toggleCatalogSidebarLoading called with:", on);
   const sidebar = qs("#catalogSidebar");
   console.log("[DEBUG] catalogSidebar element:", sidebar);
-  sidebar?.classList.toggle("loading", on);
-  console.log("[DEBUG] loading class applied:", sidebar?.classList.contains("loading"));
+  
+  if (sidebar) {
+    if (on) {
+      sidebar.classList.add("loading");
+      console.log("[DEBUG] loading class added");
+    } else {
+      sidebar.classList.remove("loading");
+      console.log("[DEBUG] loading class removed");
+    }
+    console.log("[DEBUG] loading class applied:", sidebar.classList.contains("loading"));
+  } else {
+    console.error("[ERROR] catalogSidebar element not found!");
+  }
+  
   isLoadingCatalog = on;
 };
 const updateCatalogHeader = id => {

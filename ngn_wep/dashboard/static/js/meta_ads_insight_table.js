@@ -12,6 +12,43 @@ import {
 import { fetchMetaAdsPreviewList } from "./meta_ads_preview.js";
 import { fetchMetaAdsAdsetSummaryByType } from "./meta_ads_adset_summary_by_type.js";
 
+/* ----------------------------------------------------------------
+ * 내부 헬퍼 : 버튼 초기화
+ * ----------------------------------------------------------------*/
+function initializeButtons() {
+  console.log("[DEBUG] 🔥 initializeButtons 함수 호출");
+  
+  // 버튼 요소들을 찾기 (여러 번 시도)
+  let $toggleBtn = $("#toggleTypeSummary");
+  let $catalogBtn = $("#openCatalogSidebarBtn");
+  
+  console.log("[DEBUG] 버튼 요소 초기화:");
+  console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $toggleBtn.length);
+  console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $catalogBtn.length);
+  
+  // 버튼이 없으면 잠시 후 다시 시도
+  if ($toggleBtn.length === 0 || $catalogBtn.length === 0) {
+    console.log("[DEBUG] 버튼을 찾을 수 없음, 100ms 후 재시도");
+    setTimeout(initializeButtons, 100);
+    return;
+  }
+  
+  // 버튼 초기화
+  if ($toggleBtn.length > 0) {
+    $toggleBtn.addClass("disabled").prop("disabled", true);
+    window.$toggleTypeSummaryBtn = $toggleBtn;
+    console.log("[DEBUG] toggleTypeSummary 버튼 초기화 완료");
+  }
+  
+  if ($catalogBtn.length > 0) {
+    $catalogBtn.addClass("disabled").prop("disabled", true);
+    window.$openCatalogSidebarBtn = $catalogBtn;
+    console.log("[DEBUG] openCatalogSidebarBtn 버튼 초기화 완료");
+  }
+  
+  console.log("[DEBUG] ✅ 버튼 초기화 완료");
+}
+
 $(document).ready(function () {
   console.log("[DEBUG] 🔥 meta_ads_insight_table.js document.ready 시작");
   if (window.location.pathname !== "/ads") {
@@ -25,6 +62,9 @@ $(document).ready(function () {
 
   // 초기 버튼 상태 설정 (계정이 선택되지 않은 상태)
   initializeButtons();
+  
+  // 초기 테이블 메시지 설정
+  $("#metaAdsInsightBody").html('<tr><td colspan="13" class="text-center">계정을 선택해 주세요</td></tr>');
 
   fetchMetaAccountList();
 
@@ -194,43 +234,6 @@ export function fetchMetaAccountList() {
       console.error("[ERROR] Meta 광고 계정 목록 불러오기 실패");
     },
   });
-
-  /* ----------------------------------------------------------------
-   * 내부 헬퍼 : 버튼 초기화
-   * ----------------------------------------------------------------*/
-  function initializeButtons() {
-    console.log("[DEBUG] 🔥 initializeButtons 함수 호출");
-    
-    // 버튼 요소들을 찾기 (여러 번 시도)
-    let $toggleBtn = $("#toggleTypeSummary");
-    let $catalogBtn = $("#openCatalogSidebarBtn");
-    
-    console.log("[DEBUG] 버튼 요소 초기화:");
-    console.log("[DEBUG] toggleTypeSummary 버튼 찾기:", $toggleBtn.length);
-    console.log("[DEBUG] openCatalogSidebarBtn 버튼 찾기:", $catalogBtn.length);
-    
-    // 버튼이 없으면 잠시 후 다시 시도
-    if ($toggleBtn.length === 0 || $catalogBtn.length === 0) {
-      console.log("[DEBUG] 버튼을 찾을 수 없음, 100ms 후 재시도");
-      setTimeout(initializeButtons, 100);
-      return;
-    }
-    
-    // 버튼 초기화
-    if ($toggleBtn.length > 0) {
-      $toggleBtn.addClass("disabled").prop("disabled", true);
-      window.$toggleTypeSummaryBtn = $toggleBtn;
-      console.log("[DEBUG] toggleTypeSummary 버튼 초기화 완료");
-    }
-    
-    if ($catalogBtn.length > 0) {
-      $catalogBtn.addClass("disabled").prop("disabled", true);
-      window.$openCatalogSidebarBtn = $catalogBtn;
-      console.log("[DEBUG] openCatalogSidebarBtn 버튼 초기화 완료");
-    }
-    
-    console.log("[DEBUG] ✅ 버튼 초기화 완료");
-  }
 
   /* ----------------------------------------------------------------
    * 내부 헬퍼 : 계정 변경 이후 후처리

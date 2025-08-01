@@ -323,17 +323,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const accountId = window.metaAdsState?.accountId;
     if (!accountId) return showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
 
-    // 전체 페이지 로딩 오버레이 표시
-    if (typeof showFullPageLoading === 'function') {
-      showFullPageLoading();
-    }
+    console.log("[DEBUG] 카탈로그 사이드바 열기 시작");
+    console.log("[DEBUG] accountId:", accountId);
 
     // 먼저 사이드바를 표시하고 hidden 클래스 제거
     const sidebar = qs("#catalogSidebar");
-    sidebar?.classList.remove("hidden");
-    sidebar?.classList.add("active");
+    console.log("[DEBUG] sidebar element:", sidebar);
     
+    if (sidebar) {
+      sidebar.classList.remove("hidden");
+      sidebar.classList.add("active");
+      console.log("[DEBUG] 사이드바 표시됨");
+    }
+
     // 로딩 시작
+    console.log("[DEBUG] 로딩 시작");
     toggleCatalogSidebarLoading(true);
     
     try {
@@ -347,11 +351,8 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn(err);
       showInlinePopup(err.message || "카탈로그 열기 실패");
     } finally {
+      console.log("[DEBUG] 로딩 완료");
       toggleCatalogSidebarLoading(false);
-      // 전체 페이지 로딩 오버레이 숨김
-      if (typeof hideFullPageLoading === 'function') {
-        hideFullPageLoading();
-      }
     }
   });
 

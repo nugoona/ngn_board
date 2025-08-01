@@ -331,15 +331,23 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("[DEBUG] sidebar element:", sidebar);
     
     if (sidebar) {
+      // 사이드바를 즉시 표시
       sidebar.classList.remove("hidden");
       sidebar.classList.add("active");
       console.log("[DEBUG] 사이드바 표시됨");
       
-      // 사이드바가 표시된 후 로딩 시작 (약간의 지연으로 애니메이션이 보이도록)
-      setTimeout(() => {
-        console.log("[DEBUG] 로딩 시작");
-        toggleCatalogSidebarLoading(true);
-      }, 50);
+      // 로딩 애니메이션을 즉시 시작
+      console.log("[DEBUG] 로딩 시작");
+      toggleCatalogSidebarLoading(true);
+      
+      // 로딩 스피너가 보이도록 강제로 스타일 적용
+      const spinner = sidebar.querySelector(".loading-spinner");
+      if (spinner) {
+        spinner.style.display = "block";
+        spinner.style.visibility = "visible";
+        spinner.style.opacity = "1";
+        console.log("[DEBUG] 로딩 스피너 강제 표시");
+      }
     }
 
     try {

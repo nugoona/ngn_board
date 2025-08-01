@@ -178,33 +178,50 @@ export function fetchMetaAccountList() {
 
       /* ---------- 4) 계정 change 이벤트 ---------- */
       console.log("[DEBUG] 계정 선택 이벤트 바인딩 시작");
-      $selector
-        .off("change.metaInsight")
-        .on("change.metaInsight", function (event) {
-          console.log("[DEBUG] 🔥 계정 change 이벤트 발생!");
-          const selId = $(this).val() || null;
-          const selName = $(this).find("option:selected").text();
-          console.log("[DEBUG] 선택된 계정 ID:", selId);
-          console.log("[DEBUG] 선택된 계정 이름:", selName);
-          console.log("[DEBUG] 이벤트 타입:", event.type);
-          console.log("[DEBUG] 이벤트 타겟:", event.target);
-          
-          // metaAdsState 업데이트
+      
+      // 기존 이벤트 제거
+      $selector.off("change.metaInsight");
+      
+      // 새로운 이벤트 바인딩
+      $selector.on("change.metaInsight", function (event) {
+        console.log("[DEBUG] 🔥 계정 change 이벤트 발생!");
+        const selId = $(this).val() || null;
+        const selName = $(this).find("option:selected").text();
+        console.log("[DEBUG] 선택된 계정 ID:", selId);
+        console.log("[DEBUG] 선택된 계정 이름:", selName);
+        console.log("[DEBUG] 이벤트 타입:", event.type);
+        console.log("[DEBUG] 이벤트 타겟:", event.target);
+        
+        // metaAdsState 업데이트
+        metaAdsState.accountId = selId;
+        metaAdsState.catalogId = metaAdsState.catalogMap[selId] || null;
+        metaAdsState.company   = selId ? (metaAdsState.companyMap[selId] || "-")
+                                       : "all";
+
+        console.log("[DEBUG] metaAdsState 업데이트:", {
+          accountId: metaAdsState.accountId,
+          catalogId: metaAdsState.catalogId,
+          company: metaAdsState.company
+        });
+
+        console.log("[DEBUG] updateAfterAccountChange 호출 직전");
+        updateAfterAccountChange();
+        console.log("[DEBUG] updateAfterAccountChange 호출 완료");
+      });
+      
+      // 전역 이벤트도 추가 (중복 방지)
+      $(document).off("change.metaInsightGlobal").on("change.metaInsightGlobal", "#metaAccountSelector", function(event) {
+        console.log("[DEBUG] 🔥 전역 계정 change 이벤트 발생!");
+        const selId = $(this).val() || null;
+        if (selId) {
+          console.log("[DEBUG] 전역 이벤트에서 계정 선택됨:", selId);
           metaAdsState.accountId = selId;
           metaAdsState.catalogId = metaAdsState.catalogMap[selId] || null;
-          metaAdsState.company   = selId ? (metaAdsState.companyMap[selId] || "-")
-                                         : "all";
-
-          console.log("[DEBUG] metaAdsState 업데이트:", {
-            accountId: metaAdsState.accountId,
-            catalogId: metaAdsState.catalogId,
-            company: metaAdsState.company
-          });
-
-          console.log("[DEBUG] updateAfterAccountChange 호출 직전");
+          metaAdsState.company = metaAdsState.companyMap[selId] || "-";
           updateAfterAccountChange();
-          console.log("[DEBUG] updateAfterAccountChange 호출 완료");
-        });
+        }
+      });
+      
       console.log("[DEBUG] 계정 선택 이벤트 바인딩 완료");
 
       /* ---------- 5) 계정 1개면 자동 선택, 여러 개면 "모든 계정" 선택 ---------- */
@@ -272,15 +289,24 @@ export function fetchMetaAccountList() {
           console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
           console.log("[DEBUG] has disabled class:", $toggleBtn.hasClass("disabled"));
           
-          // 모든 비활성화 상태 제거
+          // 모든 비활성화 상태 제거 (강제로)
           $toggleBtn.removeClass("disabled");
           $toggleBtn.prop("disabled", false);
           $toggleBtn.removeAttr("disabled");
+          $toggleBtn.attr("disabled", false);
           $toggleBtn.css({
-            "opacity": "1",
-            "pointer-events": "auto",
-            "cursor": "pointer"
+            "opacity": "1 !important",
+            "pointer-events": "auto !important",
+            "cursor": "pointer !important",
+            "background-color": "initial",
+            "color": "initial"
           });
+          
+          // 인라인 스타일로 강제 활성화
+          $toggleBtn[0].style.opacity = "1";
+          $toggleBtn[0].style.pointerEvents = "auto";
+          $toggleBtn[0].style.cursor = "pointer";
+          $toggleBtn[0].disabled = false;
           
           console.log("[DEBUG] toggleTypeSummary 버튼 활성화 후 상태:");
           console.log("[DEBUG] disabled:", $toggleBtn.prop("disabled"));
@@ -292,15 +318,24 @@ export function fetchMetaAccountList() {
           console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));
           console.log("[DEBUG] has disabled class:", $catalogBtn.hasClass("disabled"));
           
-          // 모든 비활성화 상태 제거
+          // 모든 비활성화 상태 제거 (강제로)
           $catalogBtn.removeClass("disabled");
           $catalogBtn.prop("disabled", false);
           $catalogBtn.removeAttr("disabled");
+          $catalogBtn.attr("disabled", false);
           $catalogBtn.css({
-            "opacity": "1",
-            "pointer-events": "auto",
-            "cursor": "pointer"
+            "opacity": "1 !important",
+            "pointer-events": "auto !important",
+            "cursor": "pointer !important",
+            "background-color": "initial",
+            "color": "initial"
           });
+          
+          // 인라인 스타일로 강제 활성화
+          $catalogBtn[0].style.opacity = "1";
+          $catalogBtn[0].style.pointerEvents = "auto";
+          $catalogBtn[0].style.cursor = "pointer";
+          $catalogBtn[0].disabled = false;
           
           console.log("[DEBUG] openCatalogSidebarBtn 버튼 활성화 후 상태:");
           console.log("[DEBUG] disabled:", $catalogBtn.prop("disabled"));

@@ -2683,8 +2683,8 @@ th.sortable.desc::after {
 }
 
 .catalog-loading-popup .loading-text {
-  font-size: 16px !important;
-  font-weight: 500 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
   color: white !important;
   margin: 0 !important;
   display: block !important;
@@ -2702,8 +2702,8 @@ th.sortable.desc::after {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
   text-align: center !important;
   margin-top: 20px !important;
 }
@@ -2714,8 +2714,8 @@ div#catalogLoadingPopup div.catalog-loading-content div.loading-text {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
   text-align: center !important;
   margin-top: 20px !important;
   position: relative !important;

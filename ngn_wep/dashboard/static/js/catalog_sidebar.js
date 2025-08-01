@@ -18,7 +18,11 @@ const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 /* ───────── 상태/UI util ───────── */
 const toggleCatalogSidebarLoading = on => {
-  qs("#catalogSidebar")?.classList.toggle("loading", on);
+  console.log("[DEBUG] toggleCatalogSidebarLoading called with:", on);
+  const sidebar = qs("#catalogSidebar");
+  console.log("[DEBUG] catalogSidebar element:", sidebar);
+  sidebar?.classList.toggle("loading", on);
+  console.log("[DEBUG] loading class applied:", sidebar?.classList.contains("loading"));
   isLoadingCatalog = on;
 };
 const updateCatalogHeader = id => {

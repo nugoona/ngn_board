@@ -169,16 +169,15 @@ export function fetchMetaAccountList() {
         });
       console.log("[DEBUG] 계정 선택 이벤트 바인딩 완료");
 
-      /* ---------- 5) 계정 1개면 자동 선택 ---------- */
+      /* ---------- 5) 계정 1개면 자동 선택, 여러 개면 "모든 계정" 선택 ---------- */
       if (list.length === 1) {
         const onlyId = list[0].meta_acc_id || list[0].account_id;
         console.log("[DEBUG] 계정 1개 자동 선택:", onlyId);
         $selector.val(onlyId).trigger("change");
       } else if (list.length > 1) {
-        // 계정이 여러 개인 경우에도 첫 번째 계정을 자동 선택 (임시 해결책)
-        const firstId = list[0].meta_acc_id || list[0].account_id;
-        console.log("[DEBUG] 계정 여러 개 - 첫 번째 계정 자동 선택:", firstId);
-        $selector.val(firstId).trigger("change");
+        // 계정이 여러 개인 경우 "모든 계정" 선택 (자동 선택하지 않음)
+        console.log("[DEBUG] 계정 여러 개 - 모든 계정 선택 (자동 선택 안함)");
+        $selector.val("").trigger("change");
       }
 
       /* ---------- 6) 최초 테이블 표시 ---------- */

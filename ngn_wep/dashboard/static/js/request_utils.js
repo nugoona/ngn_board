@@ -28,9 +28,6 @@ export function latestAjaxRequest(key, ajaxOptions, onSuccess) {
     $.ajax(ajaxOptions);
 }
 
-// 전역 함수로도 노출 (기존 코드와의 호환성을 위해)
-window.latestAjaxRequest = latestAjaxRequest;
-
 // ✅ 페이지, 필터 입력값 기반으로 요청 데이터 생성
 export function getRequestData(page, extra = {}) {
     let companyName = $("#accountFilter").val() || "all";
@@ -49,6 +46,3 @@ export function getRequestData(page, extra = {}) {
 
     return { ...base, ...extra };
 }
-
-// 전역 함수로도 노출 (기존 코드와의 호환성을 위해)
-window.getRequestData = getRequestData;

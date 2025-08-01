@@ -55,61 +55,27 @@ function fetchProductSalesRatio() {
   const loadingOverlay = $("#loadingOverlayProductSalesRatio");
   if (loadingOverlay.length > 0) {
     showLoading("#loadingOverlayProductSalesRatio");
-    // ✅ 로딩 시 wrapper에 loading 클래스 추가
-    document.querySelector('.product-sales-ratio-wrapper')?.classList.add("loading");
   }
-
-  // 🔥 타임아웃 설정 (30초)
-  const timeoutId = setTimeout(() => {
-    console.error("[TIMEOUT] 상품 매출 비중 요청 타임아웃");
-    if (loadingOverlay.length > 0) {
-      hideLoading("#loadingOverlayProductSalesRatio");
-      document.querySelector('.product-sales-ratio-wrapper')?.classList.remove("loading");
-    }
-    // 🔥 빈 데이터로 테이블과 차트 렌더링
-    allProductSalesRatioData = [];
-    renderProductSalesRatioTable(1);
-    renderProductSalesRatioChart();
-  }, 30000);
 
   latestAjaxRequest("product_sales_ratio", {
     url: "/dashboard/get_data",
     method: "POST",
     contentType: "application/json",
     data: JSON.stringify(requestData),
-    timeout: 25000, // 25초 타임아웃
     error: function (xhr, status, error) {
-      clearTimeout(timeoutId);
       if (loadingOverlay.length > 0) {
         hideLoading("#loadingOverlayProductSalesRatio");
-        // ✅ 에러 시에도 wrapper에서 loading 클래스 제거
-        document.querySelector('.product-sales-ratio-wrapper')?.classList.remove("loading");
       }
       console.error("[ERROR] 상품 매출 비중 오류:", status, error);
-      
-      // 🔥 에러 시에도 빈 데이터로 렌더링
-      allProductSalesRatioData = [];
-      renderProductSalesRatioTable(1);
-      renderProductSalesRatioChart();
     }
   }, function (res) {
-    clearTimeout(timeoutId);
     if (loadingOverlay.length > 0) {
       hideLoading("#loadingOverlayProductSalesRatio");
-      // ✅ 로딩 완료 시 wrapper에서 loading 클래스 제거
-      document.querySelector('.product-sales-ratio-wrapper')?.classList.remove("loading");
     }
 
     if (res.status === "success") {
       allProductSalesRatioData = res.product_sales_ratio || [];
       console.log("[DEBUG] 상품 매출 비중 데이터 수신:", allProductSalesRatioData);
-      
-      // 🔥 데이터 검증 추가
-      if (!Array.isArray(allProductSalesRatioData)) {
-        console.warn("[WARN] 상품 매출 비중 데이터가 배열이 아님:", allProductSalesRatioData);
-        allProductSalesRatioData = [];
-      }
-      
       renderProductSalesRatioTable(1);
       setupPagination_ratio();
       // 🔥 차트도 함께 업데이트
@@ -118,7 +84,6 @@ function fetchProductSalesRatio() {
       console.warn("[WARN] 상품 매출 비중 응답 없음", res);
       allProductSalesRatioData = [];
       // 🔥 데이터가 없을 때도 차트 업데이트
-      renderProductSalesRatioTable(1);
       renderProductSalesRatioChart();
     }
   });
@@ -220,11 +185,7 @@ function changePage_ratio(page) {
 // ECharts 파이 차트 렌더링
 function renderProductSalesRatioChart() {
   const chartDom = document.getElementById('productSalesRatioChart');
-  if (!chartDom) {
-    console.warn("[WARN] productSalesRatioChart 요소를 찾을 수 없습니다.");
-    return;
-  }
-  
+  if (!chartDom) return;
   // 기존 차트 인스턴스 제거
   if (window.echartsProductSalesRatio) {
     window.echartsProductSalesRatio.dispose();
@@ -235,46 +196,6 @@ function renderProductSalesRatioChart() {
     .filter(item => (item.item_product_sales || item.total_sales || 0) > 0)
     .sort((a, b) => (b.sales_ratio_percent || b.sales_ratio || 0) - (a.sales_ratio_percent || a.sales_ratio || 0));
   const top5 = sortedData.slice(0, 5);
-  
-  // 🔥 데이터가 없을 때 처리
-  if (top5.length === 0) {
-    console.log("[DEBUG] 차트 데이터 없음 - 빈 차트 렌더링");
-    const myChart = echarts.init(chartDom, null, {renderer: 'svg'});
-    window.echartsProductSalesRatio = myChart;
-    
-    const option = {
-      title: {
-        text: '매출 상위 상품군 TOP5',
-        left: 'center',
-        top: 20,
-        textStyle: {
-          fontSize: 22,
-          fontWeight: '700',
-          fontFamily: 'Pretendard, sans-serif',
-          color: '#ffffff'
-        },
-        backgroundColor: '#1e293b',
-        borderRadius: 6,
-        padding: [12, 24],
-        shadowBlur: 8,
-        shadowColor: 'rgba(0, 0, 0, 0.15)',
-        shadowOffsetX: 2,
-        shadowOffsetY: 2
-      },
-      graphic: [{
-        type: 'text',
-        left: 'center',
-        top: 'middle',
-        style: {
-          text: '데이터가 없습니다',
-          fontSize: 16,
-          fill: '#666'
-        }
-      }]
-    };
-    myChart.setOption(option);
-    return;
-  }
   
   // 테이블 데이터에서 실제 퍼센트를 가져와서 사용
   const data = top5.map(item => ({
@@ -306,31 +227,31 @@ function renderProductSalesRatioChart() {
       shadowOffsetX: 2,
       shadowOffsetY: 2
     },
-    tooltip: {
-      trigger: 'item',
-      formatter: function(params) {
-        const actualSales = params.data.actualSales || 0;
-        const formattedSales = actualSales.toLocaleString();
-        return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
-      }
-    },
-    graphic: [{
-      type: 'line',
-      left: 'center',
-      top: 70,
-      shape: {
-        x1: -80,
-        y1: 0,
-        x2: 80,
-        y2: 0
+          tooltip: {
+        trigger: 'item',
+        formatter: function(params) {
+          const actualSales = params.data.actualSales || 0;
+          const formattedSales = actualSales.toLocaleString();
+          return `${params.name}<br/>₩${formattedSales} (${params.value}%)`;
+        }
       },
-      style: {
-        stroke: '#e2e8f0',
-        lineWidth: 2,
-        shadowBlur: 2,
-        shadowColor: 'rgba(0, 0, 0, 0.1)'
-      }
-    }],
+      graphic: [{
+        type: 'line',
+        left: 'center',
+        top: 70,
+        shape: {
+          x1: -80,
+          y1: 0,
+          x2: 80,
+          y2: 0
+        },
+        style: {
+          stroke: '#e2e8f0',
+          lineWidth: 2,
+          shadowBlur: 2,
+          shadowColor: 'rgba(0, 0, 0, 0.1)'
+        }
+      }],
     series: [{
       name: '매출 비중',
       type: 'pie',
@@ -432,6 +353,8 @@ $(document).ready(function() {
     }
   });
 });
+
+
 
 // 전역 함수로 노출
 window.fetchProductSalesRatio = fetchProductSalesRatio;

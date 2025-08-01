@@ -3,8 +3,6 @@
  * Intersection Observer API를 사용한 스마트 로딩
  */
 
-import { getRequestData } from './request_utils.js';
-
 class LazyLoadManager {
     constructor() {
         this.observers = new Map();

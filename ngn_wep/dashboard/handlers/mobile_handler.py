@@ -356,7 +356,8 @@ def get_meta_ads_by_account():
                 name for name in session.get("company_names", []) if name.lower() != "demo"
             ]
         else:
-            company_name = str(raw_company_name).strip().lower()
+            # 단일 회사명인 경우 리스트로 변환
+            company_name = [str(raw_company_name).strip().lower()]
         
         # 페이지네이션 파라미터 추출 (백엔드에서는 모든 데이터 가져오기)
         page = data.get("page", 1)
@@ -364,6 +365,7 @@ def get_meta_ads_by_account():
         
         # 메타 광고별 성과 조회 (광고 탭 기준)
         print(f"[MOBILE] 📊 메타 광고별 성과 파라미터: company_name={company_name}, account_id={account_id}, start_date={start_date}, end_date={end_date}, page={page}, limit={limit}")
+        print(f"[MOBILE] 📊 company_name 타입: {type(company_name)}, 값: {company_name}")
         
         ads_data = get_meta_ads_insight_table(
             level="ad",
@@ -424,11 +426,13 @@ def get_live_ads():
             return jsonify({"status": "error", "message": "account_id 누락"}), 400
         
         # LIVE 광고 미리보기 조회 (웹버전과 동일)
+        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 요청: account_id={account_id}")
         live_ads = get_meta_ads_preview_list(account_id)
+        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 결과: {len(live_ads) if live_ads else 0}개")
         
         return jsonify({
             "status": "success",
-            "live_ads": live_ads[:5]  # 상위 5개만
+            "live_ads": live_ads[:5] if live_ads else []  # 상위 5개만
         })
         
     except Exception as e:

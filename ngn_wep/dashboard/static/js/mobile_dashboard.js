@@ -831,11 +831,24 @@ function initializeFlatpickr() {
         }
     });
 
-    // 날짜 선택 시 데이터 새로고침
-    $("#startDate, #endDate").change(function() {
-        const startDate = $("#startDate").val();
+    // 시작일 선택 시
+    $("#startDate").change(function() {
+        const startDate = $(this).val();
         const endDate = $("#endDate").val();
-        if (startDate && endDate) {
+        
+        // 종료일이 이미 선택되어 있고, 시작일이 종료일보다 이전인 경우에만 데이터 로드
+        if (startDate && endDate && new Date(startDate) <= new Date(endDate)) {
+            fetchMobileData();
+        }
+    });
+    
+    // 종료일 선택 시
+    $("#endDate").change(function() {
+        const endDate = $(this).val();
+        const startDate = $("#startDate").val();
+        
+        // 시작일이 이미 선택되어 있고, 종료일이 시작일보다 이후인 경우에만 데이터 로드
+        if (startDate && endDate && new Date(endDate) >= new Date(startDate)) {
             fetchMobileData();
         }
     });

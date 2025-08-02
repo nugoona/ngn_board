@@ -335,7 +335,13 @@ async function fetchMobileData() {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         
-        const companyName = companySelect ? companySelect.value : 'all';
+        // 회사 선택 값이 비어있으면 자동 선택 시도
+        let companyName = companySelect ? companySelect.value : 'all';
+        if (!companyName || companyName === '') {
+            companyName = setupCompanyAutoSelection() || 'all';
+            console.log('🏢 회사값 자동 보정:', companyName);
+        }
+
         const period = periodSelect ? periodSelect.value : 'today';
         const startDate = startDateInput ? startDateInput.value.trim() : '';
         const endDate = endDateInput ? endDateInput.value.trim() : '';
@@ -593,10 +599,15 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const endDate = document.getElementById('endDate');
         
         const companySelect = document.getElementById('accountFilter');
+        let companyName = companySelect ? companySelect.value : 'all';
+        if (!companyName || companyName === '') {
+            companyName = setupCompanyAutoSelection() || 'all';
+            console.log('🏢 메타 광고 요청 - 회사값 자동 보정:', companyName);
+        }
+
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
         const endDateValue = endDate ? endDate.value : '';
-        const companyName = companySelect ? companySelect.value : 'all';
         
         metaAdsCurrentPage = page;
         
@@ -836,8 +847,9 @@ function initMobileDashboard() {
     // 필터 설정
     setupFilters();
     
-    // 회사 자동 선택 설정
-    setupCompanyAutoSelection();
+    // 회사 자동 선택 설정 - 반환값 확인
+    const selectedCompany = setupCompanyAutoSelection();
+    console.log('🏢 초기화 시 선택된 회사:', selectedCompany);
     
     // 메타 광고 계정 목록 로딩
     fetchMetaAccounts();
@@ -850,12 +862,35 @@ function initMobileDashboard() {
 
 // 회사 자동 선택 설정
 function setupCompanyAutoSelection() {
+    console.log('🏢 회사 자동 선택 시작');
     const companySelect = document.getElementById('accountFilter');
-    if (companySelect && companySelect.options.length > 0) {
-        // 첫 번째 옵션 선택 (all 또는 첫 번째 회사)
-        companySelect.selectedIndex = 0;
-        console.log('🏢 첫 번째 회사 자동 선택:', companySelect.value);
+    if (!companySelect) {
+        console.error('❌ 회사 선택 엘리먼트를 찾을 수 없음');
+        return;
     }
+
+    // 옵션 목록 확인
+    const options = Array.from(companySelect.options);
+    console.log('🏢 사용 가능한 회사 목록:', options.map(opt => ({ value: opt.value, text: opt.text })));
+
+    if (options.length > 0) {
+        // 첫 번째 옵션이 placeholder가 아닌 경우에만 선택
+        const firstOption = options[0];
+        if (firstOption.value && firstOption.value !== 'placeholder') {
+            companySelect.value = firstOption.value;
+            console.log('🏢 첫 번째 회사 자동 선택:', firstOption.value);
+        } else if (options.length > 1) {
+            // placeholder가 있는 경우 두 번째 옵션 선택
+            companySelect.value = options[1].value;
+            console.log('🏢 두 번째 회사 자동 선택:', options[1].value);
+        }
+    }
+
+    // 선택된 값 확인
+    const selectedValue = companySelect.value;
+    console.log('🏢 최종 선택된 회사:', selectedValue);
+
+    return selectedValue;
 }
 
 // ─────────────────────────────────────────────

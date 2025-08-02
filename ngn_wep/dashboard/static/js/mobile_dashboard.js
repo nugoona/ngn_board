@@ -718,6 +718,13 @@ function setupFilters() {
     if (startDate) {
         startDate.addEventListener('change', () => {
             console.log('📅 시작일 변경:', startDate.value);
+            // placeholder 관리
+            const startPlaceholder = startDate.nextElementSibling;
+            if (startDate.value) {
+                startPlaceholder.style.opacity = '0';
+            } else {
+                startPlaceholder.style.opacity = '1';
+            }
             // 🚀 디바운싱 적용
             debounceFetchMobileData();
             
@@ -742,6 +749,13 @@ function setupFilters() {
     if (endDate) {
         endDate.addEventListener('change', () => {
             console.log('📅 종료일 변경:', endDate.value);
+            // placeholder 관리
+            const endPlaceholder = endDate.nextElementSibling;
+            if (endDate.value) {
+                endPlaceholder.style.opacity = '0';
+            } else {
+                endPlaceholder.style.opacity = '1';
+            }
             // 🚀 디바운싱 적용
             debounceFetchMobileData();
             

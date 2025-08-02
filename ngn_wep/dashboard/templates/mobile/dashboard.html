@@ -18,6 +18,22 @@
     <!-- 네이티브 달력 스타일 -->
     <style>
         /* 네이티브 달력 스타일링 */
+        .date-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+
+        .date-placeholder {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #666;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
         input[type="date"] {
             -webkit-appearance: none;
             appearance: none;
@@ -30,6 +46,12 @@
             box-shadow: var(--shadow-sm);
             width: 100%;
             font-family: inherit;
+        }
+
+        /* 날짜가 선택되면 placeholder 숨김 */
+        input[type="date"]:not(:placeholder-shown) + .date-placeholder,
+        input[type="date"]:focus + .date-placeholder {
+            opacity: 0;
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator {
@@ -1134,8 +1156,14 @@
                 </select>
             </div>
             <div class="filter-row" id="dateRangeContainer" style="display: none;">
-                <input type="date" id="startDate" class="date-input" placeholder="시작일">
-                <input type="date" id="endDate" class="date-input" placeholder="종료일">
+                <div class="date-input-wrapper">
+                    <input type="date" id="startDate" class="date-input">
+                    <span class="date-placeholder">시작일 선택</span>
+                </div>
+                <div class="date-input-wrapper">
+                    <input type="date" id="endDate" class="date-input">
+                    <span class="date-placeholder">종료일 선택</span>
+                </div>
             </div>
             <div class="header-bottom">
                 <div class="update-time" id="updatedAtText">업데이트: --</div>

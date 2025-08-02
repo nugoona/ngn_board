@@ -188,11 +188,11 @@ async function fetchCafe24ProductSalesData(page = 1) {
         
         if (data.status === 'success' && data.cafe24_product_sales) {
             renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
+            hideLoading("#loadingOverlayCafe24Products");  // 렌더링 후 로딩 숨김
         }
         
     } catch (error) {
         console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
-    } finally {
         hideLoading("#loadingOverlayCafe24Products");
     }
 }
@@ -310,16 +310,20 @@ async function fetchMobileData() {
             // 1. Performance Summary 렌더링
             if (combinedData.performance_summary) {
                 renderPerformanceSummary(combinedData.performance_summary);
+                hideLoading("#loadingOverlaySitePerformance");
+                hideLoading("#loadingOverlayAdPerformance");
             }
             
             // 2. Cafe24 Product Sales 렌더링
             if (combinedData.cafe24_product_sales) {
                 renderCafe24ProductSales(combinedData.cafe24_product_sales, combinedData.cafe24_product_sales_total_count);
+                hideLoading("#loadingOverlayCafe24Products");
             }
             
             // 3. GA4 Source Summary 렌더링
             if (combinedData.ga4_source_summary) {
                 renderGa4SourceSummary(combinedData.ga4_source_summary);
+                hideLoading("#loadingOverlayGa4Sources");
             }
             
             // 4. 업데이트 시간 표시
@@ -331,12 +335,12 @@ async function fetchMobileData() {
     } catch (error) {
         console.error('❌ 모바일 데이터 로딩 실패:', error);
         showError('데이터 로드 실패');
-    } finally {
-        // 실제 존재하는 로딩 스피너만 숨기기
+        // 에러 시에도 로딩 스피너 숨김
         hideLoading("#loadingOverlaySitePerformance");
         hideLoading("#loadingOverlayAdPerformance");
         hideLoading("#loadingOverlayCafe24Products");
-        // hideLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
+        hideLoading("#loadingOverlayGa4Sources");
+    } finally {
         isLoading = false;
     }
 }
@@ -525,15 +529,17 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             const pageData = metaAdsAllData.slice(startIndex, endIndex);
             
             renderMetaAdsByAccount(pageData, metaAdsAllData.length);
+            // 렌더링 후 로딩 숨김
+            hideLoading("#loadingOverlayMetaAds");
         } else {
             console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
+            hideLoading("#loadingOverlayMetaAds");
         }
         
     } catch (error) {
         console.error('❌ 메타 광고별 성과 로딩 실패:', error);
-    } finally {
-        // 메타 광고 로딩 오버레이 숨기기
         hideLoading("#loadingOverlayMetaAds");
+    } finally {
         // 🔥 추가로 모든 로딩 오버레이 확인
         hideAllLoadingOverlays();
     }

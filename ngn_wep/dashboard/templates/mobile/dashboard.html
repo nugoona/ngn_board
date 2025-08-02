@@ -21,59 +21,48 @@
         .date-input-wrapper {
             position: relative;
             flex: 1;
+            height: 44px;
+            background: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
         }
 
         .date-placeholder {
+            font-size: 14px;
+            color: #666;
+            pointer-events: none;
             position: absolute;
             left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
+        }
+
+        .date-value {
             font-size: 14px;
-            color: #555;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-            z-index: 10;
+            color: var(--text-primary);
+            display: none;
+            position: absolute;
+            left: 16px;
         }
 
         input[type="date"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: white;
-            padding: 12px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 8px;
-            font-size: 14px;
-            color: var(--text-primary);
-            width: 100%;
-            font-family: inherit;
-        }
-
-        /* 값이 없을 때는 텍스트 숨김 */
-        input[type="date"]:invalid {
-            color: transparent;
-        }
-
-        input[type="date"]:focus {
-            border-color: rgba(0, 0, 0, 0.2);
-            outline: none;
-        }
-
-        /* 날짜가 선택되면 placeholder 숨김 */
-        input[type="date"]:not(:placeholder-shown) + .date-placeholder,
-        input[type="date"]:focus + .date-placeholder {
             opacity: 0;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            padding: 0;
-            margin: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             cursor: pointer;
-            opacity: 0.6;
         }
 
-        input[type="date"]::-webkit-datetime-edit {
-            padding: 0;
+        /* 날짜가 선택되면 placeholder 숨기고 값 표시 */
+        input[type="date"]:not(:invalid) + .date-placeholder {
+            display: none;
+        }
+
+        input[type="date"]:not(:invalid) ~ .date-value {
+            display: block;
         }
 
         /* 다크모드 대응 */
@@ -1169,10 +1158,12 @@
                 <div class="date-input-wrapper">
                     <input type="date" id="startDate" class="date-input" required>
                     <span class="date-placeholder">시작일 선택</span>
+                    <span class="date-value"></span>
                 </div>
                 <div class="date-input-wrapper">
                     <input type="date" id="endDate" class="date-input" required>
                     <span class="date-placeholder">종료일 선택</span>
+                    <span class="date-value"></span>
                 </div>
             </div>
             <div class="header-bottom">

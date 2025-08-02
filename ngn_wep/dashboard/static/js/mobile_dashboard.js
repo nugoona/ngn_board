@@ -1035,45 +1035,27 @@ function renderPerformanceSummary(performanceData) {
     
     const updates = [
         () => {
-            const totalSalesElement = document.getElementById('total-sales');
-            if (totalSalesElement) {
-                totalSalesElement.textContent = formatCurrency(data.total_sales || 0);
+            const siteVisitsElement = document.getElementById('site-visits');
+            if (siteVisitsElement) {
+                siteVisitsElement.textContent = formatNumber(data.site_visits || 0);
             }
         },
         () => {
-            const ordersCountElement = document.getElementById('orders-count');
-            if (ordersCountElement) {
-                ordersCountElement.textContent = formatNumber(data.orders_count || 0);
+            const visitorsElement = document.getElementById('visitors');
+            if (visitorsElement) {
+                visitorsElement.textContent = formatNumber(data.visitors || 0);
             }
         },
         () => {
-            const adSpendRatioElement = document.getElementById('ad-spend-ratio');
-            if (adSpendRatioElement) {
-                adSpendRatioElement.textContent = formatPercentage(data.ad_spend_ratio || 0);
+            const orderCountElement = document.getElementById('order-count');
+            if (orderCountElement) {
+                orderCountElement.textContent = formatNumber(data.order_count || 0);
             }
         },
         () => {
-            const adSpendElement = document.getElementById('ad-spend');
-            if (adSpendElement) {
-                adSpendElement.textContent = formatCurrency(data.ad_spend || 0);
-            }
-        },
-        () => {
-            const totalPurchasesElement = document.getElementById('total-purchases');
-            if (totalPurchasesElement) {
-                totalPurchasesElement.textContent = formatNumber(data.total_purchases || 0);
-            }
-        },
-        () => {
-            const cpcElement = document.getElementById('cpc');
-            if (cpcElement) {
-                cpcElement.textContent = formatCurrency(data.cpc || 0);
-            }
-        },
-        () => {
-            const roasElement = document.getElementById('roas');
-            if (roasElement) {
-                roasElement.textContent = formatPercentage(data.roas || 0);
+            const conversionRateElement = document.getElementById('conversion-rate');
+            if (conversionRateElement) {
+                conversionRateElement.textContent = formatPercentage(data.conversion_rate || 0);
             }
         }
     ];

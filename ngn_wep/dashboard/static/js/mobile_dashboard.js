@@ -254,10 +254,8 @@ async function fetchMobileData() {
         showLoading("#loadingOverlayGa4Sources");
         
         // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
-        const promises = [];
-        
-        // 1. Performance Summary (웹 버전과 동일한 엔드포인트 사용)
-        promises.push(
+        const [performanceSummary, cafe24Products, ga4Sources] = await Promise.all([
+            // 1. Performance Summary
             fetch('/dashboard/get_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -266,14 +264,11 @@ async function fetchMobileData() {
                     company_name: companyName,
                     period: period,
                     start_date: startDateValue,
-                    end_date: endDateValue,
-                    no_limit: true  // 전체 데이터 요청
+                    end_date: endDateValue
                 })
-            }).then(response => response.json())
-        );
-        
-        // 2. Cafe24 Product Sales (웹 버전과 동일한 엔드포인트 사용)
-        promises.push(
+            }).then(response => response.json()),
+
+            // 2. Cafe24 Product Sales
             fetch('/dashboard/get_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -285,11 +280,9 @@ async function fetchMobileData() {
                     end_date: endDateValue,
                     no_limit: true  // 전체 데이터 요청
                 })
-            }).then(response => response.json())
-        );
-        
-        // 3. GA4 Source Summary (웹 버전과 동일한 엔드포인트 사용)
-        promises.push(
+            }).then(response => response.json()),
+
+            // 3. GA4 Source Summary
             fetch('/dashboard/get_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -302,55 +295,29 @@ async function fetchMobileData() {
                     no_limit: true  // 전체 데이터 요청
                 })
             }).then(response => response.json())
-        );
+        ]);
+
+        console.log('✅ 병렬 API 호출 완료:', [performanceSummary, cafe24Products, ga4Sources]);
         
-        // 🚀 병렬로 모든 API 호출 실행
-        const results = await Promise.all(promises);
-        console.log('✅ 병렬 API 호출 완료:', results);
-        
-        // 📊 데이터 통합 및 렌더링
-        const combinedData = {
-            status: 'success',
-            performance_summary: results[0]?.performance_summary || [],
-            cafe24_product_sales: results[1]?.cafe24_product_sales || [],
-            cafe24_product_sales_total_count: results[1]?.cafe24_product_sales_total_count || 0,
-            ga4_source_summary: results[2]?.ga4_source_summary || [],
-            latest_update: results[0]?.latest_update || results[1]?.latest_update || results[2]?.latest_update
-        };
-        
-        console.log('✅ 모바일 데이터 로딩 완료:', combinedData);
-        
-        // 📊 데이터 렌더링
-        if (combinedData.status === 'success') {
-            // 1. Performance Summary 렌더링
-            if (combinedData.performance_summary) {
-                // DOM 업데이트가 완료된 후 로딩 스피너를 숨기기 위해 setTimeout 사용
-                setTimeout(() => {
-                    renderPerformanceSummary(combinedData.performance_summary);
-                    requestAnimationFrame(() => {
-                        hideLoading("#loadingOverlaySitePerformance");
-                        hideLoading("#loadingOverlayAdPerformance");
-                    });
-                }, 0);
-            }
-            
-            // 2. Cafe24 Product Sales 렌더링
-            if (combinedData.cafe24_product_sales) {
-                renderCafe24ProductSales(combinedData.cafe24_product_sales, combinedData.cafe24_product_sales_total_count);
-                hideLoading("#loadingOverlayCafe24Products");
-            }
-            
-            // 3. GA4 Source Summary 렌더링
-            if (combinedData.ga4_source_summary) {
-                renderGa4SourceSummary(combinedData.ga4_source_summary);
-                hideLoading("#loadingOverlayGa4Sources");
-            }
-            
-            // 4. 업데이트 시간 표시
-            if (combinedData.latest_update) {
-                updateMobileTimestamp(combinedData.latest_update);
-            }
+        // 데이터 렌더링
+        if (performanceSummary.performance_summary) {
+            renderPerformanceSummary(performanceSummary.performance_summary);
+            hideLoading("#loadingOverlaySitePerformance");
+            hideLoading("#loadingOverlayAdPerformance");
         }
+
+        if (cafe24Products.cafe24_product_sales) {
+            renderCafe24ProductSales(cafe24Products.cafe24_product_sales, cafe24Products.cafe24_product_sales_total_count);
+            hideLoading("#loadingOverlayCafe24Products");
+        }
+
+        if (ga4Sources.ga4_source_summary) {
+            renderGa4SourceSummary(ga4Sources.ga4_source_summary);
+            hideLoading("#loadingOverlayGa4Sources");
+        }
+
+        // 업데이트 시간 표시
+        updateLastUpdateTime(performanceSummary.updated_at || cafe24Products.updated_at);
         
     } catch (error) {
         console.error('❌ 모바일 데이터 로딩 실패:', error);
@@ -565,12 +532,25 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
 }
 
 // ─────────────────────────────────────────────
-// 8) LIVE 광고 미리보기 조회
+// 8) LIVE 광고 미리보기 조회 (캐시 적용)
 // ─────────────────────────────────────────────
+const liveAdsCache = new Map();
+
 async function fetchLiveAds(accountId) {
     if (!accountId) return;
     
     try {
+        // 캐시 체크
+        const cacheKey = `${accountId}`;
+        if (liveAdsCache.has(cacheKey)) {
+            console.log('🎯 LIVE 광고 미리보기 캐시 사용:', accountId);
+            const cachedData = liveAdsCache.get(cacheKey);
+            renderLiveAds(cachedData.live_ads);
+            showLiveAdsSection();
+            return;
+        }
+
+        console.log('🔍 LIVE 광고 미리보기 요청:', accountId);
         const response = await fetch('/m/get_live_ads', {
             method: 'POST',
             headers: {
@@ -589,6 +569,8 @@ async function fetchLiveAds(accountId) {
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
         if (data.status === 'success' && data.live_ads) {
+            // 캐시 저장
+            liveAdsCache.set(cacheKey, data);
             renderLiveAds(data.live_ads);
             showLiveAdsSection();
         } else {
@@ -599,8 +581,6 @@ async function fetchLiveAds(accountId) {
     } catch (error) {
         console.error('❌ LIVE 광고 미리보기 로딩 실패:', error);
         hideLiveAdsSection();
-        // 🔥 추가로 모든 로딩 오버레이 확인
-        hideAllLoadingOverlays();
     }
 }
 
@@ -787,8 +767,10 @@ function setupFilters() {
                 console.log('🔄 메타 광고 계정 선택으로 인한 데이터 로딩:', accountId);
                 // 전체 데이터 초기화
                 metaAdsAllData = [];
-                fetchMetaAdsByAccount(accountId);
+                // LIVE 광고 미리보기만 새로고침
                 fetchLiveAds(accountId);
+                // 메타 광고 성과 데이터 새로고침
+                fetchMetaAdsByAccount(accountId);
                 showLiveAdsSection();
             } else {
                 console.log('🔄 메타 광고 계정 선택 해제');

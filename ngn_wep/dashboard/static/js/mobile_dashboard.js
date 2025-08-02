@@ -1244,18 +1244,37 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
     
+    // 광고 성과 요약 업데이트
+    const spendElement = document.getElementById('ad-spend');
+    const purchasesElement = document.getElementById('ad-purchases');
+    const clickCostElement = document.getElementById('click-cost');
+    const roasElement = document.getElementById('ad-roas');
+
+    if (spendElement) {
+        spendElement.textContent = formatCurrency(adsData.total_spend || 0);
+    }
+    if (purchasesElement) {
+        purchasesElement.textContent = formatNumber(adsData.total_purchases || 0);
+    }
+    if (clickCostElement) {
+        clickCostElement.textContent = formatCurrency(adsData.average_cpc || 0);
+    }
+    if (roasElement) {
+        roasElement.textContent = formatPercentage(adsData.total_roas || 0);
+    }
+
     // 광고 목록 테이블 업데이트
-    const tbody = document.getElementById('meta-ads-table');
-    if (!tbody) return;
+    const tableBody = document.getElementById('meta-ads-table');
+    if (!tableBody) return;
     
-    tbody.innerHTML = '';
+    tableBody.innerHTML = '';
     
-    if (!Array.isArray(adsData) || adsData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+    if (!Array.isArray(adsData.ads) || adsData.ads.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
-    adsData.forEach(ad => {
+    adsData.ads.forEach(ad => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="text-left">${ad.campaign_name || '--'}</td>
@@ -1265,7 +1284,7 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
             <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
             <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
         `;
-        tbody.appendChild(row);
+        tableBody.appendChild(row);
     });
     
     // 페이지네이션 업데이트

@@ -471,11 +471,8 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
         console.log('✅ 모바일 Performance Summary 로딩 성공:', data);
         
         if (data.status === 'success' && data.performance_summary && data.performance_summary.length > 0) {
-            console.log('성과 요약 데이터:', data.performance_summary[0]);
-            renderPerformanceSummary(data.performance_summary[0]);
+            renderPerformanceSummary(data.performance_summary[0], data.total_orders);
             setCachedData(cacheKey, data);
-        } else {
-            console.warn('성과 요약 데이터 없음:', data);
         }
         
         return data;
@@ -1023,26 +1020,27 @@ function setupCompanyAutoSelection() {
 // ─────────────────────────────────────────────
 
 // 🚀 최적화된 성과 요약 렌더링
-function renderPerformanceSummary(performanceData) {
-    if (!performanceData || !performanceData.performance_summary || !performanceData.performance_summary[0]) {
-        console.warn('⚠️ 성과 요약 데이터가 없음');
-        return;
-    }
+function renderPerformanceSummary(performanceData, totalOrders) {
+    console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
-    console.log('📊 성과 요약 렌더링:', performanceData);
+    // 사이트 성과 요약 KPI 값들 설정
+    document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
+    // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
+    const visitors = performanceData.total_visitors || 0;
+    document.getElementById('total-visitors').textContent = visitors.toLocaleString();
+    // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
+    const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
+    document.getElementById('orders-count').textContent = formatNumber(ordersCount);
+    // 매출대비 광고비 (백분율로 표시)
+    const adSpendRatio = performanceData.ad_spend_ratio || 0;
+    document.getElementById('ad-spend-ratio').textContent = formatPercentage(adSpendRatio);
     
-    // API 응답에서 필요한 데이터 추출
-    const summary = performanceData.performance_summary[0];
-    const data = {
-        ga4_users: summary.ga4_users || summary.total_visits || 0,
-        total_orders: summary.total_orders || 0,
-        total_revenue: summary.total_revenue || 0,
-        total_spend: summary.ad_spend || 0,
-        total_clicks: summary.total_clicks || 0,
-        total_purchases: summary.total_purchases || 0,
-        avg_cpc: summary.avg_cpc || 0,
-        ad_spend_ratio: summary.ad_spend_ratio || 0
-    };
+    // 광고 성과 요약 KPI 값들 설정
+    document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
+    document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
+    // avg_opo는 실제로 avg_cpc 필드입니다
+    document.getElementById('cpc').textContent = formatCurrency(performanceData.avg_opo || performanceData.avg_cpc || 0);
+    document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
     
     // DocumentFragment 사용으로 DOM 조작 최적화
     const fragment = createDocumentFragment();

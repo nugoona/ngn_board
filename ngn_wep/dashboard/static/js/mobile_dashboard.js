@@ -4,6 +4,12 @@
 // 🔥 성능 최적화: 요청 중복 방지 및 메모리 효율성 개선
 // requestRegistry 제거 - 병렬 처리로 최적화
 
+// ✅ 새로고침 시 세션스토리지 초기화
+if (performance.navigation.type === 1) {
+    sessionStorage.clear();
+    console.log('🔄 새로고침 감지 - 세션 스토리지 초기화');
+}
+
 // ─────────────────────────────────────────────
 // 1) 전역 변수 (웹버전과 동일)
 // ─────────────────────────────────────────────
@@ -335,11 +341,28 @@ async function fetchMobileData() {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         
-        // 회사 선택 값이 비어있으면 자동 선택 시도
+        // 회사 선택 처리
         let companyName = companySelect ? companySelect.value : 'all';
+        
+        // 세션 스토리지에서 저장된 회사 확인
+        const savedCompany = sessionStorage.getItem("mobileSelectedCompany");
+        
         if (!companyName || companyName === '') {
-            companyName = setupCompanyAutoSelection() || 'all';
-            console.log('🏢 회사값 자동 보정:', companyName);
+            if (savedCompany) {
+                companyName = savedCompany;
+                console.log('🏢 세션 스토리지에서 회사 복원:', companyName);
+            } else {
+                companyName = setupCompanyAutoSelection() || 'all';
+                console.log('🏢 회사값 자동 보정:', companyName);
+            }
+        }
+        
+        // 회사명 가공 (웹버전과 동일하게)
+        if (companyName === 'all' && typeof userCompanyList !== 'undefined') {
+            companyName = userCompanyList
+                .filter(name => name.toLowerCase() !== "demo")
+                .map(name => name.toLowerCase());
+            console.log('🏢 모든 업체 처리:', companyName);
         }
 
         const period = periodSelect ? periodSelect.value : 'today';
@@ -770,6 +793,11 @@ function setupFilters() {
     // 기간 변경 시
     if (periodSelect) {
         periodSelect.addEventListener('change', () => {
+            if (isLoading) {
+                console.log('⚠️ 이미 로딩 중이므로 중단');
+                return;
+            }
+
             console.log('📅 기간 변경:', periodSelect.value);
             
             // ✅ 직접 선택 모드일 때 날짜 입력 필드 표시/숨김 (웹버전과 동일)
@@ -797,7 +825,24 @@ function setupFilters() {
     // 회사 변경 시
     if (companySelect) {
         companySelect.addEventListener('change', () => {
-            console.log('🏢 회사 변경:', companySelect.value);
+            if (isLoading) {
+                console.log('⚠️ 이미 로딩 중이므로 중단');
+                return;
+            }
+
+            const selectedValue = companySelect.value;
+            console.log('🏢 회사 변경:', selectedValue);
+
+            // 세션 스토리지에 저장
+            sessionStorage.setItem("mobileSelectedCompany", selectedValue);
+
+            // 메타 광고 계정 초기화
+            selectedMetaAccount = null;
+            if (metaAccountSelect) {
+                metaAccountSelect.value = '';
+            }
+
+            // 데이터 새로고침
             debounceFetchMobileData();
         });
     }
@@ -805,32 +850,69 @@ function setupFilters() {
     // 시작일 변경 시
     if (startDate) {
         startDate.addEventListener('change', () => {
-            console.log('📅 시작일 변경:', startDate.value);
-            if (periodSelect.value === 'manual') {
-                debounceFetchMobileData();
+            if (isLoading) {
+                console.log('⚠️ 이미 로딩 중이므로 중단');
+                return;
             }
+
+            console.log('📅 시작일 변경:', startDate.value);
+            
+            const startDateValue = startDate.value?.trim();
+            const endDateValue = endDate.value?.trim();
+            const selectedPeriod = periodSelect.value;
+
+            if (selectedPeriod === 'manual' && (!startDateValue || !endDateValue)) {
+                console.warn('[BLOCKED] 직접 선택: 종료일 누락 → 실행 안함');
+                return;
+            }
+
+            debounceFetchMobileData();
         });
     }
     
     // 종료일 변경 시
     if (endDate) {
         endDate.addEventListener('change', () => {
-            console.log('📅 종료일 변경:', endDate.value);
-            if (periodSelect.value === 'manual') {
-                debounceFetchMobileData();
+            if (isLoading) {
+                console.log('⚠️ 이미 로딩 중이므로 중단');
+                return;
             }
+
+            console.log('📅 종료일 변경:', endDate.value);
+            
+            const startDateValue = startDate.value?.trim();
+            const endDateValue = endDate.value?.trim();
+            const selectedPeriod = periodSelect.value;
+
+            if (selectedPeriod === 'manual' && (!startDateValue || !endDateValue)) {
+                console.warn('[BLOCKED] 직접 선택: 시작일 누락 → 실행 안함');
+                return;
+            }
+
+            debounceFetchMobileData();
         });
     }
     
     // 메타 계정 변경 시
     if (metaAccountSelect) {
         metaAccountSelect.addEventListener('change', () => {
+            if (isLoading) {
+                console.log('⚠️ 이미 로딩 중이므로 중단');
+                return;
+            }
+
             const selectedAccountId = metaAccountSelect.value;
             console.log('📊 메타 계정 변경:', selectedAccountId);
             
             if (selectedAccountId) {
                 selectedMetaAccount = selectedAccountId;
                 fetchMetaAdsByAccount(selectedAccountId, 1);
+            } else {
+                // 계정이 선택되지 않은 경우 테이블 초기화
+                const tbody = document.getElementById('meta-ads-table');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
+                }
             }
         });
     }
@@ -869,26 +951,52 @@ function setupCompanyAutoSelection() {
         return;
     }
 
-    // 옵션 목록 확인
-    const options = Array.from(companySelect.options);
-    console.log('🏢 사용 가능한 회사 목록:', options.map(opt => ({ value: opt.value, text: opt.text })));
+    // 기존 옵션 제거
+    companySelect.innerHTML = '';
 
-    if (options.length > 0) {
-        // 첫 번째 옵션이 placeholder가 아닌 경우에만 선택
-        const firstOption = options[0];
-        if (firstOption.value && firstOption.value !== 'placeholder') {
-            companySelect.value = firstOption.value;
-            console.log('🏢 첫 번째 회사 자동 선택:', firstOption.value);
-        } else if (options.length > 1) {
-            // placeholder가 있는 경우 두 번째 옵션 선택
-            companySelect.value = options[1].value;
-            console.log('🏢 두 번째 회사 자동 선택:', options[1].value);
+    // 세션 스토리지에서 저장된 회사 가져오기
+    const savedCompany = sessionStorage.getItem("mobileSelectedCompany") || "all";
+    console.log('🏢 저장된 회사:', savedCompany);
+
+    // demo 사용자 체크 (전역 변수 currentUserId 사용)
+    const isDemoUser = typeof currentUserId !== 'undefined' && currentUserId === "demo";
+
+    if (isDemoUser) {
+        // demo 사용자는 demo만 선택 가능
+        companySelect.innerHTML = '<option value="demo" selected>demo</option>';
+        console.log('🏢 demo 사용자 - demo 계정만 표시');
+    } else {
+        // 일반 사용자용 회사 목록 처리
+        const userList = typeof userCompanyList !== 'undefined' ? userCompanyList : [];
+        const filteredList = userList.filter(name => name.toLowerCase() !== "demo");
+
+        if (filteredList.length > 1) {
+            // 2개 이상의 회사가 있을 경우 "모든 업체" 옵션 추가
+            const allOption = document.createElement('option');
+            allOption.value = "all";
+            allOption.textContent = "모든 업체";
+            allOption.selected = savedCompany === "all";
+            companySelect.appendChild(allOption);
         }
+
+        // 회사 목록 추가
+        filteredList.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company.toLowerCase();
+            option.textContent = company;
+            option.selected = savedCompany === company.toLowerCase();
+            companySelect.appendChild(option);
+        });
+
+        console.log('🏢 회사 목록 설정 완료:', filteredList);
     }
 
     // 선택된 값 확인
     const selectedValue = companySelect.value;
     console.log('🏢 최종 선택된 회사:', selectedValue);
+
+    // 세션 스토리지에 저장
+    sessionStorage.setItem("mobileSelectedCompany", selectedValue);
 
     return selectedValue;
 }

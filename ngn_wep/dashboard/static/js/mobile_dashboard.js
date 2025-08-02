@@ -1024,49 +1024,95 @@ function setupCompanyAutoSelection() {
 
 // 🚀 최적화된 성과 요약 렌더링
 function renderPerformanceSummary(performanceData) {
-    if (!performanceData || !performanceData[0]) {
+    if (!performanceData || !performanceData.performance_summary || !performanceData.performance_summary[0]) {
         console.warn('⚠️ 성과 요약 데이터가 없음');
         return;
     }
     
     console.log('📊 성과 요약 렌더링:', performanceData);
     
-    // 첫 번째 데이터 항목 사용
-    const data = performanceData[0];
+    // API 응답에서 필요한 데이터 추출
+    const summary = performanceData.performance_summary[0];
+    const data = {
+        ga4_users: summary.ga4_users || summary.total_visits || 0,
+        total_orders: summary.total_orders || 0,
+        total_revenue: summary.total_revenue || 0,
+        total_spend: summary.ad_spend || 0,
+        total_clicks: summary.total_clicks || 0,
+        total_purchases: summary.total_purchases || 0,
+        avg_cpc: summary.avg_cpc || 0,
+        ad_spend_ratio: summary.ad_spend_ratio || 0
+    };
     
     // DocumentFragment 사용으로 DOM 조작 최적화
     const fragment = createDocumentFragment();
     
     const updates = [
         () => {
+            // 사이트 방문수
             const siteVisitsElement = document.getElementById('site-visits');
             if (siteVisitsElement) {
-                siteVisitsElement.textContent = formatNumber(data.total_visits || data.ga4_users || 0);
-                console.log('사이트 방문수 업데이트:', data.total_visits || data.ga4_users);
+                siteVisitsElement.textContent = formatNumber(data.ga4_users);
+                console.log('사이트 방문수 업데이트:', data.ga4_users);
             }
         },
         () => {
+            // 방문자수
             const visitorsElement = document.getElementById('visitors');
             if (visitorsElement) {
-                visitorsElement.textContent = formatNumber(data.total_users || data.ga4_users || 0);
-                console.log('방문자수 업데이트:', data.total_users || data.ga4_users);
+                visitorsElement.textContent = formatNumber(data.ga4_users);
+                console.log('방문자수 업데이트:', data.ga4_users);
             }
         },
         () => {
+            // 주문수
             const orderCountElement = document.getElementById('order-count');
             if (orderCountElement) {
-                orderCountElement.textContent = formatNumber(data.total_orders || 0);
+                orderCountElement.textContent = formatNumber(data.total_orders);
                 console.log('주문수 업데이트:', data.total_orders);
             }
         },
         () => {
+            // 전환율
             const conversionRateElement = document.getElementById('conversion-rate');
             if (conversionRateElement) {
-                const visits = data.total_visits || data.ga4_users || 1;
-                const orders = data.total_orders || 0;
-                const rate = (orders / visits) * 100;
+                const rate = (data.total_orders / data.ga4_users) * 100;
                 conversionRateElement.textContent = formatPercentage(rate);
                 console.log('전환율 업데이트:', rate);
+            }
+        },
+        () => {
+            // 광고비
+            const adSpendElement = document.getElementById('ad-spend');
+            if (adSpendElement) {
+                adSpendElement.textContent = formatCurrency(data.total_spend);
+                console.log('광고비 업데이트:', data.total_spend);
+            }
+        },
+        () => {
+            // 구매수
+            const purchasesElement = document.getElementById('ad-purchases');
+            if (purchasesElement) {
+                purchasesElement.textContent = formatNumber(data.total_purchases);
+                console.log('구매수 업데이트:', data.total_purchases);
+            }
+        },
+        () => {
+            // 클릭당 비용
+            const clickCostElement = document.getElementById('click-cost');
+            if (clickCostElement) {
+                const cpc = data.total_clicks > 0 ? data.total_spend / data.total_clicks : 0;
+                clickCostElement.textContent = formatCurrency(cpc);
+                console.log('클릭당 비용 업데이트:', cpc);
+            }
+        },
+        () => {
+            // ROAS
+            const roasElement = document.getElementById('ad-roas');
+            if (roasElement) {
+                const roas = data.total_spend > 0 ? (data.total_revenue / data.total_spend) * 100 : 0;
+                roasElement.textContent = formatPercentage(roas);
+                console.log('ROAS 업데이트:', roas);
             }
         }
     ];

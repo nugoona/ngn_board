@@ -662,8 +662,10 @@ function setupFilters() {
             if (dateRangeContainer) {
                 if (periodSelect.value === 'manual') {
                     dateRangeContainer.style.display = 'flex';
+                    periodSelect.classList.add('active-period');
                 } else {
                     dateRangeContainer.style.display = 'none';
+                    periodSelect.classList.remove('active-period');
                 }
             }
             
@@ -849,7 +851,8 @@ function initializeFlatpickr() {
     function handleDateChange() {
         const startDate = $("#startDate").val();
         const endDate = $("#endDate").val();
-        const period = $("#periodFilter").val();
+        const periodSelect = document.getElementById('periodFilter');
+        const period = periodSelect.value;
         
         // 직접 선택 모드이고, 두 날짜가 모두 선택되었을 때만 데이터 로드
         if (period === 'manual' && startDate && endDate) {
@@ -858,6 +861,8 @@ function initializeFlatpickr() {
             
             // 시작일이 종료일보다 이후가 아닌 경우에만 데이터 로드
             if (startDateTime <= endDateTime) {
+                // 날짜 선택 완료 시 기간 선택 버튼 스타일 초기화
+                periodSelect.classList.remove('active-period');
                 fetchMobileData();
             }
         }

@@ -470,9 +470,12 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
         const data = await response.json();
         console.log('✅ 모바일 Performance Summary 로딩 성공:', data);
         
-        if (data.status === 'success' && data.performance_summary) {
-            renderPerformanceSummary(data.performance_summary);
+        if (data.status === 'success' && data.performance_summary && data.performance_summary.length > 0) {
+            console.log('성과 요약 데이터:', data.performance_summary[0]);
+            renderPerformanceSummary(data.performance_summary[0]);
             setCachedData(cacheKey, data);
+        } else {
+            console.warn('성과 요약 데이터 없음:', data);
         }
         
         return data;
@@ -672,23 +675,24 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const data = await response.json();
         console.log('✅ 메타 광고 데이터 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_by_account) {
-            // 데이터 처리 및 렌더링
-            const processedData = processMetaAdsForMobile(data.meta_ads_by_account);
+        if (data.status === 'success') {
+            // 광고 성과 요약 데이터 준비
+            const summaryData = {
+                total_spend: data.total_spend || 0,
+                total_purchases: data.total_purchases || 0,
+                average_cpc: data.average_cpc || 0,
+                total_roas: data.total_roas || 0,
+                ads: []
+            };
+
+            // 광고 목록 데이터 처리
+            if (data.meta_ads_by_account && Array.isArray(data.meta_ads_by_account)) {
+                summaryData.ads = processMetaAdsForMobile(data.meta_ads_by_account)
+                    .sort((a, b) => (b.spend || 0) - (a.spend || 0))
+                    .slice((page - 1) * 10, page * 10);
+            }
             
-            // 지출 내림차순 정렬
-            processedData.sort((a, b) => {
-                const aSpend = a.spend || 0;
-                const bSpend = b.spend || 0;
-                return bSpend - aSpend;
-            });
-            
-            // 페이지별 데이터로 렌더링
-            const startIndex = (page - 1) * 10;
-            const endIndex = startIndex + 10;
-            const pageData = processedData.slice(startIndex, endIndex);
-            
-            renderMetaAdsByAccount(pageData, processedData.length);
+            renderMetaAdsByAccount(summaryData, data.meta_ads_by_account?.length || 0);
         } else {
             console.warn('⚠️ 메타 광고 데이터 없음:', data);
         }
@@ -1038,24 +1042,28 @@ function renderPerformanceSummary(performanceData) {
             const siteVisitsElement = document.getElementById('site-visits');
             if (siteVisitsElement) {
                 siteVisitsElement.textContent = formatNumber(data.site_visits || 0);
+                console.log('사이트 방문수 업데이트:', data.site_visits);
             }
         },
         () => {
             const visitorsElement = document.getElementById('visitors');
             if (visitorsElement) {
                 visitorsElement.textContent = formatNumber(data.visitors || 0);
+                console.log('방문자수 업데이트:', data.visitors);
             }
         },
         () => {
             const orderCountElement = document.getElementById('order-count');
             if (orderCountElement) {
-                orderCountElement.textContent = formatNumber(data.order_count || 0);
+                orderCountElement.textContent = formatNumber(data.orders_count || 0);
+                console.log('주문수 업데이트:', data.orders_count);
             }
         },
         () => {
             const conversionRateElement = document.getElementById('conversion-rate');
             if (conversionRateElement) {
                 conversionRateElement.textContent = formatPercentage(data.conversion_rate || 0);
+                console.log('전환율 업데이트:', data.conversion_rate);
             }
         }
     ];
@@ -1184,28 +1192,50 @@ function renderMetaAccountFilter(accounts) {
 
 // 🚀 최적화된 메타 광고별 성과 렌더링
 function renderMetaAdsByAccount(adsData, totalCount = null) {
-    if (!adsData || !Array.isArray(adsData)) return;
+    if (!adsData) return;
     
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
     
+    // 광고 성과 요약 데이터 업데이트
+    const spendElement = document.getElementById('ad-spend');
+    const purchasesElement = document.getElementById('ad-purchases');
+    const clickCostElement = document.getElementById('click-cost');
+    const roasElement = document.getElementById('ad-roas');
+
+    if (spendElement) {
+        spendElement.textContent = formatCurrency(adsData.total_spend || 0);
+    }
+    if (purchasesElement) {
+        purchasesElement.textContent = formatNumber(adsData.total_purchases || 0);
+    }
+    if (clickCostElement) {
+        clickCostElement.textContent = formatCurrency(adsData.average_cpc || 0);
+    }
+    if (roasElement) {
+        roasElement.textContent = formatPercentage(adsData.total_roas || 0);
+    }
+
+    // 광고 목록 테이블 업데이트
     const tbody = document.getElementById('meta-ads-table');
     if (!tbody) return;
     
     // DocumentFragment 사용
     const fragment = createDocumentFragment();
     
-    adsData.forEach(ad => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="text-left">${ad.campaign_name || '--'}</td>
-            <td class="text-left">${ad.ad_name || '--'}</td>
-            <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
-            <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
-            <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
-            <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
-        `;
-        fragment.appendChild(row);
-    });
+    if (Array.isArray(adsData.ads)) {
+        adsData.ads.forEach(ad => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="text-left">${ad.campaign_name || '--'}</td>
+                <td class="text-left">${ad.ad_name || '--'}</td>
+                <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
+                <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
+                <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
+                <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
+            `;
+            fragment.appendChild(row);
+        });
+    }
     
     // 한 번에 DOM 업데이트
     tbody.innerHTML = '';

@@ -317,15 +317,24 @@ async function fetchMobileData() {
         
         const results = await Promise.allSettled(promises);
         
-        // 결과 처리
+        // 결과 처리 및 latest_update 추출
+        let latestUpdate = null;
         results.forEach((result, index) => {
             if (result.status === 'rejected') {
                 console.error(`❌ 데이터 요청 실패 (${index}):`, result.reason);
+            } else if (result.value && result.value.latest_update) {
+                // 성공한 API 응답에서 latest_update 사용
+                latestUpdate = result.value.latest_update;
+                console.log('✅ API 응답에서 latest_update 추출:', latestUpdate);
             }
         });
         
-        // 타임스탬프 업데이트
-        updateMobileTimestamp(new Date().toLocaleString('ko-KR'));
+        // ✅ 타임스탬프 업데이트 (API 응답의 latest_update 우선, 없으면 현재 시간)
+        if (latestUpdate) {
+            updateMobileTimestamp(latestUpdate);
+        } else {
+            updateMobileTimestamp(new Date().toLocaleString('ko-KR'));
+        }
         
     } catch (error) {
         console.error('❌ 모바일 데이터 요청 실패:', error);
@@ -370,8 +379,12 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
             renderPerformanceSummary(data.performance_summary);
         }
         
+        // ✅ 서버 응답의 latest_update 반환
+        return data;
+        
     } catch (error) {
         console.error('❌ 모바일 Performance Summary 로딩 실패:', error);
+        return null;
     }
 }
 
@@ -406,8 +419,12 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
             renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
         }
         
+        // ✅ 서버 응답의 latest_update 반환
+        return data;
+        
     } catch (error) {
         console.error('❌ 모바일 Cafe24 Products 로딩 실패:', error);
+        return null;
     }
 }
 
@@ -440,8 +457,12 @@ async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
             renderGa4SourceSummary(data.ga4_source_summary);
         }
         
+        // ✅ 서버 응답의 latest_update 반환
+        return data;
+        
     } catch (error) {
         console.error('❌ 모바일 GA4 Sources 로딩 실패:', error);
+        return null;
     }
 }
 
@@ -455,8 +476,24 @@ function updateMobileTimestamp(latestUpdate) {
         // 다양한 날짜 형식 처리
         let dateStr = latestUpdate;
         
+        // ✅ toLocaleString('ko-KR') 형식 처리 추가
+        if (dateStr.includes('오전') || dateStr.includes('오후')) {
+            // 2025. 8. 2. 오후 6:29:00 형식 처리
+            const match = dateStr.match(/(\d+)\.\s*(\d+)\.\s*(\d+)\.\s*(오전|오후)\s*(\d+):(\d+):(\d+)/);
+            if (match) {
+                const [, year, month, day, ampm, hour, minute, second] = match;
+                let adjustedHour = parseInt(hour);
+                if (ampm === '오후' && adjustedHour !== 12) {
+                    adjustedHour += 12;
+                } else if (ampm === '오전' && adjustedHour === 12) {
+                    adjustedHour = 0;
+                }
+                dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${adjustedHour.toString().padStart(2, '0')}:${minute}:${second}`;
+                console.log('🔧 변환된 날짜 형식 (toLocaleString):', dateStr);
+            }
+        }
         // 2025-07-28-22-11 형식인 경우 처리
-        if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
+        else if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
             const parts = dateStr.split('-');
             const year = parts[0];
             const month = parts[1];

@@ -782,11 +782,65 @@ function setupFilters() {
     addCampaignFilterEvents();
 }
 
+// Flatpickr 초기화 함수
+function initializeFlatpickr() {
+    const commonConfig = {
+        locale: 'ko',
+        dateFormat: 'Y-m-d',
+        disableMobile: false,
+        allowInput: false
+    };
+
+    const startDatePicker = flatpickr("#startDate", {
+        ...commonConfig,
+        maxDate: new Date(),
+        onChange: function(selectedDates, dateStr, instance) {
+            // 종료일 최소값을 시작일로 설정
+            endDatePicker.set('minDate', dateStr);
+        }
+    });
+
+    const endDatePicker = flatpickr("#endDate", {
+        ...commonConfig,
+        maxDate: new Date(),
+        onOpen: function(selectedDates, dateStr, instance) {
+            // 시작일이 선택되어 있으면 최소 날짜 제한
+            const startDate = startDatePicker.selectedDates[0];
+            if (startDate) {
+                instance.set('minDate', startDate);
+            }
+        }
+    });
+
+    // 기간 필터가 "직접 선택"일 때만 날짜 선택 컨테이너 표시
+    $("#periodFilter").change(function() {
+        const isManual = $(this).val() === "manual";
+        $("#dateRangeContainer").toggle(isManual);
+        if (!isManual) {
+            startDatePicker.clear();
+            endDatePicker.clear();
+            fetchAllData();  // 데이터 새로고침
+        }
+    });
+
+    // 날짜 선택 시 데이터 새로고침
+    $("#startDate, #endDate").change(function() {
+        const startDate = $("#startDate").val();
+        const endDate = $("#endDate").val();
+        if (startDate && endDate) {
+            fetchAllData();
+        }
+    });
+}
+
 // ─────────────────────────────────────────────
 // 11) 초기화 함수
 // ─────────────────────────────────────────────
 function initMobileDashboard() {
     console.log('🚀 모바일 대시보드 초기화 시작...');
+    
+    // Flatpickr 초기화
+    initializeFlatpickr();
     
     // 🔥 모든 로딩 오버레이 숨기기 (화이트 패널 문제 해결)
     hideAllLoadingOverlays();

@@ -233,7 +233,7 @@ async function fetchMobileData() {
         showLoading("#loadingOverlaySitePerformance");
         showLoading("#loadingOverlayAdPerformance");
         showLoading("#loadingOverlayCafe24Products");
-        // showLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
+        showLoading("#loadingOverlayGa4Sources");
         
         // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
         const promises = [];
@@ -539,9 +539,6 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
     } catch (error) {
         console.error('❌ 메타 광고별 성과 로딩 실패:', error);
         hideLoading("#loadingOverlayMetaAds");
-    } finally {
-        // 🔥 추가로 모든 로딩 오버레이 확인
-        hideAllLoadingOverlays();
     }
 }
 
@@ -825,7 +822,7 @@ function initializeFlatpickr() {
         if (!isManual) {
             startDatePicker.clear();
             endDatePicker.clear();
-            fetchAllData();  // 데이터 새로고침
+            fetchMobileData();  // 데이터 새로고침
         }
     });
 
@@ -834,7 +831,7 @@ function initializeFlatpickr() {
         const startDate = $("#startDate").val();
         const endDate = $("#endDate").val();
         if (startDate && endDate) {
-            fetchAllData();
+            fetchMobileData();
         }
     });
 }
@@ -847,9 +844,6 @@ function initMobileDashboard() {
     
     // Flatpickr 초기화
     initializeFlatpickr();
-    
-    // 🔥 모든 로딩 오버레이 숨기기 (화이트 패널 문제 해결)
-    hideAllLoadingOverlays();
     
     // 웹버전과 동일한 업체명 자동 선택 로직
     setupCompanyAutoSelection();

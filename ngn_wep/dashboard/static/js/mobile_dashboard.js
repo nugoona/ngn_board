@@ -604,11 +604,12 @@ async function fetchMetaAccounts() {
         if (data.status === 'success' && data.meta_accounts) {
             renderMetaAccountFilter(data.meta_accounts);
             
-            // 첫 번째 계정이 있으면 자동 선택
+            // '공홈' 포함된 계정 자동 선택, 없으면 첫 번째 계정 선택
             if (data.meta_accounts.length > 0) {
-                const firstAccount = data.meta_accounts[0];
-                selectedMetaAccount = firstAccount.account_id;
-                console.log('🔄 첫 번째 메타 계정 자동 선택:', selectedMetaAccount);
+                const homeAccount = data.meta_accounts.find(account => account.account_name.includes('공홈'));
+                const selectedAccount = homeAccount || data.meta_accounts[0];
+                selectedMetaAccount = selectedAccount.account_id;
+                console.log('🔄 메타 계정 자동 선택:', selectedAccount.account_name, selectedMetaAccount);
                 
                 // 메타 광고 데이터 로딩
                 await fetchMetaAdsByAccount(selectedMetaAccount, 1);
@@ -1243,11 +1244,39 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
     
-    // 광고 성과 요약 데이터 업데이트
-    const spendElement = document.getElementById('ad-spend');
-    const purchasesElement = document.getElementById('ad-purchases');
-    const clickCostElement = document.getElementById('click-cost');
-    const roasElement = document.getElementById('ad-roas');
+    // 광고 목록 테이블 업데이트
+    const tbody = document.getElementById('meta-ads-table');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!Array.isArray(adsData) || adsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+        return;
+    }
+    
+    adsData.forEach(ad => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="text-left">${ad.campaign_name || '--'}</td>
+            <td class="text-left">${ad.ad_name || '--'}</td>
+            <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
+            <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
+            <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // 페이지네이션 업데이트
+    if (totalCount !== null) {
+        updatePagination(document.querySelector('.data-table'), metaAdsCurrentPage, totalCount);
+    }
+    
+    // 라이브 광고 미리보기 가져오기
+    if (selectedMetaAccount) {
+        fetchLiveAds(selectedMetaAccount);
+    }
 
     if (spendElement) {
         spendElement.textContent = formatCurrency(adsData.total_spend || 0);
@@ -1455,6 +1484,53 @@ function filterMetaAdsByCampaign() {
 // ─────────────────────────────────────────────
 // 15) LIVE 광고 섹션 표시/숨김
 // ─────────────────────────────────────────────
+function renderLiveAds(liveAds) {
+    console.log('📺 라이브 광고 미리보기 렌더링:', liveAds);
+    
+    const container = document.getElementById('live-ads-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!liveAds || liveAds.length === 0) {
+        container.innerHTML = '<div class="text-center">현재 진행중인 광고가 없습니다.</div>';
+        return;
+    }
+    
+    liveAds.forEach(ad => {
+        const adCard = document.createElement('div');
+        adCard.className = 'live-ad-card';
+        
+        // 광고 이미지가 있는 경우에만 이미지 섹션 추가
+        const imageHtml = ad.image_url ? `
+            <div class="ad-image">
+                <img src="${ad.image_url}" alt="광고 이미지" onerror="this.style.display='none'">
+            </div>
+        ` : '';
+        
+        adCard.innerHTML = `
+            ${imageHtml}
+            <div class="ad-info">
+                <div class="ad-name">${ad.ad_name || '--'}</div>
+                <div class="ad-text">${ad.ad_text || '--'}</div>
+                <div class="ad-stats">
+                    <span>지출: ${formatCurrency(ad.spend || 0)}</span>
+                    <span>구매: ${formatNumber(ad.purchases || 0)}</span>
+                    <span>ROAS: ${formatPercentage(ad.roas || 0)}</span>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(adCard);
+    });
+    
+    // 라이브 광고 섹션 표시
+    const liveAdsSection = document.getElementById('live-ads-section');
+    if (liveAdsSection) {
+        liveAdsSection.style.display = 'block';
+    }
+}
+
 function showLiveAdsSection() {
     const liveAdsSection = document.getElementById('live-ads-section');
     if (liveAdsSection) {

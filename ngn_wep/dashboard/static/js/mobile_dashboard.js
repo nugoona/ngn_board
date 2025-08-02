@@ -342,18 +342,107 @@ async function fetchMobileData() {
 
 // 개별 API 호출 함수들 (웹버전과 동일한 구조, 단일 호출로 통합)
 async function fetchMobilePerformanceSummary(companyName, period, startDate, endDate) {
-    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
-    console.log('🔄 모바일 Performance Summary - 단일 API 호출로 통합됨');
+    try {
+        console.log('🔄 모바일 Performance Summary API 호출');
+        
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'performance_summary',
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ 모바일 Performance Summary 로딩 성공:', data);
+        
+        if (data.status === 'success' && data.performance_summary) {
+            renderPerformanceSummary(data.performance_summary);
+        }
+        
+    } catch (error) {
+        console.error('❌ 모바일 Performance Summary 로딩 실패:', error);
+    }
 }
 
 async function fetchMobileCafe24Products(companyName, period, startDate, endDate) {
-    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
-    console.log('🔄 모바일 Cafe24 Products - 단일 API 호출로 통합됨');
+    try {
+        console.log('🔄 모바일 Cafe24 Products API 호출');
+        
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'cafe24_product_sales',
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate,
+                page: 1,
+                limit: 5
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ 모바일 Cafe24 Products 로딩 성공:', data);
+        
+        if (data.status === 'success' && data.cafe24_product_sales) {
+            renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
+        }
+        
+    } catch (error) {
+        console.error('❌ 모바일 Cafe24 Products 로딩 실패:', error);
+    }
 }
 
 async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
-    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
-    console.log('🔄 모바일 GA4 Sources - 단일 API 호출로 통합됨');
+    try {
+        console.log('🔄 모바일 GA4 Sources API 호출');
+        
+        const response = await fetch('/dashboard/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data_type: 'ga4_source_summary',
+                company_name: companyName,
+                period: period,
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ 모바일 GA4 Sources 로딩 성공:', data);
+        
+        if (data.status === 'success' && data.ga4_source_summary) {
+            renderGa4SourceSummary(data.ga4_source_summary);
+        }
+        
+    } catch (error) {
+        console.error('❌ 모바일 GA4 Sources 로딩 실패:', error);
+    }
 }
 
 function updateMobileTimestamp(latestUpdate) {

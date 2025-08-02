@@ -531,12 +531,12 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const data = await response.json();
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_by_account) {
-            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
-            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_by_account.length);
+        if (data.status === 'success' && data.meta_ads_insight_table) {
+            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_insight_table);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table.length);
             
             // 전체 데이터 저장
-            metaAdsAllData = data.meta_ads_by_account;
+            metaAdsAllData = data.meta_ads_insight_table;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
             // 초기 로딩 시 지출 내림차순으로 정렬

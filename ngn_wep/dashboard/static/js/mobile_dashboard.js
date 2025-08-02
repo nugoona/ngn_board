@@ -256,7 +256,7 @@ async function fetchMobileData() {
         // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
         const promises = [];
         
-        // 1. Performance Summary
+        // 1. Performance Summary (웹 버전과 동일한 엔드포인트 사용)
         promises.push(
             fetch('/dashboard/get_data', {
                 method: 'POST',
@@ -267,13 +267,12 @@ async function fetchMobileData() {
                     period: period,
                     start_date: startDateValue,
                     end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
+                    no_limit: true  // 전체 데이터 요청
                 })
             }).then(response => response.json())
         );
         
-        // 2. Cafe24 Product Sales
+        // 2. Cafe24 Product Sales (웹 버전과 동일한 엔드포인트 사용)
         promises.push(
             fetch('/dashboard/get_data', {
                 method: 'POST',
@@ -284,13 +283,12 @@ async function fetchMobileData() {
                     period: period,
                     start_date: startDateValue,
                     end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
+                    no_limit: true  // 전체 데이터 요청
                 })
             }).then(response => response.json())
         );
         
-        // 3. GA4 Source Summary
+        // 3. GA4 Source Summary (웹 버전과 동일한 엔드포인트 사용)
         promises.push(
             fetch('/dashboard/get_data', {
                 method: 'POST',
@@ -301,8 +299,7 @@ async function fetchMobileData() {
                     period: period,
                     start_date: startDateValue,
                     end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
+                    no_limit: true  // 전체 데이터 요청
                 })
             }).then(response => response.json())
         );

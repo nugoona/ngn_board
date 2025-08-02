@@ -1241,8 +1241,10 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     const processedAdsData = processMetaAdsForMobile(adsData);
     console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
     
-    // 첫 페이지 10개만 표시
-    const displayAdsData = processedAdsData.slice(0, 10);
+    // 페이지별로 데이터 표시
+    const startIndex = (metaAdsCurrentPage - 1) * 10;
+    const endIndex = startIndex + 10;
+    const displayAdsData = processedAdsData.slice(startIndex, endIndex);
     
     // 광고별 성과 데이터 렌더링
     displayAdsData.forEach((row, index) => {

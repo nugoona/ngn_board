@@ -15,10 +15,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='mobile_styles.css') }}">
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+    <!-- 네이티브 달력 스타일 -->
+    <style>
+        /* 네이티브 달력 스타일링 */
+        input[type="date"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: white;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+            width: 100%;
+            font-family: inherit;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        input[type="date"]::-webkit-datetime-edit {
+            padding: 0;
+        }
+
+        /* 다크모드 대응 */
+        [data-theme="dark"] input[type="date"] {
+            background: var(--dark-surface);
+            color: var(--dark-text);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
     <!-- Heroicons -->
     <!-- Heroicons 제거 - 모바일에서는 사용하지 않음 -->
     <style>
@@ -1089,8 +1121,8 @@
                 </select>
             </div>
             <div class="filter-row" id="dateRangeContainer" style="display: none;">
-                <input type="text" id="startDate" class="date-input" placeholder="시작일" readonly>
-                <input type="text" id="endDate" class="date-input" placeholder="종료일" readonly>
+                <input type="date" id="startDate" class="date-input" placeholder="시작일">
+                <input type="date" id="endDate" class="date-input" placeholder="종료일">
             </div>
             <div class="header-bottom">
                 <div class="update-time" id="updatedAtText">업데이트: --</div>

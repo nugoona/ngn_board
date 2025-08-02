@@ -789,35 +789,38 @@ function setupFilters() {
     addCampaignFilterEvents();
 }
 
-// Flatpickr 초기화 함수
+// 네이티브 달력 초기화 함수
 function initializeFlatpickr() {
-    const commonConfig = {
-        locale: 'ko',
-        dateFormat: 'Y-m-d',
-        disableMobile: false,
-        allowInput: false
-    };
-
-    const startDatePicker = flatpickr("#startDate", {
-        ...commonConfig,
-        maxDate: new Date(),
-        onChange: function(selectedDates, dateStr, instance) {
-            // 종료일 최소값을 시작일로 설정
-            endDatePicker.set('minDate', dateStr);
-        }
-    });
-
-    const endDatePicker = flatpickr("#endDate", {
-        ...commonConfig,
-        maxDate: new Date(),
-        onOpen: function(selectedDates, dateStr, instance) {
-            // 시작일이 선택되어 있으면 최소 날짜 제한
-            const startDate = startDatePicker.selectedDates[0];
-            if (startDate) {
-                instance.set('minDate', startDate);
-            }
-        }
-    });
+    // 오늘 날짜를 YYYY-MM-DD 형식으로 가져오기
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 시작일과 종료일 input을 date 타입으로 변경
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (startDateInput && endDateInput) {
+        // date 타입으로 변경
+        startDateInput.type = 'date';
+        endDateInput.type = 'date';
+        
+        // 최대 날짜를 오늘로 제한
+        startDateInput.max = today;
+        endDateInput.max = today;
+        
+        // 시작일 변경 시
+        startDateInput.addEventListener('change', function() {
+            // 종료일의 최소값을 시작일로 설정
+            endDateInput.min = this.value;
+            handleDateChange();
+        });
+        
+        // 종료일 변경 시
+        endDateInput.addEventListener('change', function() {
+            // 시작일의 최대값을 종료일로 설정
+            startDateInput.max = this.value || today;
+            handleDateChange();
+        });
+    }
 
     // 기간 필터가 "직접 선택"일 때만 날짜 선택 컨테이너 표시
     $("#periodFilter").change(function() {
@@ -826,12 +829,12 @@ function initializeFlatpickr() {
         
         if (isManual) {
             // 직접 선택 시 날짜 초기화만 하고 데이터는 로드하지 않음
-            startDatePicker.clear();
-            endDatePicker.clear();
+            if (startDateInput) startDateInput.value = '';
+            if (endDateInput) endDateInput.value = '';
         } else {
             // 다른 기간 선택 시 데이터 새로고침
-            startDatePicker.clear();
-            endDatePicker.clear();
+            if (startDateInput) startDateInput.value = '';
+            if (endDateInput) endDateInput.value = '';
             fetchMobileData();
         }
     });
@@ -853,12 +856,6 @@ function initializeFlatpickr() {
             }
         }
     }
-    
-    // 시작일 선택 시
-    $("#startDate").change(handleDateChange);
-    
-    // 종료일 선택 시
-    $("#endDate").change(handleDateChange);
 }
 
 // ─────────────────────────────────────────────

@@ -1020,9 +1020,15 @@ function setupCompanyAutoSelection() {
 
 // 🚀 최적화된 성과 요약 렌더링
 function renderPerformanceSummary(performanceData) {
-    if (!performanceData) return;
+    if (!performanceData || !performanceData[0]) {
+        console.warn('⚠️ 성과 요약 데이터가 없음');
+        return;
+    }
     
     console.log('📊 성과 요약 렌더링:', performanceData);
+    
+    // 첫 번째 데이터 항목 사용
+    const data = performanceData[0];
     
     // DocumentFragment 사용으로 DOM 조작 최적화
     const fragment = createDocumentFragment();
@@ -1031,43 +1037,43 @@ function renderPerformanceSummary(performanceData) {
         () => {
             const totalSalesElement = document.getElementById('total-sales');
             if (totalSalesElement) {
-                totalSalesElement.textContent = formatCurrency(performanceData.total_sales || 0);
+                totalSalesElement.textContent = formatCurrency(data.total_sales || 0);
             }
         },
         () => {
             const ordersCountElement = document.getElementById('orders-count');
             if (ordersCountElement) {
-                ordersCountElement.textContent = formatNumber(performanceData.orders_count || 0);
+                ordersCountElement.textContent = formatNumber(data.orders_count || 0);
             }
         },
         () => {
             const adSpendRatioElement = document.getElementById('ad-spend-ratio');
             if (adSpendRatioElement) {
-                adSpendRatioElement.textContent = formatPercentage(performanceData.ad_spend_ratio || 0);
+                adSpendRatioElement.textContent = formatPercentage(data.ad_spend_ratio || 0);
             }
         },
         () => {
             const adSpendElement = document.getElementById('ad-spend');
             if (adSpendElement) {
-                adSpendElement.textContent = formatCurrency(performanceData.ad_spend || 0);
+                adSpendElement.textContent = formatCurrency(data.ad_spend || 0);
             }
         },
         () => {
             const totalPurchasesElement = document.getElementById('total-purchases');
             if (totalPurchasesElement) {
-                totalPurchasesElement.textContent = formatNumber(performanceData.total_purchases || 0);
+                totalPurchasesElement.textContent = formatNumber(data.total_purchases || 0);
             }
         },
         () => {
             const cpcElement = document.getElementById('cpc');
             if (cpcElement) {
-                cpcElement.textContent = formatCurrency(performanceData.cpc || 0);
+                cpcElement.textContent = formatCurrency(data.cpc || 0);
             }
         },
         () => {
             const roasElement = document.getElementById('roas');
             if (roasElement) {
-                roasElement.textContent = formatPercentage(performanceData.roas || 0);
+                roasElement.textContent = formatPercentage(data.roas || 0);
             }
         }
     ];

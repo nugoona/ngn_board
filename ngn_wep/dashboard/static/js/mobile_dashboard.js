@@ -835,12 +835,17 @@ function initializeFlatpickr() {
         const isManual = $(this).val() === "manual";
         $("#dateRangeContainer").toggle(isManual);
         
+        // 기간 선택 버튼 스타일 관리
         if (isManual) {
-            // 직접 선택 시 날짜 초기화만 하고 데이터는 로드하지 않음
+            // 직접 선택 시 파란색으로 변경
+            $(this).addClass('active-period');
+            // 날짜 초기화만 하고 데이터는 로드하지 않음
             if (startDateInput) startDateInput.value = '';
             if (endDateInput) endDateInput.value = '';
         } else {
-            // 다른 기간 선택 시 데이터 새로고침
+            // 다른 기간 선택 시 하얀색으로 변경
+            $(this).removeClass('active-period');
+            // 데이터 새로고침
             if (startDateInput) startDateInput.value = '';
             if (endDateInput) endDateInput.value = '';
             fetchMobileData();

@@ -15,6 +15,16 @@ let selectedMetaAccount = null;
 let fetchMobileDataTimeout = null;
 const FETCH_DEBOUNCE_DELAY = 300; // 300ms 디바운스
 
+// 🔥 로딩 스피너 개선을 위한 전역 변수 추가
+const loadingStates = {
+    performance: false,
+    cafe24: false,
+    ga4: false,
+    meta: false
+};
+const LOADING_TIMEOUT = 15000; // 15초 타임아웃
+let loadingTimeoutId = null;
+
 // ─────────────────────────────────────────────
 // 2) 유틸리티 함수 (웹버전과 동일)
 // ─────────────────────────────────────────────
@@ -50,10 +60,7 @@ function debounceFetchMobileData() {
     }, FETCH_DEBOUNCE_DELAY);
 }
 
-// ================================
-// 로딩 상태 관리 함수들 (웹버전과 동일)
-// ================================
-
+// 🔥 로딩 상태 관리 함수들 개선
 function showLoading(target) {
     console.log("🔄 showLoading called for:", target);
     
@@ -92,6 +99,94 @@ function hideLoading(target) {
     element.style.pointerEvents = 'none';
     
     console.log("✅ Loading completed for:", target);
+}
+
+// 🔥 개별 섹션별 로딩 상태 관리 함수 추가
+function setLoadingState(section, isActive) {
+    loadingStates[section] = isActive;
+    console.log(`🔄 ${section} 로딩 상태 변경:`, isActive);
+    checkAllLoadingComplete();
+}
+
+function checkAllLoadingComplete() {
+    const allComplete = Object.values(loadingStates).every(state => !state);
+    console.log('🔍 로딩 상태 확인:', loadingStates, '모든 완료:', allComplete);
+    
+    if (allComplete) {
+        console.log('✅ 모든 로딩 완료 - 로딩 스피너 제거');
+        clearLoadingTimeout();
+        hideAllLoadingOverlays();
+    }
+}
+
+function clearLoadingTimeout() {
+    if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+        loadingTimeoutId = null;
+        console.log('⏰ 로딩 타임아웃 제거');
+    }
+}
+
+function startLoadingTimeout() {
+    clearLoadingTimeout();
+    loadingTimeoutId = setTimeout(() => {
+        console.warn('⚠️ 로딩 타임아웃 발생 - 강제 종료');
+        hideAllLoadingOverlays();
+        showError('데이터 로딩 시간이 초과되었습니다. 다시 시도해주세요.');
+        // 모든 로딩 상태 초기화
+        Object.keys(loadingStates).forEach(section => {
+            loadingStates[section] = false;
+        });
+    }, LOADING_TIMEOUT);
+    console.log('⏰ 로딩 타임아웃 시작:', LOADING_TIMEOUT + 'ms');
+}
+
+function hideAllLoadingOverlays() {
+    console.log("🔄 모든 로딩 오버레이 숨기기");
+    hideLoading("#loadingOverlaySitePerformance");
+    hideLoading("#loadingOverlayAdPerformance");
+    hideLoading("#loadingOverlayCafe24Products");
+    hideLoading("#loadingOverlayGa4Sources");
+}
+
+// 🔥 섹션별 에러 처리 함수 추가
+function handleSectionError(sectionName, error) {
+    console.error(`❌ ${sectionName} 로딩 실패:`, error);
+    setLoadingState(sectionName, false);
+    
+    // 해당 섹션에 에러 메시지 표시
+    const errorElement = document.getElementById(`${sectionName}Error`);
+    if (errorElement) {
+        errorElement.textContent = '데이터를 불러올 수 없습니다.';
+        errorElement.style.display = 'block';
+    }
+}
+
+function showError(message) {
+    console.error('❌ 에러 메시지:', message);
+    // 간단한 토스트 메시지 표시
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #ff4444;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 14px;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
 }
 
 // ─────────────────────────────────────────────
@@ -302,6 +397,12 @@ async function fetchMobileData() {
         
         console.log('📊 요청 파라미터:', { companyName, period, startDate, endDate });
         
+        // 🔥 로딩 상태 초기화 및 타임아웃 시작
+        Object.keys(loadingStates).forEach(section => {
+            loadingStates[section] = true;
+        });
+        startLoadingTimeout();
+        
         // 모든 로딩 오버레이 표시
         showLoading("#loadingOverlaySitePerformance");
         showLoading("#loadingOverlayAdPerformance");
@@ -322,6 +423,11 @@ async function fetchMobileData() {
         results.forEach((result, index) => {
             if (result.status === 'rejected') {
                 console.error(`❌ 데이터 요청 실패 (${index}):`, result.reason);
+                // 🔥 실패한 섹션의 로딩 상태 해제
+                const sectionNames = ['performance', 'cafe24', 'ga4'];
+                if (index < sectionNames.length) {
+                    handleSectionError(sectionNames[index], result.reason);
+                }
             } else if (result.value && result.value.latest_update) {
                 // 성공한 API 응답에서 latest_update 사용
                 latestUpdate = result.value.latest_update;
@@ -338,14 +444,13 @@ async function fetchMobileData() {
         
     } catch (error) {
         console.error('❌ 모바일 데이터 요청 실패:', error);
+        // 🔥 전체 실패 시 모든 로딩 상태 해제
+        Object.keys(loadingStates).forEach(section => {
+            setLoadingState(section, false);
+        });
     } finally {
         isLoading = false;
-        
-        // 모든 로딩 오버레이 숨기기
-        hideLoading("#loadingOverlaySitePerformance");
-        hideLoading("#loadingOverlayAdPerformance");
-        hideLoading("#loadingOverlayCafe24Products");
-        hideLoading("#loadingOverlayGa4Sources");
+        // 🔥 개별 섹션별 로딩 상태는 각 API 호출 함수에서 관리
     }
 }
 
@@ -379,11 +484,16 @@ async function fetchMobilePerformanceSummary(companyName, period, startDate, end
             renderPerformanceSummary(data.performance_summary);
         }
         
+        // 🔥 성공 시 로딩 상태 해제
+        setLoadingState('performance', false);
+        
         // ✅ 서버 응답의 latest_update 반환
         return data;
         
     } catch (error) {
         console.error('❌ 모바일 Performance Summary 로딩 실패:', error);
+        // 🔥 실패 시 로딩 상태 해제
+        setLoadingState('performance', false);
         return null;
     }
 }
@@ -419,11 +529,16 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
             renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
         }
         
+        // 🔥 성공 시 로딩 상태 해제
+        setLoadingState('cafe24', false);
+        
         // ✅ 서버 응답의 latest_update 반환
         return data;
         
     } catch (error) {
         console.error('❌ 모바일 Cafe24 Products 로딩 실패:', error);
+        // 🔥 실패 시 로딩 상태 해제
+        setLoadingState('cafe24', false);
         return null;
     }
 }
@@ -457,11 +572,16 @@ async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
             renderGa4SourceSummary(data.ga4_source_summary);
         }
         
+        // 🔥 성공 시 로딩 상태 해제
+        setLoadingState('ga4', false);
+        
         // ✅ 서버 응답의 latest_update 반환
         return data;
         
     } catch (error) {
         console.error('❌ 모바일 GA4 Sources 로딩 실패:', error);
+        // 🔥 실패 시 로딩 상태 해제
+        setLoadingState('ga4', false);
         return null;
     }
 }
@@ -568,6 +688,8 @@ async function fetchMetaAccounts() {
         
     } catch (error) {
         console.error('❌ 메타 광고 계정 목록 로딩 실패:', error);
+        // 🔥 에러 처리 추가
+        showError('메타 광고 계정 목록을 불러올 수 없습니다.');
     }
 }
 
@@ -576,6 +698,9 @@ async function fetchMetaAccounts() {
 // ─────────────────────────────────────────────
 async function fetchMetaAdsByAccount(accountId, page = 1) {
     if (!accountId) return;
+    
+    // 🔥 메타 광고 로딩 상태 설정
+    setLoadingState('meta', true);
     
     // 메타 광고 로딩 오버레이 표시
     showLoading("#loadingOverlayMetaAds");
@@ -656,11 +781,13 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         
     } catch (error) {
         console.error('❌ 메타 광고별 성과 로딩 실패:', error);
+        // 🔥 실패 시 로딩 상태 해제
+        setLoadingState('meta', false);
     } finally {
         // 메타 광고 로딩 오버레이 숨기기
         hideLoading("#loadingOverlayMetaAds");
-        // 🔥 추가로 모든 로딩 오버레이 확인
-        hideAllLoadingOverlays();
+        // 🔥 성공 시에도 로딩 상태 해제
+        setLoadingState('meta', false);
     }
 }
 
@@ -705,11 +832,8 @@ async function fetchLiveAds(accountId) {
 }
 
 // ─────────────────────────────────────────────
-// 9) 에러 처리 함수
+// 9) 에러 처리 함수 (중복 제거 - 상단에 이미 정의됨)
 // ─────────────────────────────────────────────
-function showError(message) {
-    console.error('🚨 에러:', message);
-}
 
 // 상품명 토스트 메시지 표시
 function showProductNameToast(productName) {
@@ -965,21 +1089,7 @@ function initMobileDashboard() {
     console.log('✅ 모바일 대시보드 초기화 완료');
 }
 
-// 🔥 모든 로딩 오버레이 숨기기 함수
-function hideAllLoadingOverlays() {
-    console.log('🔧 모든 로딩 오버레이 숨기기 시작');
-    
-    const loadingOverlays = document.querySelectorAll('[id*="loadingOverlay"]');
-    loadingOverlays.forEach(overlay => {
-        console.log('🔧 로딩 오버레이 숨기기:', overlay.id);
-        overlay.style.display = 'none';
-        overlay.style.visibility = 'hidden';
-        overlay.style.opacity = '0';
-        overlay.style.pointerEvents = 'none';
-    });
-    
-    console.log('✅ 모든 로딩 오버레이 숨기기 완료');
-}
+// 🔥 모든 로딩 오버레이 숨기기 함수 (중복 제거 - 상단에 이미 정의됨)
 
 // 웹버전과 동일한 업체명 자동 선택 로직
 function setupCompanyAutoSelection() {

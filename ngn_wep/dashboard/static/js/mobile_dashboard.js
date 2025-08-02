@@ -824,10 +824,16 @@ function initializeFlatpickr() {
     $("#periodFilter").change(function() {
         const isManual = $(this).val() === "manual";
         $("#dateRangeContainer").toggle(isManual);
-        if (!isManual) {
+        
+        if (isManual) {
+            // 직접 선택 시 날짜 초기화만 하고 데이터는 로드하지 않음
             startDatePicker.clear();
             endDatePicker.clear();
-            fetchMobileData();  // 데이터 새로고침
+        } else {
+            // 다른 기간 선택 시 데이터 새로고침
+            startDatePicker.clear();
+            endDatePicker.clear();
+            fetchMobileData();
         }
     });
 

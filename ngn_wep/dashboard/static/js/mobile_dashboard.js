@@ -309,9 +309,14 @@ async function fetchMobileData() {
         if (combinedData.status === 'success') {
             // 1. Performance Summary 렌더링
             if (combinedData.performance_summary) {
-                renderPerformanceSummary(combinedData.performance_summary);
-                hideLoading("#loadingOverlaySitePerformance");
-                hideLoading("#loadingOverlayAdPerformance");
+                // DOM 업데이트가 완료된 후 로딩 스피너를 숨기기 위해 setTimeout 사용
+                setTimeout(() => {
+                    renderPerformanceSummary(combinedData.performance_summary);
+                    requestAnimationFrame(() => {
+                        hideLoading("#loadingOverlaySitePerformance");
+                        hideLoading("#loadingOverlayAdPerformance");
+                    });
+                }, 0);
             }
             
             // 2. Cafe24 Product Sales 렌더링
@@ -940,25 +945,47 @@ function renderPerformanceSummary(performanceData) {
     // 성과 데이터가 배열인 경우 첫 번째 요소 사용
     const data = Array.isArray(performanceData) ? performanceData[0] : performanceData;
     
-    // 사이트 성과 요약 KPI 값들 설정
-    document.getElementById('site-revenue').textContent = formatCurrency(data.site_revenue || 0);
-    // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
-    const visitors = data.total_visitors || 0;
-    document.getElementById('total-visitors').textContent = visitors.toLocaleString();
-    // performance_summary_new.py에서 통합으로 가져온 total_orders 사용
-    const ordersCount = data.total_orders || 0;
-    document.getElementById('orders-count').textContent = formatNumber(ordersCount);
-    // 매출대비 광고비 (백분율로 표시)
-    const adSpendRatio = data.ad_spend_ratio || 0;
-    document.getElementById('ad-spend-ratio').textContent = formatPercentage(adSpendRatio);
+    // DOM 업데이트를 일괄 처리하기 위한 DocumentFragment 사용
+    const siteFragment = document.createDocumentFragment();
+    const adFragment = document.createDocumentFragment();
     
-    // 광고 성과 요약 KPI 값들 설정
-    document.getElementById('ad-spend').textContent = formatCurrency(data.ad_spend || 0);
-    document.getElementById('total-purchases').textContent = formatNumber(data.total_purchases || 0);
-    // avg_opo는 실제로 avg_cpc 필드입니다 - CPC는 정수로 표시
-    const cpcValue = data.avg_opo || data.avg_cpc || 0;
-    document.getElementById('cpc').textContent = formatCurrency(Math.round(cpcValue));
-    document.getElementById('roas').textContent = formatPercentage(data.roas_percentage || 0);
+    // 사이트 성과 요약 KPI 값들 준비
+    const siteElements = {
+        'site-revenue': formatCurrency(data.site_revenue || 0),
+        'total-visitors': (data.total_visitors || 0).toLocaleString(),
+        'orders-count': formatNumber(data.total_orders || 0),
+        'ad-spend-ratio': formatPercentage(data.ad_spend_ratio || 0)
+    };
+    
+    // 광고 성과 요약 KPI 값들 준비
+    const adElements = {
+        'ad-spend': formatCurrency(data.ad_spend || 0),
+        'total-purchases': formatNumber(data.total_purchases || 0),
+        'cpc': formatCurrency(Math.round(data.avg_opo || data.avg_cpc || 0)),
+        'roas': formatPercentage(data.roas_percentage || 0)
+    };
+    
+    // 사이트 성과 요약 업데이트
+    Object.entries(siteElements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const span = document.createElement('span');
+            span.textContent = value;
+            element.textContent = '';
+            element.appendChild(span);
+        }
+    });
+    
+    // 광고 성과 요약 업데이트
+    Object.entries(adElements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const span = document.createElement('span');
+            span.textContent = value;
+            element.textContent = '';
+            element.appendChild(span);
+        }
+    });
     
     // 광고 성과 요약 제목에 광고 미디어 정보 추가
     const adMedia = data.ad_media || '';

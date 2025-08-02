@@ -273,6 +273,13 @@ function initializeMobileFlatpickr() {
     return;
   }
 
+  // 기간 선택 엘리먼트 참조를 먼저 가져오기
+  const periodSelect = document.getElementById('periodFilter');
+  if (!periodSelect) {
+    console.warn('Period filter element not found');
+    return;
+  }
+
   const commonConfig = {
     locale: 'ko',
     dateFormat: 'Y-m-d',
@@ -290,7 +297,8 @@ function initializeMobileFlatpickr() {
       ...commonConfig,
       onChange: function(selectedDates, dateStr) {
         console.log('📅 시작일 변경:', dateStr);
-        if (periodSelect.value === 'manual') {
+        const periodSelect = document.getElementById('periodFilter');
+        if (periodSelect && periodSelect.value === 'manual') {
           debounceFetchMobileData();
         }
       },
@@ -308,7 +316,8 @@ function initializeMobileFlatpickr() {
       ...commonConfig,
       onChange: function(selectedDates, dateStr) {
         console.log('📅 종료일 변경:', dateStr);
-        if (periodSelect.value === 'manual') {
+        const periodSelect = document.getElementById('periodFilter');
+        if (periodSelect && periodSelect.value === 'manual') {
           debounceFetchMobileData();
         }
       },
@@ -810,10 +819,14 @@ function setupFilters() {
                     endDatePicker?.enable();
                 } else {
                     dateRangeContainer.style.display = 'none';
-                    startDatePicker?.clear();
-                    endDatePicker?.clear();
-                    startDate.value = "";
-                    endDate.value = "";
+                    if (startDatePicker) {
+                        startDatePicker.clear();
+                        startDate.value = "";
+                    }
+                    if (endDatePicker) {
+                        endDatePicker.clear();
+                        endDate.value = "";
+                    }
                 }
             }
             

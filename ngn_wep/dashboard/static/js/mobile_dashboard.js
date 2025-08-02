@@ -506,19 +506,21 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             end_date: endDateValue
         });
         
-        // 모바일 전용 엔드포인트 사용 (전체 데이터 요청)
-        const response = await fetch('/m/get_meta_ads_by_account', {
+        // 웹버전과 동일한 엔드포인트 사용 (전체 데이터 요청)
+        const response = await fetch('/dashboard/get_data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+                data_type: 'meta_ads_insight_table',
+                level: 'ad',
                 account_id: accountId,
                 company_name: companyName,
                 period: period,
                 start_date: startDateValue,
-                end_date: endDateValue
-                // limit과 page 제거하여 전체 데이터 요청
+                end_date: endDateValue,
+                no_limit: true  // 전체 데이터 요청을 위해 limit 제거
             })
         });
         

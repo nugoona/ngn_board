@@ -15,11 +15,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='mobile_styles.css') }}">
     <!-- Heroicons -->
     <!-- Heroicons 제거 - 모바일에서는 사용하지 않음 -->
-    
-    <!-- ✅ Flatpickr 라이브러리 추가 (웹버전과 동일) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/material_blue.css">
-    
     <style>
         :root {
             /* Light Mode Colors - 웹버전과 동일한 색상 팔레트 */
@@ -1282,10 +1277,6 @@
 
     <!-- 모바일 전용 JS -->
     <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
-    
-    <!-- ✅ Flatpickr JS 라이브러리 추가 (웹버전과 동일) -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ko.min.js"></script>
     
     <!-- 테마 토글 스크립트 -->
     <script>

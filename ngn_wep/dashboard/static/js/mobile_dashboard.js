@@ -1,14 +1,8 @@
 // File: ngn_wep/dashboard/static/js/mobile_dashboard.js
 // 모바일 대시보드 JavaScript - 웹버전과 동일한 구조, 데이터만 축소
 
-// 🔥 성능 최적화: 요청 중복 방지 및 메모리 효율성 개선
+// 🔥 성능 최적화: 요청 중복 방지
 // requestRegistry 제거 - 병렬 처리로 최적화
-
-// ✅ 새로고침 시 세션스토리지 초기화
-if (performance.navigation.type === 1) {
-    sessionStorage.clear();
-    console.log('🔄 새로고침 감지 - 세션 스토리지 초기화');
-}
 
 // ─────────────────────────────────────────────
 // 1) 전역 변수 (웹버전과 동일)
@@ -21,23 +15,9 @@ let selectedMetaAccount = null;
 let fetchMobileDataTimeout = null;
 const FETCH_DEBOUNCE_DELAY = 300; // 300ms 디바운스
 
-// 🔥 로딩 스피너 개선을 위한 전역 변수 추가 (단순화)
-let isLoadingData = false;
-const LOADING_TIMEOUT = 15000; // 15초 타임아웃
-let loadingTimeoutId = null;
-
-// 🚀 성능 최적화를 위한 캐시 추가
-const dataCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5분 캐시
-
-// ✅ Flatpickr 전역 변수 추가
-let startDatePicker = null;
-let endDatePicker = null;
-
 // ─────────────────────────────────────────────
 // 2) 유틸리티 함수 (웹버전과 동일)
 // ─────────────────────────────────────────────
-
 function formatNumber(num) {
     if (num === null || num === undefined) return '--';
     return num.toLocaleString();
@@ -65,7 +45,10 @@ function debounceFetchMobileData() {
     }, FETCH_DEBOUNCE_DELAY);
 }
 
-// 🔥 로딩 상태 관리 함수들 개선 (단순화)
+// ================================
+// 로딩 상태 관리 함수들 (웹버전과 동일)
+// ================================
+
 function showLoading(target) {
     console.log("🔄 showLoading called for:", target);
     
@@ -103,128 +86,7 @@ function hideLoading(target) {
     element.style.opacity = '0';
     element.style.pointerEvents = 'none';
     
-    console.log("✅ Loading stopped for:", target);
-}
-
-// 🔥 단순화된 로딩 상태 관리
-function startLoading() {
-    isLoadingData = true;
-    console.log('🔄 전체 로딩 시작');
-    
-    // 모든 로딩 오버레이 표시
-    showLoading("#loadingOverlaySitePerformance");
-    showLoading("#loadingOverlayAdPerformance");
-    showLoading("#loadingOverlayCafe24Products");
-    showLoading("#loadingOverlayGa4Sources");
-    showLoading("#loadingOverlayMetaAds");
-    
-    // 타임아웃 시작
-    startLoadingTimeout();
-}
-
-function stopLoading() {
-    isLoadingData = false;
-    console.log('✅ 전체 로딩 완료');
-    
-    // 타임아웃 제거
-    clearLoadingTimeout();
-    
-    // 모든 로딩 오버레이 숨기기
-    hideAllLoadingOverlays();
-}
-
-function clearLoadingTimeout() {
-    if (loadingTimeoutId) {
-        clearTimeout(loadingTimeoutId);
-        loadingTimeoutId = null;
-        console.log('⏰ 로딩 타임아웃 제거');
-    }
-}
-
-function startLoadingTimeout() {
-    clearLoadingTimeout();
-    loadingTimeoutId = setTimeout(() => {
-        console.warn('⚠️ 로딩 타임아웃 발생 - 강제 종료');
-        stopLoading();
-        showError('데이터 로딩 시간이 초과되었습니다. 다시 시도해주세요.');
-    }, LOADING_TIMEOUT);
-    console.log('⏰ 로딩 타임아웃 시작:', LOADING_TIMEOUT + 'ms');
-}
-
-// 🔥 수정: 모든 로딩 오버레이 숨기기 (메타 광고 포함)
-function hideAllLoadingOverlays() {
-    console.log("🔄 모든 로딩 오버레이 숨기기");
-    hideLoading("#loadingOverlaySitePerformance");
-    hideLoading("#loadingOverlayAdPerformance");
-    hideLoading("#loadingOverlayCafe24Products");
-    hideLoading("#loadingOverlayGa4Sources");
-    hideLoading("#loadingOverlayMetaAds"); // 🔥 누락된 메타 광고 추가
-}
-
-// 🔥 에러 처리 함수
-function handleError(error, context) {
-    console.error(`❌ ${context} 실패:`, error);
-    showError(`${context}를 불러올 수 없습니다.`);
-}
-
-function showError(message) {
-    console.error('❌ 에러 메시지:', message);
-    // 간단한 토스트 메시지 표시
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #ff4444;
-        color: white;
-        padding: 12px 16px;
-        border-radius: 8px;
-        z-index: 10000;
-        font-size: 14px;
-        max-width: 300px;
-        word-wrap: break-word;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.remove();
-        }
-    }, 5000);
-}
-
-// 🚀 성능 최적화: 캐시 관리
-function getCacheKey(type, params) {
-    return `${type}_${JSON.stringify(params)}`;
-}
-
-function getCachedData(key) {
-    const cached = dataCache.get(key);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        console.log('📦 캐시된 데이터 사용:', key);
-        return cached.data;
-    }
-    return null;
-}
-
-function setCachedData(key, data) {
-    dataCache.set(key, {
-        data: data,
-        timestamp: Date.now()
-    });
-    console.log('📦 데이터 캐시 저장:', key);
-}
-
-// 🚀 성능 최적화: DOM 조작 최적화
-function createDocumentFragment() {
-    return document.createDocumentFragment();
-}
-
-function batchDOMUpdates(updates) {
-    requestAnimationFrame(() => {
-        updates.forEach(update => update());
-    });
+    console.log("✅ Loading completed for:", target);
 }
 
 // ─────────────────────────────────────────────
@@ -264,236 +126,42 @@ function processMetaAdsForMobile(metaAdsData) {
 // 4) 웹버전과 호환되는 함수들 (filters.js 호환)
 // ─────────────────────────────────────────────
 
-// ✅ Flatpickr 초기화 함수 (웹버전과 동일)
-function initializeMobileFlatpickr() {
-  // Flatpickr가 로드되었는지 확인
-  if (typeof flatpickr === 'undefined') {
-    console.warn('Flatpickr not loaded, retrying in 100ms...');
-    setTimeout(initializeMobileFlatpickr, 100);
-    return;
-  }
-
-  // 기간 선택 엘리먼트 참조를 먼저 가져오기
-  const periodSelect = document.getElementById('periodFilter');
-  if (!periodSelect) {
-    console.warn('Period filter element not found');
-    return;
-  }
-
-  const commonConfig = {
-    locale: 'ko',
-    dateFormat: 'Y-m-d',
-    allowInput: false,
-    clickOpens: true,
-    theme: 'material_blue',
-    disableMobile: false,
-    time_24hr: true
-  };
-
-  // 시작일 선택기
-  const startDateInput = document.getElementById('startDate');
-  if (startDateInput && !startDatePicker) {
-    startDatePicker = flatpickr(startDateInput, {
-      ...commonConfig,
-      onChange: function(selectedDates, dateStr) {
-        console.log('📅 시작일 변경:', dateStr);
-        const periodSelect = document.getElementById('periodFilter');
-        if (periodSelect && periodSelect.value === 'manual') {
-          debounceFetchMobileData();
-        }
-      },
-      onClose: function(selectedDates, dateStr) {
-        console.log('📅 시작일 선택 완료:', dateStr);
-      }
-    });
-    console.log('✅ 시작일 Flatpickr 초기화 완료');
-  }
-
-  // 종료일 선택기
-  const endDateInput = document.getElementById('endDate');
-  if (endDateInput && !endDatePicker) {
-    endDatePicker = flatpickr(endDateInput, {
-      ...commonConfig,
-      onChange: function(selectedDates, dateStr) {
-        console.log('📅 종료일 변경:', dateStr);
-        const periodSelect = document.getElementById('periodFilter');
-        if (periodSelect && periodSelect.value === 'manual') {
-          debounceFetchMobileData();
-        }
-      },
-      onClose: function(selectedDates, dateStr) {
-        console.log('📅 종료일 선택 완료:', dateStr);
-      }
-    });
-    console.log('✅ 종료일 Flatpickr 초기화 완료');
-  }
+// 웹버전의 updateAllData 함수와 동일한 역할
+async function updateAllData() {
+    console.log('🔄 모바일 updateAllData() 호출');
+    await fetchMobileData();
 }
 
-// ─────────────────────────────────────────────
-// 5) 데이터 요청 함수들 (웹버전과 동일한 구조)
-// ─────────────────────────────────────────────
+// 웹버전의 fetchPerformanceSummaryData 함수와 동일한 역할
+async function fetchPerformanceSummaryData() {
+    console.log('🔄 모바일 fetchPerformanceSummaryData() 호출');
+    await fetchMobileData();
+}
 
-// 🔥 최적화된 데이터 요청 함수
-async function fetchMobileData() {
-    console.log('🔄 모바일 데이터 요청 시작');
+// 웹버전의 fetchCafe24SalesData 함수와 동일한 역할
+async function fetchCafe24SalesData() {
+    console.log('🔄 모바일 fetchCafe24SalesData() 호출');
+    await fetchMobileData();
+}
+
+// 웹버전의 fetchCafe24ProductSalesData 함수와 동일한 역할
+async function fetchCafe24ProductSalesData(page = 1) {
+    console.log('🔄 모바일 fetchCafe24ProductSalesData() 호출 - 페이지:', page);
     
-    if (isLoading) {
-        console.log('⚠️ 이미 로딩 중이므로 중단');
-        return;
-    }
-    
-    isLoading = true;
+    cafe24ProductSalesCurrentPage = page;
     
     try {
         const companySelect = document.getElementById('accountFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
         const periodSelect = document.getElementById('periodFilter');
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
         
-        // 회사 선택 처리
-        let companyName = companySelect ? companySelect.value : 'all';
-        
-        // 세션 스토리지에서 저장된 회사 확인
-        const savedCompany = sessionStorage.getItem("mobileSelectedCompany");
-        
-        if (!companyName || companyName === '') {
-            if (savedCompany) {
-                companyName = savedCompany;
-                console.log('🏢 세션 스토리지에서 회사 복원:', companyName);
-            } else {
-                companyName = setupCompanyAutoSelection() || 'all';
-                console.log('🏢 회사값 자동 보정:', companyName);
-            }
-        }
-        
-        // 회사명 가공 (웹버전과 동일하게)
-        if (companyName === 'all' && typeof userCompanyList !== 'undefined') {
-            companyName = userCompanyList
-                .filter(name => name.toLowerCase() !== "demo")
-                .map(name => name.toLowerCase());
-            console.log('🏢 모든 업체 처리:', companyName);
-        }
-
+        const companyName = companySelect ? companySelect.value : 'all';
         const period = periodSelect ? periodSelect.value : 'today';
-        const startDate = startDateInput ? startDateInput.value.trim() : '';
-        const endDate = endDateInput ? endDateInput.value.trim() : '';
+        const startDateValue = startDate ? startDate.value : '';
+        const endDateValue = endDate ? endDate.value : '';
         
-        // ✅ 직접 선택 모드에서 날짜 검증 (웹버전과 동일)
-        if (period === 'manual' && (!startDate || !endDate)) {
-            console.warn('[BLOCKED] 직접 선택: 날짜 누락 → 실행 안함');
-            isLoading = false;
-            return;
-        }
-        
-        console.log('📊 요청 파라미터:', { companyName, period, startDate, endDate });
-        
-        // 🔥 단순화된 로딩 시작
-        startLoading();
-        
-        // 🚀 병렬로 데이터 요청 (최적화)
-        const promises = [
-            fetchMobilePerformanceSummary(companyName, period, startDate, endDate),
-            fetchMobileCafe24Products(companyName, period, startDate, endDate),
-            fetchMobileGa4Sources(companyName, period, startDate, endDate)
-        ];
-        
-        const results = await Promise.allSettled(promises);
-        
-        // 결과 처리 및 latest_update 추출
-        let latestUpdate = null;
-        let hasError = false;
-        
-        results.forEach((result, index) => {
-            if (result.status === 'rejected') {
-                console.error(`❌ 데이터 요청 실패 (${index}):`, result.reason);
-                hasError = true;
-            } else if (result.value && result.value.latest_update) {
-                // 성공한 API 응답에서 latest_update 사용
-                latestUpdate = result.value.latest_update;
-                console.log('✅ API 응답에서 latest_update 추출:', latestUpdate);
-            }
-        });
-        
-        // ✅ 타임스탬프 업데이트 (API 응답의 latest_update 우선, 없으면 현재 시간)
-        if (latestUpdate) {
-            updateMobileTimestamp(latestUpdate);
-        } else {
-            updateMobileTimestamp(new Date().toLocaleString('ko-KR'));
-        }
-        
-        // 에러가 있으면 사용자에게 알림
-        if (hasError) {
-            showError('일부 데이터를 불러올 수 없습니다.');
-        }
-        
-    } catch (error) {
-        console.error('❌ 모바일 데이터 요청 실패:', error);
-        handleError(error, '데이터 요청');
-    } finally {
-        isLoading = false;
-        // 🔥 로딩 완료
-        stopLoading();
-    }
-}
-
-// 🚀 최적화된 개별 API 호출 함수들
-async function fetchMobilePerformanceSummary(companyName, period, startDate, endDate) {
-    const cacheKey = getCacheKey('performance', { companyName, period, startDate, endDate });
-    const cached = getCachedData(cacheKey);
-    
-    if (cached) {
-        renderPerformanceSummary(cached.performance_summary);
-        return cached;
-    }
-    
-    try {
-        console.log('🔄 모바일 Performance Summary API 호출');
-        
-        const response = await fetch('/dashboard/get_data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                data_type: 'performance_summary',
-                company_name: companyName,
-                period: period,
-                start_date: startDate,
-                end_date: endDate
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('✅ 모바일 Performance Summary 로딩 성공:', data);
-        
-        if (data.status === 'success' && data.performance_summary && data.performance_summary.length > 0) {
-            renderPerformanceSummary(data.performance_summary[0], data.total_orders);
-            setCachedData(cacheKey, data);
-        }
-        
-        return data;
-        
-    } catch (error) {
-        console.error('❌ 모바일 Performance Summary 로딩 실패:', error);
-        return null;
-    }
-}
-
-async function fetchMobileCafe24Products(companyName, period, startDate, endDate) {
-    const cacheKey = getCacheKey('cafe24', { companyName, period, startDate, endDate });
-    const cached = getCachedData(cacheKey);
-    
-    if (cached) {
-        renderCafe24ProductSales(cached.cafe24_product_sales, cached.cafe24_product_sales_total_count);
-        return cached;
-    }
-    
-    try {
-        console.log('🔄 모바일 Cafe24 Products API 호출');
+        showLoading("#loadingOverlayCafe24Products");
         
         const response = await fetch('/dashboard/get_data', {
             method: 'POST',
@@ -504,9 +172,9 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
                 data_type: 'cafe24_product_sales',
                 company_name: companyName,
                 period: period,
-                start_date: startDate,
-                end_date: endDate,
-                page: 1,
+                start_date: startDateValue,
+                end_date: endDateValue,
+                page: page,
                 limit: 5
             })
         });
@@ -516,82 +184,247 @@ async function fetchMobileCafe24Products(companyName, period, startDate, endDate
         }
         
         const data = await response.json();
-        console.log('✅ 모바일 Cafe24 Products 로딩 성공:', data);
+        console.log('✅ 카페24 상품판매 데이터 로딩 성공:', data);
         
         if (data.status === 'success' && data.cafe24_product_sales) {
             renderCafe24ProductSales(data.cafe24_product_sales, data.cafe24_product_sales_total_count);
-            setCachedData(cacheKey, data);
         }
         
-        return data;
+    } catch (error) {
+        console.error('❌ 카페24 상품판매 데이터 로딩 실패:', error);
+    } finally {
+        hideLoading("#loadingOverlayCafe24Products");
+    }
+}
+
+// 웹버전의 fetchGa4SourceSummaryData 함수와 동일한 역할
+async function fetchGa4SourceSummaryData() {
+    console.log('🔄 모바일 fetchGa4SourceSummaryData() 호출');
+    await fetchMobileData();
+}
+
+// ─────────────────────────────────────────────
+// 5) API 호출 함수 (웹버전과 동일한 단일 호출)
+// ─────────────────────────────────────────────
+async function fetchMobileData() {
+    if (isLoading) return;
+    
+    isLoading = true;
+    console.log('🔄 모바일 데이터 로딩 시작...');
+    
+    try {
+        // 현재 필터 값들 가져오기 (웹버전과 동일)
+        const companySelect = document.getElementById('accountFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const periodSelect = document.getElementById('periodFilter');
+        
+        const companyName = companySelect ? companySelect.value : 'all';
+        const period = periodSelect ? periodSelect.value : 'today';
+        const startDateValue = startDate ? startDate.value : '';
+        const endDateValue = endDate ? endDate.value : '';
+        
+        console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
+        
+        // 🚀 웹버전과 동일한 병렬 API 호출로 최적화
+        console.log('🚀 병렬 API 호출로 모든 데이터 로딩 시작...');
+        
+        // 실제 존재하는 로딩 스피너만 표시
+        showLoading("#loadingOverlaySitePerformance");
+        showLoading("#loadingOverlayAdPerformance");
+        showLoading("#loadingOverlayCafe24Products");
+        // showLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
+        
+        // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
+        const promises = [];
+        
+        // 1. Performance Summary
+        promises.push(
+            fetch('/dashboard/get_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    data_type: 'performance_summary',
+                    company_name: companyName,
+                    period: period,
+                    start_date: startDateValue,
+                    end_date: endDateValue,
+                    limit: 5
+                    // _cache_buster 제거로 캐시 활용
+                })
+            }).then(response => response.json())
+        );
+        
+        // 2. Cafe24 Product Sales
+        promises.push(
+            fetch('/dashboard/get_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    data_type: 'cafe24_product_sales',
+                    company_name: companyName,
+                    period: period,
+                    start_date: startDateValue,
+                    end_date: endDateValue,
+                    limit: 5
+                    // _cache_buster 제거로 캐시 활용
+                })
+            }).then(response => response.json())
+        );
+        
+        // 3. GA4 Source Summary
+        promises.push(
+            fetch('/dashboard/get_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    data_type: 'ga4_source_summary',
+                    company_name: companyName,
+                    period: period,
+                    start_date: startDateValue,
+                    end_date: endDateValue,
+                    limit: 5
+                    // _cache_buster 제거로 캐시 활용
+                })
+            }).then(response => response.json())
+        );
+        
+        // 🚀 병렬로 모든 API 호출 실행
+        const results = await Promise.all(promises);
+        console.log('✅ 병렬 API 호출 완료:', results);
+        
+        // 📊 데이터 통합 및 렌더링
+        const combinedData = {
+            status: 'success',
+            performance_summary: results[0]?.performance_summary || [],
+            cafe24_product_sales: results[1]?.cafe24_product_sales || [],
+            cafe24_product_sales_total_count: results[1]?.cafe24_product_sales_total_count || 0,
+            ga4_source_summary: results[2]?.ga4_source_summary || [],
+            latest_update: results[0]?.latest_update || results[1]?.latest_update || results[2]?.latest_update
+        };
+        
+        console.log('✅ 모바일 데이터 로딩 완료:', combinedData);
+        
+        // 📊 데이터 렌더링
+        if (combinedData.status === 'success') {
+            // 1. Performance Summary 렌더링
+            if (combinedData.performance_summary) {
+                renderPerformanceSummary(combinedData.performance_summary);
+            }
+            
+            // 2. Cafe24 Product Sales 렌더링
+            if (combinedData.cafe24_product_sales) {
+                renderCafe24ProductSales(combinedData.cafe24_product_sales, combinedData.cafe24_product_sales_total_count);
+            }
+            
+            // 3. GA4 Source Summary 렌더링
+            if (combinedData.ga4_source_summary) {
+                renderGa4SourceSummary(combinedData.ga4_source_summary);
+            }
+            
+            // 4. 업데이트 시간 표시
+            if (combinedData.latest_update) {
+                updateMobileTimestamp(combinedData.latest_update);
+            }
+        }
         
     } catch (error) {
-        console.error('❌ 모바일 Cafe24 Products 로딩 실패:', error);
-        return null;
+        console.error('❌ 모바일 데이터 로딩 실패:', error);
+        showError('데이터 로드 실패');
+    } finally {
+        // 실제 존재하는 로딩 스피너만 숨기기
+        hideLoading("#loadingOverlaySitePerformance");
+        hideLoading("#loadingOverlayAdPerformance");
+        hideLoading("#loadingOverlayCafe24Products");
+        // hideLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
+        isLoading = false;
     }
+}
+
+// 개별 API 호출 함수들 (웹버전과 동일한 구조, 단일 호출로 통합)
+async function fetchMobilePerformanceSummary(companyName, period, startDate, endDate) {
+    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
+    console.log('🔄 모바일 Performance Summary - 단일 API 호출로 통합됨');
+}
+
+async function fetchMobileCafe24Products(companyName, period, startDate, endDate) {
+    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
+    console.log('🔄 모바일 Cafe24 Products - 단일 API 호출로 통합됨');
 }
 
 async function fetchMobileGa4Sources(companyName, period, startDate, endDate) {
-    const cacheKey = getCacheKey('ga4', { companyName, period, startDate, endDate });
-    const cached = getCachedData(cacheKey);
-    
-    if (cached) {
-        renderGa4SourceSummary(cached.ga4_source_summary);
-        return cached;
-    }
+    // 단일 API 호출로 통합되었으므로 별도 구현 불필요
+    console.log('🔄 모바일 GA4 Sources - 단일 API 호출로 통합됨');
+}
+
+function updateMobileTimestamp(latestUpdate) {
+    const updatedAtText = document.getElementById('updatedAtText');
+    if (!updatedAtText || !latestUpdate) return;
     
     try {
-        console.log('🔄 모바일 GA4 Sources API 호출');
+        console.log('🔍 원본 latest_update:', latestUpdate);
         
-        const response = await fetch('/dashboard/get_data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                data_type: 'ga4_source_summary',
-                company_name: companyName,
-                period: period,
-                start_date: startDate,
-                end_date: endDate
-            })
-        });
+        // 다양한 날짜 형식 처리
+        let dateStr = latestUpdate;
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // 2025-07-28-22-11 형식인 경우 처리
+        if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
+            const parts = dateStr.split('-');
+            const year = parts[0];
+            const month = parts[1];
+            const day = parts[2];
+            const hour = parts[3];
+            const minute = parts[4];
+            dateStr = `${year}-${month}-${day}T${hour}:${minute}:00`;
+            console.log('🔧 변환된 날짜 형식:', dateStr);
         }
         
-        const data = await response.json();
-        console.log('✅ 모바일 GA4 Sources 로딩 성공:', data);
+        const utc = new Date(dateStr);
         
-        if (data.status === 'success' && data.ga4_source_summary) {
-            renderGa4SourceSummary(data.ga4_source_summary);
-            setCachedData(cacheKey, data);
+        // 유효한 날짜인지 확인
+        if (isNaN(utc.getTime())) {
+            console.warn('❌ 유효하지 않은 날짜 형식:', latestUpdate);
+            updatedAtText.textContent = '최종 업데이트: -';
+            return;
         }
         
-        return data;
+        // 시간만 보정 (날짜는 그대로 유지)
+        const hours = utc.getUTCHours() + 9;
+        const adjustedHour = hours % 24;
+        const carryDate = hours >= 24 ? 1 : 0;
         
+        const year = utc.getUTCFullYear();
+        const month = utc.getUTCMonth() + 1;
+        const date = utc.getUTCDate();
+        const finalDate = date + carryDate;
+        const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
+        
+        const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
+        updatedAtText.textContent = `최종 업데이트: ${formatted}`;
+        console.log('✅ 업데이트 시간 표시 완료:', formatted);
     } catch (error) {
-        console.error('❌ 모바일 GA4 Sources 로딩 실패:', error);
-        return null;
+        console.error('❌ 업데이트 시간 처리 오류:', error);
+        updatedAtText.textContent = '최종 업데이트: -';
     }
 }
 
 // ─────────────────────────────────────────────
-// 6) 메타 광고 관련 함수들 (최적화)
+// 6) 메타 광고 계정 목록 조회
 // ─────────────────────────────────────────────
-
-// 🚀 최적화된 메타 계정 조회
 async function fetchMetaAccounts() {
     try {
-        console.log('🔄 메타 광고 계정 목록 요청');
+        const companySelect = document.getElementById('accountFilter');
+        const companyName = companySelect ? companySelect.value : 'all';
         
+        // 모바일 전용 엔드포인트 사용
         const response = await fetch('/m/get_meta_accounts', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+                company_name: companyName
+            })
         });
         
         if (!response.ok) {
@@ -602,29 +435,25 @@ async function fetchMetaAccounts() {
         console.log('✅ 메타 광고 계정 목록 로딩 성공:', data);
         
         if (data.status === 'success' && data.meta_accounts) {
+            console.log('📊 메타 광고 계정 목록:', data.meta_accounts);
             renderMetaAccountFilter(data.meta_accounts);
-            
-            // '공홈' 포함된 계정 자동 선택, 없으면 첫 번째 계정 선택
-            if (data.meta_accounts.length > 0) {
-                const homeAccount = data.meta_accounts.find(account => account.account_name.includes('공홈'));
-                const selectedAccount = homeAccount || data.meta_accounts[0];
-                selectedMetaAccount = selectedAccount.account_id;
-                console.log('🔄 메타 계정 자동 선택:', selectedAccount.account_name, selectedMetaAccount);
-                
-                // 메타 광고 데이터 로딩
-                await fetchMetaAdsByAccount(selectedMetaAccount, 1);
-            }
+        } else {
+            console.warn('⚠️ 메타 광고 계정 목록 데이터 없음');
         }
         
     } catch (error) {
         console.error('❌ 메타 광고 계정 목록 로딩 실패:', error);
-        showError('메타 광고 계정 목록을 불러올 수 없습니다.');
     }
 }
 
-// 🚀 최적화된 메타 광고 데이터 조회
+// ─────────────────────────────────────────────
+// 7) 메타 광고별 성과 조회
+// ─────────────────────────────────────────────
 async function fetchMetaAdsByAccount(accountId, page = 1) {
     if (!accountId) return;
+    
+    // 메타 광고 로딩 오버레이 표시
+    showLoading("#loadingOverlayMetaAds");
     
     try {
         const periodSelect = document.getElementById('periodFilter');
@@ -632,19 +461,17 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const endDate = document.getElementById('endDate');
         
         const companySelect = document.getElementById('accountFilter');
-        let companyName = companySelect ? companySelect.value : 'all';
-        if (!companyName || companyName === '') {
-            companyName = setupCompanyAutoSelection() || 'all';
-            console.log('🏢 메타 광고 요청 - 회사값 자동 보정:', companyName);
-        }
-
         const period = periodSelect ? periodSelect.value : 'today';
         const startDateValue = startDate ? startDate.value : '';
         const endDateValue = endDate ? endDate.value : '';
+        const companyName = companySelect ? companySelect.value : 'all';
         
         metaAdsCurrentPage = page;
         
-        console.log('📊 메타 광고 데이터 요청:', {
+        // 전체 데이터를 한 번에 가져오기 (limit 없이)
+        console.log('📊 메타 광고 전체 데이터 요청 파라미터:', {
+            data_type: 'meta_ads_insight_table',
+            level: 'ad',
             account_id: accountId,
             company_name: companyName,
             period: period,
@@ -652,6 +479,7 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             end_date: endDateValue
         });
         
+        // 모바일 전용 엔드포인트 사용 (전체 데이터 요청)
         const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
             headers: {
@@ -663,6 +491,7 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
                 period: period,
                 start_date: startDateValue,
                 end_date: endDateValue
+                // limit과 page 제거하여 전체 데이터 요청
             })
         });
         
@@ -671,38 +500,47 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         }
         
         const data = await response.json();
-        console.log('✅ 메타 광고 데이터 로딩 성공:', data);
+        console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
-        if (data.status === 'success') {
-            // 광고 성과 요약 데이터 준비
-            const summaryData = {
-                total_spend: data.total_spend || 0,
-                total_purchases: data.total_purchases || 0,
-                average_cpc: data.average_cpc || 0,
-                total_roas: data.total_roas || 0,
-                ads: []
-            };
-
-            // 광고 목록 데이터 처리
-            if (data.meta_ads_by_account && Array.isArray(data.meta_ads_by_account)) {
-                summaryData.ads = processMetaAdsForMobile(data.meta_ads_by_account)
-                    .sort((a, b) => (b.spend || 0) - (a.spend || 0))
-                    .slice((page - 1) * 10, page * 10);
-            }
+        if (data.status === 'success' && data.meta_ads_by_account) {
+            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_by_account.length);
             
-            renderMetaAdsByAccount(summaryData, data.meta_ads_by_account?.length || 0);
+            // 전체 데이터 저장
+            metaAdsAllData = data.meta_ads_by_account;
+            console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
+            
+            // 초기 로딩 시 지출 내림차순으로 정렬
+            metaAdsAllData.sort((a, b) => {
+                const aSpend = a.spend || 0;
+                const bSpend = b.spend || 0;
+                return bSpend - aSpend; // 내림차순
+            });
+            
+            console.log('🔄 초기 지출 내림차순 정렬 완료');
+            
+            // 페이지별 데이터로 렌더링
+            const startIndex = (page - 1) * 10;
+            const endIndex = startIndex + 10;
+            const pageData = metaAdsAllData.slice(startIndex, endIndex);
+            
+            renderMetaAdsByAccount(pageData, metaAdsAllData.length);
         } else {
-            console.warn('⚠️ 메타 광고 데이터 없음:', data);
+            console.warn('⚠️ 메타 광고별 성과 데이터 없음 또는 실패:', data);
         }
         
     } catch (error) {
-        console.error('❌ 메타 광고 데이터 로딩 실패:', error);
-        handleError(error, '메타 광고 데이터');
+        console.error('❌ 메타 광고별 성과 로딩 실패:', error);
+    } finally {
+        // 메타 광고 로딩 오버레이 숨기기
+        hideLoading("#loadingOverlayMetaAds");
+        // 🔥 추가로 모든 로딩 오버레이 확인
+        hideAllLoadingOverlays();
     }
 }
 
 // ─────────────────────────────────────────────
-// 7) LIVE 광고 미리보기 조회 (최적화)
+// 8) LIVE 광고 미리보기 조회
 // ─────────────────────────────────────────────
 async function fetchLiveAds(accountId) {
     if (!accountId) return;
@@ -736,12 +574,17 @@ async function fetchLiveAds(accountId) {
     } catch (error) {
         console.error('❌ LIVE 광고 미리보기 로딩 실패:', error);
         hideLiveAdsSection();
+        // 🔥 추가로 모든 로딩 오버레이 확인
+        hideAllLoadingOverlays();
     }
 }
 
 // ─────────────────────────────────────────────
-// 8) UI 유틸리티 함수들
+// 9) 에러 처리 함수
 // ─────────────────────────────────────────────
+function showError(message) {
+    console.error('🚨 에러:', message);
+}
 
 // 상품명 토스트 메시지 표시
 function showProductNameToast(productName) {
@@ -789,7 +632,7 @@ function showProductNameToast(productName) {
 }
 
 // ─────────────────────────────────────────────
-// 9) 필터 이벤트 핸들러 (웹버전과 동일)
+// 10) 필터 이벤트 핸들러 (웹버전과 동일)
 // ─────────────────────────────────────────────
 function setupFilters() {
     const companySelect = document.getElementById('accountFilter');
@@ -798,762 +641,653 @@ function setupFilters() {
     const periodSelect = document.getElementById('periodFilter');
     const metaAccountSelect = document.getElementById('metaAccountSelector');
     
-    // ✅ Flatpickr 초기화
-    initializeMobileFlatpickr();
-    
     // 기간 변경 시
     if (periodSelect) {
         periodSelect.addEventListener('change', () => {
-            if (isLoading) {
-                console.log('⚠️ 이미 로딩 중이므로 중단');
-                return;
-            }
-
             console.log('📅 기간 변경:', periodSelect.value);
             
-            // ✅ 직접 선택 모드일 때 날짜 입력 필드 표시/숨김 (웹버전과 동일)
+            // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
             const dateRangeContainer = document.getElementById('dateRangeContainer');
             if (dateRangeContainer) {
                 if (periodSelect.value === 'manual') {
                     dateRangeContainer.style.display = 'flex';
-                    // Flatpickr 인스턴스 재활성화
-                    if (startDatePicker) startDatePicker.set('disabled', false);
-                    if (endDatePicker) endDatePicker.set('disabled', false);
                 } else {
                     dateRangeContainer.style.display = 'none';
-                    if (startDatePicker) {
-                        startDatePicker.clear();
-                        startDate.value = "";
-                    }
-                    if (endDatePicker) {
-                        endDatePicker.clear();
-                        endDate.value = "";
-                    }
                 }
             }
             
-            // 데이터 새로고침
+            // 🚀 디바운싱 적용
             debounceFetchMobileData();
+            
+            // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
+            if (selectedMetaAccount) {
+                console.log('🔄 기간 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
+                fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 기간 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
+            }
         });
     }
     
-    // 회사 변경 시
+    // 업체 변경 시
     if (companySelect) {
         companySelect.addEventListener('change', () => {
-            if (isLoading) {
-                console.log('⚠️ 이미 로딩 중이므로 중단');
-                return;
-            }
-
-            const selectedValue = companySelect.value;
-            console.log('🏢 회사 변경:', selectedValue);
-
-            // 세션 스토리지에 저장
-            sessionStorage.setItem("mobileSelectedCompany", selectedValue);
-
-            // 메타 광고 계정 초기화
+            console.log('🏢 업체 변경:', companySelect.value);
+            
+            // 메타 광고 계정 선택 초기화
             selectedMetaAccount = null;
             if (metaAccountSelect) {
                 metaAccountSelect.value = '';
             }
-
-            // 데이터 새로고침
+            hideLiveAdsSection();
+            
+            // 메타 광고 테이블 초기화
+            const metaAdsTable = document.getElementById('meta-ads-table');
+            if (metaAdsTable) {
+                metaAdsTable.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+            }
+            
+            // 🚀 디바운싱 적용
             debounceFetchMobileData();
+            fetchMetaAccounts(); // 메타 광고 계정 목록 업데이트
         });
     }
     
-    // 시작일 변경 시
+    // 날짜 변경 시
     if (startDate) {
         startDate.addEventListener('change', () => {
-            if (isLoading) {
-                console.log('⚠️ 이미 로딩 중이므로 중단');
-                return;
-            }
-
             console.log('📅 시작일 변경:', startDate.value);
-            
-            const startDateValue = startDate.value?.trim();
-            const endDateValue = endDate.value?.trim();
-            const selectedPeriod = periodSelect.value;
-
-            if (selectedPeriod === 'manual' && (!startDateValue || !endDateValue)) {
-                console.warn('[BLOCKED] 직접 선택: 종료일 누락 → 실행 안함');
-                return;
-            }
-
+            // 🚀 디바운싱 적용
             debounceFetchMobileData();
+            
+            // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
+            if (selectedMetaAccount) {
+                console.log('🔄 시작일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
+                fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 시작일 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
+            }
         });
     }
     
-    // 종료일 변경 시
     if (endDate) {
         endDate.addEventListener('change', () => {
-            if (isLoading) {
-                console.log('⚠️ 이미 로딩 중이므로 중단');
-                return;
-            }
-
             console.log('📅 종료일 변경:', endDate.value);
-            
-            const startDateValue = startDate.value?.trim();
-            const endDateValue = endDate.value?.trim();
-            const selectedPeriod = periodSelect.value;
-
-            if (selectedPeriod === 'manual' && (!startDateValue || !endDateValue)) {
-                console.warn('[BLOCKED] 직접 선택: 시작일 누락 → 실행 안함');
-                return;
-            }
-
+            // 🚀 디바운싱 적용
             debounceFetchMobileData();
+            
+            // 메타 광고 계정이 선택되어 있으면 광고별 성과도 업데이트
+            if (selectedMetaAccount) {
+                console.log('🔄 종료일 변경으로 인한 메타 광고 데이터 재로딩:', selectedMetaAccount);
+                fetchMetaAdsByAccount(selectedMetaAccount);
+                fetchLiveAds(selectedMetaAccount);
+            } else {
+                // 메타 광고 계정이 선택되어 있지 않으면 현재 선택된 계정 확인
+                const metaAccountSelect = document.getElementById('metaAccountSelector');
+                if (metaAccountSelect && metaAccountSelect.value) {
+                    selectedMetaAccount = metaAccountSelect.value;
+                    console.log('🔄 종료일 변경으로 인한 메타 광고 데이터 재로딩 (자동 선택):', selectedMetaAccount);
+                    fetchMetaAdsByAccount(selectedMetaAccount);
+                    fetchLiveAds(selectedMetaAccount);
+                }
+            }
         });
     }
     
-    // 메타 계정 변경 시
+    // 메타 광고 계정 선택 시
     if (metaAccountSelect) {
-        metaAccountSelect.addEventListener('change', async () => {
-            if (isLoading) {
-                console.log('⚠️ 이미 로딩 중이므로 중단');
-                return;
-            }
-
-            const selectedAccountId = metaAccountSelect.value;
-            console.log('📊 메타 계정 변경:', selectedAccountId);
+        metaAccountSelect.addEventListener('change', () => {
+            const accountId = metaAccountSelect.value;
+            console.log('📊 메타 광고 계정 변경:', accountId);
             
-            if (selectedAccountId) {
-                selectedMetaAccount = selectedAccountId;
-                await fetchMetaAdsByAccount(selectedAccountId, 1);
-                // 라이브 광고 미리보기도 함께 업데이트
-                await fetchLiveAds(selectedAccountId);
+            selectedMetaAccount = accountId;
+            
+            if (accountId) {
+                console.log('🔄 메타 광고 계정 선택으로 인한 데이터 로딩:', accountId);
+                // 전체 데이터 초기화
+                metaAdsAllData = [];
+                fetchMetaAdsByAccount(accountId);
+                fetchLiveAds(accountId);
+                showLiveAdsSection();
             } else {
-                // 계정이 선택되지 않은 경우 테이블 초기화
-                const tableBody = document.getElementById('meta-ads-table');
-                if (tableBody) {
-                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
-                }
-                // 라이브 광고 섹션 숨기기
+                console.log('🔄 메타 광고 계정 선택 해제');
                 hideLiveAdsSection();
+                
+                // 메타 광고 테이블 초기화
+                const metaAdsTable = document.getElementById('meta-ads-table');
+                if (metaAdsTable) {
+                    metaAdsTable.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+                }
             }
         });
     }
+    
+    // 캠페인 필터 이벤트 설정
+    addCampaignFilterEvents();
 }
 
 // ─────────────────────────────────────────────
-// 10) 초기화 함수들
+// 11) 초기화 함수
 // ─────────────────────────────────────────────
-
-// 🔥 최적화된 모바일 대시보드 초기화
 function initMobileDashboard() {
-    console.log('🚀 모바일 대시보드 초기화 시작');
+    console.log('🚀 모바일 대시보드 초기화 시작...');
     
-    // 필터 설정
+    // 🔥 모든 로딩 오버레이 숨기기 (화이트 패널 문제 해결)
+    hideAllLoadingOverlays();
+    
+    // 웹버전과 동일한 업체명 자동 선택 로직
+    setupCompanyAutoSelection();
+    
     setupFilters();
     
-    // 회사 자동 선택 설정 - 반환값 확인
-    const selectedCompany = setupCompanyAutoSelection();
-    console.log('🏢 초기화 시 선택된 회사:', selectedCompany);
+    // 🚀 초기 데이터 로딩 (중복 방지)
+    if (!isLoading) {
+        fetchMobileData();
+    }
     
-    // 메타 광고 계정 목록 로딩
-    fetchMetaAccounts();
-    
-    // 초기 데이터 로딩
-    fetchMobileData();
+    fetchMetaAccounts(); // 메타 광고 계정 목록 로드
     
     console.log('✅ 모바일 대시보드 초기화 완료');
 }
 
-// 회사 자동 선택 설정
+// 🔥 모든 로딩 오버레이 숨기기 함수
+function hideAllLoadingOverlays() {
+    console.log('🔧 모든 로딩 오버레이 숨기기 시작');
+    
+    const loadingOverlays = document.querySelectorAll('[id*="loadingOverlay"]');
+    loadingOverlays.forEach(overlay => {
+        console.log('🔧 로딩 오버레이 숨기기:', overlay.id);
+        overlay.style.display = 'none';
+        overlay.style.visibility = 'hidden';
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+    });
+    
+    console.log('✅ 모든 로딩 오버레이 숨기기 완료');
+}
+
+// 웹버전과 동일한 업체명 자동 선택 로직
 function setupCompanyAutoSelection() {
-    console.log('🏢 회사 자동 선택 시작');
     const companySelect = document.getElementById('accountFilter');
-    if (!companySelect) {
-        console.error('❌ 회사 선택 엘리먼트를 찾을 수 없음');
-        return;
-    }
-
-    // 기존 옵션 제거
-    companySelect.innerHTML = '';
-
-    // 세션 스토리지에서 저장된 회사 가져오기
-    const savedCompany = sessionStorage.getItem("mobileSelectedCompany") || "all";
-    console.log('🏢 저장된 회사:', savedCompany);
-
-    // demo 사용자 체크 (전역 변수 currentUserId 사용)
-    const isDemoUser = typeof currentUserId !== 'undefined' && currentUserId === "demo";
-
+    if (!companySelect) return;
+    
+    // 현재 사용자 정보 확인
+    const isDemoUser = currentUserId === "demo";
+    
     if (isDemoUser) {
-        // demo 사용자는 demo만 선택 가능
+        // demo 사용자는 demo만 선택
         companySelect.innerHTML = '<option value="demo" selected>demo</option>';
-        console.log('🏢 demo 사용자 - demo 계정만 표시');
     } else {
-        // 일반 사용자용 회사 목록 처리
-        const userList = typeof userCompanyList !== 'undefined' ? userCompanyList : [];
-        const filteredList = userList.filter(name => name.toLowerCase() !== "demo");
-
-        if (filteredList.length > 1) {
-            // 2개 이상의 회사가 있을 경우 "모든 업체" 옵션 추가
-            const allOption = document.createElement('option');
-            allOption.value = "all";
-            allOption.textContent = "모든 업체";
-            allOption.selected = savedCompany === "all";
-            companySelect.appendChild(allOption);
+        // 일반 사용자는 업체 목록에서 demo 제외
+        const filteredCompanies = userCompanyList.filter(name => name.toLowerCase() !== "demo");
+        
+        if (filteredCompanies.length === 1) {
+            // 업체가 1개면 자동 선택
+            const company = filteredCompanies[0];
+            companySelect.innerHTML = `<option value="${company.toLowerCase()}" selected>${company}</option>`;
+        } else if (filteredCompanies.length > 1) {
+            // 업체가 2개 이상이면 "모든 업체" 옵션 추가
+            companySelect.innerHTML = '<option value="all" selected>모든 업체</option>';
+            filteredCompanies.forEach(company => {
+                const option = document.createElement('option');
+                option.value = company.toLowerCase();
+                option.textContent = company;
+                companySelect.appendChild(option);
+            });
         }
-
-        // 회사 목록 추가
-        filteredList.forEach(company => {
-            const option = document.createElement('option');
-            option.value = company.toLowerCase();
-            option.textContent = company;
-            option.selected = savedCompany === company.toLowerCase();
-            companySelect.appendChild(option);
-        });
-
-        console.log('🏢 회사 목록 설정 완료:', filteredList);
     }
-
-    // 선택된 값 확인
-    const selectedValue = companySelect.value;
-    console.log('🏢 최종 선택된 회사:', selectedValue);
-
-    // 세션 스토리지에 저장
-    sessionStorage.setItem("mobileSelectedCompany", selectedValue);
-
-    return selectedValue;
+    
+    console.log('🏢 업체명 자동 선택 완료:', companySelect.value);
 }
 
 // ─────────────────────────────────────────────
-// 11) 렌더링 함수들 (성능 최적화)
+// 12) DOM 로드 시 초기화
 // ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', initMobileDashboard);
 
-// 🚀 최적화된 성과 요약 렌더링
-function renderPerformanceSummary(performanceData, totalOrders) {
+// 🔥 추가 안전장치: 5초 후 모든 로딩 오버레이 강제 숨기기
+setTimeout(() => {
+    console.log('🔧 5초 후 모든 로딩 오버레이 강제 숨기기');
+    hideAllLoadingOverlays();
+}, 5000);
+
+// ─────────────────────────────────────────────
+// 13) 페이지네이션 전역 변수
+// ─────────────────────────────────────────────
+let cafe24ProductSalesCurrentPage = 1;
+let cafe24ProductSalesTotalCount = 0;
+let metaAdsCurrentPage = 1;
+let metaAdsTotalCount = 0;
+let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
+let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 방지
+
+
+
+// 사이트 성과 요약 렌더링 (핵심 KPI)
+function renderPerformanceSummary(performanceData) {
     console.log('📊 사이트 성과 요약 렌더링:', performanceData);
     
+    // 성과 데이터가 배열인 경우 첫 번째 요소 사용
+    const data = Array.isArray(performanceData) ? performanceData[0] : performanceData;
+    
     // 사이트 성과 요약 KPI 값들 설정
-    document.getElementById('site-revenue').textContent = formatCurrency(performanceData.site_revenue || 0);
+    document.getElementById('site-revenue').textContent = formatCurrency(data.site_revenue || 0);
     // 방문자는 K 없이 원래 숫자로 표시 (예: 1,278)
-    const visitors = performanceData.total_visitors || 0;
+    const visitors = data.total_visitors || 0;
     document.getElementById('total-visitors').textContent = visitors.toLocaleString();
-    // 모바일 전용: total_orders 사용 (totalOrders가 있으면 사용, 없으면 total_purchases 사용)
-    const ordersCount = totalOrders !== undefined ? totalOrders : (performanceData.total_purchases || 0);
+    // performance_summary_new.py에서 통합으로 가져온 total_orders 사용
+    const ordersCount = data.total_orders || 0;
     document.getElementById('orders-count').textContent = formatNumber(ordersCount);
     // 매출대비 광고비 (백분율로 표시)
-    const adSpendRatio = performanceData.ad_spend_ratio || 0;
+    const adSpendRatio = data.ad_spend_ratio || 0;
     document.getElementById('ad-spend-ratio').textContent = formatPercentage(adSpendRatio);
     
     // 광고 성과 요약 KPI 값들 설정
-    document.getElementById('ad-spend').textContent = formatCurrency(performanceData.ad_spend || 0);
-    document.getElementById('total-purchases').textContent = formatNumber(performanceData.total_purchases || 0);
-    // avg_opo는 실제로 avg_cpc 필드입니다
-    document.getElementById('cpc').textContent = formatCurrency(performanceData.avg_opo || performanceData.avg_cpc || 0);
-    document.getElementById('roas').textContent = formatPercentage(performanceData.roas_percentage || 0);
+    document.getElementById('ad-spend').textContent = formatCurrency(data.ad_spend || 0);
+    document.getElementById('total-purchases').textContent = formatNumber(data.total_purchases || 0);
+    // avg_opo는 실제로 avg_cpc 필드입니다 - CPC는 정수로 표시
+    const cpcValue = data.avg_opo || data.avg_cpc || 0;
+    document.getElementById('cpc').textContent = formatCurrency(Math.round(cpcValue));
+    document.getElementById('roas').textContent = formatPercentage(data.roas_percentage || 0);
     
-    // DocumentFragment 사용으로 DOM 조작 최적화
-    const fragment = createDocumentFragment();
-    
-    const updates = [
-        () => {
-            // 사이트 방문수
-            const siteVisitsElement = document.getElementById('site-visits');
-            if (siteVisitsElement) {
-                siteVisitsElement.textContent = formatNumber(data.ga4_users);
-                console.log('사이트 방문수 업데이트:', data.ga4_users);
-            }
-        },
-        () => {
-            // 방문자수
-            const visitorsElement = document.getElementById('visitors');
-            if (visitorsElement) {
-                visitorsElement.textContent = formatNumber(data.ga4_users);
-                console.log('방문자수 업데이트:', data.ga4_users);
-            }
-        },
-        () => {
-            // 주문수
-            const orderCountElement = document.getElementById('order-count');
-            if (orderCountElement) {
-                orderCountElement.textContent = formatNumber(data.total_orders);
-                console.log('주문수 업데이트:', data.total_orders);
-            }
-        },
-        () => {
-            // 전환율
-            const conversionRateElement = document.getElementById('conversion-rate');
-            if (conversionRateElement) {
-                const rate = (data.total_orders / data.ga4_users) * 100;
-                conversionRateElement.textContent = formatPercentage(rate);
-                console.log('전환율 업데이트:', rate);
-            }
-        },
-        () => {
-            // 광고비
-            const adSpendElement = document.getElementById('ad-spend');
-            if (adSpendElement) {
-                adSpendElement.textContent = formatCurrency(data.total_spend);
-                console.log('광고비 업데이트:', data.total_spend);
-            }
-        },
-        () => {
-            // 구매수
-            const purchasesElement = document.getElementById('ad-purchases');
-            if (purchasesElement) {
-                purchasesElement.textContent = formatNumber(data.total_purchases);
-                console.log('구매수 업데이트:', data.total_purchases);
-            }
-        },
-        () => {
-            // 클릭당 비용
-            const clickCostElement = document.getElementById('click-cost');
-            if (clickCostElement) {
-                const cpc = data.total_clicks > 0 ? data.total_spend / data.total_clicks : 0;
-                clickCostElement.textContent = formatCurrency(cpc);
-                console.log('클릭당 비용 업데이트:', cpc);
-            }
-        },
-        () => {
-            // ROAS
-            const roasElement = document.getElementById('ad-roas');
-            if (roasElement) {
-                const roas = data.total_spend > 0 ? (data.total_revenue / data.total_spend) * 100 : 0;
-                roasElement.textContent = formatPercentage(roas);
-                console.log('ROAS 업데이트:', roas);
-            }
-        }
-    ];
-    
-    // 배치 업데이트로 성능 최적화
-    batchDOMUpdates(updates);
-    
-    console.log('✅ 성과 요약 렌더링 완료');
+    // 광고 성과 요약 제목에 광고 미디어 정보 추가
+    const adMedia = data.ad_media || '';
+    const adPerformanceSection = document.querySelector('.section:nth-child(3) .section-header');
+    if (adMedia && adPerformanceSection) {
+        adPerformanceSection.textContent = `광고 성과 요약 - ${adMedia}`;
+    }
 }
 
-// 🚀 최적화된 카페24 상품판매 렌더링
+// 카페24 상품판매 렌더링
 function renderCafe24ProductSales(products, totalCount = 0) {
-    if (!products || !Array.isArray(products)) return;
-    
-    console.log('📊 카페24 상품판매 렌더링:', products);
+    console.log('📦 카페24 상품판매 렌더링:', products);
     
     const tbody = document.getElementById('cafe24-products');
     if (!tbody) return;
     
-    // DocumentFragment 사용
-    const fragment = createDocumentFragment();
+    tbody.innerHTML = '';
     
-    products.forEach(product => {
+    if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>';
+        return;
+    }
+    
+    // 첫 페이지 5개만 표시
+    const displayProducts = products.slice(0, 5);
+    
+    displayProducts.forEach(product => {
         const row = document.createElement('tr');
+        const productName = product.product_name || '-';
+        const salesAmount = product.item_product_sales || 0;
+        
         row.innerHTML = `
-            <td class="product-name" onclick="showProductNameToast('${product.product_name || ''}')">${product.product_name || '--'}</td>
-            <td class="text-right">${formatNumber(product.total_quantity || 0)}</td>
-            <td class="text-right">${formatCurrency(product.total_sales || 0)}</td>
+            <td class="text-truncate" title="${productName}">${productName}</td>
+            <td class="text-right">${formatNumber(product.item_quantity || 0)}</td>
+            <td class="text-right">${formatCurrency(salesAmount)}</td>
         `;
-        fragment.appendChild(row);
+        
+        // 상품명 터치 시 전체 텍스트 표시 (모바일 전용)
+        const productNameCell = row.querySelector('td:first-child');
+        if (productNameCell) {
+            const productName = productNameCell.textContent.trim();
+            if (productName && productName !== '-') {
+                productNameCell.classList.add('product-name-cell');
+                productNameCell.setAttribute('data-full-text', productName);
+                productNameCell.setAttribute('title', productName);
+                
+                productNameCell.addEventListener('click', function() {
+                    // 터치 시 전체 텍스트를 토스트로 표시
+                    showProductNameToast(productName);
+                });
+            }
+        }
+        
+        tbody.appendChild(row);
     });
     
-    // 한 번에 DOM 업데이트
-    tbody.innerHTML = '';
-    tbody.appendChild(fragment);
-    
-    console.log('✅ 카페24 상품판매 렌더링 완료');
+    // 페이지네이션 업데이트
+    cafe24ProductSalesTotalCount = totalCount;
+    updatePagination('cafe24_product_sales', cafe24ProductSalesCurrentPage, totalCount);
 }
 
-// 🚀 최적화된 GA4 소스별 유입수 렌더링
+// GA4 소스별 유입수 렌더링
 function renderGa4SourceSummary(sources) {
-    if (!sources || !Array.isArray(sources)) return;
-    
-    console.log('📊 GA4 소스별 유입수 렌더링:', sources);
+    console.log('🌐 GA4 소스별 유입수 렌더링:', sources);
     
     const tbody = document.getElementById('ga4-sources');
     if (!tbody) return;
     
-    // DocumentFragment 사용
-    const fragment = createDocumentFragment();
+    tbody.innerHTML = '';
     
-    sources.forEach(source => {
+    if (sources.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>';
+        return;
+    }
+    
+    // (not set) 제외하고 상위 5개만 필터링
+    const filteredSources = sources
+        .filter(source => source.source && source.source !== '(not set)' && source.source !== 'not set')
+        .slice(0, 5);
+    
+    console.log('🔍 필터링된 GA4 소스:', filteredSources);
+    
+    filteredSources.forEach(source => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${source.source || '--'}</td>
-            <td class="text-right">${formatNumber(source.users || 0)}</td>
+            <td class="text-truncate">${source.source || '-'}</td>
+            <td class="text-right">${formatNumber(source.total_users || 0)}</td>
         `;
-        fragment.appendChild(row);
+        tbody.appendChild(row);
     });
-    
-    // 한 번에 DOM 업데이트
-    tbody.innerHTML = '';
-    tbody.appendChild(fragment);
-    
-    console.log('✅ GA4 소스별 유입수 렌더링 완료');
 }
 
-// 🚀 최적화된 메타 광고 렌더링
+// 메타 광고 렌더링 (기본 계정별 성과)
 function renderMetaAds(metaAds) {
-    if (!metaAds || !Array.isArray(metaAds)) return;
-    
     console.log('📊 메타 광고 렌더링:', metaAds);
     
     const tbody = document.getElementById('meta-ads-table');
     if (!tbody) return;
     
-    // DocumentFragment 사용
-    const fragment = createDocumentFragment();
-    
-    metaAds.forEach(ad => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="text-left">${ad.campaign_name || '--'}</td>
-            <td class="text-left">${ad.ad_name || '--'}</td>
-            <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
-            <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
-            <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
-            <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
-        `;
-        fragment.appendChild(row);
-    });
-    
-    // 한 번에 DOM 업데이트
     tbody.innerHTML = '';
-    tbody.appendChild(fragment);
     
-    console.log('✅ 메타 광고 렌더링 완료');
-}
-
-// 메타 계정 필터 렌더링
-function renderMetaAccountFilter(accounts) {
-    if (!accounts || !Array.isArray(accounts)) return;
-    
-    console.log('📊 메타 계정 필터 렌더링:', accounts);
-    
-    const select = document.getElementById('metaAccountSelector');
-    if (!select) return;
-    
-    // 기존 옵션 제거 (placeholder 제외)
-    const placeholder = select.querySelector('.placeholder-option');
-    select.innerHTML = '';
-    if (placeholder) {
-        select.appendChild(placeholder);
-    }
-    
-    // 새 옵션 추가
-    accounts.forEach(account => {
-        const option = document.createElement('option');
-        option.value = account.account_id;
-        option.textContent = account.account_name || account.account_id;
-        select.appendChild(option);
-    });
-    
-    console.log('✅ 메타 계정 필터 렌더링 완료');
-}
-
-// 🚀 최적화된 메타 광고별 성과 렌더링
-function renderMetaAdsByAccount(adsData, totalCount = null) {
-    if (!adsData) return;
-    
-    console.log('📊 메타 광고별 성과 렌더링:', adsData);
-    
-    // 광고 성과 요약 업데이트
-    const spendElement = document.getElementById('ad-spend');
-    const purchasesElement = document.getElementById('ad-purchases');
-    const clickCostElement = document.getElementById('click-cost');
-    const roasElement = document.getElementById('ad-roas');
-
-    if (spendElement) {
-        spendElement.textContent = formatCurrency(adsData.total_spend || 0);
-    }
-    if (purchasesElement) {
-        purchasesElement.textContent = formatNumber(adsData.total_purchases || 0);
-    }
-    if (clickCostElement) {
-        clickCostElement.textContent = formatCurrency(adsData.average_cpc || 0);
-    }
-    if (roasElement) {
-        roasElement.textContent = formatPercentage(adsData.total_roas || 0);
-    }
-
-    // 광고 목록 테이블 업데이트
-    const tableBody = document.getElementById('meta-ads-table');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = '';
-    
-    if (!Array.isArray(adsData.ads) || adsData.ads.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+    if (metaAds.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
-    adsData.ads.forEach(ad => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="text-left">${ad.campaign_name || '--'}</td>
-            <td class="text-left">${ad.ad_name || '--'}</td>
-            <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
-            <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
-            <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
-            <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
+    // 모바일용 데이터 처리
+    const processedMetaAds = processMetaAdsForMobile(metaAds);
+    
+    processedMetaAds.forEach(row => {
+        const tableRow = document.createElement('tr');
+        tableRow.innerHTML = `
+            <td class="text-left">${row.campaign_name || '-'}</td>
+            <td class="text-left">${row.ad_name || '-'}</td>
+            <td class="text-right">${formatNumber(row.total_spend || 0)}</td>
+            <td class="text-right">${formatNumber(row.cpc || 0)}</td>
+            <td class="text-right">${formatNumber(row.total_purchases || 0)}</td>
+            <td class="text-right">${formatNumber(row.roas || 0)}</td>
         `;
-        tableBody.appendChild(row);
+        tbody.appendChild(tableRow);
+    });
+}
+
+// 메타 광고 계정 필터 렌더링
+function renderMetaAccountFilter(accounts) {
+    console.log('🏢 메타 광고 계정 필터 렌더링:', accounts);
+    
+    const metaAccountSelect = document.getElementById('metaAccountSelector');
+    
+    if (!metaAccountSelect) return;
+    
+    // 기존 옵션 제거 (기본 옵션 제외)
+    metaAccountSelect.innerHTML = '<option value="">계정을 선택해주세요</option>';
+    
+    // 계정이 있으면 옵션 추가
+    if (accounts && accounts.length > 0) {
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.account_id;
+            option.textContent = account.account_name;
+            metaAccountSelect.appendChild(option);
+        });
+        
+        // 계정이 1개면 자동 선택
+        if (accounts.length === 1) {
+            const accountId = accounts[0].account_id;
+            metaAccountSelect.value = accountId;
+            console.log('🏢 계정 1개 자동 선택:', accountId);
+            fetchMetaAdsByAccount(accountId);
+            fetchLiveAds(accountId); // LIVE 광고 미리보기 로드
+        } else if (accounts.length > 1) {
+            // 계정이 여러 개인 경우 "공홈"이 포함된 계정 우선 선택
+            let selectedAccount = accounts[0]; // 기본값은 첫 번째 계정
+            
+            // "공홈"이 포함된 계정 찾기
+            const gonghomAccount = accounts.find(account => 
+                account.account_name && account.account_name.includes('공홈')
+            );
+            
+            if (gonghomAccount) {
+                selectedAccount = gonghomAccount;
+                console.log('🏢 "공홈" 포함 계정 자동 선택:', selectedAccount.account_id, selectedAccount.account_name);
+            } else {
+                console.log('🏢 "공홈" 포함 계정이 없어 첫 번째 계정 자동 선택:', selectedAccount.account_id);
+            }
+            
+            metaAccountSelect.value = selectedAccount.account_id;
+            fetchMetaAdsByAccount(selectedAccount.account_id);
+            fetchLiveAds(selectedAccount.account_id); // LIVE 광고 미리보기 로드
+        }
+    }
+    
+    // 계정 선택 이벤트 추가
+    metaAccountSelect.addEventListener('change', function() {
+        const selectedAccountId = this.value;
+        console.log('🏢 선택된 메타 계정:', selectedAccountId);
+        
+        if (selectedAccountId) {
+            fetchMetaAdsByAccount(selectedAccountId);
+            fetchLiveAds(selectedAccountId); // LIVE 광고 미리보기 로드
+        } else {
+            // 계정이 선택되지 않은 경우 테이블 초기화
+            const tbody = document.getElementById('meta-ads-table');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
+            }
+            hideLiveAdsSection(); // LIVE 광고 섹션 숨기기
+        }
+    });
+}
+
+// 메타 광고별 성과 렌더링 (광고 탭 기준)
+function renderMetaAdsByAccount(adsData, totalCount = null) {
+    console.log('📊 메타 광고별 성과 렌더링:', adsData);
+    console.log('📊 메타 광고별 성과 전체 개수:', totalCount);
+    
+    const tbody = document.getElementById('meta-ads-table');
+    if (!tbody) {
+        console.error('❌ meta-ads-table 요소를 찾을 수 없습니다');
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    if (!adsData || adsData.length === 0) {
+        console.log('⚠️ 메타 광고 데이터가 없습니다');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>';
+        return;
+    }
+    
+    console.log('📊 원본 메타 광고 데이터:', adsData);
+    
+    // 모바일용 데이터 처리 (CPC, ROAS 계산 포함)
+    const processedAdsData = processMetaAdsForMobile(adsData);
+    console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
+    
+    // 첫 페이지 10개만 표시
+    const displayAdsData = processedAdsData.slice(0, 10);
+    
+    // 광고별 성과 데이터 렌더링
+    displayAdsData.forEach((row, index) => {
+        console.log(`📊 광고 ${index + 1}:`, row);
+        
+        // CPC와 ROAS 계산 (웹버전과 동일한 로직)
+        const spend = row.spend || 0;
+        const clicks = row.clicks || 0;
+        const purchases = row.purchases || 0;
+        const purchase_value = row.purchase_value || 0;
+        
+        const cpc = clicks > 0 ? Math.round(spend / clicks) : 0;
+        const roas = spend > 0 ? Math.round((purchase_value / spend) * 100) : 0;
+        
+        const tableRow = document.createElement('tr');
+        tableRow.innerHTML = `
+            <td class="text-left">${row.campaign_name || '-'}</td>
+            <td class="text-left">${row.ad_name || '-'}</td>
+            <td class="text-right">${formatNumber(spend)}</td>
+            <td class="text-right">${formatNumber(cpc)}</td>
+            <td class="text-right">${formatNumber(purchases)}</td>
+            <td class="text-right">${formatNumber(roas)}%</td>
+        `;
+        tbody.appendChild(tableRow);
     });
     
-    // 페이지네이션 업데이트
-    if (totalCount !== null) {
-        updatePagination(document.querySelector('.data-table'), metaAdsCurrentPage, totalCount);
-    }
-    
-    // 라이브 광고 미리보기 가져오기
-    if (selectedMetaAccount) {
-        fetchLiveAds(selectedMetaAccount);
-    }
-
-    if (spendElement) {
-        spendElement.textContent = formatCurrency(adsData.total_spend || 0);
-    }
-    if (purchasesElement) {
-        purchasesElement.textContent = formatNumber(adsData.total_purchases || 0);
-    }
-    if (clickCostElement) {
-        clickCostElement.textContent = formatCurrency(adsData.average_cpc || 0);
-    }
-    if (roasElement) {
-        roasElement.textContent = formatPercentage(adsData.total_roas || 0);
-    }
-
-    // 광고 목록 테이블 업데이트
-    const tbody = document.getElementById('meta-ads-table');
-    if (!tbody) return;
-    
-    // DocumentFragment 사용
-    const fragment = createDocumentFragment();
-    
-    if (Array.isArray(adsData.ads)) {
-        adsData.ads.forEach(ad => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="text-left">${ad.campaign_name || '--'}</td>
-                <td class="text-left">${ad.ad_name || '--'}</td>
-                <td class="text-right">${formatCurrency(ad.spend || 0)}</td>
-                <td class="text-right">${formatCurrency(ad.cpc || 0)}</td>
-                <td class="text-right">${formatNumber(ad.purchases || 0)}</td>
-                <td class="text-right">${formatPercentage(ad.roas || 0)}</td>
-            `;
-            fragment.appendChild(row);
+    // 총합 로우 추가 (전체 데이터 기준 - 페이지와 관계없이 고정)
+    if (metaAdsAllData.length > 0) {
+        // 전체 데이터로 총합 계산 (페이지와 관계없이)
+        const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
+        const totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
+        const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+        
+        // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
+        const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+        const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
+        
+        console.log('📊 전체 데이터 기준 총합 (페이지와 관계없이):', {
+            totalSpend,
+            totalClicks,
+            totalPurchases,
+            totalPurchaseValue,
+            totalCpc,
+            totalRoas
         });
+        
+        const totalRow = document.createElement('tr');
+        totalRow.className = 'bg-gray-50 font-semibold';
+        totalRow.innerHTML = `
+            <td colspan="2" class="text-truncate">총합</td>
+            <td class="text-right">${formatNumber(totalSpend)}</td>
+            <td class="text-right">${formatNumber(totalCpc)}</td>
+            <td class="text-right">${formatNumber(totalPurchases)}</td>
+            <td class="text-right">${formatNumber(totalRoas)}%</td>
+        `;
+        tbody.appendChild(totalRow);
     }
     
-    // 한 번에 DOM 업데이트
-    tbody.innerHTML = '';
-    tbody.appendChild(fragment);
+    // 페이지네이션 업데이트 (전체 데이터 개수 사용)
+    metaAdsTotalCount = totalCount || adsData.length; // 서버에서 받은 전체 개수 또는 현재 데이터 개수
+    updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     
-    // 페이지네이션 업데이트
-    if (totalCount !== null) {
-        updatePagination(document.querySelector('.data-table'), metaAdsCurrentPage, totalCount);
+    // 테이블 헤더 클릭 이벤트는 한 번만 등록 (중복 방지)
+    if (!tableSortEventsAdded) {
+        addTableSortEvents();
+        tableSortEventsAdded = true;
     }
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
 
-// ─────────────────────────────────────────────
-// 12) 페이지네이션 함수
-// ─────────────────────────────────────────────
-function updatePagination(table, currentPage, totalItems) {
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
-    if (totalPages <= 1) return;
-    
-    const paginationContainer = document.getElementById('pagination_meta_ads');
-    if (!paginationContainer) return;
-    
-    let paginationHTML = '<div class="pagination">';
-    
-    // 이전 페이지 버튼
-    if (currentPage > 1) {
-        paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage - 1})">이전</button>`;
-    }
-    
-    // 페이지 번호들
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-    
-    for (let i = startPage; i <= endPage; i++) {
-        if (i === currentPage) {
-            paginationHTML += `<button class="page-btn active">${i}</button>`;
-        } else {
-            paginationHTML += `<button class="page-btn" onclick="changePage(${i})">${i}</button>`;
-        }
-    }
-    
-    // 다음 페이지 버튼
-    if (currentPage < totalPages) {
-        paginationHTML += `<button class="page-btn" onclick="changePage(${currentPage + 1})">다음</button>`;
-    }
-    
-    paginationHTML += '</div>';
-    paginationContainer.innerHTML = paginationHTML;
-}
-
-// 페이지 변경 함수
-function changePage(page) {
-    if (selectedMetaAccount) {
-        metaAdsCurrentPage = page;
-        fetchMetaAdsByAccount(selectedMetaAccount, page);
-    }
-}
-
-// ─────────────────────────────────────────────
-// 13) 테이블 정렬 기능
-// ─────────────────────────────────────────────
-function addTableSortEvents() {
-    const tables = document.querySelectorAll('.data-table');
-    tables.forEach(table => {
-        const headers = table.querySelectorAll('th');
-        headers.forEach((header, index) => {
-            header.style.cursor = 'pointer';
-            header.addEventListener('click', () => {
-                sortTable(table, index);
-            });
-        });
-    });
-}
-
-function sortTable(table, columnIndex) {
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    
-    // 현재 정렬 방향 확인
-    const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
-    const isAscending = header.classList.contains('sort-asc');
-    
-    // 정렬 방향 토글
-    table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
-    header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
-    
-    // 데이터 정렬
-    rows.sort((a, b) => {
-        const aValue = getCellValue(a, columnIndex);
-        const bValue = getCellValue(b, columnIndex);
-        
-        // 숫자 정렬
-        if (!isNaN(aValue) && !isNaN(bValue)) {
-            return isAscending ? bValue - aValue : aValue - bValue;
-        }
-        
-        // 문자열 정렬
-        const aStr = String(aValue).toLowerCase();
-        const bStr = String(bValue).toLowerCase();
-        
-        if (isAscending) {
-            return bStr.localeCompare(aStr);
-        } else {
-            return aStr.localeCompare(bStr);
-        }
-    });
-    
-    // 정렬된 행들을 테이블에 다시 추가
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-function getCellValue(row, columnIndex) {
-    const cell = row.querySelector(`td:nth-child(${columnIndex + 1})`);
-    if (!cell) return '';
-    
-    let value = cell.textContent.trim();
-    
-    // 숫자 추출 (통화, 퍼센트 등 제거)
-    const numericMatch = value.match(/[\d,]+/);
-    if (numericMatch) {
-        value = numericMatch[0].replace(/,/g, '');
-        return parseFloat(value) || 0;
-    }
-    
-    return value;
-}
-
-// ─────────────────────────────────────────────
-// 14) 캠페인 필터 기능
-// ─────────────────────────────────────────────
-function addCampaignFilterEvents() {
-    const filterCheckboxes = document.querySelectorAll('.campaign-filter input[type="checkbox"]');
-    filterCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', filterMetaAdsByCampaign);
-    });
-}
-
-function filterMetaAdsByCampaign() {
-    if (!metaAdsAllData || metaAdsAllData.length === 0) return;
-    
-    const conversionFilter = document.getElementById('filter-conversion');
-    const inflowFilter = document.getElementById('filter-inflow');
-    const reachFilter = document.getElementById('filter-reach');
-    
-    const showConversion = conversionFilter ? conversionFilter.checked : true;
-    const showInflow = inflowFilter ? inflowFilter.checked : true;
-    const showReach = reachFilter ? reachFilter.checked : true;
-    
-    const filteredData = metaAdsAllData.filter(ad => {
-        const campaignName = ad.campaign_name || '';
-        
-        if (campaignName.includes('전환') && showConversion) return true;
-        if (campaignName.includes('유입') && showInflow) return true;
-        if (campaignName.includes('도달') && showReach) return true;
-        
-        return false;
-    });
-    
-    // 필터링된 데이터로 페이지네이션 업데이트
-    const startIndex = (metaAdsCurrentPage - 1) * 10;
-    const endIndex = startIndex + 10;
-    const pageData = filteredData.slice(startIndex, endIndex);
-    
-    renderMetaAdsByAccount(pageData, filteredData.length);
-}
-
-// ─────────────────────────────────────────────
-// 15) LIVE 광고 섹션 표시/숨김
-// ─────────────────────────────────────────────
+// LIVE 광고 미리보기 렌더링 (웹버전과 동일한 인스타그램 스타일)
 function renderLiveAds(liveAds) {
-    console.log('📺 라이브 광고 미리보기 렌더링:', liveAds);
+    console.log('🖼️ LIVE 광고 미리보기 렌더링:', liveAds);
     
-    const container = document.getElementById('live-ads-container');
-    if (!container) return;
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    if (!liveAdsScroll) return;
     
-    container.innerHTML = '';
+    liveAdsScroll.innerHTML = '';
     
-    if (!liveAds || liveAds.length === 0) {
-        container.innerHTML = '<div class="text-center">현재 진행중인 광고가 없습니다.</div>';
+    if (liveAds.length === 0) {
+        liveAdsScroll.innerHTML = '<div class="text-center" style="padding: 20px; color: #6b7280;">미리볼 광고가 없습니다.</div>';
         return;
     }
     
     liveAds.forEach(ad => {
         const adCard = document.createElement('div');
-        adCard.className = 'live-ad-card';
+        adCard.className = 'insta-card';
         
-        // 광고 이미지가 있는 경우에만 이미지 섹션 추가
-        const imageHtml = ad.image_url ? `
-            <div class="ad-image">
-                <img src="${ad.image_url}" alt="광고 이미지" onerror="this.style.display='none'">
-            </div>
-        ` : '';
+        // 인스타그램 스타일 카드 생성 (웹버전과 동일)
+        const instagramAccName = ad.instagram_acc_name || 'No Name';
+        const message = ad.message || '(문구 없음)';
+        const firstLine = message.split('\n')[0];
+        
+        const accountNameHTML = `<span style='font-weight:bold;'>${instagramAccName}</span>`;
+        const shortCaption = `${accountNameHTML} ${firstLine} <span class='more-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... more</span>`;
         
         adCard.innerHTML = `
-            ${imageHtml}
-            <div class="ad-info">
-                <div class="ad-name">${ad.ad_name || '--'}</div>
-                <div class="ad-text">${ad.ad_text || '--'}</div>
-                <div class="ad-stats">
-                    <span>지출: ${formatCurrency(ad.spend || 0)}</span>
-                    <span>구매: ${formatNumber(ad.purchases || 0)}</span>
-                    <span>ROAS: ${formatPercentage(ad.roas || 0)}</span>
+            <div class="insta-header">
+                <div class="insta-header-left">
+                    <img class="profile-image" src="https://cdn-icons-png.flaticon.com/512/1946/1946429.png" alt="프로필">
+                    <div class="account-info">
+                        <span class="insta-account-name">${instagramAccName}</span>
+                        <span class="ad-label" style="color: gray;">광고</span>
+                    </div>
                 </div>
+                <div class="insta-menu">⋯</div>
+            </div>
+
+            <div class="insta-image" style="position: relative;">
+                <img class="ad-image" src="${ad.image_url || ''}" alt="광고 이미지" loading="lazy" onerror="this.style.display='none'">
+                
+                ${ad.is_video ? '<div class="play-overlay" style="display: flex;"><svg viewBox="0 0 100 100" class="play-icon" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : '<div class="play-overlay" style="display: none;"></div>'}
+            </div>
+
+            <div class="insta-cta">
+                <a class="cta-link" href="${ad.link || '#'}" target="_blank">
+                    <span>더 알아보기</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#385185" viewBox="0 0 24 24" width="18" height="18">
+                        <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </a>
+            </div>
+
+            <div class="insta-footer">
+                <div class="insta-icons">
+                    <div class="insta-icons-left">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4 8.5 8.5 0 0 1-6.6 3.1 8.38 8.38 0 0 1-5.4-1.9L3 21l2.9-3.1a8.38 8.38 0 0 1-1.9-5.4 8.5 8.5 0 0 1 3.1-6.6A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 6.6 3.1A8.38 8.38 0 0 1 21 11.5z"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                        </svg>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div class="insta-caption ad-caption">${shortCaption}</div>
             </div>
         `;
         
-        container.appendChild(adCard);
+        // 더보기/접기 기능 추가
+        const captionElement = adCard.querySelector('.ad-caption');
+        if (captionElement) {
+            const fullCaption = `${accountNameHTML} ${message} <span class='less-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... less</span>`;
+            
+            captionElement.addEventListener('click', function(e) {
+                if (e.target.classList.contains('more-toggle')) {
+                    this.innerHTML = fullCaption;
+                } else if (e.target.classList.contains('less-toggle')) {
+                    this.innerHTML = shortCaption;
+                }
+            });
+        }
+        
+        liveAdsScroll.appendChild(adCard);
     });
-    
-    // 라이브 광고 섹션 표시
-    const liveAdsSection = document.getElementById('live-ads-section');
-    if (liveAdsSection) {
-        liveAdsSection.style.display = 'block';
-    }
 }
 
+// LIVE 광고 섹션 표시/숨김
 function showLiveAdsSection() {
     const liveAdsSection = document.getElementById('live-ads-section');
     if (liveAdsSection) {
@@ -1569,7 +1303,239 @@ function hideLiveAdsSection() {
 }
 
 // ─────────────────────────────────────────────
-// 16) 디버깅용 전역 함수 (개발용)
+// 15) 페이지네이션 함수
+// ─────────────────────────────────────────────
+function updatePagination(table, currentPage, totalItems) {
+    let limit = table === 'cafe24_product_sales' ? 5 : 10; // 카페24는 5개, 메타광고는 10개
+    let totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 1;
+
+    console.log(`📄 ${table} 페이지네이션 업데이트`);
+    console.log(`📄 현재 페이지: ${currentPage}`);
+    console.log(`📄 전체 페이지 수: ${totalPages}`);
+    console.log(`📄 전체 데이터 개수: ${totalItems}`);
+
+    let paginationContainer = document.getElementById(`pagination_${table}`);
+
+    if (!paginationContainer) {
+        console.warn(`⚠️ 페이지네이션 컨테이너를 찾을 수 없음: #pagination_${table}`);
+        return;
+    }
+
+    paginationContainer.innerHTML = ''; // 기존 버튼 제거 후 다시 추가
+
+    let prevDisabled = currentPage <= 1 ? "disabled" : "";
+    let nextDisabled = currentPage >= totalPages ? "disabled" : "";
+
+    paginationContainer.innerHTML = `
+        <button class="pagination-btn prev-btn" data-table="${table}" data-page="${currentPage - 1}" ${prevDisabled}>이전</button>
+        <span class="pagination-info">${currentPage} / ${totalPages}</span>
+        <button class="pagination-btn next-btn" data-table="${table}" data-page="${currentPage + 1}" ${nextDisabled}>다음</button>
+    `;
+
+    // 이벤트 핸들러 제거 후 다시 추가 (중복 방지)
+    paginationContainer.querySelectorAll(".pagination-btn").forEach(btn => {
+        btn.addEventListener('click', function() {
+            let newPage = parseInt(this.dataset.page);
+            let tableName = this.dataset.table;
+
+            if (!this.hasAttribute("disabled") && newPage !== currentPage) {
+                console.log(`📄 ${tableName} 페이지 이동: ${newPage}`);
+
+                if (tableName === 'cafe24_product_sales') {
+                    fetchCafe24ProductSalesData(newPage);
+                } else if (tableName === 'meta_ads') {
+                    fetchMetaAdsByAccount(selectedMetaAccount, newPage);
+                }
+            } else {
+                console.log(`📄 ${tableName} 버튼 클릭 불가 (비활성화 상태 또는 현재 페이지)`);
+            }
+        });
+    });
+}
+
+// ─────────────────────────────────────────────
+// 16) 테이블 정렬 기능
+// ─────────────────────────────────────────────
+function addTableSortEvents() {
+    const table = document.querySelector('#meta-ads-table').closest('table');
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th');
+    headers.forEach((header, index) => {
+        // 원본 텍스트 저장 (정렬 표시 제외)
+        if (!header.dataset.originalText) {
+            header.dataset.originalText = header.textContent.replace(' ↑', '').replace(' ↓', '');
+        }
+        
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', () => {
+            sortTable(table, index);
+        });
+    });
+}
+
+function sortTable(table, columnIndex) {
+    console.log('🔄 전체 데이터 정렬 시작 - 컬럼:', columnIndex);
+    
+    // 헤더 정렬 상태 확인 및 업데이트
+    const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+    const currentOrder = header.dataset.order || 'none';
+    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+    
+    console.log('🔄 정렬 상태 변경:', currentOrder, '→', newOrder);
+    
+    // 전체 데이터 정렬
+    if (metaAdsAllData.length > 0) {
+        // 정렬 기준 컬럼에 따라 전체 데이터 정렬
+        const sortedData = [...metaAdsAllData].sort((a, b) => {
+            let aValue, bValue;
+            
+            switch (columnIndex) {
+                case 0: // 캠페인
+                    aValue = (a.campaign_name || '').toLowerCase();
+                    bValue = (b.campaign_name || '').toLowerCase();
+                    break;
+                case 1: // 광고
+                    aValue = (a.ad_name || '').toLowerCase();
+                    bValue = (b.ad_name || '').toLowerCase();
+                    break;
+                case 2: // 지출
+                    aValue = a.spend || 0;
+                    bValue = b.spend || 0;
+                    break;
+                case 3: // CPC
+                    aValue = a.clicks > 0 ? Math.round(a.spend / a.clicks) : 0;
+                    bValue = b.clicks > 0 ? Math.round(b.spend / b.clicks) : 0;
+                    break;
+                case 4: // 구매
+                    aValue = a.purchases || 0;
+                    bValue = b.purchases || 0;
+                    break;
+                case 5: // ROAS
+                    aValue = a.spend > 0 ? Math.round((a.purchase_value / a.spend) * 100) : 0;
+                    bValue = b.spend > 0 ? Math.round((b.purchase_value / b.spend) * 100) : 0;
+                    break;
+                default:
+                    aValue = 0;
+                    bValue = 0;
+            }
+            
+            // 문자열 비교
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                if (newOrder === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            }
+            
+            // 숫자 비교
+            if (newOrder === 'asc') {
+                return aValue - bValue;
+            } else {
+                return bValue - aValue;
+            }
+        });
+        
+        // 정렬된 전체 데이터 저장
+        metaAdsAllData = sortedData;
+        console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
+        
+        // 정렬 시 페이지를 1로 리셋
+        metaAdsCurrentPage = 1;
+        
+        // 첫 페이지 데이터로 다시 렌더링
+        const pageData = metaAdsAllData.slice(0, 10);
+        
+        renderMetaAdsByAccount(pageData, metaAdsAllData.length);
+    }
+    
+    // 모든 헤더의 정렬 표시 제거
+    table.querySelectorAll('th').forEach(th => {
+        th.dataset.order = 'none';
+        th.textContent = th.dataset.originalText || th.textContent.replace(' ↑', '').replace(' ↓', '');
+    });
+    
+    // 현재 헤더에 정렬 표시
+    header.dataset.order = newOrder;
+    header.textContent = (header.dataset.originalText || header.textContent.replace(' ↑', '').replace(' ↓', '')) + (newOrder === 'asc' ? ' ↑' : ' ↓');
+    
+    console.log('🔄 정렬 표시 업데이트 완료:', header.textContent);
+}
+
+function getCellValue(row, columnIndex) {
+    const cell = row.cells[columnIndex];
+    if (!cell) return 0;
+    
+    const text = cell.textContent.trim();
+    
+    // 숫자 추출 (쉼표와 % 제거)
+    const number = parseFloat(text.replace(/[%,]/g, ''));
+    return isNaN(number) ? text : number;
+}
+
+// ─────────────────────────────────────────────
+// 17) 캠페인 필터 기능
+// ─────────────────────────────────────────────
+function addCampaignFilterEvents() {
+    const filterCheckboxes = document.querySelectorAll('.campaign-filter input[type="checkbox"]');
+    
+    filterCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            filterMetaAdsByCampaign();
+        });
+    });
+}
+
+function filterMetaAdsByCampaign() {
+    const selectedCampaigns = [];
+    document.querySelectorAll('.campaign-filter input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedCampaigns.push(checkbox.value);
+    });
+    
+    console.log('🔍 선택된 캠페인:', selectedCampaigns);
+    
+    // 전체 데이터에서 필터링
+    if (metaAdsAllData.length > 0) {
+        const filteredData = metaAdsAllData.filter(row => {
+            const campaignName = row.campaign_name || '';
+            
+            // 선택된 캠페인 타입이 없으면 모든 데이터 표시
+            if (selectedCampaigns.length === 0) {
+                return true;
+            }
+            
+            // 선택된 캠페인 타입 중 하나라도 포함되면 표시
+            return selectedCampaigns.some(campaignType => 
+                campaignName.includes(campaignType)
+            );
+        });
+        
+        console.log('🔍 필터링된 데이터:', filteredData.length, '개');
+        
+        // 필터링된 데이터로 렌더링 (첫 페이지)
+        const startIndex = 0;
+        const endIndex = 10;
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        // 필터링된 데이터를 임시로 저장하여 총합 계산에 사용
+        const originalMetaAdsAllData = metaAdsAllData;
+        metaAdsAllData = filteredData;
+        
+        renderMetaAdsByAccount(pageData, filteredData.length);
+        
+        // 원본 데이터 복원
+        metaAdsAllData = originalMetaAdsAllData;
+        
+        // 페이지네이션 업데이트
+        metaAdsCurrentPage = 1;
+        metaAdsTotalCount = filteredData.length;
+        updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
+    }
+}
+
+// ─────────────────────────────────────────────
+// 18) 디버깅용 전역 함수 (개발용)
 // ─────────────────────────────────────────────
 window.mobileDashboard = {
     fetchData: fetchMobileData,
@@ -1581,91 +1547,3 @@ window.mobileDashboard = {
     fetchLiveAds: fetchLiveAds,
     processMetaAdsForMobile: processMetaAdsForMobile
 }; 
-
-function updateMobileTimestamp(latestUpdate) {
-    const updatedAtText = document.getElementById('updatedAtText');
-    if (!updatedAtText || !latestUpdate) return;
-    
-    try {
-        console.log('🔍 원본 latest_update:', latestUpdate);
-        
-        // 다양한 날짜 형식 처리
-        let dateStr = latestUpdate;
-        
-        // ✅ toLocaleString('ko-KR') 형식 처리 추가
-        if (dateStr.includes('오전') || dateStr.includes('오후')) {
-            // 2025. 8. 2. 오후 6:29:00 형식 처리
-            const match = dateStr.match(/(\d+)\.\s*(\d+)\.\s*(\d+)\.\s*(오전|오후)\s*(\d+):(\d+):(\d+)/);
-            if (match) {
-                const [, year, month, day, ampm, hour, minute, second] = match;
-                let adjustedHour = parseInt(hour);
-                if (ampm === '오후' && adjustedHour !== 12) {
-                    adjustedHour += 12;
-                } else if (ampm === '오전' && adjustedHour === 12) {
-                    adjustedHour = 0;
-                }
-                dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${adjustedHour.toString().padStart(2, '0')}:${minute}:${second}`;
-                console.log('🔧 변환된 날짜 형식 (toLocaleString):', dateStr);
-            }
-        }
-        // 2025-07-28-22-11 형식인 경우 처리
-        else if (dateStr.includes('-') && dateStr.split('-').length >= 5) {
-            const parts = dateStr.split('-');
-            const year = parts[0];
-            const month = parts[1];
-            const day = parts[2];
-            const hour = parts[3];
-            const minute = parts[4];
-            dateStr = `${year}-${month}-${day}T${hour}:${minute}:00`;
-            console.log('🔧 변환된 날짜 형식:', dateStr);
-        }
-        
-        const utc = new Date(dateStr);
-        
-        // 유효한 날짜인지 확인
-        if (isNaN(utc.getTime())) {
-            console.warn('❌ 유효하지 않은 날짜 형식:', latestUpdate);
-            updatedAtText.textContent = '최종 업데이트: -';
-            return;
-        }
-        
-        // 시간만 보정 (날짜는 그대로 유지)
-        const hours = utc.getUTCHours() + 9;
-        const adjustedHour = hours % 24;
-        const carryDate = hours >= 24 ? 1 : 0;
-        
-        const year = utc.getUTCFullYear();
-        const month = utc.getUTCMonth() + 1;
-        const date = utc.getUTCDate();
-        const finalDate = date + carryDate;
-        const minutes = utc.getUTCMinutes().toString().padStart(2, '0');
-        
-        const formatted = `${year}년 ${month}월 ${finalDate}일 ${adjustedHour}시 ${minutes}분`;
-        updatedAtText.textContent = `최종 업데이트: ${formatted}`;
-        console.log('✅ 업데이트 시간 표시 완료:', formatted);
-    } catch (error) {
-        console.error('❌ 업데이트 시간 처리 오류:', error);
-        updatedAtText.textContent = '최종 업데이트: -';
-    }
-}
-
-// ─────────────────────────────────────────────
-// 17) 전역 변수들
-// ─────────────────────────────────────────────
-let cafe24ProductSalesCurrentPage = 1;
-let cafe24ProductSalesTotalCount = 0;
-let metaAdsCurrentPage = 1;
-let metaAdsTotalCount = 0;
-let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
-let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 방지
-
-// ─────────────────────────────────────────────
-// 18) DOM 로드 시 초기화
-// ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', initMobileDashboard);
-
-// 🔥 추가 안전장치: 5초 후 모든 로딩 오버레이 강제 숨기기
-setTimeout(() => {
-    console.log('🔧 5초 후 모든 로딩 오버레이 강제 숨기기');
-    hideAllLoadingOverlays();
-}, 5000);

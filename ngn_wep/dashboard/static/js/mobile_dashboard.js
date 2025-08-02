@@ -18,6 +18,11 @@ const FETCH_DEBOUNCE_DELAY = 300; // 300ms 디바운스
 // ─────────────────────────────────────────────
 // 2) 유틸리티 함수 (웹버전과 동일)
 // ─────────────────────────────────────────────
+
+// ✅ Flatpickr 전역 변수 추가
+let startDatePicker = null;
+let endDatePicker = null;
+
 function formatNumber(num) {
     if (num === null || num === undefined) return '--';
     return num.toLocaleString();
@@ -126,6 +131,67 @@ function processMetaAdsForMobile(metaAdsData) {
 // 4) 웹버전과 호환되는 함수들 (filters.js 호환)
 // ─────────────────────────────────────────────
 
+// ✅ Flatpickr 초기화 함수 (웹버전과 동일)
+function initializeMobileFlatpickr() {
+  // Flatpickr가 로드되었는지 확인
+  if (typeof flatpickr === 'undefined') {
+    console.warn('Flatpickr not loaded, retrying in 100ms...');
+    setTimeout(initializeMobileFlatpickr, 100);
+    return;
+  }
+
+  const commonConfig = {
+    locale: 'ko',
+    dateFormat: 'Y-m-d',
+    allowInput: false,
+    clickOpens: true,
+    theme: 'material_blue',
+    disableMobile: false,
+    onChange: function(selectedDates, dateStr, instance) {
+      // 날짜 변경 시 기존 로직 실행
+      if (instance.element.id === 'startDate') {
+        document.getElementById('startDate').dispatchEvent(new Event('change'));
+      } else if (instance.element.id === 'endDate') {
+        document.getElementById('endDate').dispatchEvent(new Event('change'));
+      }
+    }
+  };
+
+  // 기존 인스턴스가 있으면 제거
+  if (startDatePicker) {
+    startDatePicker.destroy();
+  }
+  if (endDatePicker) {
+    endDatePicker.destroy();
+  }
+
+  // 시작일 Flatpickr
+  startDatePicker = flatpickr("#startDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 종료일이 선택되어 있으면 최대 날짜 제한
+      const endDate = endDatePicker?.selectedDates[0];
+      if (endDate) {
+        instance.set('maxDate', endDate);
+      }
+    }
+  });
+
+  // 종료일 Flatpickr
+  endDatePicker = flatpickr("#endDate", {
+    ...commonConfig,
+    maxDate: new Date(),
+    onOpen: function(selectedDates, dateStr, instance) {
+      // 시작일이 선택되어 있으면 최소 날짜 제한
+      const startDate = startDatePicker?.selectedDates[0];
+      if (startDate) {
+        instance.set('minDate', startDate);
+      }
+    }
+  });
+}
+
 // 웹버전의 updateAllData 함수와 동일한 역할
 async function updateAllData() {
     console.log('🔄 모바일 updateAllData() 호출');
@@ -207,137 +273,70 @@ async function fetchGa4SourceSummaryData() {
 // 5) API 호출 함수 (웹버전과 동일한 단일 호출)
 // ─────────────────────────────────────────────
 async function fetchMobileData() {
-    if (isLoading) return;
+    console.log('🔄 모바일 데이터 요청 시작');
+    
+    if (isLoading) {
+        console.log('⚠️ 이미 로딩 중이므로 중단');
+        return;
+    }
     
     isLoading = true;
-    console.log('🔄 모바일 데이터 로딩 시작...');
     
     try {
-        // 현재 필터 값들 가져오기 (웹버전과 동일)
         const companySelect = document.getElementById('accountFilter');
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
         const periodSelect = document.getElementById('periodFilter');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
         
         const companyName = companySelect ? companySelect.value : 'all';
         const period = periodSelect ? periodSelect.value : 'today';
-        const startDateValue = startDate ? startDate.value : '';
-        const endDateValue = endDate ? endDate.value : '';
+        const startDate = startDateInput ? startDateInput.value.trim() : '';
+        const endDate = endDateInput ? endDateInput.value.trim() : '';
         
-        console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
+        // ✅ 직접 선택 모드에서 날짜 검증 (웹버전과 동일)
+        if (period === 'manual' && (!startDate || !endDate)) {
+            console.warn('[BLOCKED] 직접 선택: 날짜 누락 → 실행 안함');
+            isLoading = false;
+            return;
+        }
         
-        // 🚀 웹버전과 동일한 병렬 API 호출로 최적화
-        console.log('🚀 병렬 API 호출로 모든 데이터 로딩 시작...');
+        console.log('📊 요청 파라미터:', { companyName, period, startDate, endDate });
         
-        // 실제 존재하는 로딩 스피너만 표시
+        // 모든 로딩 오버레이 표시
         showLoading("#loadingOverlaySitePerformance");
         showLoading("#loadingOverlayAdPerformance");
         showLoading("#loadingOverlayCafe24Products");
-        // showLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
+        showLoading("#loadingOverlayGa4Sources");
         
-        // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
-        const promises = [];
+        // 병렬로 데이터 요청
+        const promises = [
+            fetchMobilePerformanceSummary(companyName, period, startDate, endDate),
+            fetchMobileCafe24Products(companyName, period, startDate, endDate),
+            fetchMobileGa4Sources(companyName, period, startDate, endDate)
+        ];
         
-        // 1. Performance Summary
-        promises.push(
-            fetch('/dashboard/get_data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    data_type: 'performance_summary',
-                    company_name: companyName,
-                    period: period,
-                    start_date: startDateValue,
-                    end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
-                })
-            }).then(response => response.json())
-        );
+        const results = await Promise.allSettled(promises);
         
-        // 2. Cafe24 Product Sales
-        promises.push(
-            fetch('/dashboard/get_data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    data_type: 'cafe24_product_sales',
-                    company_name: companyName,
-                    period: period,
-                    start_date: startDateValue,
-                    end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
-                })
-            }).then(response => response.json())
-        );
-        
-        // 3. GA4 Source Summary
-        promises.push(
-            fetch('/dashboard/get_data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    data_type: 'ga4_source_summary',
-                    company_name: companyName,
-                    period: period,
-                    start_date: startDateValue,
-                    end_date: endDateValue,
-                    limit: 5
-                    // _cache_buster 제거로 캐시 활용
-                })
-            }).then(response => response.json())
-        );
-        
-        // 🚀 병렬로 모든 API 호출 실행
-        const results = await Promise.all(promises);
-        console.log('✅ 병렬 API 호출 완료:', results);
-        
-        // 📊 데이터 통합 및 렌더링
-        const combinedData = {
-            status: 'success',
-            performance_summary: results[0]?.performance_summary || [],
-            cafe24_product_sales: results[1]?.cafe24_product_sales || [],
-            cafe24_product_sales_total_count: results[1]?.cafe24_product_sales_total_count || 0,
-            ga4_source_summary: results[2]?.ga4_source_summary || [],
-            latest_update: results[0]?.latest_update || results[1]?.latest_update || results[2]?.latest_update
-        };
-        
-        console.log('✅ 모바일 데이터 로딩 완료:', combinedData);
-        
-        // 📊 데이터 렌더링
-        if (combinedData.status === 'success') {
-            // 1. Performance Summary 렌더링
-            if (combinedData.performance_summary) {
-                renderPerformanceSummary(combinedData.performance_summary);
+        // 결과 처리
+        results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.error(`❌ 데이터 요청 실패 (${index}):`, result.reason);
             }
-            
-            // 2. Cafe24 Product Sales 렌더링
-            if (combinedData.cafe24_product_sales) {
-                renderCafe24ProductSales(combinedData.cafe24_product_sales, combinedData.cafe24_product_sales_total_count);
-            }
-            
-            // 3. GA4 Source Summary 렌더링
-            if (combinedData.ga4_source_summary) {
-                renderGa4SourceSummary(combinedData.ga4_source_summary);
-            }
-            
-            // 4. 업데이트 시간 표시
-            if (combinedData.latest_update) {
-                updateMobileTimestamp(combinedData.latest_update);
-            }
-        }
+        });
+        
+        // 타임스탬프 업데이트
+        updateMobileTimestamp(new Date().toLocaleString('ko-KR'));
         
     } catch (error) {
-        console.error('❌ 모바일 데이터 로딩 실패:', error);
-        showError('데이터 로드 실패');
+        console.error('❌ 모바일 데이터 요청 실패:', error);
     } finally {
-        // 실제 존재하는 로딩 스피너만 숨기기
+        isLoading = false;
+        
+        // 모든 로딩 오버레이 숨기기
         hideLoading("#loadingOverlaySitePerformance");
         hideLoading("#loadingOverlayAdPerformance");
         hideLoading("#loadingOverlayCafe24Products");
-        // hideLoading("#loadingOverlayGa4Source"); // 존재하지 않는 요소 제거
-        isLoading = false;
+        hideLoading("#loadingOverlayGa4Sources");
     }
 }
 
@@ -641,18 +640,28 @@ function setupFilters() {
     const periodSelect = document.getElementById('periodFilter');
     const metaAccountSelect = document.getElementById('metaAccountSelector');
     
+    // ✅ Flatpickr 초기화
+    initializeMobileFlatpickr();
+    
     // 기간 변경 시
     if (periodSelect) {
         periodSelect.addEventListener('change', () => {
             console.log('📅 기간 변경:', periodSelect.value);
             
-            // 직접 선택 모드일 때 날짜 입력 필드 표시/숨김
+            // ✅ 직접 선택 모드일 때 날짜 입력 필드 표시/숨김 (웹버전과 동일)
             const dateRangeContainer = document.getElementById('dateRangeContainer');
             if (dateRangeContainer) {
                 if (periodSelect.value === 'manual') {
                     dateRangeContainer.style.display = 'flex';
+                    // Flatpickr 인스턴스 재활성화
+                    startDatePicker?.enable();
+                    endDatePicker?.enable();
                 } else {
                     dateRangeContainer.style.display = 'none';
+                    startDatePicker?.clear();
+                    endDatePicker?.clear();
+                    startDate.value = "";
+                    endDate.value = "";
                 }
             }
             
@@ -705,6 +714,16 @@ function setupFilters() {
     if (startDate) {
         startDate.addEventListener('change', () => {
             console.log('📅 시작일 변경:', startDate.value);
+            
+            // ✅ 직접 선택 모드에서 날짜 검증 (웹버전과 동일)
+            const endDateValue = endDate ? endDate.value : '';
+            const selectedPeriod = periodSelect ? periodSelect.value : '';
+            
+            if (selectedPeriod === 'manual' && (!startDate.value || !endDateValue)) {
+                console.warn('[BLOCKED] 직접 선택: 종료일 누락 → 실행 안함');
+                return;
+            }
+            
             // 🚀 디바운싱 적용
             debounceFetchMobileData();
             
@@ -729,6 +748,16 @@ function setupFilters() {
     if (endDate) {
         endDate.addEventListener('change', () => {
             console.log('📅 종료일 변경:', endDate.value);
+            
+            // ✅ 직접 선택 모드에서 날짜 검증 (웹버전과 동일)
+            const startDateValue = startDate ? startDate.value : '';
+            const selectedPeriod = periodSelect ? periodSelect.value : '';
+            
+            if (selectedPeriod === 'manual' && (!startDateValue || !endDate.value)) {
+                console.warn('[BLOCKED] 직접 선택: 시작일 누락 → 실행 안함');
+                return;
+            }
+            
             // 🚀 디바운싱 적용
             debounceFetchMobileData();
             
@@ -794,6 +823,9 @@ function initMobileDashboard() {
     // 웹버전과 동일한 업체명 자동 선택 로직
     setupCompanyAutoSelection();
     
+    // ✅ Flatpickr 초기화
+    initializeMobileFlatpickr();
+    
     setupFilters();
     
     // 🚀 초기 데이터 로딩 (중복 방지)
@@ -801,7 +833,8 @@ function initMobileDashboard() {
         fetchMobileData();
     }
     
-    fetchMetaAccounts(); // 메타 광고 계정 목록 로드
+    // 메타 광고 계정 목록 로딩
+    fetchMetaAccounts();
     
     console.log('✅ 모바일 대시보드 초기화 완료');
 }

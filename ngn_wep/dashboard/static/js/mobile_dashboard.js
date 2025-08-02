@@ -209,20 +209,38 @@ async function fetchGa4SourceSummaryData() {
 async function fetchMobileData() {
     if (isLoading) return;
     
+    // 현재 필터 값들 가져오기 (웹버전과 동일)
+    const periodSelect = document.getElementById('periodFilter');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    
+    const period = periodSelect ? periodSelect.value : 'today';
+    const startDateValue = startDate ? startDate.value : '';
+    const endDateValue = endDate ? endDate.value : '';
+    
+    // "직접 선택" 모드일 때 날짜 검증
+    if (period === 'manual') {
+        if (!startDateValue || !endDateValue) {
+            console.log('❌ 직접 선택 모드에서 날짜가 선택되지 않음');
+            return;
+        }
+        
+        const startDateTime = new Date(startDateValue);
+        const endDateTime = new Date(endDateValue);
+        
+        if (startDateTime > endDateTime) {
+            console.log('❌ 시작일이 종료일보다 늦음');
+            return;
+        }
+    }
+    
     isLoading = true;
     console.log('🔄 모바일 데이터 로딩 시작...');
     
     try {
         // 현재 필터 값들 가져오기 (웹버전과 동일)
         const companySelect = document.getElementById('accountFilter');
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
-        const periodSelect = document.getElementById('periodFilter');
-        
         const companyName = companySelect ? companySelect.value : 'all';
-        const period = periodSelect ? periodSelect.value : 'today';
-        const startDateValue = startDate ? startDate.value : '';
-        const endDateValue = endDate ? endDate.value : '';
         
         console.log('📊 필터 값:', { companyName, period, startDateValue, endDateValue });
         

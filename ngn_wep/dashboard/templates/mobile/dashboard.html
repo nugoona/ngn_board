@@ -38,26 +38,24 @@
         input[type="date"] {
             -webkit-appearance: none;
             appearance: none;
-            background: transparent;
+            background: white;
             padding: 12px 16px;
             border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 8px;
             font-size: 14px;
-            color: white;
+            color: var(--text-primary);
             width: 100%;
             font-family: inherit;
         }
 
-        input[type="date"]:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.6);
-            outline: none;
+        /* 값이 없을 때는 텍스트 숨김 */
+        input[type="date"]:invalid {
+            color: transparent;
         }
 
-        /* 날짜 선택되었을 때 배경색 변경 */
-        input[type="date"]:not(:placeholder-shown) {
-            background: white;
-            color: var(--text-primary);
+        input[type="date"]:focus {
+            border-color: rgba(0, 0, 0, 0.2);
+            outline: none;
         }
 
         /* 날짜가 선택되면 placeholder 숨김 */
@@ -1169,11 +1167,11 @@
             </div>
             <div class="filter-row" id="dateRangeContainer" style="display: none;">
                 <div class="date-input-wrapper">
-                    <input type="date" id="startDate" class="date-input">
+                    <input type="date" id="startDate" class="date-input" required>
                     <span class="date-placeholder">시작일 선택</span>
                 </div>
                 <div class="date-input-wrapper">
-                    <input type="date" id="endDate" class="date-input">
+                    <input type="date" id="endDate" class="date-input" required>
                     <span class="date-placeholder">종료일 선택</span>
                 </div>
             </div>

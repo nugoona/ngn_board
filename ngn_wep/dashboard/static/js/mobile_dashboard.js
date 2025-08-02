@@ -1041,29 +1041,32 @@ function renderPerformanceSummary(performanceData) {
         () => {
             const siteVisitsElement = document.getElementById('site-visits');
             if (siteVisitsElement) {
-                siteVisitsElement.textContent = formatNumber(data.site_visits || 0);
-                console.log('사이트 방문수 업데이트:', data.site_visits);
+                siteVisitsElement.textContent = formatNumber(data.total_visits || data.ga4_users || 0);
+                console.log('사이트 방문수 업데이트:', data.total_visits || data.ga4_users);
             }
         },
         () => {
             const visitorsElement = document.getElementById('visitors');
             if (visitorsElement) {
-                visitorsElement.textContent = formatNumber(data.visitors || 0);
-                console.log('방문자수 업데이트:', data.visitors);
+                visitorsElement.textContent = formatNumber(data.total_users || data.ga4_users || 0);
+                console.log('방문자수 업데이트:', data.total_users || data.ga4_users);
             }
         },
         () => {
             const orderCountElement = document.getElementById('order-count');
             if (orderCountElement) {
-                orderCountElement.textContent = formatNumber(data.orders_count || 0);
-                console.log('주문수 업데이트:', data.orders_count);
+                orderCountElement.textContent = formatNumber(data.total_orders || 0);
+                console.log('주문수 업데이트:', data.total_orders);
             }
         },
         () => {
             const conversionRateElement = document.getElementById('conversion-rate');
             if (conversionRateElement) {
-                conversionRateElement.textContent = formatPercentage(data.conversion_rate || 0);
-                console.log('전환율 업데이트:', data.conversion_rate);
+                const visits = data.total_visits || data.ga4_users || 1;
+                const orders = data.total_orders || 0;
+                const rate = (orders / visits) * 100;
+                conversionRateElement.textContent = formatPercentage(rate);
+                console.log('전환율 업데이트:', rate);
             }
         }
     ];

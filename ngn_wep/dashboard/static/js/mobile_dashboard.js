@@ -317,7 +317,7 @@ async function fetchMobileData() {
         }
 
         // 업데이트 시간 표시
-        updateLastUpdateTime(performanceSummary.updated_at || cafe24Products.updated_at);
+        updateMobileTimestamp(performanceSummary.updated_at || cafe24Products.updated_at);
         
     } catch (error) {
         console.error('❌ 모바일 데이터 로딩 실패:', error);

@@ -817,8 +817,8 @@ function setupFilters() {
                 if (periodSelect.value === 'manual') {
                     dateRangeContainer.style.display = 'flex';
                     // Flatpickr 인스턴스 재활성화
-                    startDatePicker?.enable();
-                    endDatePicker?.enable();
+                    if (startDatePicker) startDatePicker.set('disabled', false);
+                    if (endDatePicker) endDatePicker.set('disabled', false);
                 } else {
                     dateRangeContainer.style.display = 'none';
                     if (startDatePicker) {
@@ -910,7 +910,7 @@ function setupFilters() {
     
     // 메타 계정 변경 시
     if (metaAccountSelect) {
-        metaAccountSelect.addEventListener('change', () => {
+        metaAccountSelect.addEventListener('change', async () => {
             if (isLoading) {
                 console.log('⚠️ 이미 로딩 중이므로 중단');
                 return;
@@ -921,13 +921,17 @@ function setupFilters() {
             
             if (selectedAccountId) {
                 selectedMetaAccount = selectedAccountId;
-                fetchMetaAdsByAccount(selectedAccountId, 1);
+                await fetchMetaAdsByAccount(selectedAccountId, 1);
+                // 라이브 광고 미리보기도 함께 업데이트
+                await fetchLiveAds(selectedAccountId);
             } else {
                 // 계정이 선택되지 않은 경우 테이블 초기화
-                const tbody = document.getElementById('meta-ads-table');
-                if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
+                const tableBody = document.getElementById('meta-ads-table');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
                 }
+                // 라이브 광고 섹션 숨기기
+                hideLiveAdsSection();
             }
         });
     }

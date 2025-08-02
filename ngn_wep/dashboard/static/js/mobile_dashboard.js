@@ -317,7 +317,13 @@ async function fetchMobileData() {
         }
 
         // 업데이트 시간 표시
-        updateMobileTimestamp(performanceSummary.updated_at || cafe24Products.updated_at);
+        if (performanceSummary.latest_update) {
+            updateMobileTimestamp(performanceSummary.latest_update);
+        } else if (cafe24Products.latest_update) {
+            updateMobileTimestamp(cafe24Products.latest_update);
+        } else if (ga4Sources.latest_update) {
+            updateMobileTimestamp(ga4Sources.latest_update);
+        }
         
     } catch (error) {
         console.error('❌ 모바일 데이터 로딩 실패:', error);

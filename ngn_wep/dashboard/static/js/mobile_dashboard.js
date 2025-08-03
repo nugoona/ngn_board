@@ -833,6 +833,17 @@ function initializeFlatpickr() {
         startDateInput.addEventListener('change', function() {
             // 종료일의 최소값을 시작일로 설정
             endDateInput.min = this.value;
+            
+            // 날짜 표시 업데이트
+            const dateValue = this.value ? new Date(this.value).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : '';
+            this.nextElementSibling.style.opacity = this.value ? '0' : '1';
+            this.nextElementSibling.nextElementSibling.textContent = dateValue;
+            this.nextElementSibling.nextElementSibling.style.display = this.value ? 'block' : 'none';
+            
             handleDateChange();
         });
         
@@ -840,6 +851,17 @@ function initializeFlatpickr() {
         endDateInput.addEventListener('change', function() {
             // 시작일의 최대값을 종료일로 설정
             startDateInput.max = this.value || today;
+            
+            // 날짜 표시 업데이트
+            const dateValue = this.value ? new Date(this.value).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : '';
+            this.nextElementSibling.style.opacity = this.value ? '0' : '1';
+            this.nextElementSibling.nextElementSibling.textContent = dateValue;
+            this.nextElementSibling.nextElementSibling.style.display = this.value ? 'block' : 'none';
+            
             handleDateChange();
         });
     }

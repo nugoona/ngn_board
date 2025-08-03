@@ -1,0 +1,70 @@
+<!-- ✅ 월별 매출 유입 테이블 + 차트 (테이블 박스 내부에서 표시됨) -->
+<div class="monthly-sales-traffic-wrapper">
+
+  <!-- 왼쪽: 월별 요약 테이블 -->
+  <div class="monthly-summary-table-wrapper">
+    <div class="monthly-summary-table">
+      <table>
+        <thead>
+          <tr>
+            <th>업체명</th>
+            <th>월</th>
+            <th>매출</th>
+            <th>유입</th>
+          </tr>
+        </thead>
+        <tbody id="monthlySummaryTableBody">
+          <!-- JS로 채워짐 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 오른쪽: ApexCharts 차트 -->
+  <div class="monthly-summary-chart-wrapper">
+    <div id="monthlyNetSalesVisitorsChart"></div>
+  </div>
+</div>
+
+<style>
+/* ✅ ApexCharts 커스텀 스타일 */
+.monthly-summary-chart-wrapper {
+  height: 550px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#monthlyNetSalesVisitorsChart {
+  height: 100%;
+  width: 100%;
+}
+
+/* ApexCharts 툴팁 커스터마이징 */
+.apexcharts-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.apexcharts-legend {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-legend-text {
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+</style>

@@ -1,0 +1,101 @@
+<!-- ✅ 테이블 + 차트 (토글 구조) -->
+
+<!-- ✅ 로딩 스피너 -->
+<div id="loadingOverlayProductSalesRatio" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">데이터를 불러오는 중입니다...</div>
+</div>
+
+<!-- 📌 테이블 본문 -->
+<div class="table-content-container">
+  <table>
+    <thead>
+      <tr>
+        <th>날짜</th>
+        <th>업체명</th>
+        <th>상품명</th>
+        <th>총 판매량</th>
+        <th>총 매출</th>
+        <th>매출비중(%)</th>
+      </tr>
+    </thead>
+    <tbody id="productSalesRatioTableBody">
+      <!-- JS에서 채워짐 -->
+    </tbody>
+  </table>
+  <div id="pagination_product_sales_ratio" class="pagination"></div>
+</div>
+
+<!-- 📌 토글 버튼 -->
+<div class="platform-sales-toggle-bar no-border" style="margin-top: -8px;">
+  <button id="toggleProductSalesRatioChart" class="toggle-btn">상위 TOP5 차트 보기</button>
+</div>
+
+<!-- 📌 비중 차트 포함 영역 -->
+<div id="productSalesRatioChartContainer" style="display: none; margin-top: 20px;">
+  {% include 'components/product_sales_ratio_chart.html' %}
+</div>
+
+<style>
+/* ✅ ApexCharts 파이 차트 커스텀 스타일 */
+.product-sales-ratio-chart {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.pie-chart-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.pie-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 20px;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+.pie-chart-wrapper {
+  height: 400px;
+  width: 100%;
+}
+
+#productSalesRatioChart {
+  height: 100%;
+  width: 100%;
+}
+
+/* ApexCharts 툴팁 커스터마이징 */
+.apexcharts-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-tooltip-title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+.apexcharts-legend {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
+}
+
+.apexcharts-legend-text {
+  font-weight: 500 !important;
+  color: #374151 !important;
+}
+</style>
+

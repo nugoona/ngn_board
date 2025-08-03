@@ -835,14 +835,19 @@ function initializeFlatpickr() {
             endDateInput.min = this.value;
             
             // 날짜 표시 업데이트
-            const dateValue = this.value ? new Date(this.value).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }) : '';
-            this.nextElementSibling.style.opacity = this.value ? '0' : '1';
-            this.nextElementSibling.nextElementSibling.textContent = dateValue;
-            this.nextElementSibling.nextElementSibling.style.display = this.value ? 'block' : 'none';
+            if (this.value) {
+                const dateValue = new Date(this.value).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                this.nextElementSibling.style.display = 'none'; // placeholder 숨기기
+                this.nextElementSibling.nextElementSibling.textContent = dateValue;
+                this.nextElementSibling.nextElementSibling.style.display = 'block';
+            } else {
+                this.nextElementSibling.style.display = 'block'; // placeholder 보이기
+                this.nextElementSibling.nextElementSibling.style.display = 'none';
+            }
             
             handleDateChange();
         });
@@ -853,14 +858,19 @@ function initializeFlatpickr() {
             startDateInput.max = this.value || today;
             
             // 날짜 표시 업데이트
-            const dateValue = this.value ? new Date(this.value).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            }) : '';
-            this.nextElementSibling.style.opacity = this.value ? '0' : '1';
-            this.nextElementSibling.nextElementSibling.textContent = dateValue;
-            this.nextElementSibling.nextElementSibling.style.display = this.value ? 'block' : 'none';
+            if (this.value) {
+                const dateValue = new Date(this.value).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                this.nextElementSibling.style.display = 'none'; // placeholder 숨기기
+                this.nextElementSibling.nextElementSibling.textContent = dateValue;
+                this.nextElementSibling.nextElementSibling.style.display = 'block';
+            } else {
+                this.nextElementSibling.style.display = 'block'; // placeholder 보이기
+                this.nextElementSibling.nextElementSibling.style.display = 'none';
+            }
             
             handleDateChange();
         });

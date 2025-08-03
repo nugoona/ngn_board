@@ -28,6 +28,7 @@
             display: flex;
             align-items: center;
             padding: 0 16px;
+            overflow: hidden;
         }
 
         .date-placeholder {
@@ -36,6 +37,7 @@
             pointer-events: none;
             position: absolute;
             left: 16px;
+            z-index: 1;
         }
 
         .date-value {
@@ -44,15 +46,31 @@
             display: none;
             position: absolute;
             left: 16px;
+            z-index: 1;
         }
 
         input[type="date"] {
-            opacity: 0;
+            opacity: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            color: var(--text-primary);
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            padding: 0;
+            z-index: 2;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            width: 100%;
+            height: 100%;
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            background: transparent;
+            color: transparent;
             cursor: pointer;
         }
 
@@ -66,10 +84,16 @@
         }
 
         /* 다크모드 대응 */
-        [data-theme="dark"] input[type="date"] {
+        [data-theme="dark"] .date-input-wrapper {
             background: var(--dark-surface);
+        }
+
+        [data-theme="dark"] input[type="date"] {
             color: var(--dark-text);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        [data-theme="dark"] .date-value {
+            color: var(--dark-text);
         }
     </style>
     <!-- Heroicons -->

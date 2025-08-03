@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>NGN 모바일 대시보드</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mobile_styles.css') }}">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 네이티브 달력 스타일 -->
+    <style>
+        /* 네이티브 달력 스타일링 */
+        .date-input-wrapper {
+            position: relative;
+            flex: 1;
+            height: 44px;
+            background: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            overflow: hidden;
+        }
+
+        .date-placeholder {
+            font-size: 14px;
+            color: #666;
+            pointer-events: none;
+            position: absolute;
+            left: 16px;
+            z-index: 1;
+        }
+
+        .date-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            display: none;
+            position: absolute;
+            left: 16px;
+            z-index: 1;
+        }
+
+        input[type="date"] {
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            color: transparent;
+            background: transparent;
+            border: none;
+            font-size: 14px;
+            padding: 0;
+            z-index: 2;
+            left: 0;
+            top: 0;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: transparent;
+            color: transparent;
+            cursor: pointer;
+        }
+
+        /* 날짜가 선택되면 placeholder 숨기고 값 표시 */
+        input[type="date"]:not(:invalid) + .date-placeholder {
+            display: none;
+        }
+
+        input[type="date"]:not(:invalid) ~ .date-value {
+            display: block;
+        }
+
+        /* 다크모드 대응 */
+        [data-theme="dark"] .date-input-wrapper {
+            background: var(--dark-surface);
+        }
+
+        [data-theme="dark"] input[type="date"] {
+            color: var(--dark-text);
+        }
+
+        [data-theme="dark"] .date-value {
+            color: var(--dark-text);
+        }
+    </style>
+    <!-- Heroicons -->
+    <!-- Heroicons 제거 - 모바일에서는 사용하지 않음 -->
+    <style>
+        :root {
+            /* Light Mode Colors - 웹버전과 동일한 색상 팔레트 */
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-200: #bae6fd;
+            --primary-300: #7dd3fc;
+            --primary-400: #38bdf8;
+            --primary-500: #6366f1;  /* 웹버전과 동일 */
+            --primary-600: #4f46e5;  /* 웹버전과 동일 */
+            --primary-700: #4338ca;
+            --primary-800: #3730a3;
+            --primary-900: #312e81;
+            
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            
+            --success-500: #10b981;
+            --warning-500: #f59e0b;
+            --error-500: #ef4444;
+            
+            /* 웹버전과 동일한 그림자 시스템 */
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            /* Dark Mode Colors */
+            --dark-bg: #0f172a;
+            --dark-surface: #1e293b;
+            --dark-surface-2: #334155;
+            --dark-text: #f1f5f9;
+            --dark-text-secondary: #cbd5e1;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: var(--dark-bg);
+            --bg-secondary: var(--dark-surface);
+            --bg-tertiary: var(--dark-surface-2);
+            --text-primary: var(--dark-text);
+            --text-secondary: var(--dark-text-secondary);
+            --border-color: #334155;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: var(--gray-50);
+            --bg-tertiary: var(--gray-100);
+            --text-primary: var(--gray-900);
+            --text-secondary: var(--gray-600);
+            --border-color: var(--gray-200);
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--gray-100);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* 모바일 전용 wrapper */
+        #m-dashboard {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            padding-top: 140px; /* 헤더 높이만큼 상단 여백 */
+            background: var(--gray-100);
+        }
+
+        /* 섹션 전체 너비 조정 */
+        .section {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .section-content {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0;
+        }
+
+        /* 스켈레톤 애니메이션 */
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* 텍스트 말줄임표 */
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 필터 스타일 - 새로운 파란색 계열 */
+        .filter-section {
+            background: #055193;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        /* 기간 선택 버튼 활성화 상태 */
+        .filter-select.active-period {
+            background: #055193 !important;
+            color: white !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        /* 기간 선택 후 상태 */
+        .filter-select:not(.active-period) {
+            background: white !important;
+            color: var(--text-primary) !important;
+        }
+
+        /* 다크모드에서 드롭다운 텍스트 가독성 개선 */
+        [data-theme="dark"] .filter-select {
+            background: var(--dark-surface);
+            color: var(--dark-text);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        [data-theme="dark"] .filter-select option {
+            background: var(--dark-surface);
+            color: var(--dark-text);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .filter-select option {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .date-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 다크모드에서 날짜 입력 필드 가독성 개선 */
+        [data-theme="dark"] .date-input {
+            background: var(--dark-surface);
+            color: var(--dark-text);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* 모바일에서 로딩 시 배경 어두워짐 방지 */
+        #m-dashboard.loading,
+        #m-dashboard.real-loading {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        .section.loading,
+        .section.real-loading {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-align: left;
+            margin-top: 8px;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .logout-btn {
+            background: #053056 !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .logout-btn:hover {
+            background: #042a4a !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        /* 섹션 스타일 - 웹버전과 동일한 카드 디자인 */
+        .section {
+            background: var(--bg-primary);
+            margin: 4px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            width: calc(100% - 8px);
+            box-sizing: border-box;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* KPI 카드 스타일 */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gray-600) 0%, var(--gray-700) 100%);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .kpi-value {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        /* 테이블 스타일 - 모던한 디자인 */
+        .table-container {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            border-radius: 12px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .data-table {
+            width: 100% !important;
+            max-width: 100% !important;
+            border-collapse: collapse;
+            table-layout: auto;
+            background: var(--bg-primary);
+        }
+
+        /* 카페24 상품판매 테이블 - 고정 레이아웃으로 컬럼 너비 지정 */
+        .cafe24-products-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .cafe24-products-table th:nth-child(1),
+        .cafe24-products-table td:nth-child(1) {
+            width: 50%; /* 상품명 - 말줄임표로 자름 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cafe24-products-table th:nth-child(2),
+        .cafe24-products-table td:nth-child(2) {
+            width: 25%; /* 총판매량 */
+            text-align: right;
+        }
+
+        .cafe24-products-table th:nth-child(3),
+        .cafe24-products-table td:nth-child(3) {
+            width: 25%; /* 총매출 */
+            text-align: right;
+        }
+
+        /* GA4 소스별 유입수 테이블 */
+        .ga4-sources-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .ga4-sources-table th:nth-child(1),
+        .ga4-sources-table td:nth-child(1) {
+            width: 60%; /* 소스명 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ga4-sources-table th:nth-child(2),
+        .ga4-sources-table td:nth-child(2) {
+            width: 40%; /* 유입수 */
+            text-align: right;
+        }
+
+        .data-table th {
+            background: var(--bg-tertiary);
+            padding: 8px 6px;
+            text-align: center; /* 기본값을 center로 변경 */
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .data-table td {
+            padding: 8px 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 모바일 메타 광고 테이블 헤더와 데이터 정렬 일치 - 최고 우선순위 */
+        .data-table th.text-right,
+        .data-table td.text-right {
+            text-align: right !important;
+        }
+
+        .data-table th.text-center,
+        .data-table td.text-center {
+            text-align: center !important;
+        }
+
+        .data-table th.text-left,
+        .data-table td.text-left {
+            text-align: left !important;
+        }
+
+
+
+        /* 상품명 컬럼 - 터치 시 전체 텍스트 표시 */
+        .product-name-cell {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .product-name-cell:hover::after,
+        .product-name-cell:active::after {
+            content: attr(data-full-text);
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: normal;
+            word-wrap: break-word;
+            max-width: 300px;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* 터치 시 시각적 피드백 */
+        .product-name-cell:active {
+            background-color: var(--bg-secondary);
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-secondary);
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* 섹션 헤더 - 세련된 스타일 */
+        .section-header {
+            padding: 16px 16px 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            font-size: 16px;
+            color: white;
+            background: var(--gray-700);
+            text-align: center;
+        }
+
+        .section-content {
+            padding: 12px;
+        }
+
+        /* 메타 광고 계정 선택 - 모던한 디자인 */
+        .meta-account-filter {
+            background: var(--bg-secondary);
+            padding: 16px;
+            margin: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .meta-account-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;  /* 더 둥근 모서리로 업그레이드 */
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .meta-account-select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* 드롭다운 첫 번째 옵션 스타일링 */
+        .meta-account-select .placeholder-option {
+            background: var(--gray-700) !important;
+            color: white !important;
+            font-weight: 700 !important;
+            font-size: 16px !important;
+            text-align: center !important;
+            padding: 12px !important;
+        }
+
+        .meta-account-select .placeholder-option:hover {
+            background: var(--gray-600) !important;
+        }
+
+        /* 메타 계정 선택 드롭다운 자체 스타일 */
+        .meta-account-select {
+            background: var(--gray-700) !important;
+            color: white !important;
+            font-weight: 700 !important;
+            border: none !important;
+        }
+
+        /* 계정 선택 컨테이너 */
+        .account-selection-container {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .account-select-wrapper {
+            margin-bottom: 0;
+        }
+
+        /* 캠페인 필터 스타일 - 체크박스 색상 변경 */
+        .campaign-filter {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .radio-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .radio-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+        }
+
+        .radio-item span {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* 페이지네이션 스타일 - 모던한 디자인 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 16px 0;
+        }
+
+        .pagination-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;  /* 더 둥근 모서리로 업그레이드 */
+            padding: 10px 16px;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--bg-secondary);
+            border-color: var(--primary-500);
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn:disabled {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* LIVE 광고 미리보기 - 웹버전과 동일한 인스타그램 스타일 */
+        .live-ads-container {
+            padding: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .live-ads-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 8px 0;
+            width: 100%;
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: #6366f1 #f1f5f9;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-thumb {
+            background: #6366f1;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .live-ads-scroll::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+        }
+
+        /* 인스타그램 스타일 카드 */
+        .insta-card {
+            width: 300px;
+            margin-bottom: 20px;
+            background: white;
+            border: 1px solid #dbdbdb;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        /* 광고 이미지 */
+        .insta-image {
+            position: relative;
+            background: #f0f0f0;
+        }
+
+        .ad-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 플레이 버튼 오버레이 (영상 광고 전용) */
+        .play-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.0);
+        }
+
+        .play-icon {
+            width: 60px;
+            height: 60px;
+            opacity: 0.8;
+        }
+
+        /* 헤더/푸터 공통 */
+        .insta-header, .insta-footer {
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        /* 헤더 */
+        .insta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .insta-header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .profile-image {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .insta-account-name {
+            font-weight: bold;
+        }
+
+        .insta-menu {
+            font-size: 20px;
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* CTA 영역 */
+        .insta-cta {
+            padding: 10px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .insta-cta a {
+            text-decoration: none;
+            color: #385185;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 푸터 */
+        .insta-footer {
+            padding: 12px;
+        }
+
+        .insta-icons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .insta-icons-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .insta-icons svg {
+            width: 24px;
+            height: 24px;
+            color: #262626;
+            cursor: pointer;
+        }
+
+        .insta-caption {
+            font-size: 14px;
+            line-height: 1.4;
+            color: #262626;
+        }
+
+        .insta-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .account-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .insta-account-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .insta-menu {
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-primary);
+            margin-left: auto;
+        }
+
+        /* CTA 영역 */
+        .insta-cta {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .insta-cta a {
+            text-decoration: none;
+            color: var(--primary-600);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* 푸터 */
+        .insta-footer {
+            padding: 16px;
+        }
+
+        .insta-icons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .insta-icons-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .insta-icons svg {
+            width: 24px;
+            height: 24px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .insta-icons svg:hover {
+            color: var(--primary-500);
+        }
+
+        .insta-caption {
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        /* 다크모드 토글 버튼 */
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #055193 0%, #053056 100%);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 로딩 스피너 */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary-500);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;  /* 2x2 강제 유지 */
+                gap: 12px;
+            }
+            
+            .section {
+                margin: 4px;
+                width: calc(100% - 8px);
+            }
+            
+            .section-content {
+                padding: 16px;
+            }
+            
+            .filter-section {
+                padding: 12px;
+            }
+            
+            #m-dashboard {
+                padding-top: 120px;
+            }
+        }
+
+        /* 스무스 스크롤 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 포커스 스타일 */
+        *:focus {
+            outline: 2px solid var(--primary-500);
+            outline-offset: 2px;
+        }
+
+        /* ================================
+         모바일 로딩 오버레이 스타일 (웹버전과 동일)
+        ================================ */
+
+        /* 모든 로딩 오버레이 기본 스타일 */
+        .loading-overlay {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            display: none !important;
+            justify-content: center !important;
+            align-items: center !important;
+            flex-direction: column !important;
+            z-index: 9999 !important;
+            pointer-events: auto !important;
+            transition: all 0.3s ease !important;
+            border-radius: 12px !important;
+        }
+
+        /* 로딩 오버레이 강제 표시 (배경만 투명하게, 스피너는 보이게) */
+        .loading-overlay[style*="display: flex"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 9999 !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
+        /* 🔥 모든 로딩 오버레이에 대한 강력한 투명도 강제 적용 (스피너는 보이게) */
+        .loading-overlay,
+        .loading-overlay[style],
+        .loading-overlay[style*="background"],
+        .loading-overlay[style*="background-color"],
+        .loading-overlay[style*="backdrop-filter"],
+        .loading-overlay[style*="-webkit-backdrop-filter"] {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            opacity: 1 !important;
+        }
+
+        /* 모든 로딩 오버레이 ID에 대한 강력한 투명도 강제 적용 (스피너는 보이게) */
+        [id*="loadingOverlay"],
+        [id*="LoadingOverlay"],
+        [id*="loading-overlay"],
+        [id*="Loading-Overlay"] {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            opacity: 1 !important;
+        }
+
+        /* 스피너 스타일 */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 로딩 텍스트 */
+        .loading-text {
+            font-size: 16px;
+            color: #374151;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        /* 스피너 애니메이션 */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div id="m-dashboard">
+        <!-- 상단 필터 (웹버전과 동일한 ID 사용) -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <select id="accountFilter" class="filter-select">
+                    <option value="">업체 선택</option>
+                </select>
+                <select id="periodFilter" class="filter-select">
+                    <option value="today" selected>오늘</option>
+                    <option value="yesterday">어제</option>
+                    <option value="last7days">최근 7일</option>
+                    <option value="current_month">이번 달</option>
+                    <option value="last_month">지난 달</option>
+                    <option value="manual">직접 선택</option>
+                </select>
+            </div>
+            <div class="filter-row" id="dateRangeContainer" style="display: none;">
+                <div class="date-input-wrapper">
+                    <input type="date" id="startDate" class="date-input" required>
+                    <span class="date-placeholder">시작일 선택</span>
+                    <span class="date-value"></span>
+                </div>
+                <div class="date-input-wrapper">
+                    <input type="date" id="endDate" class="date-input" required>
+                    <span class="date-placeholder">종료일 선택</span>
+                    <span class="date-value"></span>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="update-time" id="updatedAtText">업데이트: --</div>
+                <button class="logout-btn" onclick="window.location.href='/logout'">로그아웃</button>
+            </div>
+        </div>
+
+        <!-- 사이트 성과 요약 (핵심 KPI) -->
+        <div class="section">
+            <div class="section-header">사이트 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid" style="position: relative;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">사이트 매출</div>
+                        <div class="kpi-value" id="site-revenue">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">방문자</div>
+                        <div class="kpi-value" id="total-visitors">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">주문수</div>
+                        <div class="kpi-value" id="orders-count">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">매출대비 광고비</div>
+                        <div class="kpi-value" id="ad-spend-ratio">--</div>
+                    </div>
+                    <div id="loadingOverlaySitePerformance" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 광고 성과 요약 -->
+        <div class="section">
+            <div class="section-header">광고 성과 요약</div>
+            <div class="section-content">
+                <div class="kpi-grid" style="position: relative;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">광고비</div>
+                        <div class="kpi-value" id="ad-spend">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">구매수</div>
+                        <div class="kpi-value" id="total-purchases">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">클릭당 비용</div>
+                        <div class="kpi-value" id="cpc">--</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">ROAS</div>
+                        <div class="kpi-value" id="roas">--</div>
+                    </div>
+                    <div id="loadingOverlayAdPerformance" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 카페24 상품판매 -->
+        <div class="section">
+            <div class="section-header">카페24 상품판매</div>
+            <div class="section-content">
+                <div class="table-container" style="position: relative;">
+                    <table class="data-table cafe24-products-table">
+                        <thead>
+                            <tr>
+                                <th>상품명</th>
+                                <th class="text-right">총판매량</th>
+                                <th class="text-right">총매출</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cafe24-products">
+                            <tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="loadingOverlayCafe24Products" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <!-- 카페24 상품판매 페이지네이션 -->
+                <div id="pagination_cafe24_product_sales" class="pagination-container"></div>
+            </div>
+        </div>
+
+        <!-- GA4 소스별 유입수 -->
+        <div class="section">
+            <div class="section-header">GA4 소스별 유입수</div>
+            <div class="section-content">
+                <div class="table-container" style="position: relative;">
+                    <table class="data-table ga4-sources-table">
+                        <thead>
+                            <tr>
+                                <th>소스</th>
+                                <th class="text-right">유입수</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ga4-sources">
+                            <tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="loadingOverlayGa4Sources" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메타 광고 성과 테이블 -->
+        <div class="section">
+            <div class="section-header">메타 광고 성과</div>
+            <div class="section-content">
+                <!-- 계정 선택 -->
+                <div class="account-selection-container">
+                    <div class="account-select-wrapper">
+                        <select id="metaAccountSelector" class="meta-account-select">
+                            <option value="" class="placeholder-option">계정을 선택해주세요</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 캠페인 필터 -->
+                <div class="campaign-filter">
+                    <label class="filter-label">캠페인 필터:</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-conversion" value="전환" checked>
+                            <span>전환</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-inflow" value="유입" checked>
+                            <span>유입</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="checkbox" id="filter-reach" value="도달" checked>
+                            <span>도달</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="table-container" style="overflow-x: auto; position: relative;">
+                    <table class="data-table" style="min-width: 600px;">
+                        <thead>
+                            <tr>
+                                <th class="text-left" style="width: 80px; min-width: 80px;">캠페인</th>
+                                <th class="text-left" style="width: 150px; min-width: 150px;">광고</th>
+                                <th class="text-right" style="width: 80px; min-width: 80px;">지출</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">CPC</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">구매</th>
+                                <th class="text-right" style="width: 60px; min-width: 60px;">ROAS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meta-ads-table">
+                            <tr><td colspan="6" class="text-center">데이터가 없습니다</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="loadingOverlayMetaAds" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <!-- 메타 광고 성과 페이지네이션 -->
+                <div id="pagination_meta_ads" class="pagination-container"></div>
+            </div>
+        </div>
+
+        <!-- LIVE 광고 미리보기 -->
+        <div class="section" id="live-ads-section" style="display: none;">
+            <div class="section-header">LIVE 광고 미리보기</div>
+            <div class="live-ads-container">
+                <div class="live-ads-scroll" id="live-ads-scroll">
+                    <div class="text-center">광고 계정을 선택해주세요</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 다크모드 토글 버튼 -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="테마 변경">
+        🌙
+    </button>
+
+    <!-- 웹버전과 동일한 전역 변수 설정 -->
+    <script>
+        const userCompanyList = {{ session['company_names'] | tojson }};
+        const currentUserId = "{{ session['user_id'] }}";
+    </script>
+
+    <!-- 모바일 전용 JS -->
+    <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
+    
+    <!-- 테마 토글 스크립트 -->
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            body.setAttribute('data-theme', newTheme);
+            
+            // 버튼 아이콘 변경
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.innerHTML = newTheme === 'light' ? '🌙' : '☀️';
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // 페이지 로드 시 저장된 테마 적용
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.innerHTML = savedTheme === 'light' ? '🌙' : '☀️';
+        });
+    </script>
+</body>
+</html> 

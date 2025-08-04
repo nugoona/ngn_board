@@ -1623,7 +1623,6 @@ function updatePagination(table, currentPage, totalItems) {
                     // 페이지네이션 업데이트
                     updatePagination('meta_ads', newPage, metaAdsTotalCount);
                 }
-                }
             } else {
                 console.log(`📄 ${tableName} 버튼 클릭 불가 (비활성화 상태 또는 현재 페이지)`);
             }

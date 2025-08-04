@@ -1506,7 +1506,16 @@ function updatePagination(table, currentPage, totalItems) {
                 if (tableName === 'cafe24_product_sales') {
                     fetchCafe24ProductSalesData(newPage);
                 } else if (tableName === 'meta_ads') {
-                    fetchMetaAdsByAccount(selectedMetaAccount, newPage);
+                    // 현재 선택된 메타 광고 계정 ID 가져오기
+                    const metaAccountSelect = document.getElementById('metaAccountSelector');
+                    const currentAccountId = metaAccountSelect ? metaAccountSelect.value : null;
+                    
+                    if (currentAccountId) {
+                        console.log('📄 메타 광고 페이지 이동 - 계정:', currentAccountId, '페이지:', newPage);
+                        fetchMetaAdsByAccount(currentAccountId, newPage);
+                    } else {
+                        console.warn('⚠️ 선택된 메타 광고 계정이 없습니다');
+                    }
                 }
             } else {
                 console.log(`📄 ${tableName} 버튼 클릭 불가 (비활성화 상태 또는 현재 페이지)`);

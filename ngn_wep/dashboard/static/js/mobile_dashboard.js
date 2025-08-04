@@ -476,21 +476,18 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             end_date: endDateValue
         });
         
-        // 웹버전과 동일한 엔드포인트 사용 (전체 데이터 요청)
-        const response = await fetch('/dashboard/get_data', {
+        // 모바일 전용 엔드포인트 사용 (전체 데이터 요청)
+        const response = await fetch('/m/get_meta_ads_by_account', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                data_type: 'meta_ads_insight_table',
-                level: 'ad',
                 account_id: accountId,
                 company_name: companyName,
                 period: period,
                 start_date: startDateValue,
-                end_date: endDateValue,
-                no_limit: true  // 전체 데이터 요청을 위해 limit 제거
+                end_date: endDateValue
             })
         });
         
@@ -501,12 +498,13 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         const data = await response.json();
         console.log('✅ 메타 광고별 성과 로딩 성공:', data);
         
-        if (data.status === 'success' && data.meta_ads_insight_table) {
-            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_insight_table);
-            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_insight_table.length);
+        if (data.status === 'success' && data.meta_ads_by_account) {
+            console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
+            console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_total_count);
             
             // 전체 데이터 저장
-            metaAdsAllData = data.meta_ads_insight_table;
+            metaAdsAllData = data.meta_ads_by_account;
+            metaAdsTotalCount = data.meta_ads_total_count;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
             // 초기 로딩 시 지출 내림차순으로 정렬

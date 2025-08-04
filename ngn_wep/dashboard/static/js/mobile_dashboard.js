@@ -1380,10 +1380,17 @@ function renderLiveAds(liveAds) {
     
     liveAdsScroll.innerHTML = '';
     
+    // 실제 데이터가 없는 경우
     if (liveAds.length === 0) {
+        showLiveAdsContent(); // 스켈레톤 UI 숨기고 실제 컨텐츠 표시
         liveAdsScroll.innerHTML = '<div class="text-center" style="padding: 20px; color: #6b7280;">미리볼 광고가 없습니다.</div>';
         return;
     }
+    
+    // 데이터가 있는 경우, 약간의 지연 후 실제 컨텐츠 표시 (자연스러운 전환을 위해)
+    setTimeout(() => {
+        showLiveAdsContent();
+    }, 500);
     
     liveAds.forEach(ad => {
         const adCard = document.createElement('div');
@@ -1466,16 +1473,39 @@ function renderLiveAds(liveAds) {
 // LIVE 광고 섹션 표시/숨김
 function showLiveAdsSection() {
     const liveAdsSection = document.getElementById('live-ads-section');
+    const liveAdsSkeleton = document.getElementById('live-ads-skeleton');
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    
     if (liveAdsSection) {
         liveAdsSection.style.display = 'block';
+        
+        // 스켈레톤 UI 표시, 실제 컨텐츠는 숨김
+        if (liveAdsSkeleton) liveAdsSkeleton.style.display = 'flex';
+        if (liveAdsScroll) liveAdsScroll.style.display = 'none';
     }
 }
 
 function hideLiveAdsSection() {
     const liveAdsSection = document.getElementById('live-ads-section');
+    const liveAdsSkeleton = document.getElementById('live-ads-skeleton');
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    
     if (liveAdsSection) {
         liveAdsSection.style.display = 'none';
+        
+        // 스켈레톤 UI와 실제 컨텐츠 모두 숨김
+        if (liveAdsSkeleton) liveAdsSkeleton.style.display = 'none';
+        if (liveAdsScroll) liveAdsScroll.style.display = 'none';
     }
+}
+
+function showLiveAdsContent() {
+    const liveAdsSkeleton = document.getElementById('live-ads-skeleton');
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    
+    // 스켈레톤 UI 숨기고 실제 컨텐츠 표시
+    if (liveAdsSkeleton) liveAdsSkeleton.style.display = 'none';
+    if (liveAdsScroll) liveAdsScroll.style.display = 'flex';
 }
 
 // ─────────────────────────────────────────────

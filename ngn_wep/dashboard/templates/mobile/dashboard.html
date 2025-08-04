@@ -207,14 +207,105 @@
             padding: 0;
         }
 
-        /* 스켈레톤 애니메이션 */
+        /* 스켈레톤 UI 스타일 */
+        .live-ads-skeleton {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 8px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
         .skeleton {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background: var(--bg-secondary);
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+        }
+
+        /* 스켈레톤 요소들 */
+        .profile-image-skeleton {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gray-300);
+        }
+
+        .account-info-skeleton {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .account-name-skeleton {
+            width: 120px;
+            height: 14px;
+            border-radius: 4px;
+            background: var(--gray-300);
+        }
+
+        .ad-label-skeleton {
+            width: 60px;
+            height: 12px;
+            border-radius: 4px;
+            background: var(--gray-300);
+        }
+
+        .insta-image-skeleton {
+            width: 100%;
+            height: 300px;
+            background: var(--gray-300);
+            margin: 12px 0;
+        }
+
+        .insta-cta-skeleton {
+            width: 90%;
+            height: 40px;
+            margin: 12px auto;
+            border-radius: 8px;
+            background: var(--gray-300);
+        }
+
+        .insta-icons-skeleton {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .insta-icons-skeleton::before,
+        .insta-icons-skeleton::after {
+            content: "";
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background: var(--gray-300);
+        }
+
+        .caption-skeleton {
+            width: 100%;
+            height: 32px;
+            border-radius: 4px;
+            background: var(--gray-300);
+        }
+
+        /* 다크모드 대응 */
+        [data-theme="dark"] .skeleton {
+            background: var(--dark-surface-2);
+        }
+
+        [data-theme="dark"] .profile-image-skeleton,
+        [data-theme="dark"] .account-name-skeleton,
+        [data-theme="dark"] .ad-label-skeleton,
+        [data-theme="dark"] .insta-image-skeleton,
+        [data-theme="dark"] .insta-cta-skeleton,
+        [data-theme="dark"] .insta-icons-skeleton::before,
+        [data-theme="dark"] .insta-icons-skeleton::after,
+        [data-theme="dark"] .caption-skeleton {
+            background: var(--dark-surface);
         }
 
         /* 텍스트 말줄임표 */
@@ -1360,10 +1451,65 @@
         </div>
 
         <!-- LIVE 광고 미리보기 -->
-        <div class="section" id="live-ads-section" style="display: none;">
+        <div class="section" id="live-ads-section">
             <div class="section-header">LIVE 광고 미리보기</div>
             <div class="live-ads-container">
-                <div class="live-ads-scroll" id="live-ads-scroll">
+                <!-- 스켈레톤 UI -->
+                <div class="live-ads-skeleton" id="live-ads-skeleton">
+                    <div class="insta-card skeleton">
+                        <div class="insta-header">
+                            <div class="insta-header-left">
+                                <div class="profile-image-skeleton"></div>
+                                <div class="account-info-skeleton">
+                                    <div class="account-name-skeleton"></div>
+                                    <div class="ad-label-skeleton"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insta-image-skeleton"></div>
+                        <div class="insta-cta-skeleton"></div>
+                        <div class="insta-footer">
+                            <div class="insta-icons-skeleton"></div>
+                            <div class="caption-skeleton"></div>
+                        </div>
+                    </div>
+                    <div class="insta-card skeleton">
+                        <div class="insta-header">
+                            <div class="insta-header-left">
+                                <div class="profile-image-skeleton"></div>
+                                <div class="account-info-skeleton">
+                                    <div class="account-name-skeleton"></div>
+                                    <div class="ad-label-skeleton"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insta-image-skeleton"></div>
+                        <div class="insta-cta-skeleton"></div>
+                        <div class="insta-footer">
+                            <div class="insta-icons-skeleton"></div>
+                            <div class="caption-skeleton"></div>
+                        </div>
+                    </div>
+                    <div class="insta-card skeleton">
+                        <div class="insta-header">
+                            <div class="insta-header-left">
+                                <div class="profile-image-skeleton"></div>
+                                <div class="account-info-skeleton">
+                                    <div class="account-name-skeleton"></div>
+                                    <div class="ad-label-skeleton"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insta-image-skeleton"></div>
+                        <div class="insta-cta-skeleton"></div>
+                        <div class="insta-footer">
+                            <div class="insta-icons-skeleton"></div>
+                            <div class="caption-skeleton"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 실제 광고 컨테이너 -->
+                <div class="live-ads-scroll" id="live-ads-scroll" style="display: none;">
                     <div class="text-center">광고 계정을 선택해주세요</div>
                 </div>
             </div>

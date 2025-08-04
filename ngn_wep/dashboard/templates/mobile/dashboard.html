@@ -207,6 +207,50 @@
             padding: 0;
         }
 
+        /* 로딩 상태 메시지 스타일 */
+        .loading-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            width: 100%;
+            gap: 12px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .loading-status .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-status .loading-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        /* 다크모드 대응 */
+        [data-theme="dark"] .loading-status {
+            background: var(--dark-surface);
+        }
+
+        [data-theme="dark"] .loading-status .loading-spinner {
+            border-color: var(--dark-surface-2);
+            border-top-color: var(--primary-500);
+        }
+
+        [data-theme="dark"] .loading-status .loading-text {
+            color: var(--dark-text);
+        }
+
         /* 스켈레톤 UI 스타일 */
         .live-ads-skeleton {
             display: flex;
@@ -1454,6 +1498,11 @@
         <div class="section" id="live-ads-section">
             <div class="section-header">LIVE 광고 미리보기</div>
             <div class="live-ads-container">
+                <!-- 로딩 상태 메시지 -->
+                <div class="loading-status" id="loading-status">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">LIVE 광고를 불러오는 중...</div>
+                </div>
                 <!-- 스켈레톤 UI -->
                 <div class="live-ads-skeleton" id="live-ads-skeleton">
                     <div class="insta-card skeleton">

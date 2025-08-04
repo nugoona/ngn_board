@@ -1277,14 +1277,41 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     console.log('📊 원본 메타 광고 데이터:', adsData);
     
-    // 모바일용 데이터 처리 (CPC, ROAS 계산 포함)
-    const processedAdsData = processMetaAdsForMobile(adsData);
-    console.log('📊 처리된 메타 광고 데이터:', processedAdsData);
-    
-    // 페이지별로 데이터 표시
+    // 전체 데이터 저장 (페이지네이션을 위해)
+    if (adsData && adsData.length > 0) {
+        // 전체 데이터 저장
+        metaAdsAllData = [...adsData];  // 전체 데이터 복사본 저장
+        metaAdsTotalCount = totalCount || adsData.length;
+        
+        // 페이지 수 계산 (10개씩 표시)
+        const totalPages = Math.ceil(metaAdsTotalCount / 10);
+        
+        // 현재 페이지가 전체 페이지 수를 초과하지 않도록 조정
+        if (metaAdsCurrentPage > totalPages) {
+            metaAdsCurrentPage = totalPages;
+        }
+        
+        console.log('📊 메타 광고 데이터 저장 완료:', {
+            totalData: metaAdsAllData.length,
+            totalCount: metaAdsTotalCount,
+            currentPage: metaAdsCurrentPage,
+            totalPages: totalPages
+        });
+    } else {
+        // 데이터가 없는 경우 초기화
+        metaAdsAllData = [];
+        metaAdsTotalCount = 0;
+        metaAdsCurrentPage = 1;
+    }
+
+    // 현재 페이지의 데이터 처리 및 표시
     const startIndex = (metaAdsCurrentPage - 1) * 10;
     const endIndex = startIndex + 10;
-    const displayAdsData = processedAdsData.slice(startIndex, endIndex);
+    const pageData = metaAdsAllData.slice(startIndex, endIndex);
+    
+    // 모바일용 데이터 처리 (CPC, ROAS 계산 포함)
+    const displayAdsData = processMetaAdsForMobile(pageData);
+    console.log('📊 현재 페이지 처리된 데이터:', displayAdsData);
     
     // 광고별 성과 데이터 렌더링
     displayAdsData.forEach((row, index) => {
@@ -1344,35 +1371,8 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         tbody.appendChild(totalRow);
     }
     
-    // 전체 데이터 저장 (페이지네이션을 위해)
-    if (adsData && adsData.length > 0) {
-        // 전체 데이터 저장
-        metaAdsAllData = [...adsData];  // 전체 데이터 복사본 저장
-        metaAdsTotalCount = totalCount || adsData.length;
-        
-        // 페이지 수 계산 (10개씩 표시)
-        const totalPages = Math.ceil(metaAdsTotalCount / 10);
-        
-        // 현재 페이지가 전체 페이지 수를 초과하지 않도록 조정
-        if (metaAdsCurrentPage > totalPages) {
-            metaAdsCurrentPage = totalPages;
-        }
-        
-        console.log('📊 메타 광고 데이터 저장 완료:', {
-            totalData: metaAdsAllData.length,
-            totalCount: metaAdsTotalCount,
-            currentPage: metaAdsCurrentPage,
-            totalPages: totalPages
-        });
-        
-        updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
-    } else {
-        // 데이터가 없는 경우 초기화
-        metaAdsAllData = [];
-        metaAdsTotalCount = 0;
-        metaAdsCurrentPage = 1;
-        updatePagination('meta_ads', 1, 0);
-    }
+    // 페이지네이션 업데이트
+    updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     
     // 테이블 헤더 클릭 이벤트는 한 번만 등록 (중복 방지)
     if (!tableSortEventsAdded) {

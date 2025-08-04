@@ -502,8 +502,8 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
             console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_total_count);
             
-            // 전체 데이터 저장
-            metaAdsAllData = data.meta_ads_by_account;
+            // 전체 데이터 저장 (fetchMetaAdsByAccount에서만 전체 데이터 저장)
+            metaAdsAllData = [...data.meta_ads_by_account];  // 배열 복사
             metaAdsTotalCount = data.meta_ads_total_count;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
@@ -1275,32 +1275,38 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     console.log('📊 원본 메타 광고 데이터:', adsData);
     
-    // 전체 데이터 저장 (페이지네이션을 위해)
-    if (adsData && adsData.length > 0) {
-        // 전체 데이터 저장
-        metaAdsAllData = [...adsData];  // 전체 데이터 복사본 저장
-        metaAdsTotalCount = totalCount || adsData.length;
-        
-        // 페이지 수 계산 (10개씩 표시)
-        const totalPages = Math.ceil(metaAdsTotalCount / 10);
-        
-        // 현재 페이지가 전체 페이지 수를 초과하지 않도록 조정
-        if (metaAdsCurrentPage > totalPages) {
-            metaAdsCurrentPage = totalPages;
-        }
-        
-        console.log('📊 메타 광고 데이터 저장 완료:', {
-            totalData: metaAdsAllData.length,
-            totalCount: metaAdsTotalCount,
-            currentPage: metaAdsCurrentPage,
-            totalPages: totalPages
-        });
-    } else {
-        // 데이터가 없는 경우 초기화
+    // 데이터가 없는 경우 초기화
+    if (!adsData || adsData.length === 0) {
         metaAdsAllData = [];
         metaAdsTotalCount = 0;
         metaAdsCurrentPage = 1;
+        return;
     }
+    
+    // 이미 전체 데이터가 있고 새로운 데이터가 10개 이하인 경우, 페이지 데이터로 간주
+    if (metaAdsAllData.length > adsData.length && adsData.length <= 10) {
+        console.log('📊 기존 전체 데이터 유지 (페이지 데이터 렌더링)');
+    } else {
+        // 새로운 전체 데이터 저장
+        console.log('📊 새로운 전체 데이터 저장');
+        metaAdsAllData = [...adsData];
+        metaAdsTotalCount = totalCount || adsData.length;
+    }
+    
+    // 페이지 수 계산 (10개씩 표시)
+    const totalPages = Math.ceil(metaAdsTotalCount / 10);
+    
+    // 현재 페이지가 전체 페이지 수를 초과하지 않도록 조정
+    if (metaAdsCurrentPage > totalPages) {
+        metaAdsCurrentPage = totalPages;
+    }
+    
+    console.log('📊 메타 광고 데이터 상태:', {
+        totalData: metaAdsAllData.length,
+        totalCount: metaAdsTotalCount,
+        currentPage: metaAdsCurrentPage,
+        totalPages: totalPages
+    });
 
     // 현재 페이지의 데이터 처리 및 표시
     const startIndex = (metaAdsCurrentPage - 1) * 10;

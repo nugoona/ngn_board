@@ -393,15 +393,17 @@ def get_meta_ads_by_account():
                 "meta_ads_total_count": total_count
             })
         else:
-            # 기존 형식 (페이지네이션 없음)
+            # 기존 형식 (전체 데이터)
             print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
             
-            # 모바일용 데이터 처리
-            processed_ads_data = process_meta_ads_for_mobile(ads_data[:10])
+            # 모바일용 데이터 처리 (전체 데이터)
+            processed_ads_data = process_meta_ads_for_mobile(ads_data)
+            total_count = len(processed_ads_data)
             
             return jsonify({
                 "status": "success",
-                "meta_ads_by_account": processed_ads_data
+                "meta_ads_by_account": processed_ads_data,
+                "meta_ads_total_count": total_count
             })
         
     except Exception as e:

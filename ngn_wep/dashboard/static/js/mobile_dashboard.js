@@ -1344,19 +1344,31 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         tbody.appendChild(totalRow);
     }
     
-    // 페이지네이션 업데이트 (실제 데이터가 있는 경우에만)
+    // 전체 데이터 저장 (페이지네이션을 위해)
     if (adsData && adsData.length > 0) {
-        // 실제 데이터가 있는 경우에만 전체 개수 설정
-        metaAdsTotalCount = adsData.length;
+        // 전체 데이터 저장
+        metaAdsAllData = [...adsData];  // 전체 데이터 복사본 저장
+        metaAdsTotalCount = totalCount || adsData.length;
+        
         // 페이지 수 계산 (10개씩 표시)
         const totalPages = Math.ceil(metaAdsTotalCount / 10);
+        
         // 현재 페이지가 전체 페이지 수를 초과하지 않도록 조정
         if (metaAdsCurrentPage > totalPages) {
             metaAdsCurrentPage = totalPages;
         }
+        
+        console.log('📊 메타 광고 데이터 저장 완료:', {
+            totalData: metaAdsAllData.length,
+            totalCount: metaAdsTotalCount,
+            currentPage: metaAdsCurrentPage,
+            totalPages: totalPages
+        });
+        
         updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
     } else {
-        // 데이터가 없는 경우 페이지네이션 초기화
+        // 데이터가 없는 경우 초기화
+        metaAdsAllData = [];
         metaAdsTotalCount = 0;
         metaAdsCurrentPage = 1;
         updatePagination('meta_ads', 1, 0);

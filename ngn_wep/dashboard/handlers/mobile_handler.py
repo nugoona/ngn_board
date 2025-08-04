@@ -432,7 +432,7 @@ def get_live_ads():
         
         return jsonify({
             "status": "success",
-            "live_ads": live_ads[:5] if live_ads else []  # 상위 5개만
+            "live_ads": live_ads if live_ads else []  # 모든 LIVE 광고 표시
         })
         
     except Exception as e:

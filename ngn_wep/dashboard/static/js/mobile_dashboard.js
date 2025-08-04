@@ -1568,16 +1568,61 @@ function updatePagination(table, currentPage, totalItems) {
                 if (tableName === 'cafe24_product_sales') {
                     fetchCafe24ProductSalesData(newPage);
                 } else if (tableName === 'meta_ads') {
-                    // 현재 선택된 메타 광고 계정 ID 가져오기
-                    const metaAccountSelect = document.getElementById('metaAccountSelector');
-                    const currentAccountId = metaAccountSelect ? metaAccountSelect.value : null;
+                    // 저장된 전체 데이터에서 페이지 데이터 추출하여 표시
+                    console.log('📄 메타 광고 페이지 이동:', newPage);
+                    metaAdsCurrentPage = newPage;
                     
-                    if (currentAccountId) {
-                        console.log('📄 메타 광고 페이지 이동 - 계정:', currentAccountId, '페이지:', newPage);
-                        fetchMetaAdsByAccount(currentAccountId, newPage);
-                    } else {
-                        console.warn('⚠️ 선택된 메타 광고 계정이 없습니다');
+                    // 현재 페이지의 데이터만 다시 렌더링
+                    const startIndex = (newPage - 1) * 10;
+                    const endIndex = startIndex + 10;
+                    const pageData = metaAdsAllData.slice(startIndex, endIndex);
+                    
+                    // 테이블 초기화
+                    const tbody = document.getElementById('meta-ads-table');
+                    if (tbody) tbody.innerHTML = '';
+                    
+                    // 현재 페이지 데이터 처리 및 렌더링
+                    const displayAdsData = processMetaAdsForMobile(pageData);
+                    console.log('📊 현재 페이지 처리된 데이터:', displayAdsData);
+                    
+                    // 데이터 렌더링
+                    displayAdsData.forEach((row, index) => {
+                        const tableRow = document.createElement('tr');
+                        tableRow.innerHTML = `
+                            <td class="text-left">${row.campaign_name || '-'}</td>
+                            <td class="text-left">${row.ad_name || '-'}</td>
+                            <td class="text-right">${formatNumber(row.spend || 0)}</td>
+                            <td class="text-right">${formatNumber(row.clicks > 0 ? Math.round(row.spend / row.clicks) : 0)}</td>
+                            <td class="text-right">${formatNumber(row.purchases || 0)}</td>
+                            <td class="text-right">${formatNumber(row.spend > 0 ? Math.round((row.purchase_value / row.spend) * 100) : 0)}%</td>
+                        `;
+                        tbody.appendChild(tableRow);
+                    });
+                    
+                    // 총합 로우 추가
+                    if (metaAdsAllData.length > 0) {
+                        const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
+                        const totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
+                        const totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
+                        const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+                        const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+                        const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
+                        
+                        const totalRow = document.createElement('tr');
+                        totalRow.className = 'bg-gray-50 font-semibold';
+                        totalRow.innerHTML = `
+                            <td colspan="2" class="text-truncate">총합</td>
+                            <td class="text-right">${formatNumber(totalSpend)}</td>
+                            <td class="text-right">${formatNumber(totalCpc)}</td>
+                            <td class="text-right">${formatNumber(totalPurchases)}</td>
+                            <td class="text-right">${formatNumber(totalRoas)}%</td>
+                        `;
+                        tbody.appendChild(totalRow);
                     }
+                    
+                    // 페이지네이션 업데이트
+                    updatePagination('meta_ads', newPage, metaAdsTotalCount);
+                }
                 }
             } else {
                 console.log(`📄 ${tableName} 버튼 클릭 불가 (비활성화 상태 또는 현재 페이지)`);

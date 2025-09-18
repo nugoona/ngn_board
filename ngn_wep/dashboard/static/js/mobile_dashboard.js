@@ -810,7 +810,9 @@ function setupFilters() {
     }
     
     // 캠페인 필터 이벤트 설정
+    console.log('🔧 [DEBUG] 캠페인 필터 이벤트 설정 시작');
     addCampaignFilterEvents();
+    console.log('🔧 [DEBUG] 캠페인 필터 이벤트 설정 완료');
 }
 
 // 네이티브 달력 초기화 함수
@@ -1387,8 +1389,12 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     
     // 테이블 헤더 클릭 이벤트는 한 번만 등록 (중복 방지)
     if (!tableSortEventsAdded) {
+        console.log('🔧 [DEBUG] 테이블 정렬 이벤트 등록 시작');
         addTableSortEvents();
         tableSortEventsAdded = true;
+        console.log('🔧 [DEBUG] 테이블 정렬 이벤트 등록 완료');
+    } else {
+        console.log('🔧 [DEBUG] 테이블 정렬 이벤트 이미 등록됨');
     }
     
     console.log('✅ 메타 광고별 성과 렌더링 완료');
@@ -1645,37 +1651,77 @@ function updatePagination(table, currentPage, totalItems) {
 // 16) 테이블 정렬 기능
 // ─────────────────────────────────────────────
 function addTableSortEvents() {
+    console.log('🔧 [DEBUG] 테이블 정렬 이벤트 바인딩 시작');
+    
     const table = document.querySelector('#meta-ads-table').closest('table');
-    if (!table) return;
+    if (!table) {
+        console.log('🔧 [DEBUG] 테이블을 찾을 수 없음');
+        return;
+    }
+    
+    console.log('🔧 [DEBUG] 테이블 찾음:', table);
     
     const headers = table.querySelectorAll('th');
+    console.log('🔧 [DEBUG] 찾은 헤더 개수:', headers.length);
+    
     headers.forEach((header, index) => {
+        console.log(`🔧 [DEBUG] 헤더 ${index + 1}:`, {
+            text: header.textContent,
+            index: index
+        });
+        
         // 원본 텍스트 저장 (정렬 표시 제외)
         if (!header.dataset.originalText) {
             header.dataset.originalText = header.textContent.replace(' ↑', '').replace(' ↓', '');
         }
         
         header.style.cursor = 'pointer';
-        header.addEventListener('click', () => {
+        header.addEventListener('click', (event) => {
+            console.log('🔧 [DEBUG] 헤더 클릭 이벤트 발생:', {
+                target: event.target,
+                text: event.target.textContent,
+                index: index
+            });
             sortTable(table, index);
         });
     });
+    
+    console.log('🔧 [DEBUG] 테이블 정렬 이벤트 바인딩 완료');
 }
 
 function sortTable(table, columnIndex) {
-    console.log('🔄 데이터 정렬 시작 - 컬럼:', columnIndex);
+    console.log('🔧 [DEBUG] sortTable 함수 시작');
+    console.log('🔧 [DEBUG] 정렬 요청 컬럼:', columnIndex);
     
     // 헤더 정렬 상태 확인 및 업데이트
     const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
+    if (!header) {
+        console.log('🔧 [DEBUG] 헤더를 찾을 수 없음:', columnIndex);
+        return;
+    }
+    
     const currentOrder = header.dataset.order || 'none';
     const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
     
-    console.log('🔄 정렬 상태 변경:', currentOrder, '→', newOrder);
+    console.log('🔧 [DEBUG] 정렬 상태 변경:', {
+        currentOrder: currentOrder,
+        newOrder: newOrder,
+        headerText: header.textContent
+    });
     
     // 정렬할 데이터 결정 (필터가 적용된 경우 필터링된 데이터, 아니면 전체 데이터)
     const dataToSort = metaAdsCurrentFilter.length > 0 ? metaAdsFilteredData : metaAdsAllData;
     
+    console.log('🔧 [DEBUG] 정렬할 데이터 상태:', {
+        필터적용여부: metaAdsCurrentFilter.length > 0,
+        현재필터: metaAdsCurrentFilter,
+        전체데이터개수: metaAdsAllData.length,
+        필터링데이터개수: metaAdsFilteredData.length,
+        정렬할데이터개수: dataToSort.length
+    });
+    
     if (dataToSort.length > 0) {
+        console.log('🔧 [DEBUG] 정렬할 데이터 샘플:', dataToSort.slice(0, 3));
         // 정렬 기준 컬럼에 따라 데이터 정렬
         const sortedData = [...dataToSort].sort((a, b) => {
             let aValue, bValue;
@@ -1731,18 +1777,29 @@ function sortTable(table, columnIndex) {
         if (metaAdsCurrentFilter.length > 0) {
             // 필터가 적용된 경우: 필터링된 데이터만 정렬
             metaAdsFilteredData = sortedData;
-            console.log('🔄 필터링된 데이터 정렬 완료:', sortedData.length, '개');
+            console.log('🔧 [DEBUG] 필터링된 데이터 정렬 완료:', {
+                정렬된개수: sortedData.length,
+                정렬된데이터샘플: sortedData.slice(0, 3)
+            });
         } else {
             // 필터가 없는 경우: 전체 데이터 정렬
             metaAdsAllData = sortedData;
-            console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
+            console.log('🔧 [DEBUG] 전체 데이터 정렬 완료:', {
+                정렬된개수: sortedData.length,
+                정렬된데이터샘플: sortedData.slice(0, 3)
+            });
         }
         
         // 정렬 시 페이지를 1로 리셋
         metaAdsCurrentPage = 1;
+        console.log('🔧 [DEBUG] 페이지 리셋:', metaAdsCurrentPage);
         
         // 첫 페이지 데이터로 다시 렌더링
         const pageData = sortedData.slice(0, 10);
+        console.log('🔧 [DEBUG] 렌더링할 페이지 데이터:', {
+            페이지데이터개수: pageData.length,
+            페이지데이터샘플: pageData.slice(0, 3)
+        });
         
         renderMetaAdsByAccount(pageData, sortedData.length);
     }
@@ -1775,64 +1832,152 @@ function getCellValue(row, columnIndex) {
 // 17) 캠페인 필터 기능
 // ─────────────────────────────────────────────
 function addCampaignFilterEvents() {
+    console.log('🔧 [DEBUG] 캠페인 필터 이벤트 바인딩 시작');
     const filterCheckboxes = document.querySelectorAll('.campaign-filter input[type="checkbox"]');
+    console.log('🔧 [DEBUG] 찾은 체크박스 개수:', filterCheckboxes.length);
     
-    filterCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
+    filterCheckboxes.forEach((checkbox, index) => {
+        console.log(`🔧 [DEBUG] 체크박스 ${index + 1}:`, {
+            id: checkbox.id,
+            value: checkbox.value,
+            checked: checkbox.checked
+        });
+        
+        checkbox.addEventListener('change', (event) => {
+            console.log('🔧 [DEBUG] 체크박스 변경 이벤트 발생:', {
+                target: event.target,
+                value: event.target.value,
+                checked: event.target.checked,
+                id: event.target.id
+            });
             filterMetaAdsByCampaign();
         });
     });
+    
+    console.log('🔧 [DEBUG] 캠페인 필터 이벤트 바인딩 완료');
 }
 
 function filterMetaAdsByCampaign() {
+    console.log('🔧 [DEBUG] filterMetaAdsByCampaign 함수 시작');
+    
     const selectedCampaigns = [];
-    document.querySelectorAll('.campaign-filter input[type="checkbox"]:checked').forEach(checkbox => {
-        selectedCampaigns.push(checkbox.value);
+    const allCheckboxes = document.querySelectorAll('.campaign-filter input[type="checkbox"]');
+    console.log('🔧 [DEBUG] 전체 체크박스 개수:', allCheckboxes.length);
+    
+    allCheckboxes.forEach((checkbox, index) => {
+        console.log(`🔧 [DEBUG] 체크박스 ${index + 1} 상태:`, {
+            id: checkbox.id,
+            value: checkbox.value,
+            checked: checkbox.checked
+        });
+        
+        if (checkbox.checked) {
+            selectedCampaigns.push(checkbox.value);
+        }
     });
     
-    console.log('🔍 선택된 캠페인:', selectedCampaigns);
+    console.log('🔧 [DEBUG] 선택된 캠페인:', selectedCampaigns);
+    console.log('🔧 [DEBUG] 현재 전체 데이터 개수:', metaAdsAllData.length);
     
     // 필터 상태 저장
     metaAdsCurrentFilter = selectedCampaigns;
+    console.log('🔧 [DEBUG] 필터 상태 저장됨:', metaAdsCurrentFilter);
     
     // 전체 데이터에서 필터링
     if (metaAdsAllData.length > 0) {
+        console.log('🔧 [DEBUG] 필터링 시작 - 원본 데이터 샘플:', metaAdsAllData.slice(0, 3));
+        
         const filteredData = metaAdsAllData.filter(row => {
             const campaignName = row.campaign_name || '';
             
             // 선택된 캠페인 타입이 없으면 모든 데이터 표시
             if (selectedCampaigns.length === 0) {
+                console.log('🔧 [DEBUG] 필터 없음 - 모든 데이터 표시');
                 return true;
             }
             
             // 선택된 캠페인 타입 중 하나라도 포함되면 표시
-            return selectedCampaigns.some(campaignType => 
+            const matches = selectedCampaigns.some(campaignType => 
                 campaignName.includes(campaignType)
             );
+            
+            if (matches) {
+                console.log('🔧 [DEBUG] 매칭된 캠페인:', campaignName);
+            }
+            
+            return matches;
         });
         
-        console.log('🔍 필터링된 데이터:', filteredData.length, '개');
+        console.log('🔧 [DEBUG] 필터링 완료:', {
+            원본개수: metaAdsAllData.length,
+            필터링개수: filteredData.length,
+            필터링된데이터샘플: filteredData.slice(0, 3)
+        });
         
         // 필터링된 데이터를 별도 변수에 저장
         metaAdsFilteredData = filteredData;
+        console.log('🔧 [DEBUG] 필터링된 데이터 저장됨:', metaAdsFilteredData.length, '개');
         
         // 필터링된 데이터로 렌더링 (첫 페이지)
         const startIndex = 0;
         const endIndex = 10;
         const pageData = filteredData.slice(startIndex, endIndex);
         
+        console.log('🔧 [DEBUG] 렌더링할 페이지 데이터:', pageData.length, '개');
         renderMetaAdsByAccount(pageData, filteredData.length);
         
         // 페이지네이션 업데이트
         metaAdsCurrentPage = 1;
         metaAdsTotalCount = filteredData.length;
+        console.log('🔧 [DEBUG] 페이지네이션 업데이트:', {
+            currentPage: metaAdsCurrentPage,
+            totalCount: metaAdsTotalCount
+        });
         updatePagination('meta_ads', metaAdsCurrentPage, metaAdsTotalCount);
+    } else {
+        console.log('🔧 [DEBUG] 전체 데이터가 없어서 필터링 불가');
     }
+    
+    console.log('🔧 [DEBUG] filterMetaAdsByCampaign 함수 완료');
 }
 
 // ─────────────────────────────────────────────
 // 18) 디버깅용 전역 함수 (개발용)
 // ─────────────────────────────────────────────
+function debugMetaAdsState() {
+    console.log('🔧 [DEBUG] 메타광고 상태 정보:', {
+        metaAdsAllData: {
+            length: metaAdsAllData.length,
+            sample: metaAdsAllData.slice(0, 3)
+        },
+        metaAdsFilteredData: {
+            length: metaAdsFilteredData.length,
+            sample: metaAdsFilteredData.slice(0, 3)
+        },
+        metaAdsCurrentFilter: metaAdsCurrentFilter,
+        metaAdsCurrentPage: metaAdsCurrentPage,
+        metaAdsTotalCount: metaAdsTotalCount,
+        tableSortEventsAdded: tableSortEventsAdded
+    });
+}
+
+function debugCampaignFilterElements() {
+    console.log('🔧 [DEBUG] 캠페인 필터 요소들:', {
+        filterContainer: document.querySelector('.campaign-filter'),
+        checkboxes: document.querySelectorAll('.campaign-filter input[type="checkbox"]'),
+        checkboxCount: document.querySelectorAll('.campaign-filter input[type="checkbox"]').length
+    });
+}
+
+function debugTableElements() {
+    console.log('🔧 [DEBUG] 테이블 요소들:', {
+        table: document.querySelector('#meta-ads-table'),
+        tableContainer: document.querySelector('#meta-ads-table')?.closest('table'),
+        headers: document.querySelectorAll('#meta-ads-table').closest('table')?.querySelectorAll('th'),
+        headerCount: document.querySelectorAll('#meta-ads-table').closest('table')?.querySelectorAll('th').length
+    });
+}
+
 window.mobileDashboard = {
     fetchData: fetchMobileData,
     getData: () => mobileData,
@@ -1841,5 +1986,8 @@ window.mobileDashboard = {
     fetchMetaAccounts: fetchMetaAccounts,
     fetchMetaAdsByAccount: fetchMetaAdsByAccount,
     fetchLiveAds: fetchLiveAds,
-    processMetaAdsForMobile: processMetaAdsForMobile
+    processMetaAdsForMobile: processMetaAdsForMobile,
+    debugMetaAdsState: debugMetaAdsState,
+    debugCampaignFilterElements: debugCampaignFilterElements,
+    debugTableElements: debugTableElements
 }; 

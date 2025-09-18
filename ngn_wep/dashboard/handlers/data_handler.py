@@ -479,7 +479,6 @@ def get_dashboard_data_route():
                 else:
                     # ✅ 캐시 미스 - 새로운 데이터 조회
                     print(f"[WEB] 🔍 LIVE 광고 미리보기 요청 (캐시 미스): account_id={account_id}")
-                    import time
                     start_time = time.time()
                     ad_list = get_meta_ads_preview_list(account_id)
                     processing_time = time.time() - start_time
@@ -496,7 +495,6 @@ def get_dashboard_data_route():
             except Exception as cache_error:
                 print(f"[WEB] 캐시 시스템 오류: {cache_error}")
                 # ✅ 캐시 실패 시 직접 조회
-                import time
                 start_time = time.time()
                 ad_list = get_meta_ads_preview_list(account_id)
                 processing_time = time.time() - start_time

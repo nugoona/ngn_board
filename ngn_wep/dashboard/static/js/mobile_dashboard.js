@@ -1291,14 +1291,26 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         return;
     }
     
-    // 이미 전체 데이터가 있고 새로운 데이터가 10개 이하인 경우, 페이지 데이터로 간주
-    if (metaAdsAllData.length > adsData.length && adsData.length <= 10) {
-        console.log('📊 기존 전체 데이터 유지 (페이지 데이터 렌더링)');
+    // 필터링된 데이터인지 확인
+    const isFilteredData = metaAdsCurrentFilter.length > 0;
+    
+    if (isFilteredData) {
+        // 필터링된 데이터인 경우: 필터링된 데이터로 렌더링
+        console.log('📊 필터링된 데이터 렌더링:', {
+            필터상태: metaAdsCurrentFilter,
+            필터링데이터개수: adsData.length,
+            전체데이터개수: metaAdsAllData.length
+        });
     } else {
-        // 새로운 전체 데이터 저장
-        console.log('📊 새로운 전체 데이터 저장');
-        metaAdsAllData = [...adsData];
-        metaAdsTotalCount = totalCount || adsData.length;
+        // 필터링되지 않은 데이터인 경우: 기존 로직 유지
+        if (metaAdsAllData.length > adsData.length && adsData.length <= 10) {
+            console.log('📊 기존 전체 데이터 유지 (페이지 데이터 렌더링)');
+        } else {
+            // 새로운 전체 데이터 저장
+            console.log('📊 새로운 전체 데이터 저장');
+            metaAdsAllData = [...adsData];
+            metaAdsTotalCount = totalCount || adsData.length;
+        }
     }
     
     // 페이지 수 계산 (10개씩 표시)
@@ -1319,7 +1331,18 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     // 현재 페이지의 데이터 처리 및 표시
     const startIndex = (metaAdsCurrentPage - 1) * 10;
     const endIndex = startIndex + 10;
-    const pageData = metaAdsAllData.slice(startIndex, endIndex);
+    
+    // 필터링된 데이터인지에 따라 다른 데이터 소스 사용
+    const dataSource = isFilteredData ? adsData : metaAdsAllData;
+    const pageData = dataSource.slice(startIndex, endIndex);
+    
+    console.log('📊 페이지 데이터 처리:', {
+        isFilteredData: isFilteredData,
+        dataSourceLength: dataSource.length,
+        pageDataLength: pageData.length,
+        startIndex: startIndex,
+        endIndex: endIndex
+    });
     
     // 모바일용 데이터 처리 (CPC, ROAS 계산 포함)
     const displayAdsData = processMetaAdsForMobile(pageData);
@@ -1351,13 +1374,20 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     });
     
     // 총합 로우 추가 (필터링된 데이터 기준 - 페이지와 관계없이 고정)
-    const dataForTotal = metaAdsCurrentFilter.length > 0 ? metaAdsFilteredData : metaAdsAllData;
+    const dataForTotal = isFilteredData ? adsData : metaAdsAllData;
     if (dataForTotal.length > 0) {
         // 필터링된 데이터 또는 전체 데이터로 총합 계산 (페이지와 관계없이)
         const totalSpend = dataForTotal.reduce((sum, row) => sum + (row.spend || 0), 0);
         const totalClicks = dataForTotal.reduce((sum, row) => sum + (row.clicks || 0), 0);
         const totalPurchases = dataForTotal.reduce((sum, row) => sum + (row.purchases || 0), 0);
         const totalPurchaseValue = dataForTotal.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+        
+        console.log('📊 총합 계산 데이터:', {
+            isFilteredData: isFilteredData,
+            dataForTotalLength: dataForTotal.length,
+            totalSpend: totalSpend,
+            totalClicks: totalClicks
+        });
         
         // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
         const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;

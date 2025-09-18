@@ -458,14 +458,52 @@ def get_dashboard_data_route():
                 "total_spend_sum": total_spend_sum
             }
 
-        # Meta Ads 광고 미리보기 - 단일
+        # Meta Ads 광고 미리보기 - 단일 (최적화된 버전)
         if data_type == "meta_ads_preview_list":
             from ..services.meta_ads_preview import get_meta_ads_preview_list
 
             account_id = data.get("account_id")
-            ad_list = get_meta_ads_preview_list(account_id)
-
-            response_data["meta_ads_preview_list"] = ad_list
+            
+            # ✅ 캐시 키 생성 (계정별 + 날짜별)
+            from datetime import datetime
+            cache_key = f"live_ads_{account_id}_{datetime.now().strftime('%Y%m%d')}"
+            
+            # ✅ 캐시 확인 (Redis 또는 메모리 캐시)
+            try:
+                from ..utils.cache_utils import get_cached_data, set_cached_data
+                cached_result = get_cached_data(cache_key)
+                if cached_result:
+                    print(f"[WEB] 🚀 LIVE 광고 캐시 히트: account_id={account_id}")
+                    response_data["meta_ads_preview_list"] = cached_result
+                    response_data["cached"] = True
+                else:
+                    # ✅ 캐시 미스 - 새로운 데이터 조회
+                    print(f"[WEB] 🔍 LIVE 광고 미리보기 요청 (캐시 미스): account_id={account_id}")
+                    import time
+                    start_time = time.time()
+                    ad_list = get_meta_ads_preview_list(account_id)
+                    processing_time = time.time() - start_time
+                    print(f"[WEB] 🔍 LIVE 광고 미리보기 결과: {len(ad_list) if ad_list else 0}개, {processing_time:.2f}초")
+                    
+                    # ✅ 결과 캐싱 (30분간 유효)
+                    if ad_list:
+                        set_cached_data(cache_key, ad_list, ttl=1800)  # 30분
+                        print(f"[WEB] 💾 LIVE 광고 캐시 저장: {len(ad_list)}개")
+                    
+                    response_data["meta_ads_preview_list"] = ad_list
+                    response_data["cached"] = False
+                    response_data["processing_time"] = round(processing_time, 2)
+            except Exception as cache_error:
+                print(f"[WEB] 캐시 시스템 오류: {cache_error}")
+                # ✅ 캐시 실패 시 직접 조회
+                import time
+                start_time = time.time()
+                ad_list = get_meta_ads_preview_list(account_id)
+                processing_time = time.time() - start_time
+                print(f"[WEB] 🔍 LIVE 광고 미리보기 (캐시 실패): {len(ad_list) if ad_list else 0}개, {processing_time:.2f}초")
+                response_data["meta_ads_preview_list"] = ad_list
+                response_data["cached"] = False
+                response_data["processing_time"] = round(processing_time, 2)
 
         # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
         if data_type == "slide_collection_ads":

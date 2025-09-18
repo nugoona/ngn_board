@@ -1430,9 +1430,9 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
 
-// LIVE 광고 미리보기 렌더링 (웹버전과 동일한 인스타그램 스타일)
+// LIVE 광고 미리보기 순차적 렌더링 (개선된 버전)
 function renderLiveAds(liveAds) {
-    console.log('🖼️ LIVE 광고 미리보기 렌더링:', liveAds);
+    console.log('🖼️ LIVE 광고 미리보기 순차적 렌더링 시작:', liveAds);
     
     const liveAdsScroll = document.getElementById('live-ads-scroll');
     if (!liveAdsScroll) return;
@@ -1441,92 +1441,182 @@ function renderLiveAds(liveAds) {
     
     // 실제 데이터가 없는 경우
     if (liveAds.length === 0) {
-        showLiveAdsContent(); // 스켈레톤 UI 숨기고 실제 컨텐츠 표시
+        showLiveAdsContent();
         liveAdsScroll.innerHTML = '<div class="text-center" style="padding: 20px; color: #6b7280;">미리볼 광고가 없습니다.</div>';
         return;
     }
     
-    // 데이터가 있는 경우, 약간의 지연 후 실제 컨텐츠 표시 (자연스러운 전환을 위해)
+    // 스켈레톤 UI 숨기고 실제 컨텐츠 표시
     setTimeout(() => {
         showLiveAdsContent();
-    }, 500);
+    }, 300);
     
-    liveAds.forEach(ad => {
-        const adCard = document.createElement('div');
-        adCard.className = 'insta-card';
+    // 순차적 렌더링 시작
+    renderLiveAdsSequentially(liveAds, 0);
+}
+
+// 순차적 렌더링 함수
+function renderLiveAdsSequentially(liveAds, index) {
+    if (index >= liveAds.length) {
+        console.log('🖼️ 모든 LIVE 광고 렌더링 완료');
+        return;
+    }
+    
+    const ad = liveAds[index];
+    console.log(`🖼️ LIVE 광고 ${index + 1}/${liveAds.length} 렌더링 중:`, ad.ad_name);
+    
+    const liveAdsScroll = document.getElementById('live-ads-scroll');
+    if (!liveAdsScroll) return;
+    
+    // 광고 카드 생성
+    const adCard = createLiveAdCard(ad, index);
+    
+    // 카드를 DOM에 추가 (즉시 표시)
+    liveAdsScroll.appendChild(adCard);
+    
+    // 이미지 로딩 상태 관리
+    const imageElement = adCard.querySelector('.ad-image');
+    if (imageElement) {
+        // 이미지 로딩 시작
+        imageElement.addEventListener('load', () => {
+            console.log(`🖼️ 이미지 로딩 완료: ${ad.ad_name}`);
+            // 다음 광고 렌더링 (약간의 지연)
+            setTimeout(() => {
+                renderLiveAdsSequentially(liveAds, index + 1);
+            }, 200);
+        });
         
-        // 인스타그램 스타일 카드 생성 (웹버전과 동일)
-        const instagramAccName = ad.instagram_acc_name || 'No Name';
-        const message = ad.message || '(문구 없음)';
-        const firstLine = message.split('\n')[0];
+        imageElement.addEventListener('error', () => {
+            console.log(`🖼️ 이미지 로딩 실패: ${ad.ad_name}`);
+            // 이미지 로딩 실패해도 다음 광고 계속 렌더링
+            setTimeout(() => {
+                renderLiveAdsSequentially(liveAds, index + 1);
+            }, 200);
+        });
         
-        const accountNameHTML = `<span style='font-weight:bold;'>${instagramAccName}</span>`;
-        const shortCaption = `${accountNameHTML} ${firstLine} <span class='more-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... more</span>`;
-        
-        adCard.innerHTML = `
-            <div class="insta-header">
-                <div class="insta-header-left">
-                    <img class="profile-image" src="https://cdn-icons-png.flaticon.com/512/1946/1946429.png" alt="프로필">
-                    <div class="account-info">
-                        <span class="insta-account-name">${instagramAccName}</span>
-                        <span class="ad-label" style="color: gray;">광고</span>
-                    </div>
+        // 이미지 로딩 시작
+        imageElement.src = ad.image_url || '';
+    } else {
+        // 이미지가 없는 경우 바로 다음 광고로
+        setTimeout(() => {
+            renderLiveAdsSequentially(liveAds, index + 1);
+        }, 200);
+    }
+}
+
+// 개별 광고 카드 생성 함수
+function createLiveAdCard(ad, index) {
+    const adCard = document.createElement('div');
+    adCard.className = 'insta-card';
+    adCard.style.opacity = '0.7'; // 로딩 중임을 표시
+    adCard.style.transition = 'opacity 0.3s ease';
+    
+    // 인스타그램 스타일 카드 생성
+    const instagramAccName = ad.instagram_acc_name || 'No Name';
+    const message = ad.message || '(문구 없음)';
+    const firstLine = message.split('\n')[0];
+    
+    const accountNameHTML = `<span style='font-weight:bold;'>${instagramAccName}</span>`;
+    const shortCaption = `${accountNameHTML} ${firstLine} <span class='more-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... more</span>`;
+    
+    adCard.innerHTML = `
+        <div class="insta-header">
+            <div class="insta-header-left">
+                <img class="profile-image" src="https://cdn-icons-png.flaticon.com/512/1946/1946429.png" alt="프로필">
+                <div class="account-info">
+                    <span class="insta-account-name">${instagramAccName}</span>
+                    <span class="ad-label" style="color: gray;">광고</span>
                 </div>
-                <div class="insta-menu">⋯</div>
             </div>
+            <div class="insta-menu">⋯</div>
+        </div>
 
-            <div class="insta-image" style="position: relative;">
-                <img class="ad-image" src="${ad.image_url || ''}" alt="광고 이미지" loading="lazy" onerror="this.style.display='none'">
-                
-                ${ad.is_video ? '<div class="play-overlay" style="display: flex;"><svg viewBox="0 0 100 100" class="play-icon" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : '<div class="play-overlay" style="display: none;"></div>'}
+        <div class="insta-image" style="position: relative;">
+            <div class="image-loading-placeholder" style="
+                width: 100%; 
+                height: 300px; 
+                background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                background-size: 200% 100%;
+                animation: shimmer 1.5s infinite;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #999;
+                font-size: 14px;
+            ">
+                이미지 로딩 중...
             </div>
-
-            <div class="insta-cta">
-                <a class="cta-link" href="${ad.link || '#'}" target="_blank">
-                    <span>더 알아보기</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#385185" viewBox="0 0 24 24" width="18" height="18">
-                        <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </a>
-            </div>
-
-            <div class="insta-footer">
-                <div class="insta-icons">
-                    <div class="insta-icons-left">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4 8.5 8.5 0 0 1-6.6 3.1 8.38 8.38 0 0 1-5.4-1.9L3 21l2.9-3.1a8.38 8.38 0 0 1-1.9-5.4 8.5 8.5 0 0 1 3.1-6.6A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 6.6 3.1A8.38 8.38 0 0 1 21 11.5z"/>
-                        </svg>
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
-                        </svg>
-                    </div>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                </div>
-                <div class="insta-caption ad-caption">${shortCaption}</div>
-            </div>
-        `;
-        
-        // 더보기/접기 기능 추가
-        const captionElement = adCard.querySelector('.ad-caption');
-        if (captionElement) {
-            const fullCaption = `${accountNameHTML} ${message} <span class='less-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... less</span>`;
+            <img class="ad-image" style="display: none;" alt="광고 이미지">
             
-            captionElement.addEventListener('click', function(e) {
-                if (e.target.classList.contains('more-toggle')) {
-                    this.innerHTML = fullCaption;
-                } else if (e.target.classList.contains('less-toggle')) {
-                    this.innerHTML = shortCaption;
-                }
-            });
-        }
+            ${ad.is_video ? '<div class="play-overlay" style="display: flex;"><svg viewBox="0 0 100 100" class="play-icon" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : '<div class="play-overlay" style="display: none;"></div>'}
+        </div>
+
+        <div class="insta-cta">
+            <a class="cta-link" href="${ad.link || '#'}" target="_blank">
+                <span>더 알아보기</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#385185" viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M9 6l6 6-6 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </a>
+        </div>
+
+        <div class="insta-footer">
+            <div class="insta-icons">
+                <div class="insta-icons-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4 8.5 8.5 0 0 1-6.6 3.1 8.38 8.38 0 0 1-5.4-1.9L3 21l2.9-3.1a8.38 8.38 0 0 1-1.9-5.4 8.5 8.5 0 0 1 3.1-6.6A8.38 8.38 0 0 1 12.5 3a8.5 8.5 0 0 1 6.6 3.1A8.38 8.38 0 0 1 21 11.5z"/>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                    </svg>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <div class="insta-caption ad-caption">${shortCaption}</div>
+        </div>
+    `;
+    
+    // 더보기/접기 기능 추가
+    const captionElement = adCard.querySelector('.ad-caption');
+    if (captionElement) {
+        const fullCaption = `${accountNameHTML} ${message} <span class='less-toggle' style='color: #737373; font-size: 13px; cursor: pointer; white-space: nowrap;'>... less</span>`;
         
-        liveAdsScroll.appendChild(adCard);
-    });
+        captionElement.addEventListener('click', function(e) {
+            if (e.target.classList.contains('more-toggle')) {
+                this.innerHTML = fullCaption;
+            } else if (e.target.classList.contains('less-toggle')) {
+                this.innerHTML = shortCaption;
+            }
+        });
+    }
+    
+    // 이미지 로딩 완료 시 처리
+    const imageElement = adCard.querySelector('.ad-image');
+    const placeholder = adCard.querySelector('.image-loading-placeholder');
+    
+    if (imageElement && placeholder) {
+        imageElement.addEventListener('load', () => {
+            // 이미지 로딩 완료 시 플레이스홀더 숨기고 이미지 표시
+            placeholder.style.display = 'none';
+            imageElement.style.display = 'block';
+            adCard.style.opacity = '1'; // 완전히 불투명하게
+        });
+        
+        imageElement.addEventListener('error', () => {
+            // 이미지 로딩 실패 시 플레이스홀더를 에러 메시지로 변경
+            placeholder.innerHTML = '이미지를 불러올 수 없습니다';
+            placeholder.style.background = '#f5f5f5';
+            placeholder.style.color = '#999';
+            adCard.style.opacity = '1';
+        });
+    }
+    
+    return adCard;
 }
 
 // LIVE 광고 섹션 표시/숨김

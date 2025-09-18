@@ -186,6 +186,30 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* LIVE 광고 이미지 로딩 애니메이션 */
+@keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+.image-loading-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.insta-card {
+    transition: opacity 0.3s ease;
+}
+
+.insta-card.loading {
+    opacity: 0.7;
+}
+
+.insta-card.loaded {
+    opacity: 1;
+}
+
 /* 반응형 그리드 */
 @media (max-width: 640px) {
     .grid-cols-2 {

@@ -507,6 +507,10 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             metaAdsTotalCount = data.meta_ads_total_count;
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
             
+            // 필터링된 데이터 초기화 (새로운 데이터 로딩 시)
+            metaAdsFilteredData = [];
+            metaAdsCurrentFilter = [];
+            
             // 초기 로딩 시 지출 내림차순으로 정렬
             metaAdsAllData.sort((a, b) => {
                 const aSpend = a.spend || 0;
@@ -1010,7 +1014,9 @@ let cafe24ProductSalesCurrentPage = 1;
 let cafe24ProductSalesTotalCount = 0;
 let metaAdsCurrentPage = 1;
 let metaAdsTotalCount = 0;
-let metaAdsAllData = []; // 전체 메타 광고 데이터 저장
+let metaAdsAllData = []; // 전체 메타 광고 데이터 저장 (원본)
+let metaAdsFilteredData = []; // 필터링된 메타 광고 데이터 저장
+let metaAdsCurrentFilter = []; // 현재 적용된 필터 상태 저장
 let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 방지
 
 
@@ -1342,13 +1348,14 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         tbody.appendChild(tableRow);
     });
     
-    // 총합 로우 추가 (전체 데이터 기준 - 페이지와 관계없이 고정)
-    if (metaAdsAllData.length > 0) {
-        // 전체 데이터로 총합 계산 (페이지와 관계없이)
-        const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
-        const totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
-        const totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
-        const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+    // 총합 로우 추가 (필터링된 데이터 기준 - 페이지와 관계없이 고정)
+    const dataForTotal = metaAdsCurrentFilter.length > 0 ? metaAdsFilteredData : metaAdsAllData;
+    if (dataForTotal.length > 0) {
+        // 필터링된 데이터 또는 전체 데이터로 총합 계산 (페이지와 관계없이)
+        const totalSpend = dataForTotal.reduce((sum, row) => sum + (row.spend || 0), 0);
+        const totalClicks = dataForTotal.reduce((sum, row) => sum + (row.clicks || 0), 0);
+        const totalPurchases = dataForTotal.reduce((sum, row) => sum + (row.purchases || 0), 0);
+        const totalPurchaseValue = dataForTotal.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
         
         // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
         const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
@@ -1656,7 +1663,7 @@ function addTableSortEvents() {
 }
 
 function sortTable(table, columnIndex) {
-    console.log('🔄 전체 데이터 정렬 시작 - 컬럼:', columnIndex);
+    console.log('🔄 데이터 정렬 시작 - 컬럼:', columnIndex);
     
     // 헤더 정렬 상태 확인 및 업데이트
     const header = table.querySelector(`th:nth-child(${columnIndex + 1})`);
@@ -1665,10 +1672,12 @@ function sortTable(table, columnIndex) {
     
     console.log('🔄 정렬 상태 변경:', currentOrder, '→', newOrder);
     
-    // 전체 데이터 정렬
-    if (metaAdsAllData.length > 0) {
-        // 정렬 기준 컬럼에 따라 전체 데이터 정렬
-        const sortedData = [...metaAdsAllData].sort((a, b) => {
+    // 정렬할 데이터 결정 (필터가 적용된 경우 필터링된 데이터, 아니면 전체 데이터)
+    const dataToSort = metaAdsCurrentFilter.length > 0 ? metaAdsFilteredData : metaAdsAllData;
+    
+    if (dataToSort.length > 0) {
+        // 정렬 기준 컬럼에 따라 데이터 정렬
+        const sortedData = [...dataToSort].sort((a, b) => {
             let aValue, bValue;
             
             switch (columnIndex) {
@@ -1718,17 +1727,24 @@ function sortTable(table, columnIndex) {
             }
         });
         
-        // 정렬된 전체 데이터 저장
-        metaAdsAllData = sortedData;
-        console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
+        // 정렬된 데이터를 적절한 변수에 저장
+        if (metaAdsCurrentFilter.length > 0) {
+            // 필터가 적용된 경우: 필터링된 데이터만 정렬
+            metaAdsFilteredData = sortedData;
+            console.log('🔄 필터링된 데이터 정렬 완료:', sortedData.length, '개');
+        } else {
+            // 필터가 없는 경우: 전체 데이터 정렬
+            metaAdsAllData = sortedData;
+            console.log('🔄 전체 데이터 정렬 완료:', sortedData.length, '개');
+        }
         
         // 정렬 시 페이지를 1로 리셋
         metaAdsCurrentPage = 1;
         
         // 첫 페이지 데이터로 다시 렌더링
-        const pageData = metaAdsAllData.slice(0, 10);
+        const pageData = sortedData.slice(0, 10);
         
-        renderMetaAdsByAccount(pageData, metaAdsAllData.length);
+        renderMetaAdsByAccount(pageData, sortedData.length);
     }
     
     // 모든 헤더의 정렬 표시 제거
@@ -1776,6 +1792,9 @@ function filterMetaAdsByCampaign() {
     
     console.log('🔍 선택된 캠페인:', selectedCampaigns);
     
+    // 필터 상태 저장
+    metaAdsCurrentFilter = selectedCampaigns;
+    
     // 전체 데이터에서 필터링
     if (metaAdsAllData.length > 0) {
         const filteredData = metaAdsAllData.filter(row => {
@@ -1794,19 +1813,15 @@ function filterMetaAdsByCampaign() {
         
         console.log('🔍 필터링된 데이터:', filteredData.length, '개');
         
+        // 필터링된 데이터를 별도 변수에 저장
+        metaAdsFilteredData = filteredData;
+        
         // 필터링된 데이터로 렌더링 (첫 페이지)
         const startIndex = 0;
         const endIndex = 10;
         const pageData = filteredData.slice(startIndex, endIndex);
         
-        // 필터링된 데이터를 임시로 저장하여 총합 계산에 사용
-        const originalMetaAdsAllData = metaAdsAllData;
-        metaAdsAllData = filteredData;
-        
         renderMetaAdsByAccount(pageData, filteredData.length);
-        
-        // 원본 데이터 복원
-        metaAdsAllData = originalMetaAdsAllData;
         
         // 페이지네이션 업데이트
         metaAdsCurrentPage = 1;

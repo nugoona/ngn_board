@@ -43,8 +43,8 @@ $(document).ready(function () {
     if (period !== "manual") {
       $("#startDate").val("");
       $("#endDate").val("");
-      debugLog("🚀 updateAllData() 호출 - 필터 변경");
-      updateAllData();
+      debugLog("🚀 필터 변경 - filters.js에서 처리됨 (중복 호출 방지)");
+      // updateAllData(); // 중복 호출 방지를 위해 주석 처리 - filters.js에서 처리
     }
   });
 
@@ -53,8 +53,8 @@ $(document).ready(function () {
     const period = $("#periodFilter").val();
     const endDate = $("#endDate").val()?.trim();
     if (period === "manual" && !endDate) return;
-    debugLog("🚀 updateAllData() 호출 - 날짜 필터 변경");
-    updateAllData();
+    debugLog("🚀 날짜 필터 변경 - filters.js에서 처리됨 (중복 호출 방지)");
+    // updateAllData(); // 중복 호출 방지를 위해 주석 처리 - filters.js에서 처리
   });
   
   debugLog("📋 dashboard.js document.ready 완료");

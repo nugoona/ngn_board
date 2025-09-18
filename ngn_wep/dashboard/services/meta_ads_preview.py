@@ -1,8 +1,6 @@
 import os
 import requests
 from google.cloud import bigquery
-import asyncio
-import aiohttp
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 

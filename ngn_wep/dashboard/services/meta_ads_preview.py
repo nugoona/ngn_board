@@ -1,6 +1,10 @@
 import os
 import requests
 from google.cloud import bigquery
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # ✅ 환경변수에서 장기 토큰 불러오기
 META_ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
@@ -8,22 +12,35 @@ META_ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
 def get_meta_ads_preview_list(account_id):
     """
     주어진 account_id에 대해 오늘 활성화된 '단일', '영상' 광고를 조회하고,
-    광고 썸네일, 문구, 링크 정보를 반환합니다.
+    광고 썸네일, 문구, 링크 정보를 반환합니다. (최적화된 버전)
     """
+    start_time = time.time()
+    print(f"[OPTIMIZED] LIVE 광고 미리보기 요청 시작: account_id={account_id}")
+    
     client = bigquery.Client()
 
-    # ✅ 먼저 해당 account_id의 company_name이 demo인지 확인
+    # ✅ 먼저 해당 account_id의 company_name이 demo인지 확인 (계정 매칭 검증 강화)
     company_check_query = f"""
-        SELECT company_name
+        SELECT company_name, meta_acc_id
         FROM `winged-precept-443218-v8.ngn_dataset.metaAds_acc`
         WHERE meta_acc_id = '{account_id}'
         LIMIT 1
     """
     company_result = client.query(company_check_query).result()
-    company_name = next(iter(company_result), {}).get("company_name", None)
+    company_data = next(iter(company_result), {})
+    company_name = company_data.get("company_name", None)
+    verified_account_id = company_data.get("meta_acc_id", None)
+    
+    # ✅ 계정 매칭 검증
+    if not verified_account_id or verified_account_id != account_id:
+        print(f"[ERROR] 계정 매칭 실패: 요청된 account_id={account_id}, 검증된 account_id={verified_account_id}")
+        return []
+    
+    print(f"[VERIFIED] 계정 검증 완료: {account_id} -> {company_name}")
 
     # ✅ 데모 계정이면 고정 광고 8개 반환
     if company_name == "demo":
+        print("[DEMO] 데모 계정 - 고정 광고 반환")
         ad_names = [f"[단일] NGN 인스타 광고 {chr(65+i)}" for i in range(8)]  # A ~ H
         image_urls = [f"/static/demo_ads/demo_{i+1}.jpg" for i in range(8)]
         message = "★인스타광고는 누구나컴퍼니★"
@@ -42,7 +59,7 @@ def get_meta_ads_preview_list(account_id):
             })
         return dummy_ads
 
-    # ✅ 일반 계정일 경우 실제 광고 가져오기
+    # ✅ 일반 계정일 경우 실제 광고 가져오기 (최적화된 쿼리)
     query = f"""
         WITH today_ads AS (
           SELECT
@@ -63,6 +80,7 @@ def get_meta_ads_preview_list(account_id):
             A.date = CURRENT_DATE('Asia/Seoul')
             AND A.ad_status = 'ACTIVE'
             AND A.spend > 0
+            AND A.account_id = '{account_id}'
             AND (LOWER(A.ad_name) LIKE '%단일%' OR LOWER(A.ad_name) LIKE '%영상%')
         )
         SELECT
@@ -77,79 +95,123 @@ def get_meta_ads_preview_list(account_id):
         FROM today_ads
         GROUP BY ad_name
         ORDER BY total_spend DESC
+        LIMIT 10
     """
 
+    print("[BIGQUERY] 광고 목록 조회 시작")
+    query_start = time.time()
     ads = client.query(query).result()
-    ad_list = [dict(row) for row in ads if row.get("account_id") == account_id]
+    ad_list = [dict(row) for row in ads]
+    query_time = time.time() - query_start
+    print(f"[BIGQUERY] 광고 목록 조회 완료: {len(ad_list)}개, {query_time:.2f}초")
 
     if not ad_list:
+        print("[RESULT] 활성 광고 없음")
         return []
 
+    # ✅ 병렬 처리로 Meta API 호출 최적화
+    print("[META_API] 병렬 처리로 광고 상세 정보 수집 시작")
+    api_start = time.time()
+    results = get_ads_details_parallel(ad_list)
+    api_time = time.time() - api_start
+    print(f"[META_API] 광고 상세 정보 수집 완료: {len(results)}개, {api_time:.2f}초")
+    
+    total_time = time.time() - start_time
+    print(f"[OPTIMIZED] 전체 처리 완료: {total_time:.2f}초 (이전 대비 {query_time + api_time:.2f}초)")
+    
+    return results
+
+
+def get_ads_details_parallel(ad_list):
+    """
+    병렬 처리로 광고 상세 정보를 수집합니다.
+    """
     results = []
-    for ad in ad_list:
-        ad_id = ad["ad_id"]
-        instagram_acc_name = ad.get("instagram_acc_name", "")
-
-        try:
-            # 1차 요청: 크리에이티브 ID
-            creative_url = f"https://graph.facebook.com/v22.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
-            creative_res = requests.get(creative_url)
-            creative_data = creative_res.json()
-            creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
-            if not creative_id:
+    
+    # ThreadPoolExecutor를 사용한 병렬 처리
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        # 각 광고에 대해 병렬로 상세 정보 수집
+        future_to_ad = {
+            executor.submit(get_single_ad_details, ad): ad 
+            for ad in ad_list
+        }
+        
+        # 완료된 작업들을 순서대로 처리
+        for future in as_completed(future_to_ad):
+            ad = future_to_ad[future]
+            try:
+                result = future.result()
+                if result:  # 유효한 결과만 추가
+                    results.append(result)
+            except Exception as e:
+                print(f"[WARNING] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}): {e}")
                 continue
+    
+    return results
 
-            # 2차 요청: 상세 정보
-            detail_url = f"https://graph.facebook.com/v22.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
-            detail_res = requests.get(detail_url)
-            detail_data = detail_res.json()
 
-            message = detail_data.get("body") or \
-                      detail_data.get("object_story_spec", {}).get("message") or \
-                      detail_data.get("object_story_spec", {}).get("video_data", {}).get("message") or \
-                      "(문구 없음)"
+def get_single_ad_details(ad):
+    """
+    단일 광고의 상세 정보를 수집합니다.
+    """
+    ad_id = ad["ad_id"]
+    instagram_acc_name = ad.get("instagram_acc_name", "")
+    
+    try:
+        # 1차 요청: 크리에이티브 ID (타임아웃 단축)
+        creative_url = f"https://graph.facebook.com/v22.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+        creative_res = requests.get(creative_url, timeout=3)
+        creative_data = creative_res.json()
+        creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
+        if not creative_id:
+            return None
 
-            link = detail_data.get("object_story_spec", {}).get("video_data", {}).get("call_to_action", {}).get("value", {}).get("link") or \
-                   detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or \
-                   "#"
+        # 2차 요청: 상세 정보 (타임아웃 단축)
+        detail_url = f"https://graph.facebook.com/v22.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
+        detail_res = requests.get(detail_url, timeout=3)
+        detail_data = detail_res.json()
 
-            image_url = detail_data.get("object_story_spec", {}).get("video_data", {}).get("image_url") or \
-                        detail_data.get("image_url") or \
-                        detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or ""
+        message = detail_data.get("body") or \
+                  detail_data.get("object_story_spec", {}).get("message") or \
+                  detail_data.get("object_story_spec", {}).get("video_data", {}).get("message") or \
+                  "(문구 없음)"
 
-            if not image_url and detail_data.get("video_id"):
+        link = detail_data.get("object_story_spec", {}).get("video_data", {}).get("call_to_action", {}).get("value", {}).get("link") or \
+               detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or \
+               "#"
+
+        image_url = detail_data.get("object_story_spec", {}).get("video_data", {}).get("image_url") or \
+                    detail_data.get("image_url") or \
+                    detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or ""
+
+        # 비디오 썸네일 처리 (필요한 경우에만)
+        if not image_url and detail_data.get("video_id"):
+            try:
                 thumb_url = f"https://graph.facebook.com/v22.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
-                thumb_res = requests.get(thumb_url)
+                thumb_res = requests.get(thumb_url, timeout=2)
                 thumb_data = thumb_res.json()
                 image_url = thumb_data.get("thumbnails", {}).get("data", [{}])[0].get("uri", "")
+            except Exception as thumb_error:
+                print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
 
-            # ✅ 이미지 URL이 유효하지 않으면 광고 제외
-            if not image_url or image_url.strip() == "":
-                print(f"[FILTERED] 이미지 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
-                continue
+        # ✅ 이미지 URL이 유효하지 않으면 광고 제외
+        if not image_url or image_url.strip() == "":
+            print(f"[FILTERED] 이미지 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
+            return None
 
-            # ✅ 이미지 URL 유효성 검사 (선택적)
-            try:
-                img_check = requests.head(image_url, timeout=5)
-                if img_check.status_code != 200:
-                    print(f"[FILTERED] 이미지 URL 접근 불가로 광고 제외 (ad_id={ad_id}, status_code={img_check.status_code})")
-                    continue
-            except Exception as img_error:
-                print(f"[FILTERED] 이미지 URL 검증 실패로 광고 제외 (ad_id={ad_id}, error={img_error})")
-                continue
+        # ✅ 이미지 URL 유효성 검사 제거 (성능 최적화)
+        # 프론트엔드에서 처리하도록 변경
+        
+        return {
+            "ad_id": ad_id,
+            "ad_name": ad["ad_name"],
+            "instagram_acc_name": instagram_acc_name,
+            "message": message,
+            "link": link,
+            "image_url": image_url,
+            "is_video": bool(detail_data.get("video_id"))
+        }
 
-            results.append({
-                "ad_id": ad_id,
-                "ad_name": ad["ad_name"],
-                "instagram_acc_name": instagram_acc_name,
-                "message": message,
-                "link": link,
-                "image_url": image_url,
-                "is_video": bool(detail_data.get("video_id"))
-            })
-
-        except Exception as e:
-            print(f"[WARNING] 광고 미리보기 정보 가져오기 실패 (ad_id={ad_id}): {e}")
-            continue
-
-    return results
+    except Exception as e:
+        print(f"[WARNING] 광고 미리보기 정보 가져오기 실패 (ad_id={ad_id}): {e}")
+        return None

@@ -419,7 +419,7 @@ def get_meta_ads_by_account():
 @mobile_blueprint.route("/get_live_ads", methods=["POST"])
 @login_required
 def get_live_ads():
-    """특정 계정의 LIVE 광고 미리보기 조회 - 웹버전과 동일"""
+    """특정 계정의 LIVE 광고 미리보기 조회 - 최적화된 버전"""
     try:
         data = request.get_json() or {}
         account_id = data.get("account_id")
@@ -427,14 +427,45 @@ def get_live_ads():
         if not account_id:
             return jsonify({"status": "error", "message": "account_id 누락"}), 400
         
-        # LIVE 광고 미리보기 조회 (웹버전과 동일)
-        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 요청: account_id={account_id}")
+        # ✅ 캐시 키 생성 (계정별 + 날짜별)
+        from datetime import datetime
+        cache_key = f"live_ads_{account_id}_{datetime.now().strftime('%Y%m%d')}"
+        
+        # ✅ 캐시 확인 (Redis 또는 메모리 캐시)
+        try:
+            from ..utils.cache_utils import get_cached_data, set_cached_data
+            cached_result = get_cached_data(cache_key)
+            if cached_result:
+                print(f"[MOBILE] 🚀 LIVE 광고 캐시 히트: account_id={account_id}")
+                return jsonify({
+                    "status": "success",
+                    "live_ads": cached_result,
+                    "cached": True
+                })
+        except Exception as cache_error:
+            print(f"[MOBILE] 캐시 확인 실패: {cache_error}")
+        
+        # ✅ 캐시 미스 - 새로운 데이터 조회
+        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 요청 (캐시 미스): account_id={account_id}")
+        import time
+        start_time = time.time()
         live_ads = get_meta_ads_preview_list(account_id)
-        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 결과: {len(live_ads) if live_ads else 0}개")
+        processing_time = time.time() - start_time
+        print(f"[MOBILE] 🔍 LIVE 광고 미리보기 결과: {len(live_ads) if live_ads else 0}개, {processing_time:.2f}초")
+        
+        # ✅ 결과 캐싱 (30분간 유효)
+        try:
+            if live_ads:
+                set_cached_data(cache_key, live_ads, ttl=1800)  # 30분
+                print(f"[MOBILE] 💾 LIVE 광고 캐시 저장: {len(live_ads)}개")
+        except Exception as cache_error:
+            print(f"[MOBILE] 캐시 저장 실패: {cache_error}")
         
         return jsonify({
             "status": "success",
-            "live_ads": live_ads if live_ads else []  # 모든 LIVE 광고 표시
+            "live_ads": live_ads if live_ads else [],
+            "cached": False,
+            "processing_time": round(processing_time, 2)
         })
         
     except Exception as e:

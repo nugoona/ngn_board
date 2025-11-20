@@ -157,7 +157,7 @@ def get_single_ad_details(ad):
     
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)
-        creative_url = f"https://graph.facebook.com/v22.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+        creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
         creative_res = requests.get(creative_url, timeout=3)
         creative_data = creative_res.json()
         creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
@@ -165,7 +165,7 @@ def get_single_ad_details(ad):
             return None
 
         # 2차 요청: 상세 정보 (타임아웃 단축)
-        detail_url = f"https://graph.facebook.com/v22.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
+        detail_url = f"https://graph.facebook.com/v24.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
         detail_res = requests.get(detail_url, timeout=3)
         detail_data = detail_res.json()
 
@@ -185,7 +185,7 @@ def get_single_ad_details(ad):
         # 비디오 썸네일 처리 (필요한 경우에만)
         if not image_url and detail_data.get("video_id"):
             try:
-                thumb_url = f"https://graph.facebook.com/v22.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
+                thumb_url = f"https://graph.facebook.com/v24.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
                 thumb_res = requests.get(thumb_url, timeout=2)
                 thumb_data = thumb_res.json()
                 image_url = thumb_data.get("thumbnails", {}).get("data", [{}])[0].get("uri", "")

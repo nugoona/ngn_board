@@ -34,35 +34,35 @@ def get_meta_demo_data():
             return {"error": str(e)}
 
     if type_param == "adaccounts":
-        url = "https://graph.facebook.com/v18.0/me/adaccounts"
+        url = "https://graph.facebook.com/v24.0/me/adaccounts"
         params = {"access_token": access_token, "fields": "id,name"}
         return jsonify(make_request(url, params))
 
     elif type_param == "businesses":
-        url = "https://graph.facebook.com/v18.0/me/businesses"
+        url = "https://graph.facebook.com/v24.0/me/businesses"
         params = {"access_token": access_token, "fields": "id,name"}
         return jsonify(make_request(url, params))
 
     elif type_param == "pages":
-        url = "https://graph.facebook.com/v18.0/me/accounts"
+        url = "https://graph.facebook.com/v24.0/me/accounts"
         params = {"access_token": access_token, "fields": "id,name"}
         return jsonify(make_request(url, params))
 
     elif type_param and type_param.startswith("campaigns:"):
         ad_account_id = type_param.split(":", 1)[1]
-        url = f"https://graph.facebook.com/v18.0/{ad_account_id}/campaigns"
+        url = f"https://graph.facebook.com/v24.0/{ad_account_id}/campaigns"
         params = {"access_token": access_token, "fields": "id,name"}
         return jsonify(make_request(url, params))
 
     elif type_param and type_param.startswith("posts:"):
         page_id = type_param.split(":", 1)[1]
-        url = f"https://graph.facebook.com/v18.0/{page_id}/posts"
+        url = f"https://graph.facebook.com/v24.0/{page_id}/posts"
         params = {"access_token": access_token, "fields": "id,message,created_time"}
         return jsonify(make_request(url, params))
 
     elif type_param and type_param.startswith("engagement:"):
         page_id = type_param.split(":", 1)[1]
-        url = f"https://graph.facebook.com/v18.0/{page_id}/insights/page_impressions,page_engaged_users"
+        url = f"https://graph.facebook.com/v24.0/{page_id}/insights/page_impressions,page_engaged_users"
         params = {"access_token": access_token}
         return jsonify(make_request(url, params))
 

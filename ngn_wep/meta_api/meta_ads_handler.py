@@ -21,7 +21,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
 
 
 # ✅ BigQuery 설정
-API_VERSION = "v22.0"
+API_VERSION = "v24.0"
 PROJECT_ID = "winged-precept-443218-v8"
 DATASET_ID = "ngn_dataset"
 TABLE_ID = "meta_ads_ad_level"

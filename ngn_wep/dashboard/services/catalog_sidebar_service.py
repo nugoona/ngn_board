@@ -28,7 +28,7 @@ LOG       = logging.getLogger(__name__)
 bq_client = bigquery.Client()
 
 # ─ Meta Graph API 공통 설정 ───────────────────────────
-FB_VER   = os.getenv("FB_GRAPH_VERSION", "v22.0")
+FB_VER   = os.getenv("FB_GRAPH_VERSION", "v24.0")
 FB_HOST  = f"https://graph.facebook.com/{FB_VER}"
 
 # ✅ ① System Token 우선
@@ -248,7 +248,7 @@ def search_products_for_manual_set(
 
 
 # ──────────────────────────────────────────────────────────────
-# 4) 세트 생성 / 업데이트  (Graph API v22.0)   ★ REWORKED v2 ★
+# 4) 세트 생성 / 업데이트  (Graph API v24.0)   ★ REWORKED v2 ★
 # ──────────────────────────────────────────────────────────────
 
 # ── 내부 유틸 ────────────────────────────────────────────────

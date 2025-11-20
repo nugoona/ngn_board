@@ -27,7 +27,7 @@ if not os.getenv("META_SYSTEM_TOKEN") and not os.getenv("META_SYSTEM_USER_TOKEN"
 
 
 # ───────── Meta / BigQuery 공통 ─────────
-FB_VER   = os.getenv("FB_GRAPH_VERSION", "v22.0")
+FB_VER   = os.getenv("FB_GRAPH_VERSION", "v24.0")
 FB_HOST  = f"https://graph.facebook.com/{FB_VER}"
 FB_TOKEN = (
     os.getenv("META_SYSTEM_TOKEN")          # System Token 1순위

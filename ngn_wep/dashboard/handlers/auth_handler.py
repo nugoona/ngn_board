@@ -159,7 +159,7 @@ def facebook_callback():
     redirect_uri  = "https://board.nugoona.co.kr/facebook/callback"
 
     # 1) Short-Lived Token
-    token_url = "https://graph.facebook.com/v18.0/oauth/access_token"
+    token_url = "https://graph.facebook.com/v24.0/oauth/access_token"
     params    = {
         "client_id"    : client_id,
         "client_secret": client_secret,
@@ -201,7 +201,7 @@ def my_catalog_id():
         return jsonify({"catalog_id": None}), 401
 
     try:
-        url    = "https://graph.facebook.com/v22.0/me/businesses"
+        url    = "https://graph.facebook.com/v24.0/me/businesses"
         params = {"fields": "catalogs{id}", "access_token": access_token}
         data   = requests.get(url, params=params, timeout=10).json()
 
@@ -230,7 +230,7 @@ def check_catalog_permission():
         }), 400
 
     try:
-        url    = f"https://graph.facebook.com/v22.0/{catalog_id}/permissions"
+        url    = f"https://graph.facebook.com/v24.0/{catalog_id}/permissions"
         params = {"access_token": access_token}
         data   = requests.get(url, params=params, timeout=10).json()
 

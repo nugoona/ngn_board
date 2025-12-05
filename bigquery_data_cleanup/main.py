@@ -28,17 +28,20 @@ KST = timezone(timedelta(hours=9))
 # 테이블별 날짜 컬럼 매핑 (타입 정보 포함)
 # 테이블명: [{"name": "컬럼명", "type": "타입"}] 또는 자동 탐지
 # 타입: DATE, TIMESTAMP, DATETIME
+# 주의: temp, backup 테이블은 자동으로 건너뛰도록 처리됨
 TABLE_DATE_COLUMNS = {
-    # Cafe24 관련 - TIMESTAMP 타입으로 저장됨
-    "cafe24_orders": [{"name": "payment_date", "type": "TIMESTAMP"}],
-    "cafe24_order_items_table": [
-        {"name": "ordered_date", "type": "TIMESTAMP"},
-        {"name": "payment_date", "type": "TIMESTAMP"}
+    # Cafe24 관련
+    "cafe24_orders": [
+        {"name": "payment_date", "type": "TIMESTAMP"}  # 주문 결제일 기준
     ],
-    "daily_cafe24_sales": [{"name": "payment_date", "type": "TIMESTAMP"}],
-    "daily_cafe24_items": [{"name": "payment_date", "type": "TIMESTAMP"}],
-    "cafe24_products_table": [],  # 날짜 컬럼 없을 수 있음
-    "cafe24_categories_table": [],  # 날짜 컬럼 없을 수 있음
+    "cafe24_order_items_table": [
+        {"name": "ordered_date", "type": "TIMESTAMP"}  # 주문일 기준
+    ],
+    "daily_cafe24_sales": [{"name": "payment_date", "type": "DATE"}],
+    "daily_cafe24_items": [{"name": "payment_date", "type": "DATE"}],
+    "cafe24_refunds_table": [
+        {"name": "refund_date", "type": "DATE"}  # 환불일 기준
+    ],
     
     # Meta Ads 관련 - DATE 타입
     "meta_ads_ad_level": [{"name": "date", "type": "DATE"}],
@@ -48,13 +51,16 @@ TABLE_DATE_COLUMNS = {
     "meta_ads_campaign_summary": [{"name": "date", "type": "DATE"}],
     "highest_spend_data": [{"name": "date", "type": "DATE"}],
     
-    # GA4 관련 - TIMESTAMP 타입
-    "ga4_traffic_ngn": [{"name": "event_date", "type": "TIMESTAMP"}],
-    "ga4_viewitem_ngn": [{"name": "event_date", "type": "TIMESTAMP"}],
+    # GA4 관련 - DATE 타입
+    "ga4_traffic_ngn": [{"name": "event_date", "type": "DATE"}],
+    "ga4_viewitem_ngn": [{"name": "event_date", "type": "DATE"}],
+    "ga4_traffic": [{"name": "event_date", "type": "DATE"}],
+    "ga4_viewItem": [{"name": "event_date", "type": "DATE"}],
     
     # 기타
     "performance_summary_ngn": [{"name": "date", "type": "DATE"}],
-    "sheets_platform_sales_data": [],  # 확인 필요
+    "sheets_platform_sales_data": [{"name": "DATE", "type": "DATE"}],  # 컬럼명이 대문자
+    "instagram_followers": [{"name": "date", "type": "DATE"}],
 }
 
 def get_bigquery_client():
@@ -168,6 +174,11 @@ def cleanup_old_data():
         for table in tables:
             table_id = table.table_id
             logging.info(f"📋 처리 중: {table_id}")
+            
+            # temp, backup 테이블은 건너뛰기 (임시 테이블이므로)
+            if "_temp" in table_id or "_backup" in table_id or "temp_" in table_id:
+                logging.info(f"⏭️  {table_id}: 임시/백업 테이블이므로 건너뜀")
+                continue
             
             # 테이블 존재 확인
             if not check_table_exists(client, table_id):

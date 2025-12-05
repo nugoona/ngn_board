@@ -63,37 +63,41 @@ def collect_ga4_traffic(start_date, end_date):
         for GA4_PROPERTY_ID in GA4_PROPERTY_IDS:
             logging.info(f"📡 {GA4_PROPERTY_ID} ({target_date}) 트래픽 데이터 수집 중...")
 
-            request_body = {
-                "dateRanges": [{"startDate": target_date, "endDate": target_date}],
-                "dimensions": [{"name": "date"}, {"name": "firstUserSource"}],
-                "metrics": [
-                    {"name": "totalUsers"},
-                    {"name": "engagementRate"},
-                    {"name": "bounceRate"},
-                    {"name": "eventCount"},
-                    {"name": "screenPageViews"}
-                ]
-            }
+            try:
+                request_body = {
+                    "dateRanges": [{"startDate": target_date, "endDate": target_date}],
+                    "dimensions": [{"name": "date"}, {"name": "firstUserSource"}],
+                    "metrics": [
+                        {"name": "totalUsers"},
+                        {"name": "engagementRate"},
+                        {"name": "bounceRate"},
+                        {"name": "eventCount"},
+                        {"name": "screenPageViews"}
+                    ]
+                }
 
-            response = analytics.properties().runReport(
-                property=f"properties/{GA4_PROPERTY_ID}", body=request_body
-            ).execute()
+                response = analytics.properties().runReport(
+                    property=f"properties/{GA4_PROPERTY_ID}", body=request_body
+                ).execute()
 
-            for row in response.get("rows", []):
-                dims = [dim["value"] for dim in row["dimensionValues"]]
-                event_date, first_user_source = dims  
-                metrics = [float(metric["value"]) for metric in row["metricValues"]]
+                for row in response.get("rows", []):
+                    dims = [dim["value"] for dim in row["dimensionValues"]]
+                    event_date, first_user_source = dims  
+                    metrics = [float(metric["value"]) for metric in row["metricValues"]]
 
-                all_rows_traffic.append({
-                    "event_date": event_date,
-                    "ga4_property_id": GA4_PROPERTY_ID,
-                    "first_user_source": first_user_source,
-                    "total_users": int(metrics[0]),
-                    "engagement_rate": round(metrics[1] * 100, 2),
-                    "bounce_rate": round(metrics[2] * 100, 2),
-                    "event_count": int(metrics[3]),
-                    "screen_page_views": int(metrics[4])
-                })
+                    all_rows_traffic.append({
+                        "event_date": event_date,
+                        "ga4_property_id": GA4_PROPERTY_ID,
+                        "first_user_source": first_user_source,
+                        "total_users": int(metrics[0]),
+                        "engagement_rate": round(metrics[1] * 100, 2),
+                        "bounce_rate": round(metrics[2] * 100, 2),
+                        "event_count": int(metrics[3]),
+                        "screen_page_views": int(metrics[4])
+                    })
+            except Exception as e:
+                logging.error(f"❌ {GA4_PROPERTY_ID} ({target_date}) 트래픽 데이터 수집 실패: {e}")
+                continue
 
     df_traffic = pd.DataFrame(all_rows_traffic)
     if not df_traffic.empty:

@@ -62,36 +62,40 @@ def collect_ga4_events(target_date):
     for GA4_PROPERTY_ID in GA4_PROPERTY_IDS:
         logging.info(f"📡 {GA4_PROPERTY_ID} ({target_date}) 이벤트 데이터 수집 중...")
 
-        request_body = {
-            "dateRanges": [{"startDate": target_date, "endDate": target_date}],
-            "dimensions": [
-                {"name": "date"},
-                {"name": "country"},
-                {"name": "firstUserSource"},
-                {"name": "itemId"}
-            ],
-            "metrics": [
-                {"name": "itemsViewed"}  
-            ]
-        }
+        try:
+            request_body = {
+                "dateRanges": [{"startDate": target_date, "endDate": target_date}],
+                "dimensions": [
+                    {"name": "date"},
+                    {"name": "country"},
+                    {"name": "firstUserSource"},
+                    {"name": "itemId"}
+                ],
+                "metrics": [
+                    {"name": "itemsViewed"}  
+                ]
+            }
 
-        response = analytics.properties().runReport(
-            property=f"properties/{GA4_PROPERTY_ID}", body=request_body
-        ).execute()
+            response = analytics.properties().runReport(
+                property=f"properties/{GA4_PROPERTY_ID}", body=request_body
+            ).execute()
 
-        for row in response.get("rows", []):
-            dims = [dim["value"] for dim in row["dimensionValues"]]
-            event_date, country, first_user_source, item_id = dims
-            items_viewed = int(row["metricValues"][0]["value"])
+            for row in response.get("rows", []):
+                dims = [dim["value"] for dim in row["dimensionValues"]]
+                event_date, country, first_user_source, item_id = dims
+                items_viewed = int(row["metricValues"][0]["value"])
 
-            all_rows_events.append({
-                "event_date": event_date,
-                "country": country,
-                "first_user_source": first_user_source,
-                "item_id": item_id,
-                "view_item": items_viewed,
-                "ga4_property_id": GA4_PROPERTY_ID
-            })
+                all_rows_events.append({
+                    "event_date": event_date,
+                    "country": country,
+                    "first_user_source": first_user_source,
+                    "item_id": item_id,
+                    "view_item": items_viewed,
+                    "ga4_property_id": GA4_PROPERTY_ID
+                })
+        except Exception as e:
+            logging.error(f"❌ {GA4_PROPERTY_ID} ({target_date}) 이벤트 데이터 수집 실패: {e}")
+            continue
 
     df_events = pd.DataFrame(all_rows_events)
     df_events["event_date"] = pd.to_datetime(df_events["event_date"]).dt.date
@@ -113,30 +117,34 @@ def collect_ga4_items(target_date):
     for GA4_PROPERTY_ID in GA4_PROPERTY_IDS:
         logging.info(f"📡 {GA4_PROPERTY_ID} ({target_date}) 상품명 데이터 수집 중...")
 
-        request_body_items = {
-            "dateRanges": [{"startDate": target_date, "endDate": target_date}],
-            "dimensions": [
-                {"name": "itemId"},
-                {"name": "itemName"}
-            ],
-            "metrics": [
-                {"name": "itemsViewed"}  
-            ]
-        }
+        try:
+            request_body_items = {
+                "dateRanges": [{"startDate": target_date, "endDate": target_date}],
+                "dimensions": [
+                    {"name": "itemId"},
+                    {"name": "itemName"}
+                ],
+                "metrics": [
+                    {"name": "itemsViewed"}  
+                ]
+            }
 
-        response_items = analytics.properties().runReport(
-            property=f"properties/{GA4_PROPERTY_ID}", body=request_body_items
-        ).execute()
+            response_items = analytics.properties().runReport(
+                property=f"properties/{GA4_PROPERTY_ID}", body=request_body_items
+            ).execute()
 
-        for row in response_items.get("rows", []):
-            dims = [dim["value"] for dim in row["dimensionValues"]]
-            item_id, item_name = dims
+            for row in response_items.get("rows", []):
+                dims = [dim["value"] for dim in row["dimensionValues"]]
+                item_id, item_name = dims
 
-            all_rows_items.append({
-                "ga4_property_id": GA4_PROPERTY_ID,
-                "item_id": item_id,
-                "item_name": item_name
-            })
+                all_rows_items.append({
+                    "ga4_property_id": GA4_PROPERTY_ID,
+                    "item_id": item_id,
+                    "item_name": item_name
+                })
+        except Exception as e:
+            logging.error(f"❌ {GA4_PROPERTY_ID} ({target_date}) 상품명 데이터 수집 실패: {e}")
+            continue
 
     df_items = pd.DataFrame(all_rows_items).drop_duplicates(subset=['ga4_property_id', 'item_id'])
     df_items["ga4_property_id"] = df_items["ga4_property_id"].astype(int)

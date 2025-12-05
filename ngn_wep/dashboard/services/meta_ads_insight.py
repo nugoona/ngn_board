@@ -203,9 +203,15 @@ def get_meta_ads_insight_table(
         print(f"[ERROR] 잘못된 level 파라미터: {level}")
         return []
 
+    # ✅ campaign/adset/ad level일 때는 account_id 필수
+    if level in ["campaign", "adset", "ad"] and not account_id:
+        print(f"[ERROR] {level} level은 account_id가 필수입니다.")
+        return {"rows": [], "total_count": 0} if limit is not None else []
+
     if account_id:
         conditions.append(f"A.account_id = '{account_id}'")
     else:
+        # account level일 때만 account_id 없이 company_name으로 필터링
         if isinstance(company_name, list):
             companies = ", ".join(f"'{c.lower()}'" for c in company_name)
             conditions.append(f"LOWER({company_ref}) IN ({companies})")

@@ -101,6 +101,14 @@ export function updateUpdatedAtText(text) {
 // ✅ 데이터 요청
 export function fetchMetaAdsInsight(level) {
   console.log("[DEBUG] fetchMetaAdsInsight 호출됨!", level);
+  
+  // ✅ campaign/adset/ad level일 때는 계정 선택 필수
+  if (level !== "account" && !metaAdsState.accountId) {
+    console.log("[DEBUG] campaign/adset/ad level은 계정 선택이 필요합니다.");
+    $("#metaAdsInsightBody").html("<tr><td colspan='20' class='text-center'>계정을 선택해주세요</td></tr>");
+    return;
+  }
+  
   showLoading("#loadingOverlayMetaAdsInsight");
 
   const requestData = {
@@ -111,7 +119,7 @@ export function fetchMetaAdsInsight(level) {
     start_date: metaAdsState.startDate,
     end_date: metaAdsState.endDate,
     date_type: metaAdsState.dateType,
-    account_id: metaAdsState.accountId,
+    account_id: metaAdsState.accountId,  // account level일 때는 null 허용
   };
 
   // ✅ level별로 campaign_id, adset_id 조건부 추가

@@ -230,24 +230,31 @@ export function fetchMetaAccountList() {
         console.log("[DEBUG] 계정 1개 자동 선택:", onlyId);
         $selector.val(onlyId).trigger("change");
       } else if (list.length > 1) {
-        // 계정이 여러 개인 경우 "모든 계정" 선택 (자동 선택하지 않음)
-        console.log("[DEBUG] 계정 여러 개 - 모든 계정 선택 (자동 선택 안함)");
+        // 계정이 여러 개인 경우 "모든 계정" 선택
+        console.log("[DEBUG] 계정 여러 개 - 모든 계정 선택");
         $selector.val("");
         // 계정이 선택되지 않은 상태로 초기화
         metaAdsState.accountId = null;
         metaAdsState.catalogId = null;
         metaAdsState.company = "all";
-        // 초기화 시에는 updateAfterAccountChange 호출하지 않음 (사용자가 직접 선택할 때만 호출)
       } else {
         // 계정이 없는 경우
         console.log("[DEBUG] 계정이 없음");
-        // 계정이 없는 경우에도 updateAfterAccountChange 호출하지 않음
+        metaAdsState.accountId = null;
       }
 
-      /* ---------- 6) 최초 테이블 표시 (계정이 선택된 경우에만) ---------- */
+      /* ---------- 6) 최초 테이블 표시 ---------- */
       showMetaAdsTableHeader(metaAdsState.tabLevel);
-      if (metaAdsState.accountId) {
-        fetchMetaAdsInsight(metaAdsState.tabLevel);
+      
+      // 계정 단위(account level)일 때는 계정 선택 없이도 모든 계정 데이터 표시
+      // 캠페인/세트/광고 level일 때는 계정 선택 필수
+      const currentLevel = metaAdsState.tabLevel || "account";
+      if (currentLevel === "account") {
+        // account level: 계정 선택 없이도 모든 계정 데이터 자동 로드
+        fetchMetaAdsInsight("account");
+      } else if (metaAdsState.accountId) {
+        // campaign/adset/ad level: 계정 선택된 경우에만 데이터 로드
+        fetchMetaAdsInsight(currentLevel);
       }
     },
     error() {
@@ -372,9 +379,15 @@ export function fetchMetaAccountList() {
     renderSelectedTags();
     showMetaAdsTableHeader(metaAdsState.tabLevel);
     
-    // 계정이 선택된 경우에만 데이터 로딩
-    if (metaAdsState.accountId) {
-      fetchMetaAdsInsight(metaAdsState.tabLevel);
+    // 계정 단위(account level)일 때는 계정 선택 없이도 모든 계정 데이터 표시
+    // 캠페인/세트/광고 level일 때는 계정 선택 필수
+    const currentLevel = metaAdsState.tabLevel || "account";
+    if (currentLevel === "account") {
+      // account level: 계정 선택 없이도 모든 계정 데이터 자동 로드
+      fetchMetaAdsInsight("account");
+    } else if (metaAdsState.accountId) {
+      // campaign/adset/ad level: 계정 선택된 경우에만 데이터 로드
+      fetchMetaAdsInsight(currentLevel);
     }
   }
 }

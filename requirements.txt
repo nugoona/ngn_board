@@ -8,3 +8,5 @@ gunicorn==21.2.0
 redis==4.6.0
 flask-caching==2.1.0
 flask-pymongo==3.0.1
+pandas==2.0.3
+google-api-python-client==2.100.0

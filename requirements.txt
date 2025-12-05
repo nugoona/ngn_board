@@ -10,4 +10,5 @@ flask-caching==2.1.0
 flask-pymongo==3.0.1
 numpy==1.24.3
 pandas==1.5.3
+pyarrow==12.0.1
 google-api-python-client==2.100.0

@@ -451,10 +451,16 @@ async function fetchFilteredDataWithoutPopup() {
       }
 
       const accountId = metaAdsState.accountId;
+      const currentLevel = metaAdsState.tabLevel || "account";
       
-      // 계정이 선택된 경우에만 Meta Ads 데이터 로딩
-      if (accountId) {
-        await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+      // 계정 단위(account level)일 때는 계정 선택 없이도 모든 계정 데이터 표시
+      // 캠페인/세트/광고 level일 때는 계정 선택 필수
+      if (currentLevel === "account") {
+        // account level: 계정 선택 없이도 모든 계정 데이터 자동 로드
+        await fetchMetaAdsInsight("account");
+      } else if (accountId) {
+        // campaign/adset/ad level: 계정 선택된 경우에만 데이터 로드
+        await fetchMetaAdsInsight(currentLevel);
         
         await fetchMetaAdsAdsetSummaryByType({
           account_id: accountId,
@@ -577,10 +583,16 @@ async function fetchFilteredData() {
       }
 
       const accountId = metaAdsState.accountId;
+      const currentLevel = metaAdsState.tabLevel || "account";
       
-      // 계정이 선택된 경우에만 Meta Ads 데이터 로딩
-      if (accountId) {
-        await fetchMetaAdsInsight(metaAdsState.tabLevel || "account");
+      // 계정 단위(account level)일 때는 계정 선택 없이도 모든 계정 데이터 표시
+      // 캠페인/세트/광고 level일 때는 계정 선택 필수
+      if (currentLevel === "account") {
+        // account level: 계정 선택 없이도 모든 계정 데이터 자동 로드
+        await fetchMetaAdsInsight("account");
+      } else if (accountId) {
+        // campaign/adset/ad level: 계정 선택된 경우에만 데이터 로드
+        await fetchMetaAdsInsight(currentLevel);
         
         await fetchMetaAdsAdsetSummaryByType({
           account_id: accountId,

@@ -21,7 +21,6 @@ DATASET_ID = "ngn_dataset"
 TABLE_ID_EVENTS = "ga4_viewItem"
 TABLE_ID_ITEMS = "ga4_items"
 TABLE_ID_TARGET = "ga4_viewitem_ngn"  # ✅ MERGE 할 대상 테이블
-GA4_PROPERTY_IDS = [443411644, 449713217, 452725867]  # ✅ 3개 업체 GA4 ID 리스트
 
 # ✅ 인증 정보 설정
 credentials = service_account.Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
@@ -32,9 +31,32 @@ bigquery_client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 # ✅ GA4 API 클라이언트 초기화
 analytics = build("analyticsdata", "v1beta", credentials=credentials)
 
+# ✅ company_info 테이블에서 GA4 Property ID 동적으로 가져오기
+def get_ga4_property_ids():
+    """company_info 테이블에서 ga4_property_id가 NULL이 아니고 5자리 이상인 것들만 가져오기"""
+    query = f"""
+    SELECT DISTINCT ga4_property_id
+    FROM `{PROJECT_ID}.{DATASET_ID}.company_info`
+    WHERE ga4_property_id IS NOT NULL
+      AND ga4_property_id >= 10000
+    ORDER BY ga4_property_id
+    """
+    try:
+        results = bigquery_client.query(query).result()
+        property_ids = [int(row.ga4_property_id) for row in results]
+        logging.info(f"✅ GA4 Property IDs 로드 완료: {property_ids}")
+        return property_ids
+    except Exception as e:
+        logging.error(f"❌ GA4 Property IDs 조회 실패: {e}")
+        # 실패 시 기본값 반환
+        return [443411644, 449713217, 452725867]
+
 
 def collect_ga4_events(target_date):
     """ ✅ 특정 날짜의 GA4 이벤트 데이터를 수집하여 BigQuery에 저장 """
+    # ✅ 동적으로 GA4 Property IDs 가져오기
+    GA4_PROPERTY_IDS = get_ga4_property_ids()
+    
     all_rows_events = []
 
     for GA4_PROPERTY_ID in GA4_PROPERTY_IDS:
@@ -83,6 +105,9 @@ def collect_ga4_events(target_date):
 
 def collect_ga4_items(target_date):
     """ ✅ 특정 날짜의 GA4 상품명을 수집하여 BigQuery에 저장 """
+    # ✅ 동적으로 GA4 Property IDs 가져오기
+    GA4_PROPERTY_IDS = get_ga4_property_ids()
+    
     all_rows_items = []
 
     for GA4_PROPERTY_ID in GA4_PROPERTY_IDS:

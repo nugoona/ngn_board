@@ -164,8 +164,12 @@ def get_single_ad_details(ad):
         if not creative_id:
             return None
 
-        # 2차 요청: 상세 정보 (타임아웃 단축) - 실제 광고 이미지를 우선으로 가져오기
-        detail_url = f"https://graph.facebook.com/v24.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
+        # 2차 요청: 상세 정보 (타임아웃 단축) - asset_feed_spec 포함하여 자동 형식 광고 지원
+        detail_url = (
+            f"https://graph.facebook.com/v24.0/{creative_id}"
+            f"?fields=body,object_story_spec,image_url,video_id,asset_feed_spec"
+            f"&access_token={META_ACCESS_TOKEN}"
+        )
         detail_res = requests.get(detail_url, timeout=3)
         detail_data = detail_res.json()
 
@@ -183,7 +187,39 @@ def get_single_ad_details(ad):
                detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or \
                "#"
 
-        # 이미지 URL 추출 - 실제 광고 이미지를 우선으로, 썸네일은 최후의 수단
+        # video_id 추출 (여러 경로 지원)
+        extracted_video_id = None
+        
+        # 1) root video_id
+        if detail_data.get("video_id"):
+            extracted_video_id = detail_data["video_id"]
+        
+        # 2) asset_feed_spec 기반 (NGN 자동 형식 광고)
+        asset_feed = detail_data.get("asset_feed_spec", {})
+        videos = asset_feed.get("videos", [])
+        if not extracted_video_id and isinstance(videos, list) and len(videos) > 0:
+            extracted_video_id = videos[0].get("video_id")
+        
+        # 3) object_story_spec.video_data.video_id
+        oss = detail_data.get("object_story_spec", {})
+        if not extracted_video_id:
+            extracted_video_id = oss.get("video_data", {}).get("video_id")
+        
+        # 비디오 URL 추출 (video_id가 있는 경우)
+        video_url = None
+        if extracted_video_id:
+            try:
+                video_api = (
+                    f"https://graph.facebook.com/v24.0/{extracted_video_id}"
+                    f"?fields=source&access_token={META_ACCESS_TOKEN}"
+                )
+                video_res = requests.get(video_api, timeout=3).json()
+                if "error" not in video_res:
+                    video_url = video_res.get("source")
+            except Exception as video_error:
+                print(f"[WARNING] 비디오 URL 가져오기 실패 (ad_id={ad_id}): {video_error}")
+        
+        # 이미지 URL 추출 (썸네일용 또는 이미지 광고용)
         image_url = (
             detail_data.get("image_url") or  # 직접 이미지 URL (최우선)
             detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or  # 링크 광고 이미지
@@ -192,32 +228,26 @@ def get_single_ad_details(ad):
             detail_data.get("object_story_spec", {}).get("video_data", {}).get("picture") or
             ""
         )
-
-        # 비디오 썸네일 처리 (실제 이미지가 없을 때만 최후의 수단으로 사용)
-        if not image_url and detail_data.get("video_id"):
+        
+        # 비디오 썸네일 처리 (이미지 URL이 없고 비디오가 있는 경우)
+        if not image_url and extracted_video_id:
             try:
-                thumb_url = f"https://graph.facebook.com/v24.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
+                thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
                 thumb_res = requests.get(thumb_url, timeout=2)
                 thumb_data = thumb_res.json()
                 
-                # API 에러 확인
                 if "error" not in thumb_data:
                     thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
                     if thumbnails:
                         # 가장 큰 썸네일 선택 (고화질)
                         image_url = max(thumbnails, key=lambda x: x.get("width", 0) * x.get("height", 0)).get("uri", "")
-                else:
-                    print(f"[WARNING] 비디오 썸네일 API 에러 (ad_id={ad_id}): {thumb_data.get('error', {})}")
             except Exception as thumb_error:
                 print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
 
-        # ✅ 이미지 URL이 유효하지 않으면 광고 제외
-        if not image_url or image_url.strip() == "":
-            print(f"[FILTERED] 이미지 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
+        # ✅ 이미지 URL 또는 비디오 URL 중 하나는 있어야 함
+        if (not image_url or image_url.strip() == "") and (not video_url or video_url.strip() == ""):
+            print(f"[FILTERED] 이미지/비디오 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
             return None
-
-        # ✅ 이미지 URL 유효성 검사 제거 (성능 최적화)
-        # 프론트엔드에서 처리하도록 변경
         
         return {
             "ad_id": ad_id,
@@ -225,8 +255,9 @@ def get_single_ad_details(ad):
             "instagram_acc_name": instagram_acc_name,
             "message": message,
             "link": link,
-            "image_url": image_url,
-            "is_video": bool(detail_data.get("video_id"))
+            "image_url": image_url,  # 썸네일 또는 이미지 광고용
+            "video_url": video_url,  # 비디오 광고 원본 URL (있을 경우)
+            "is_video": bool(extracted_video_id)
         }
 
     except Exception as e:

@@ -20,13 +20,41 @@ function renderMetaAdsPreviewCards(adList) {
 
     // ✅ 동적 데이터 삽입
     $(clone).find(".insta-account-name").text(ad.instagram_acc_name || "No Name");
-    $(clone).find(".ad-image").attr("src", ad.image_url || "");
     $(clone).find(".cta-link").attr("href", ad.link || "#");
 
-    if (ad.is_video) {
+    // 비디오 URL이 있으면 비디오 태그 사용, 없으면 이미지 태그 사용
+    const $imageElement = $(clone).find(".ad-image");
+    const $videoElement = $(clone).find(".ad-video");
+    
+    if (ad.video_url) {
+      // 비디오 광고
+      $imageElement.hide();
+      $videoElement.find("source").attr("src", ad.video_url);
+      if (ad.image_url) {
+        $videoElement.attr("poster", ad.image_url); // 썸네일로 이미지 사용
+      }
+      $videoElement.show();
+      $videoElement.on("loadeddata", function() {
+        $(this).show();
+      });
+      $videoElement.on("error", function() {
+        // 비디오 로딩 실패 시 이미지로 폴백
+        $(this).hide();
+        if (ad.image_url) {
+          $imageElement.attr("src", ad.image_url).show();
+        }
+      });
+      $videoElement[0].load(); // 비디오 로딩 시작
       $(clone).find(".play-overlay").css("display", "flex");
     } else {
-      $(clone).find(".play-overlay").css("display", "none");
+      // 이미지 광고
+      $videoElement.hide();
+      $imageElement.attr("src", ad.image_url || "").show();
+      if (ad.is_video) {
+        $(clone).find(".play-overlay").css("display", "flex");
+      } else {
+        $(clone).find(".play-overlay").css("display", "none");
+      }
     }
 
     // ✅ 문구 더보기/접기 기능 구현

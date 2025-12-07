@@ -1474,13 +1474,48 @@ function renderLiveAdsSequentially(liveAds, index) {
     // 카드를 DOM에 추가 (즉시 표시)
     liveAdsScroll.appendChild(adCard);
     
-    // 이미지 로딩 상태 관리
+    // 미디어 로딩 상태 관리 (비디오 또는 이미지)
+    const videoElement = adCard.querySelector('.ad-video');
     const imageElement = adCard.querySelector('.ad-image');
-    if (imageElement) {
-        // 이미지 로딩 시작
+    
+    if (videoElement && ad.video_url) {
+        // 비디오 로딩 처리
+        videoElement.addEventListener('loadeddata', () => {
+            console.log(`🎥 비디오 로딩 완료: ${ad.ad_name}`);
+            const placeholder = adCard.querySelector('.image-loading-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            videoElement.style.display = 'block';
+            adCard.style.opacity = '1';
+            setTimeout(() => {
+                renderLiveAdsSequentially(liveAds, index + 1);
+            }, 200);
+        });
+        
+        videoElement.addEventListener('error', () => {
+            console.log(`🎥 비디오 로딩 실패: ${ad.ad_name}`);
+            // 비디오 실패 시 이미지로 폴백
+            if (ad.image_url && imageElement) {
+                imageElement.src = ad.image_url;
+                imageElement.style.display = 'block';
+            }
+            const placeholder = adCard.querySelector('.image-loading-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            adCard.style.opacity = '1';
+            setTimeout(() => {
+                renderLiveAdsSequentially(liveAds, index + 1);
+            }, 200);
+        });
+        
+        // 비디오 로딩 시작
+        videoElement.load();
+    } else if (imageElement) {
+        // 이미지 로딩 처리
         imageElement.addEventListener('load', () => {
             console.log(`🖼️ 이미지 로딩 완료: ${ad.ad_name}`);
-            // 다음 광고 렌더링 (약간의 지연)
+            const placeholder = adCard.querySelector('.image-loading-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            imageElement.style.display = 'block';
+            adCard.style.opacity = '1';
             setTimeout(() => {
                 renderLiveAdsSequentially(liveAds, index + 1);
             }, 200);
@@ -1488,7 +1523,9 @@ function renderLiveAdsSequentially(liveAds, index) {
         
         imageElement.addEventListener('error', () => {
             console.log(`🖼️ 이미지 로딩 실패: ${ad.ad_name}`);
-            // 이미지 로딩 실패해도 다음 광고 계속 렌더링
+            const placeholder = adCard.querySelector('.image-loading-placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+            adCard.style.opacity = '1';
             setTimeout(() => {
                 renderLiveAdsSequentially(liveAds, index + 1);
             }, 200);
@@ -1497,7 +1534,10 @@ function renderLiveAdsSequentially(liveAds, index) {
         // 이미지 로딩 시작
         imageElement.src = ad.image_url || '';
     } else {
-        // 이미지가 없는 경우 바로 다음 광고로
+        // 미디어가 없는 경우 바로 다음 광고로
+        const placeholder = adCard.querySelector('.image-loading-placeholder');
+        if (placeholder) placeholder.style.display = 'none';
+        adCard.style.opacity = '1';
         setTimeout(() => {
             renderLiveAdsSequentially(liveAds, index + 1);
         }, 200);
@@ -1544,9 +1584,14 @@ function createLiveAdCard(ad, index) {
                 color: #999;
                 font-size: 14px;
             ">
-                이미지 로딩 중...
+                ${ad.video_url ? '비디오 로딩 중...' : '이미지 로딩 중...'}
             </div>
-            <img class="ad-image" style="display: none;" alt="광고 이미지">
+            ${ad.video_url ? 
+                `<video class="ad-video" style="display: none; width: 100%; height: auto;" poster="${ad.image_url || ''}" muted playsinline>
+                    <source src="${ad.video_url}" type="video/mp4">
+                </video>` : 
+                `<img class="ad-image" style="display: none;" alt="광고 이미지">`
+            }
             
             ${ad.is_video ? '<div class="play-overlay" style="display: flex;"><svg viewBox="0 0 100 100" class="play-icon" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="rgba(0, 0, 0, 0.4)" /><polygon points="40,30 70,50 40,70" fill="white" /></svg></div>' : '<div class="play-overlay" style="display: none;"></div>'}
         </div>

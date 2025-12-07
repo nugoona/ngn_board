@@ -164,10 +164,24 @@ def get_single_ad_details(ad):
         if not creative_id:
             return None
 
-        # 2차 요청: 상세 정보 (타임아웃 단축)
+        # 2차 요청: 상세 정보 (타임아웃 단축) - 실제 광고 이미지를 우선으로 가져오기
         detail_url = f"https://graph.facebook.com/v24.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
         detail_res = requests.get(detail_url, timeout=3)
         detail_data = detail_res.json()
+
+        # API 에러 확인
+        if "error" in detail_data:
+            print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): {detail_data.get('error', {})}")
+            return None
+
+        # 디버깅: NGN 계정의 경우 API 응답 구조 로깅
+        if "nugoona" in instagram_acc_name.lower() or "ngn" in instagram_acc_name.lower():
+            print(f"[DEBUG] NGN 계정 API 응답 구조 (ad_id={ad_id}):")
+            print(f"  - object_story_spec keys: {list(detail_data.get('object_story_spec', {}).keys())}")
+            if "video_data" in detail_data.get("object_story_spec", {}):
+                print(f"  - video_data keys: {list(detail_data.get('object_story_spec', {}).get('video_data', {}).keys())}")
+            if "link_data" in detail_data.get("object_story_spec", {}):
+                print(f"  - link_data keys: {list(detail_data.get('object_story_spec', {}).get('link_data', {}).keys())}")
 
         message = detail_data.get("body") or \
                   detail_data.get("object_story_spec", {}).get("message") or \
@@ -178,17 +192,31 @@ def get_single_ad_details(ad):
                detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or \
                "#"
 
-        image_url = detail_data.get("object_story_spec", {}).get("video_data", {}).get("image_url") or \
-                    detail_data.get("image_url") or \
-                    detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or ""
+        # 이미지 URL 추출 - 실제 광고 이미지를 우선으로, 썸네일은 최후의 수단
+        image_url = (
+            detail_data.get("image_url") or  # 직접 이미지 URL (최우선)
+            detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or  # 링크 광고 이미지
+            detail_data.get("object_story_spec", {}).get("link_data", {}).get("image_url") or
+            detail_data.get("object_story_spec", {}).get("video_data", {}).get("image_url") or  # 비디오 광고 이미지
+            detail_data.get("object_story_spec", {}).get("video_data", {}).get("picture") or
+            ""
+        )
 
-        # 비디오 썸네일 처리 (필요한 경우에만)
+        # 비디오 썸네일 처리 (실제 이미지가 없을 때만 최후의 수단으로 사용)
         if not image_url and detail_data.get("video_id"):
             try:
                 thumb_url = f"https://graph.facebook.com/v24.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
                 thumb_res = requests.get(thumb_url, timeout=2)
                 thumb_data = thumb_res.json()
-                image_url = thumb_data.get("thumbnails", {}).get("data", [{}])[0].get("uri", "")
+                
+                # API 에러 확인
+                if "error" not in thumb_data:
+                    thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
+                    if thumbnails:
+                        # 가장 큰 썸네일 선택 (고화질)
+                        image_url = max(thumbnails, key=lambda x: x.get("width", 0) * x.get("height", 0)).get("uri", "")
+                else:
+                    print(f"[WARNING] 비디오 썸네일 API 에러 (ad_id={ad_id}): {thumb_data.get('error', {})}")
             except Exception as thumb_error:
                 print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
 

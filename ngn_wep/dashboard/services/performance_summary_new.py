@@ -145,17 +145,17 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         if len(company_name) == 1:
             # 단일 값 리스트인 경우 문자열로 변환
             company_name = company_name[0]
-            company_filter = "LOWER(company_name) = @company_name"
+            company_filter = "LOWER(L.company_name) = @company_name"
             query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name.lower()))
         else:
-            # 복수 값 리스트인 경우
+            # 복수 값 리스트인 경우 (모든 업체 합계)
             filtered_companies = [name.lower() for name in company_name]
-            company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+            company_filter = "LOWER(L.company_name) IN UNNEST(@company_name_list)"
             query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
     else:
         # 단일 문자열인 경우
         company_name = company_name.lower()
-        company_filter = "LOWER(company_name) = @company_name"
+        company_filter = "LOWER(L.company_name) = @company_name"
         query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
     
     # 날짜 파라미터
@@ -164,7 +164,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 모든 계정의 합산값 조회 (복수 계정 지원)
+    # 🔥 모든 계정의 합산값 조회 (복수 계정 지원) - GROUP BY 제거하여 모든 업체 합계 구하기
     query = f"""
         WITH latest_accounts AS (
           SELECT * EXCEPT(rn) FROM (
@@ -186,9 +186,8 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` A
         LEFT JOIN latest_accounts L ON A.account_id = L.account_id
         WHERE A.date BETWEEN @start_date AND @end_date
-          AND LOWER(L.company_name) = LOWER(@company_name)
-        GROUP BY L.company_name
-        HAVING SUM(A.spend) > 0
+          AND L.company_name IS NOT NULL
+          AND {company_filter}
         LIMIT 1
     """
     

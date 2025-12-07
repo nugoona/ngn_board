@@ -174,15 +174,6 @@ def get_single_ad_details(ad):
             print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): {detail_data.get('error', {})}")
             return None
 
-        # 디버깅: NGN 계정의 경우 API 응답 구조 로깅
-        if "nugoona" in instagram_acc_name.lower() or "ngn" in instagram_acc_name.lower():
-            print(f"[DEBUG] NGN 계정 API 응답 구조 (ad_id={ad_id}):")
-            print(f"  - object_story_spec keys: {list(detail_data.get('object_story_spec', {}).keys())}")
-            if "video_data" in detail_data.get("object_story_spec", {}):
-                print(f"  - video_data keys: {list(detail_data.get('object_story_spec', {}).get('video_data', {}).keys())}")
-            if "link_data" in detail_data.get("object_story_spec", {}):
-                print(f"  - link_data keys: {list(detail_data.get('object_story_spec', {}).get('link_data', {}).keys())}")
-
         message = detail_data.get("body") or \
                   detail_data.get("object_story_spec", {}).get("message") or \
                   detail_data.get("object_story_spec", {}).get("video_data", {}).get("message") or \

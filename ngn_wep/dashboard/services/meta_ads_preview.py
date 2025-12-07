@@ -205,44 +205,60 @@ def get_single_ad_details(ad):
         if not extracted_video_id:
             extracted_video_id = oss.get("video_data", {}).get("video_id")
         
-        # 비디오 URL 추출 (video_id가 있는 경우)
+        # 비디오 URL 추출 및 고화질 썸네일 폴백 처리
         video_url = None
+        high_quality_thumbnail = None  # 고화질 썸네일 (비디오 source 실패 시 사용)
+        
         if extracted_video_id:
+            # 1단계: 비디오 source URL 조회 시도
             try:
                 video_api = (
                     f"https://graph.facebook.com/v24.0/{extracted_video_id}"
                     f"?fields=source&access_token={META_ACCESS_TOKEN}"
                 )
                 video_res = requests.get(video_api, timeout=3).json()
+                
                 if "error" not in video_res:
                     video_url = video_res.get("source")
+                else:
+                    # 권한 에러 또는 기타 에러 발생 시 썸네일로 폴백
+                    error_code = video_res.get("error", {}).get("code", 0)
+                    print(f"[WARNING] 비디오 source 조회 실패 (ad_id={ad_id}, error_code={error_code}), 썸네일로 폴백")
             except Exception as video_error:
-                print(f"[WARNING] 비디오 URL 가져오기 실패 (ad_id={ad_id}): {video_error}")
+                print(f"[WARNING] 비디오 URL 가져오기 실패 (ad_id={ad_id}): {video_error}, 썸네일로 폴백")
+            
+            # 2단계: 비디오 source가 없거나 실패한 경우, 고화질 썸네일 조회
+            if not video_url:
+                try:
+                    thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
+                    thumb_res = requests.get(thumb_url, timeout=2)
+                    thumb_data = thumb_res.json()
+                    
+                    if "error" not in thumb_data:
+                        thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
+                        if thumbnails:
+                            # 해상도(width * height)가 가장 높은 썸네일 선택 (고화질)
+                            high_quality_thumbnail = max(
+                                thumbnails, 
+                                key=lambda x: x.get("width", 0) * x.get("height", 0)
+                            ).get("uri", "")
+                            print(f"[INFO] 고화질 썸네일 추출 성공 (ad_id={ad_id})")
+                    else:
+                        print(f"[WARNING] 비디오 썸네일 API 에러 (ad_id={ad_id}): {thumb_data.get('error', {})}")
+                except Exception as thumb_error:
+                    print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
         
         # 이미지 URL 추출 (썸네일용 또는 이미지 광고용)
+        # 고화질 썸네일이 있으면 최우선으로 사용, 없으면 기존 로직 사용
         image_url = (
-            detail_data.get("image_url") or  # 직접 이미지 URL (최우선)
+            high_quality_thumbnail or  # 고화질 썸네일 (최우선)
+            detail_data.get("image_url") or  # 직접 이미지 URL
             detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or  # 링크 광고 이미지
             detail_data.get("object_story_spec", {}).get("link_data", {}).get("image_url") or
             detail_data.get("object_story_spec", {}).get("video_data", {}).get("image_url") or  # 비디오 광고 이미지
             detail_data.get("object_story_spec", {}).get("video_data", {}).get("picture") or
             ""
         )
-        
-        # 비디오 썸네일 처리 (이미지 URL이 없고 비디오가 있는 경우)
-        if not image_url and extracted_video_id:
-            try:
-                thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
-                thumb_res = requests.get(thumb_url, timeout=2)
-                thumb_data = thumb_res.json()
-                
-                if "error" not in thumb_data:
-                    thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
-                    if thumbnails:
-                        # 가장 큰 썸네일 선택 (고화질)
-                        image_url = max(thumbnails, key=lambda x: x.get("width", 0) * x.get("height", 0)).get("uri", "")
-            except Exception as thumb_error:
-                print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
 
         # ✅ 이미지 URL 또는 비디오 URL 중 하나는 있어야 함
         if (not image_url or image_url.strip() == "") and (not video_url or video_url.strip() == ""):

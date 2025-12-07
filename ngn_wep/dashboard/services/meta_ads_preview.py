@@ -178,14 +178,45 @@ def get_single_ad_details(ad):
             print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): {detail_data.get('error', {})}")
             return None
 
-        message = detail_data.get("body") or \
-                  detail_data.get("object_story_spec", {}).get("message") or \
-                  detail_data.get("object_story_spec", {}).get("video_data", {}).get("message") or \
-                  "(문구 없음)"
+        # asset_feed_spec 추출 (NGN 자동 형식 광고용)
+        asset_feed = detail_data.get("asset_feed_spec", {})
+        
+        # message 추출 (여러 경로 지원)
+        message = (
+            detail_data.get("body") or  # 직접 body
+            detail_data.get("object_story_spec", {}).get("message") or  # object_story_spec.message
+            detail_data.get("object_story_spec", {}).get("video_data", {}).get("message") or  # object_story_spec.video_data.message
+            (asset_feed.get("bodies", [{}])[0].get("text") if asset_feed.get("bodies") and len(asset_feed.get("bodies", [])) > 0 else None) or  # asset_feed_spec.bodies[0].text
+            (asset_feed.get("descriptions", [{}])[0].get("text") if asset_feed.get("descriptions") and len(asset_feed.get("descriptions", [])) > 0 else None) or  # asset_feed_spec.descriptions[0].text
+            "(문구 없음)"
+        )
 
-        link = detail_data.get("object_story_spec", {}).get("video_data", {}).get("call_to_action", {}).get("value", {}).get("link") or \
-               detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or \
-               "#"
+        # link 추출 (여러 경로 지원)
+        # asset_feed_spec.link_urls[0].website_url (NGN 계정 실제 구조)
+        asset_link_urls = asset_feed.get("link_urls", [])
+        asset_link_value = None
+        if asset_link_urls and len(asset_link_urls) > 0:
+            asset_link_value = asset_link_urls[0].get("website_url")  # asset_feed_spec.link_urls[0].website_url
+        
+        # asset_feed_spec.links는 문자열 배열일 수도 있고 객체 배열일 수도 있음 (다른 구조 대비)
+        asset_links = asset_feed.get("links", [])
+        if not asset_link_value and asset_links and len(asset_links) > 0:
+            if isinstance(asset_links[0], str):
+                asset_link_value = asset_links[0]  # 문자열인 경우
+            elif isinstance(asset_links[0], dict):
+                asset_link_value = asset_links[0].get("link")  # 객체인 경우
+        
+        link = (
+            detail_data.get("object_story_spec", {}).get("video_data", {}).get("call_to_action", {}).get("value", {}).get("link") or  # object_story_spec.video_data.call_to_action.value.link
+            detail_data.get("object_story_spec", {}).get("link_data", {}).get("link") or  # object_story_spec.link_data.link
+            asset_link_value or  # asset_feed_spec.link_urls[0].website_url (최우선)
+            (asset_feed.get("call_to_action_links", [{}])[0].get("link") if asset_feed.get("call_to_action_links") and len(asset_feed.get("call_to_action_links", [])) > 0 else None) or  # asset_feed_spec.call_to_action_links[0].link
+            "#"
+        )
+        
+        # 디버깅: asset_feed_spec이 있는 경우 로그 출력
+        if asset_feed:
+            print(f"[DEBUG] asset_feed_spec 발견 (ad_id={ad_id}): message={message[:50] if message else 'None'}..., link={link[:50] if link and link != '#' else 'None'}...")
 
         # video_id 추출 (여러 경로 지원)
         extracted_video_id = None
@@ -249,9 +280,16 @@ def get_single_ad_details(ad):
                     print(f"[WARNING] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
         
         # 이미지 URL 추출 (썸네일용 또는 이미지 광고용)
+        # asset_feed_spec.videos[0].thumbnail_url 추출 (NGN 자동 형식 광고용)
+        asset_video_thumbnail = None
+        if asset_feed and asset_feed.get("videos") and len(asset_feed.get("videos", [])) > 0:
+            asset_video_thumbnail = asset_feed.get("videos", [])[0].get("thumbnail_url")
+        
         # 고화질 썸네일이 있으면 최우선으로 사용, 없으면 기존 로직 사용
         image_url = (
             high_quality_thumbnail or  # 고화질 썸네일 (최우선)
+            asset_video_thumbnail or  # asset_feed_spec.videos[0].thumbnail_url
+            detail_data.get("thumbnail_url") or  # 루트 thumbnail_url (NGN 계정)
             detail_data.get("image_url") or  # 직접 이미지 URL
             detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or  # 링크 광고 이미지
             detail_data.get("object_story_spec", {}).get("link_data", {}).get("image_url") or

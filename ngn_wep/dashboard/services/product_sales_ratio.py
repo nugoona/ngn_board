@@ -137,50 +137,10 @@ def get_product_sales_ratio(
         data = [dict(r) for r in rows]
         print(f'[DEBUG] 결과 건수: {len(data)}')
         
-        # 상세 디버깅 추가
         if len(data) > 0:
             print(f'[DEBUG] 첫 번째 결과: {data[0]}')
         else:
-            print('[DEBUG] ⚠️ 결과가 없음 - 상세 진단 시작')
-            
-            # 1. 기본 데이터 존재 여부 확인
-            basic_check = f"""
-            SELECT COUNT(*) as total_count
-            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
-            WHERE payment_date BETWEEN @start_date AND @end_date
-              AND {company_filter}
-              AND item_product_sales > 0
-            """
-            basic_result = client.query(basic_check, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-            basic_count = next(basic_result).total_count
-            print(f'[DEBUG] 1. 기본 조건 데이터: {basic_count}건')
-            
-            # 2. product_name이 NULL이 아닌 데이터 확인
-            name_check = f"""
-            SELECT COUNT(*) as total_count
-            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
-            WHERE payment_date BETWEEN @start_date AND @end_date
-              AND {company_filter}
-              AND item_product_sales > 0
-              AND product_name IS NOT NULL
-            """
-            name_result = client.query(name_check, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-            name_count = next(name_result).total_count
-            print(f'[DEBUG] 2. product_name NULL 제외: {name_count}건')
-            
-            # 3. 실제 데이터 샘플 확인
-            sample_check = f"""
-            SELECT product_name, item_product_sales, payment_date
-            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items`
-            WHERE payment_date BETWEEN @start_date AND @end_date
-              AND {company_filter}
-              AND item_product_sales > 0
-              AND product_name IS NOT NULL
-            LIMIT 5
-            """
-            sample_result = client.query(sample_check, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
-            sample_data = [dict(r) for r in sample_result]
-            print(f'[DEBUG] 3. 샘플 데이터: {sample_data}')
+            print('[DEBUG] ⚠️ 결과가 없음 (비용 절감을 위해 디버깅 쿼리 제거됨)')
 
         return data
 

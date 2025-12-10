@@ -16,24 +16,54 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
-try:
-    redis_client = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        db=REDIS_DB,
-        password=REDIS_PASSWORD,
-        decode_responses=True,
-        socket_timeout=5,
-        socket_connect_timeout=5
-    )
-    # 연결 테스트
-    redis_client.ping()
-    CACHE_ENABLED = True
-    print(f"[CACHE] Redis 연결 성공: {REDIS_HOST}:{REDIS_PORT}")
-except Exception as e:
-    print(f"[CACHE] Redis 연결 실패: {e} - 캐싱 비활성화")
-    redis_client = None
-    CACHE_ENABLED = False
+# Redis 사용 여부 환경변수 체크 (기본값: 비활성화)
+# REDIS_ENABLED=true로 설정해야만 Redis 연결 시도
+REDIS_ENABLED = os.getenv("REDIS_ENABLED", "false").lower() == "true"
+
+# Redis 클라이언트 지연 초기화 (모듈 임포트 시 연결 시도하지 않음)
+redis_client = None
+CACHE_ENABLED = False
+
+def _get_redis_client():
+    """
+    Redis 클라이언트를 지연 초기화 (lazy initialization)
+    첫 사용 시에만 연결 시도하여 모듈 임포트 지연 방지
+    """
+    global redis_client, CACHE_ENABLED
+    
+    # 환경변수로 Redis 비활성화된 경우 즉시 리턴 (연결 시도 안 함)
+    if not REDIS_ENABLED:
+        return None
+    
+    # 이미 연결 시도했고 실패한 경우 재시도하지 않음
+    if redis_client is False:
+        return None
+    
+    # 이미 연결된 경우 재사용
+    if redis_client is not None:
+        return redis_client
+    
+    # 첫 연결 시도 (타임아웃 매우 짧게 설정)
+    try:
+        client = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=REDIS_DB,
+            password=REDIS_PASSWORD,
+            decode_responses=True,
+            socket_timeout=0.1,  # 타임아웃 0.1초로 단축 (빠른 실패)
+            socket_connect_timeout=0.1  # 연결 타임아웃 0.1초로 단축
+        )
+        # ping() 호출 제거 (연결 시도만 하고 실제 사용 시 검증)
+        redis_client = client
+        CACHE_ENABLED = True
+        print(f"[CACHE] Redis 클라이언트 생성 완료: {REDIS_HOST}:{REDIS_PORT}")
+        return redis_client
+    except Exception as e:
+        print(f"[CACHE] Redis 연결 실패: {e} - 캐싱 비활성화")
+        redis_client = False  # 실패 표시 (재시도 방지)
+        CACHE_ENABLED = False
+        return None
 
 # 캐시 TTL 설정 (초)
 CACHE_TTL = {
@@ -63,8 +93,8 @@ def generate_cache_key(func_name: str, *args, **kwargs) -> str:
     hash_obj = hashlib.sha256(params_str.encode())
     param_hash = hash_obj.hexdigest()[:16]
     
-    # 디버깅을 위한 로그 추가
-    print(f"[CACHE] 키 생성 - 함수: {func_name}, 파라미터: {params_str}, 해시: {param_hash}")
+    # 디버깅 로그 제거 (성능 최적화)
+    # print(f"[CACHE] 키 생성 - 함수: {func_name}, 파라미터: {params_str}, 해시: {param_hash}")
     
     return f"ngn_cache:{func_name}:{param_hash}"
 
@@ -78,11 +108,12 @@ def cache_get(key: str) -> Optional[Any]:
     """
     캐시에서 데이터 조회
     """
-    if not CACHE_ENABLED:
+    client = _get_redis_client()
+    if not client:
         return None
     
     try:
-        data = redis_client.get(key)
+        data = client.get(key)
         if data:
             return json.loads(data)
     except Exception as e:
@@ -94,15 +125,16 @@ def cache_set(key: str, value: Any, ttl: int = None) -> bool:
     """
     캐시에 데이터 저장
     """
-    if not CACHE_ENABLED:
+    client = _get_redis_client()
+    if not client:
         return False
     
     try:
         data = json.dumps(value, default=str)
         if ttl:
-            redis_client.setex(key, ttl, data)
+            client.setex(key, ttl, data)
         else:
-            redis_client.set(key, data)
+            client.set(key, data)
         return True
     except Exception as e:
         print(f"[CACHE] 저장 실패: {e}")
@@ -112,14 +144,15 @@ def cache_delete(pattern: str = None) -> int:
     """
     캐시 삭제 (패턴 매칭 지원)
     """
-    if not CACHE_ENABLED:
+    client = _get_redis_client()
+    if not client:
         return 0
     
     try:
         if pattern:
-            keys = redis_client.keys(pattern)
+            keys = client.keys(pattern)
             if keys:
-                return redis_client.delete(*keys)
+                return client.delete(*keys)
         return 0
     except Exception as e:
         print(f"[CACHE] 삭제 실패: {e}")
@@ -136,8 +169,10 @@ def cached_query(func_name: str = None, ttl: int = None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            # 캐시 비활성화 상태면 바로 실행
-            if not CACHE_ENABLED:
+            # Redis 클라이언트 확인 (지연 초기화)
+            client = _get_redis_client()
+            if not client:
+                # 캐시 비활성화 상태면 바로 실행
                 return func(*args, **kwargs)
             
             # 캐시 키 생성
@@ -147,11 +182,11 @@ def cached_query(func_name: str = None, ttl: int = None):
             # 캐시에서 조회
             cached_result = cache_get(cache_key)
             if cached_result is not None:
-                print(f"[CACHE] 캐시 히트: {cache_key}")
+                # print(f"[CACHE] 캐시 히트: {cache_key}")  # 로그 제거 (성능 최적화)
                 return cached_result
             
             # 캐시 미스 - 실제 함수 실행
-            print(f"[CACHE] 캐시 미스: {cache_key}")
+            # print(f"[CACHE] 캐시 미스: {cache_key}")  # 로그 제거 (성능 최적화)
             result = func(*args, **kwargs)
             
             # 결과를 캐시에 저장
@@ -175,12 +210,13 @@ def get_cache_stats() -> Dict[str, Any]:
     """
     캐시 상태 정보 반환
     """
-    if not CACHE_ENABLED:
+    client = _get_redis_client()
+    if not client:
         return {"enabled": False, "message": "Redis 연결 실패"}
     
     try:
-        info = redis_client.info()
-        keys_count = len(redis_client.keys("ngn_cache:*"))
+        info = client.info()
+        keys_count = len(client.keys("ngn_cache:*"))
         
         return {
             "enabled": True,

@@ -1,5 +1,12 @@
+import os
 from flask import Blueprint, jsonify
 from google.cloud import bigquery
+
+# ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
+# (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
+if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.json":
+    if not os.path.exists("/app/service-account.json"):
+        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 accounts_blueprint = Blueprint("accounts", __name__)
 client = bigquery.Client()

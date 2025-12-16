@@ -137,9 +137,10 @@ def update_ga4_traffic_ngn(start_date, end_date):
         GROUP BY t.event_date, c.company_name, t.ga4_property_id, t.first_user_source
     ) AS source
     ON target.event_date = source.event_date
-    AND target.company_name = source.company_name
-    AND target.ga4_property_id = source.ga4_property_id
-    AND target.first_user_source = source.first_user_source
+       AND target.company_name = source.company_name
+       AND target.ga4_property_id = source.ga4_property_id
+       AND target.first_user_source = source.first_user_source
+       AND target.event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
     WHEN MATCHED THEN
         UPDATE SET 
             target.total_users = source.total_users,

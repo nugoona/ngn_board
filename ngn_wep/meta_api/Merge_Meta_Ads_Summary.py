@@ -95,7 +95,9 @@ def main(target_date: str):
             WHERE ad.date = '{target_date}' AND ad.ad_id IS NOT NULL
             GROUP BY ad.date, acc.company_name, ad.account_id, l.account_name
           ) S
-          ON  T.date = S.date AND T.account_id = S.account_id
+          ON  T.date = S.date 
+              AND T.account_id = S.account_id
+              AND T.date = DATE('{target_date}')
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                account_name   = S.account_name,
@@ -141,7 +143,10 @@ def main(target_date: str):
             WHERE ad.date = '{target_date}' AND ad.ad_id IS NOT NULL
             GROUP BY ad.date, acc.company_name, ad.account_id, ad.campaign_id, l.campaign_name
           ) S
-          ON  T.date = S.date AND T.account_id = S.account_id AND T.campaign_id = S.campaign_id
+          ON  T.date = S.date 
+              AND T.account_id = S.account_id 
+              AND T.campaign_id = S.campaign_id
+              AND T.date = DATE('{target_date}')
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                campaign_name  = S.campaign_name,
@@ -188,8 +193,11 @@ def main(target_date: str):
             WHERE ad.date = '{target_date}' AND ad.ad_id IS NOT NULL
             GROUP BY ad.date, acc.company_name, ad.account_id, ad.campaign_id, ad.adset_id, l.adset_name
           ) S
-          ON  T.date = S.date AND T.account_id = S.account_id
-              AND T.campaign_id = S.campaign_id AND T.adset_id = S.adset_id
+          ON  T.date = S.date 
+              AND T.account_id = S.account_id
+              AND T.campaign_id = S.campaign_id 
+              AND T.adset_id = S.adset_id
+              AND T.date = DATE('{target_date}')
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                adset_name     = S.adset_name,
@@ -260,10 +268,11 @@ def main(target_date: str):
                      l.account_name, l.campaign_name, l.adset_name, l.ad_name, l.ad_status
           ) S
           ON  T.date        = S.date
-          AND T.account_id  = S.account_id
-          AND T.campaign_id = S.campaign_id
-          AND T.adset_id    = S.adset_id
-          AND T.ad_id       = S.ad_id
+              AND T.account_id  = S.account_id
+              AND T.campaign_id = S.campaign_id
+              AND T.adset_id    = S.adset_id
+              AND T.ad_id       = S.ad_id
+              AND T.date        = DATE('{target_date}')
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                account_name   = S.account_name,

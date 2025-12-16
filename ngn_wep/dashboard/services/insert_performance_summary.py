@@ -113,7 +113,10 @@ def insert_performance_summary(target_date):
     merge_query = f"""
     MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` AS main
     USING `{PROJECT_ID}.{temp_table}` AS temp
-    ON main.date = temp.date AND main.company_name = temp.company_name AND main.ad_media = temp.ad_media
+    ON main.date = temp.date 
+       AND main.company_name = temp.company_name 
+       AND main.ad_media = temp.ad_media
+       AND main.date = DATE('{date_str}')
     WHEN MATCHED THEN
       UPDATE SET
         ad_spend = temp.ad_spend,

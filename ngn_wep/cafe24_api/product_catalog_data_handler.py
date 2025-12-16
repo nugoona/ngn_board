@@ -280,6 +280,7 @@ def merge_to_bigquery(temp_table_id, final_table_id, schema, data, merge_conditi
         MERGE `{PROJECT_ID}.{DATASET_ID}.{final_table_id}` T
         USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` S
         ON {merge_condition}
+           AND T.updated_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
         WHEN MATCHED THEN
           UPDATE SET
             {update_set}

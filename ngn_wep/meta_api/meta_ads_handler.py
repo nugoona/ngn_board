@@ -174,11 +174,14 @@ def insert_with_retry(table_id, rows, max_retries=5, wait_sec=2):
     raise RuntimeError("❌ Insert failed after all retries")
 
 # ✅ MERGE 수행
-def merge_into_main_table(temp_table_id):
+def merge_into_main_table(temp_table_id, target_date=None):
+    date_filter = f"AND T.date = DATE('{target_date}')" if target_date else ""
     query = f"""
         MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` T
         USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` S
-        ON T.date = S.date AND T.ad_id = S.ad_id
+        ON T.date = S.date 
+           AND T.ad_id = S.ad_id
+           {date_filter}
         WHEN MATCHED THEN UPDATE SET
             ad_name = S.ad_name,
             adset_id = S.adset_id,
@@ -251,7 +254,7 @@ def main(mode='yesterday'):
         return
 
     try:
-        merge_into_main_table(temp_table_id)
+        merge_into_main_table(temp_table_id, str(date))
         logging.info(f"✅ Done! Total rows processed: {len(all_data)}")
     finally:
         drop_temp_table(temp_table_id)

@@ -94,7 +94,10 @@ def run_sheet_update_for_range(date_obj):
         merge_sql = f"""
         MERGE `{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE}` T
         USING `{temp_table_id}` S
-        ON T.DATE = S.DATE AND T.company_name = S.company_name AND T.platform = S.platform
+        ON T.DATE = S.DATE 
+           AND T.company_name = S.company_name 
+           AND T.platform = S.platform
+           AND T.DATE = DATE('{target_date_str}')
         WHEN MATCHED AND T.sales_amount != S.sales_amount THEN
           UPDATE SET T.sales_amount = S.sales_amount
         WHEN NOT MATCHED THEN

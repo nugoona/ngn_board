@@ -155,9 +155,17 @@ def collect_ga4_items(target_date):
     logging.info(f"✅ GA4 상품 데이터 {len(df_items)}개 ({target_date}) 적재 완료!")
 
 
-def update_ga4_viewitem_ngn():
+def update_ga4_viewitem_ngn(target_date=None):
     """ ✅ `ga4_viewItem` 데이터를 `ga4_viewitem_ngn` 테이블로 업데이트 (중복 방지 및 업데이트) """
     logging.info(f"📡 {TABLE_ID_TARGET} 테이블 업데이트 중...")
+    
+    # 날짜 필터 설정 (최근 7일 또는 특정 날짜)
+    if target_date:
+        date_filter = f"AND v.event_date = DATE('{target_date}')"
+        target_date_filter = f"AND target.event_date = DATE('{target_date}')"
+    else:
+        date_filter = "AND v.event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+        target_date_filter = "AND target.event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
 
     merge_query = f"""
     MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TARGET}` AS target
@@ -176,6 +184,7 @@ def update_ga4_viewitem_ngn():
         LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_ITEMS}` i 
             ON v.ga4_property_id = i.ga4_property_id 
             AND v.item_id = i.item_id
+        WHERE 1=1 {date_filter}
         GROUP BY 
             v.event_date, 
             c.company_name, 
@@ -185,11 +194,12 @@ def update_ga4_viewitem_ngn():
             i.item_name
     ) AS source
     ON target.event_date = source.event_date
-    AND target.company_name = source.company_name
-    AND target.ga4_property_id = source.ga4_property_id 
-    AND target.country = source.country
-    AND target.first_user_source = source.first_user_source
-    AND target.item_name = source.item_name
+       AND target.company_name = source.company_name
+       AND target.ga4_property_id = source.ga4_property_id 
+       AND target.country = source.country
+       AND target.first_user_source = source.first_user_source
+       AND target.item_name = source.item_name
+       {target_date_filter}
     WHEN MATCHED THEN
         UPDATE SET target.view_item = source.view_item
     WHEN NOT MATCHED THEN
@@ -220,12 +230,12 @@ if __name__ == "__main__":
         logging.info("🔽 오늘 날짜만 수집합니다.")
         collect_ga4_events(today)
         collect_ga4_items(today)
-        update_ga4_viewitem_ngn()
+        update_ga4_viewitem_ngn(today)
 
     elif run_mode == "yesterday":
         logging.info("🔽 어제 날짜만 수집합니다.")
         collect_ga4_events(yesterday)
         collect_ga4_items(yesterday)
-        update_ga4_viewitem_ngn()
+        update_ga4_viewitem_ngn(yesterday)
 
     logging.info("✅ 모든 GA4 데이터 수집 및 업데이트 완료!")

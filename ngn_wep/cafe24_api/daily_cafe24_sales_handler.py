@@ -91,7 +91,7 @@ def run_query(process_date):
 
     ON target.payment_date = source.payment_date
        AND target.company_name = source.company_name
-       AND target.payment_date = DATE('{process_date}')
+       AND DATE(target.payment_date) = DATE('{process_date}')
 
     WHEN MATCHED THEN
     UPDATE SET

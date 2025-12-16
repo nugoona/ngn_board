@@ -189,7 +189,7 @@ def merge_temp_to_main_table():
         WHERE rn = 1
     ) AS source
     ON target.refund_code = source.refund_code
-       AND target.refund_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
+       AND DATE(target.refund_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
 
     WHEN MATCHED THEN
     UPDATE SET

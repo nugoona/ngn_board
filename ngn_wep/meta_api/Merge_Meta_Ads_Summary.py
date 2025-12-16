@@ -97,7 +97,7 @@ def main(target_date: str):
           ) S
           ON  T.date = S.date 
               AND T.account_id = S.account_id
-              AND T.date = DATE('{target_date}')
+              AND (T.date IS NULL OR DATE(T.date) = DATE('{target_date}'))
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                account_name   = S.account_name,
@@ -146,7 +146,7 @@ def main(target_date: str):
           ON  T.date = S.date 
               AND T.account_id = S.account_id 
               AND T.campaign_id = S.campaign_id
-              AND T.date = DATE('{target_date}')
+              AND (T.date IS NULL OR DATE(T.date) = DATE('{target_date}'))
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                campaign_name  = S.campaign_name,
@@ -197,7 +197,7 @@ def main(target_date: str):
               AND T.account_id = S.account_id
               AND T.campaign_id = S.campaign_id 
               AND T.adset_id = S.adset_id
-              AND T.date = DATE('{target_date}')
+              AND (T.date IS NULL OR DATE(T.date) = DATE('{target_date}'))
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                adset_name     = S.adset_name,
@@ -272,7 +272,7 @@ def main(target_date: str):
               AND T.campaign_id = S.campaign_id
               AND T.adset_id    = S.adset_id
               AND T.ad_id       = S.ad_id
-              AND T.date        = DATE('{target_date}')
+              AND (T.date IS NULL OR DATE(T.date) = DATE('{target_date}'))
           WHEN MATCHED THEN UPDATE SET
                company_name   = S.company_name,
                account_name   = S.account_name,

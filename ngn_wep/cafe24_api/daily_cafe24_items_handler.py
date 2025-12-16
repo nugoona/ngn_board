@@ -150,7 +150,7 @@ def execute_bigquery(process_type="today"):
        AND target.mall_id = source.mall_id
        AND target.product_no = source.product_no
        AND target.order_id = source.order_id
-       AND DATE(target.payment_date) BETWEEN DATE('{start_date}') AND DATE('{end_date}')
+       AND (target.payment_date IS NULL OR DATE(target.payment_date) BETWEEN DATE('{start_date}') AND DATE('{end_date}'))
     WHEN MATCHED THEN
       UPDATE SET
         product_url = source.product_url,  -- ✅ 강제 갱신

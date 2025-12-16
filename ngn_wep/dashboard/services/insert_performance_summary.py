@@ -116,7 +116,7 @@ def insert_performance_summary(target_date):
     ON main.date = temp.date 
        AND main.company_name = temp.company_name 
        AND main.ad_media = temp.ad_media
-       AND main.date = DATE('{date_str}')
+       AND (main.date IS NULL OR DATE(main.date) = DATE('{date_str}'))
     WHEN MATCHED THEN
       UPDATE SET
         ad_spend = temp.ad_spend,

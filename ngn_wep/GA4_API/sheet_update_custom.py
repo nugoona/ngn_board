@@ -97,7 +97,7 @@ def run_sheet_update_for_range(date_obj):
         ON T.DATE = S.DATE 
            AND T.company_name = S.company_name 
            AND T.platform = S.platform
-           AND T.DATE = DATE('{target_date_str}')
+           AND (T.DATE IS NULL OR DATE(T.DATE) = DATE('{target_date_str}'))
         WHEN MATCHED AND T.sales_amount != S.sales_amount THEN
           UPDATE SET T.sales_amount = S.sales_amount
         WHEN NOT MATCHED THEN

@@ -211,7 +211,7 @@ def merge_temp_to_main_table():
     ) AS source
     ON target.mall_id = source.mall_id 
        AND target.order_item_code = source.order_item_code
-       AND DATE(target.ordered_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY)
+       AND (target.ordered_date IS NULL OR DATE(target.ordered_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
 
     WHEN MATCHED THEN
     UPDATE SET

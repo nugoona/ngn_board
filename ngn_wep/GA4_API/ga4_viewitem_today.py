@@ -161,11 +161,11 @@ def update_ga4_viewitem_ngn(target_date=None):
     
     # 날짜 필터 설정 (최근 7일 또는 특정 날짜)
     if target_date:
-        date_filter = f"AND v.event_date = DATE('{target_date}')"
-        target_date_filter = f"AND target.event_date = DATE('{target_date}')"
+        date_filter = f"AND DATE(v.event_date) = DATE('{target_date}')"
+        target_date_filter = f"AND (target.event_date IS NULL OR DATE(target.event_date) = DATE('{target_date}'))"
     else:
-        date_filter = "AND v.event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
-        target_date_filter = "AND target.event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+        date_filter = "AND DATE(v.event_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)"
+        target_date_filter = "AND (target.event_date IS NULL OR DATE(target.event_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY))"
 
     merge_query = f"""
     MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TARGET}` AS target

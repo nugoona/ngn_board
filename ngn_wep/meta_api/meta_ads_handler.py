@@ -175,7 +175,7 @@ def insert_with_retry(table_id, rows, max_retries=5, wait_sec=2):
 
 # ✅ MERGE 수행
 def merge_into_main_table(temp_table_id, target_date=None):
-    date_filter = f"AND T.date = DATE('{target_date}')" if target_date else ""
+    date_filter = f"AND (T.date IS NULL OR DATE(T.date) = DATE('{target_date}'))" if target_date else ""
     query = f"""
         MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}` T
         USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` S

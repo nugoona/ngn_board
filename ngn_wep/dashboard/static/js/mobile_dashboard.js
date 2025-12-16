@@ -553,7 +553,8 @@ async function fetchLiveAds(accountId) {
         if (liveAdsCache.has(cacheKey)) {
             console.log('🎯 LIVE 광고 미리보기 캐시 사용:', accountId);
             const cachedData = liveAdsCache.get(cacheKey);
-            renderLiveAds(cachedData.live_ads);
+            const liveAds = cachedData.live_ads || [];
+            renderLiveAds(liveAds);
             showLiveAdsSection();
             return;
         }
@@ -576,10 +577,12 @@ async function fetchLiveAds(accountId) {
         const data = await response.json();
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
-        if (data.status === 'success' && data.live_ads) {
+        if (data.status === 'success') {
+            // 빈 배열도 포함하여 항상 renderLiveAds 호출
+            const liveAds = data.live_ads || [];
             // 캐시 저장
             liveAdsCache.set(cacheKey, data);
-            renderLiveAds(data.live_ads);
+            renderLiveAds(liveAds);
             showLiveAdsSection();
         } else {
             console.warn('🔍 LIVE 광고 미리보기 데이터 없음');

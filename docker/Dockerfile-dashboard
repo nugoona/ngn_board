@@ -18,8 +18,6 @@ RUN pip install --upgrade pip && \
 
 # 3. 애플리케이션 소스 & 설정
 COPY ngn_wep /app/ngn_wep
-# COPY config/service-account.json /app/service-account.json
-COPY config/ngn.env            /app/config/ngn.env
 
 # 4. 환경 변수 (Redis 설정 추가)
 ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"

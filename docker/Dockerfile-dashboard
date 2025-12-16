@@ -19,13 +19,10 @@ RUN pip install --upgrade pip && \
 # 3. 애플리케이션 소스 & 설정
 COPY ngn_wep /app/ngn_wep
 
-# 4. 환경 변수 (Redis 설정 추가)
+# 4. 환경 변수
 ENV FLASK_ENV="production"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="/app:/app/ngn_wep/dashboard"
-ENV REDIS_URL="redis://localhost:6379/0"
-ENV CACHE_TYPE="redis"
-ENV CACHE_REDIS_URL="redis://localhost:6379/0"
 ENV CACHE_DEFAULT_TIMEOUT=300
 
 # 5. 정적 파일 최적화를 위한 디렉토리 생성

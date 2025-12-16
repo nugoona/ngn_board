@@ -1,6 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/ngn-dashboard:$BUILD_ID', '-f', 'docker/Dockerfile-dashboard', '.']
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/ngn-dashboard:$BUILD_ID', '-f', 'docker/Dockerfile-dashboard', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/ngn-dashboard:$BUILD_ID']
@@ -13,12 +13,20 @@ steps:
         '--platform', 'managed',
         '--region', 'asia-northeast1',
         '--allow-unauthenticated',
+        '--service-account', '439320386143-compute@developer.gserviceaccount.com',
         '--memory', '1Gi',
         '--cpu', '1',
         '--max-instances', '3',
         '--min-instances', '0',
         '--cpu-boost',
-        '--set-env-vars', 'CRAWL_FUNCTION_URL=https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog'
+        '--remove-env-vars', 'GOOGLE_APPLICATION_CREDENTIALS',
+        '--set-env-vars', 'CRAWL_FUNCTION_URL=https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog,META_SYSTEM_USER_TOKEN=${_META_SYSTEM_USER_TOKEN},META_SYSTEM_TOKEN=${_META_SYSTEM_TOKEN},META_APP_ID=${_META_APP_ID},META_APP_SECRET=${_META_APP_SECRET},FORCE_TOKEN_REFRESH=${_FORCE_TOKEN_REFRESH}'
       ]
+substitutions:
+  _META_SYSTEM_USER_TOKEN: 'EAAPedvkO7m4BQF0hLQZAZBH4OX1LKhtSRLDJv2aXyrOnqsBZC0doGkrZAN4ZCiQ9TE3BeW1cP33lgf4Hbvw6bZCmUuWLUgh0nikz2EoatIEcKETPGr0pQIQLo5RxSOkjvBNGGI80Mb4v2wggzr39qqmRUsO0c9NZCxWi2AuSJpX0Af5foAcxjLad7YsY2lk'
+  _META_SYSTEM_TOKEN: 'EAAPedvkO7m4BOzwxExPzDhPRDkh59illVkGZAApj5W2ZAjwA7SIZC8gwlNruazGHqDwGCZBIwKwnTIm5zDsHsBQpDFCi8bDAjGrlOP9fiuMn13TpSNpBlaCwktV3DFctQKnCxZCauCJGOO1CwLBwDompzxz4adA4dvvyNIRKYfNmTszZAR43r2O3uNcmpDZCJdYbgZDZD'
+  _META_APP_ID: '1089027496144494'
+  _META_APP_SECRET: '9387d1b5b725c49b76500ffa00c69553'
+  _FORCE_TOKEN_REFRESH: 'True'
 images:
   - 'gcr.io/$PROJECT_ID/ngn-dashboard:$BUILD_ID'

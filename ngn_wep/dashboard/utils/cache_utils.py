@@ -226,4 +226,42 @@ def get_cache_stats() -> Dict[str, Any]:
             "uptime": info.get("uptime_in_seconds", 0)
         }
     except Exception as e:
-        return {"enabled": False, "error": str(e)} 
+        return {"enabled": False, "error": str(e)}
+
+def get_cached_data(key: str, *args, **kwargs) -> Optional[Any]:
+    """
+    캐시에서 데이터 조회 (호환 wrapper 함수)
+    
+    Args:
+        key: 캐시 키
+        *args, **kwargs: 호환성을 위한 추가 파라미터 (사용하지 않음)
+    
+    Returns:
+        캐시된 데이터 또는 None
+    """
+    try:
+        return cache_get(key)
+    except Exception as e:
+        # 로그만 남기고 예외는 던지지 않음
+        print(f"[CACHE] get_cached_data 조회 실패: {type(e).__name__}")
+        return None
+
+def set_cached_data(key: str, value: Any, ttl: int = None, *args, **kwargs) -> bool:
+    """
+    캐시에 데이터 저장 (호환 wrapper 함수)
+    
+    Args:
+        key: 캐시 키
+        value: 저장할 데이터
+        ttl: 캐시 TTL (초 단위)
+        *args, **kwargs: 호환성을 위한 추가 파라미터 (사용하지 않음)
+    
+    Returns:
+        저장 성공 여부 (bool)
+    """
+    try:
+        return cache_set(key, value, ttl)
+    except Exception as e:
+        # 로그만 남기고 예외는 던지지 않음
+        print(f"[CACHE] set_cached_data 저장 실패: {type(e).__name__}")
+        return False 

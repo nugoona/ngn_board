@@ -10,6 +10,6 @@ pandas==2.2.0
 google-auth==2.27.0
 google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
-google-api-python-client==2.91.0  # ✅ Python 3.9과 호환되는 버전으로 수정
+google-api-python-client==2.91.0  # ✅ Python 3.10+ 호환
 requests==2.31.0
 pyarrow==15.0.0

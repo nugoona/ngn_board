@@ -1,6 +1,6 @@
 # File: docker/Dockerfile-dashboard  ★전체★
 
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # 1. 시스템 패키지 (Redis 클라이언트 추가)
 RUN apt-get update && \

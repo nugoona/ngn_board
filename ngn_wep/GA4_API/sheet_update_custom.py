@@ -1,19 +1,12 @@
 import os
 import pandas as pd
 import gspread
-from google.oauth2 import service_account
+import google.auth
 from google.cloud import bigquery
 from datetime import datetime, timezone, timedelta
 
 # ✅ 한국 시간대 설정
 KST = timezone(timedelta(hours=9))
-
-# ✅ 환경 변수 기반 인증 설정
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv(
-    "GOOGLE_APPLICATION_CREDENTIALS",
-    "/home/oscar/ngn_board/config/service-account.json"
-)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
 
 # ✅ 상수
 SPREADSHEET_ID = "1s6QN0-XwUy9BsnPH2euISpNkR9RxHy9oz8HTY8Ld8bQ"
@@ -22,8 +15,7 @@ BQ_DATASET = "ngn_dataset"
 BQ_TABLE = "sheets_platform_sales_data"
 
 # ✅ 인증 설정 (BigQuery 및 Sheets)
-credentials = service_account.Credentials.from_service_account_file(
-    GOOGLE_APPLICATION_CREDENTIALS,
+credentials, project = google.auth.default(
     scopes=[
         "https://www.googleapis.com/auth/cloud-platform",
         "https://www.googleapis.com/auth/bigquery",
@@ -32,7 +24,7 @@ credentials = service_account.Credentials.from_service_account_file(
     ]
 )
 gc = gspread.authorize(credentials)
-bq_client = bigquery.Client(credentials=credentials, project=BQ_PROJECT)
+bq_client = bigquery.Client(project=BQ_PROJECT)
 
 
 def get_date_range(days=7):

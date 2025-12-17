@@ -483,9 +483,6 @@ def get_dashboard_data_route():
             response_data["meta_ads_preview_list"] = ad_list
             response_data["cached"] = False
             response_data["processing_time"] = round(processing_time, 2)
-                response_data["meta_ads_preview_list"] = ad_list
-                response_data["cached"] = False
-                response_data["processing_time"] = round(processing_time, 2)
 
         # Meta Ads 광고 미리보기 - 콜렉션/슬라이드드
         if data_type == "slide_collection_ads":

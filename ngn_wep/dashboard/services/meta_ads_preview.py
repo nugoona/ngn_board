@@ -165,15 +165,26 @@ def get_ads_details_parallel(ad_list):
         }
         
         # 완료된 작업들을 순서대로 처리
+        success_count = 0
+        fail_count = 0
         for future in as_completed(future_to_ad):
             ad = future_to_ad[future]
             try:
                 result = future.result()
                 if result:  # 유효한 결과만 추가
                     results.append(result)
+                    success_count += 1
+                else:
+                    fail_count += 1
+                    print(f"[WARNING] 광고 상세 정보 수집 결과 없음 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')})")
             except Exception as e:
-                print(f"[WARNING] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}): {e}")
+                fail_count += 1
+                print(f"[ERROR] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')}): {type(e).__name__}: {e}")
+                import traceback
+                print(f"[ERROR] 상세 에러: {traceback.format_exc()}")
                 continue
+        
+        print(f"[META_API] 수집 결과: 성공={success_count}개, 실패={fail_count}개, 총={len(ad_list)}개")
     
     return results
 
@@ -188,19 +199,22 @@ def get_single_ad_details(ad):
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)
         creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+        print(f"[DEBUG] Meta API 요청 시작: ad_id={ad_id}")
         creative_res = requests.get(creative_url, timeout=3)
         creative_data = creative_res.json()
         
         # API 에러 확인
         if "error" in creative_data:
             error_info = creative_data.get("error", {})
-            print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): code={error_info.get('code')}, message={error_info.get('message')}")
+            print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): code={error_info.get('code')}, message={error_info.get('message')}, type={error_info.get('type')}")
             return None
         
         creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
         if not creative_id:
-            print(f"[WARNING] creative_id 없음 (ad_id={ad_id}): {creative_data}")
+            print(f"[WARNING] creative_id 없음 (ad_id={ad_id}): adcreatives.data={creative_data.get('adcreatives', {}).get('data', [])}")
             return None
+        
+        print(f"[DEBUG] creative_id 조회 성공: ad_id={ad_id}, creative_id={creative_id}")
 
         # 2차 요청: 상세 정보 (타임아웃 단축) - asset_feed_spec 포함하여 자동 형식 광고 지원
         detail_url = (

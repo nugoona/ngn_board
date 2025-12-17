@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ngn_wep/cafe24_api/token_refresh.py /app/token_refresh.py
 
 # 환경 변수 설정
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV PYTHONUNBUFFERED=1
 
 # 토큰 갱신 실행

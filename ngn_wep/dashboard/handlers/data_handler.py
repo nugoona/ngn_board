@@ -1,10 +1,14 @@
 # File: services/data_service.py
 import os   
 import datetime
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, Response
 from google.cloud import bigquery
 import time
 from concurrent.futures import ThreadPoolExecutor
+import requests
+from urllib.parse import quote, unquote
+import requests
+from urllib.parse import quote, unquote
 
 # 캐시 유틸리티 임포트
 from ..utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
@@ -622,3 +626,88 @@ def catalog_set_route():
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 이미지 프록시 엔드포인트 (CORS 문제 해결)
+#     GET  /dashboard/proxy_image?url=<encoded_image_url>
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/test", methods=["GET"])
+def test():
+    return "Hello World"
+
+@data_blueprint.route("/proxy_image", methods=["GET"])
+def proxy_image():
+    """
+    외부 이미지 URL을 프록시하여 CORS 및 Mixed Content 문제를 해결합니다.
+    Meta API에서 가져온 이미지 URL을 서버에서 가져와서 반환합니다.
+    """
+    print(f"[PROXY] proxy_image 호출됨 - args: {request.args}")
+    try:
+        # URL 파라미터에서 이미지 URL 가져오기
+        image_url = request.args.get("url")
+        
+        if not image_url:
+            return jsonify({"status": "error", "message": "url 파라미터가 필요합니다"}), 400
+        
+        # URL 디코딩
+        try:
+            image_url = unquote(image_url)
+        except Exception:
+            pass  # 이미 디코딩된 경우 그대로 사용
+        
+        # 보안: 허용된 도메인만 프록시 (Meta/Facebook 이미지)
+        allowed_domains = [
+            "fbcdn.net",
+            "facebook.com",
+            "scontent",
+            "cdninstagram.com",
+            "instagram.com"
+        ]
+        
+        if not any(domain in image_url.lower() for domain in allowed_domains):
+            # 로컬 파일 경로인 경우 허용 (예: /static/demo_ads/...)
+            if not image_url.startswith("/static/"):
+                return jsonify({"status": "error", "message": "허용되지 않은 도메인입니다"}), 403
+        
+        # 로컬 파일인 경우 직접 반환
+        if image_url.startswith("/static/"):
+            from flask import send_from_directory
+            import os
+            static_folder = os.path.join(os.path.dirname(__file__), "..", "static")
+            file_path = image_url.replace("/static/", "")
+            return send_from_directory(static_folder, file_path)
+        
+        # 외부 이미지 가져오기
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        
+        response = requests.get(image_url, headers=headers, timeout=10, stream=True)
+        response.raise_for_status()
+        
+        # Content-Type 확인
+        content_type = response.headers.get("Content-Type", "image/jpeg")
+        
+        # 이미지 데이터를 스트림으로 반환
+        def generate():
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+        
+        return Response(
+            generate(),
+            mimetype=content_type,
+            headers={
+                "Cache-Control": "public, max-age=3600",  # 1시간 캐시
+                "Access-Control-Allow-Origin": "*",  # CORS 허용
+            }
+        )
+        
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] 이미지 프록시 실패: {image_url}, 오류: {str(e)}")
+        return jsonify({"status": "error", "message": f"이미지를 가져올 수 없습니다: {str(e)}"}), 500
+    except Exception as e:
+        print(f"[ERROR] 이미지 프록시 오류: {str(e)}")
+        return jsonify({"status": "error", "message": f"프록시 오류: {str(e)}"}), 500

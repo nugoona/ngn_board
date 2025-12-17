@@ -9,8 +9,6 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 필요한 파일 복사
-COPY config/ngn.env /app/ngn.env
-COPY config/service-account.json /app/service-account.json
 COPY ngn_wep/cafe24_api/token_refresh.py /app/token_refresh.py
 
 # 환경 변수 설정

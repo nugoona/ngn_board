@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+from requests.exceptions import RequestException, Timeout, ConnectionError as RequestsConnectionError
 from google.cloud import bigquery
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
@@ -18,17 +19,80 @@ if creds_path and not os.path.exists(creds_path):
 # ⚠️ 전역 캐싱 제거 - 호출 시점에 토큰을 읽도록 변경
 # META_ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")  # DEPRECATED
 
+# ✅ 토큰 로그 출력 여부 (1회만 출력)
+_token_logged = False
+
 
 def _get_meta_access_token():
     """
     Meta API 액세스 토큰을 환경변수에서 읽어 반환합니다.
     토큰이 없으면 RuntimeError를 발생시킵니다.
     """
+    global _token_logged
     token = os.getenv("META_SYSTEM_USER_TOKEN")
     if not token:
         logger.error("[META_API] META_SYSTEM_USER_TOKEN 환경변수가 설정되지 않았습니다!")
         raise RuntimeError("META_SYSTEM_USER_TOKEN 환경변수가 설정되지 않았습니다. Cloud Run 환경변수를 확인하세요.")
+    
+    # ✅ 토큰 앞 8자만 1회 출력 (보안상 전체 출력 금지)
+    if not _token_logged:
+        token_head = token[:8] if len(token) >= 8 else token
+        logger.info(f"[META_API] 토큰 로드 완료: token_head={token_head}..., length={len(token)}")
+        _token_logged = True
+    
     return token
+
+
+def _safe_meta_api_get(url, timeout=3, context=""):
+    """
+    Meta Graph API GET 요청을 수행하고, 에러 발생 시 상세 로그를 남깁니다.
+    
+    Returns:
+        dict: 성공 시 JSON 응답, 실패 시 None
+    """
+    try:
+        resp = requests.get(url, timeout=timeout)
+        
+        # ✅ HTTP 상태 코드 체크
+        if resp.status_code != 200:
+            logger.error(
+                f"[META_API] HTTP 에러 ({context}): "
+                f"status_code={resp.status_code}, url={url[:100]}..., "
+                f"body={resp.text[:500]}"
+            )
+            return None
+        
+        data = resp.json()
+        
+        # ✅ API 에러 체크
+        if "error" in data:
+            error_info = data.get("error", {})
+            logger.error(
+                f"[META_API] API 에러 ({context}): "
+                f"code={error_info.get('code')}, type={error_info.get('type')}, "
+                f"message={error_info.get('message')}, "
+                f"error_subcode={error_info.get('error_subcode')}"
+            )
+            return None
+        
+        return data
+    
+    except Timeout as e:
+        logger.exception(f"[META_API] Timeout 예외 ({context}): url={url[:100]}...")
+        return None
+    except RequestsConnectionError as e:
+        logger.exception(f"[META_API] ConnectionError 예외 ({context}): url={url[:100]}...")
+        return None
+    except RequestException as e:
+        logger.exception(f"[META_API] RequestException 예외 ({context}): url={url[:100]}...")
+        return None
+    except ValueError as e:
+        # JSON 파싱 에러
+        logger.exception(f"[META_API] JSON 파싱 에러 ({context}): url={url[:100]}...")
+        return None
+    except Exception as e:
+        logger.exception(f"[META_API] 알 수 없는 예외 ({context}): {type(e).__name__}")
+        return None
 
 
 def get_proxy_image_url(image_url):
@@ -147,9 +211,9 @@ def get_meta_ads_preview_list(account_id):
     
     # 디버깅: 조회된 광고 목록 출력
     if ad_list:
-        logger.debug(f"[BIGQUERY] 조회된 광고 목록 (최대 5개):")
+        logger.info(f"[BIGQUERY] 조회된 광고 목록 (최대 5개):")
         for idx, ad in enumerate(ad_list[:5], 1):
-            logger.debug(f"  {idx}. ad_id={ad.get('ad_id')}, ad_name={ad.get('ad_name', '')[:50]}")
+            logger.info(f"  {idx}. ad_id={ad.get('ad_id')}, ad_name={ad.get('ad_name', '')[:50]}")
     else:
         logger.warning(f"[BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, 쿼리 조건 확인 필요")
 
@@ -175,6 +239,7 @@ def get_ads_details_parallel(ad_list):
     병렬 처리로 광고 상세 정보를 수집합니다.
     """
     total_count = len(ad_list)
+    start_time = time.time()
     logger.info(f"[META_API] get_ads_details_parallel 시작: {total_count}개 광고 처리")
     
     if not ad_list:
@@ -203,18 +268,24 @@ def get_ads_details_parallel(ad_list):
                     success_count += 1
                 else:
                     fail_count += 1
-                    logger.warning(f"[META_API] 광고 상세 정보 수집 결과 없음 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')})")
+                    logger.warning(f"[META_API] 광고 상세 정보 수집 결과 없음 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')[:30]})")
             except RuntimeError as e:
                 # 토큰 누락 시 즉시 에러 전파 (조용히 0개 반환 금지)
                 logger.error(f"[META_API] 토큰 에러로 처리 중단: {e}")
                 raise
             except Exception as e:
                 fail_count += 1
-                logger.error(f"[META_API] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')}): {type(e).__name__}: {e}")
+                logger.exception(f"[META_API] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}): {type(e).__name__}")
                 continue
     
+    elapsed_time = time.time() - start_time
+    
     # ✅ 최종 수집 결과 요약 로그 (1회)
-    logger.info(f"[META_API] 📊 수집 결과 요약: 요청={total_count}개, 성공={success_count}개, 실패={fail_count}개")
+    logger.info(
+        f"[META_API] 📊 수집 결과 요약: "
+        f"요청={total_count}개, 성공={success_count}개, 실패={fail_count}개, "
+        f"경과시간={elapsed_time:.2f}초"
+    )
     
     return results
 
@@ -227,7 +298,7 @@ def get_single_ad_details(ad):
     ad_name = ad.get("ad_name", "UNKNOWN")
     instagram_acc_name = ad.get("instagram_acc_name", "")
     
-    logger.debug(f"[META_API] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}")
+    logger.info(f"[META_API] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}")
     
     # ✅ 호출 시점에 토큰 읽기 (토큰 없으면 RuntimeError 발생)
     access_token = _get_meta_access_token()
@@ -235,20 +306,10 @@ def get_single_ad_details(ad):
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)
         creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={access_token}"
-        logger.debug(f"[META_API] Meta API 요청 시작: ad_id={ad_id}")
-        creative_res = requests.get(creative_url, timeout=3)
+        logger.info(f"[META_API] 1차 요청(adcreatives) 시작: ad_id={ad_id}")
         
-        # ✅ HTTP 상태 코드 체크
-        if creative_res.status_code != 200:
-            logger.error(f"[META_API] HTTP 에러 (ad_id={ad_id}): status_code={creative_res.status_code}, body={creative_res.text[:200]}")
-            return None
-        
-        creative_data = creative_res.json()
-        
-        # API 에러 확인
-        if "error" in creative_data:
-            error_info = creative_data.get("error", {})
-            logger.error(f"[META_API] API 에러 (ad_id={ad_id}): code={error_info.get('code')}, type={error_info.get('type')}, message={error_info.get('message')}")
+        creative_data = _safe_meta_api_get(creative_url, timeout=3, context=f"adcreatives ad_id={ad_id}")
+        if creative_data is None:
             return None
         
         creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
@@ -256,7 +317,7 @@ def get_single_ad_details(ad):
             logger.warning(f"[META_API] creative_id 없음 (ad_id={ad_id}): adcreatives.data={creative_data.get('adcreatives', {}).get('data', [])}")
             return None
         
-        logger.debug(f"[META_API] creative_id 조회 성공: ad_id={ad_id}, creative_id={creative_id}")
+        logger.info(f"[META_API] creative_id 조회 성공: ad_id={ad_id}, creative_id={creative_id}")
 
         # 2차 요청: 상세 정보 (타임아웃 단축) - asset_feed_spec 포함하여 자동 형식 광고 지원
         detail_url = (
@@ -264,19 +325,10 @@ def get_single_ad_details(ad):
             f"?fields=body,object_story_spec,image_url,video_id,asset_feed_spec"
             f"&access_token={access_token}"
         )
-        detail_res = requests.get(detail_url, timeout=3)
+        logger.info(f"[META_API] 2차 요청(creative_detail) 시작: creative_id={creative_id}")
         
-        # ✅ HTTP 상태 코드 체크
-        if detail_res.status_code != 200:
-            logger.error(f"[META_API] HTTP 에러 (creative_id={creative_id}): status_code={detail_res.status_code}, body={detail_res.text[:200]}")
-            return None
-        
-        detail_data = detail_res.json()
-
-        # API 에러 확인
-        if "error" in detail_data:
-            error_info = detail_data.get("error", {})
-            logger.error(f"[META_API] API 에러 (creative_id={creative_id}): code={error_info.get('code')}, type={error_info.get('type')}, message={error_info.get('message')}")
+        detail_data = _safe_meta_api_get(detail_url, timeout=3, context=f"creative_detail creative_id={creative_id}")
+        if detail_data is None:
             return None
 
         # asset_feed_spec 추출 (NGN 자동 형식 광고용)
@@ -343,48 +395,29 @@ def get_single_ad_details(ad):
         
         if extracted_video_id:
             # 1단계: 비디오 source URL 조회 시도
-            try:
-                video_api = (
-                    f"https://graph.facebook.com/v24.0/{extracted_video_id}"
-                    f"?fields=source&access_token={access_token}"
-                )
-                video_res = requests.get(video_api, timeout=3)
-                
-                if video_res.status_code == 200:
-                    video_data = video_res.json()
-                    if "error" not in video_data:
-                        video_url = video_data.get("source")
-                    else:
-                        error_code = video_data.get("error", {}).get("code", 0)
-                        logger.warning(f"[META_API] 비디오 source API 에러 (ad_id={ad_id}, error_code={error_code}), 썸네일로 폴백")
-                else:
-                    logger.warning(f"[META_API] 비디오 source HTTP 에러 (ad_id={ad_id}, status={video_res.status_code}), 썸네일로 폴백")
-            except Exception as video_error:
-                logger.warning(f"[META_API] 비디오 URL 가져오기 실패 (ad_id={ad_id}): {video_error}, 썸네일로 폴백")
+            video_api = (
+                f"https://graph.facebook.com/v24.0/{extracted_video_id}"
+                f"?fields=source&access_token={access_token}"
+            )
+            video_data = _safe_meta_api_get(video_api, timeout=3, context=f"video_source video_id={extracted_video_id}")
+            if video_data:
+                video_url = video_data.get("source")
+            else:
+                logger.warning(f"[META_API] 비디오 source 조회 실패 (ad_id={ad_id}), 썸네일로 폴백")
             
             # 2단계: 비디오 source가 없거나 실패한 경우, 고화질 썸네일 조회
             if not video_url:
-                try:
-                    thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={access_token}"
-                    thumb_res = requests.get(thumb_url, timeout=2)
-                    
-                    if thumb_res.status_code == 200:
-                        thumb_data = thumb_res.json()
-                        if "error" not in thumb_data:
-                            thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
-                            if thumbnails:
-                                # 해상도(width * height)가 가장 높은 썸네일 선택 (고화질)
-                                high_quality_thumbnail = max(
-                                    thumbnails, 
-                                    key=lambda x: x.get("width", 0) * x.get("height", 0)
-                                ).get("uri", "")
-                                logger.debug(f"[META_API] 고화질 썸네일 추출 성공 (ad_id={ad_id})")
-                        else:
-                            logger.warning(f"[META_API] 비디오 썸네일 API 에러 (ad_id={ad_id}): {thumb_data.get('error', {})}")
-                    else:
-                        logger.warning(f"[META_API] 비디오 썸네일 HTTP 에러 (ad_id={ad_id}, status={thumb_res.status_code})")
-                except Exception as thumb_error:
-                    logger.warning(f"[META_API] 비디오 썸네일 가져오기 실패 (ad_id={ad_id}): {thumb_error}")
+                thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={access_token}"
+                thumb_data = _safe_meta_api_get(thumb_url, timeout=2, context=f"video_thumbnails video_id={extracted_video_id}")
+                if thumb_data:
+                    thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
+                    if thumbnails:
+                        # 해상도(width * height)가 가장 높은 썸네일 선택 (고화질)
+                        high_quality_thumbnail = max(
+                            thumbnails, 
+                            key=lambda x: x.get("width", 0) * x.get("height", 0)
+                        ).get("uri", "")
+                        logger.info(f"[META_API] 고화질 썸네일 추출 성공 (ad_id={ad_id})")
         
         # 이미지 URL 추출 (썸네일용 또는 이미지 광고용)
         # asset_feed_spec.videos[0].thumbnail_url 추출 (NGN 자동 형식 광고용)
@@ -413,6 +446,8 @@ def get_single_ad_details(ad):
         # ✅ 이미지 URL을 프록시 URL로 변환 (배포 환경 대응)
         proxy_image_url = get_proxy_image_url(image_url) if image_url else ""
         
+        logger.info(f"[META_API] ✅ 광고 상세 수집 성공: ad_id={ad_id}, has_image={bool(image_url)}, has_video={bool(video_url)}")
+        
         return {
             "ad_id": ad_id,
             "ad_name": ad["ad_name"],
@@ -425,5 +460,5 @@ def get_single_ad_details(ad):
         }
 
     except Exception as e:
-        logger.error(f"[META_API] 광고 미리보기 정보 가져오기 실패 (ad_id={ad_id}): {type(e).__name__}: {e}")
+        logger.exception(f"[META_API] 광고 미리보기 정보 가져오기 실패 (ad_id={ad_id}): {type(e).__name__}")
         return None

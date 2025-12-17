@@ -156,7 +156,6 @@ def merge_temp_to_main():
     ) S
     ON T.mall_id = S.mall_id 
        AND T.order_id = S.order_id
-       AND (T.payment_date IS NULL OR DATE(T.payment_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 DAY))
     WHEN MATCHED THEN UPDATE SET
         payment_date = S.payment_date,
         payment_method = S.payment_method,

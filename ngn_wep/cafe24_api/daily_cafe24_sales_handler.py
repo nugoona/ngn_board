@@ -27,19 +27,26 @@ def run_query(process_date):
           FROM `winged-precept-443218-v8.ngn_dataset.company_info`
       ),
       refund_summary AS (
+          -- ✅ order_id 기준으로 먼저 집계하여 cafe24_orders 중복 문제 해결
           SELECT
-              o.mall_id,  
-              c.company_name,  
-              DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,  
-              SUM(r.total_refund_amount) AS total_refund_amount  
-          FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
-          JOIN company_mall_ids c
-              ON r.mall_id = c.mall_id  -- 먼저 업체별 mall_id로 환불 데이터 필터링
-          JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
-              ON r.order_id = o.order_id
-              AND r.mall_id = o.mall_id  -- 동일한 몰의 주문-환불 데이터만 매칭
-          WHERE DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) = '{process_date}'
-          GROUP BY o.mall_id, c.company_name, refund_date
+              refund_agg.mall_id,
+              refund_agg.company_name,
+              refund_agg.refund_date,
+              SUM(refund_agg.total_refund_amount) AS total_refund_amount
+          FROM (
+              SELECT DISTINCT
+                  r.mall_id,
+                  c.company_name,
+                  DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,
+                  r.order_id,
+                  SUM(r.total_refund_amount) AS total_refund_amount
+              FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
+              JOIN company_mall_ids c
+                  ON r.mall_id = c.mall_id
+              WHERE DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) = '{process_date}'
+              GROUP BY r.mall_id, c.company_name, refund_date, r.order_id
+          ) refund_agg
+          GROUP BY refund_agg.mall_id, refund_agg.company_name, refund_agg.refund_date
       ),
 
       -- ✅ 주문 상품 총 판매 개수 (order_id 기준으로 개수 집계)

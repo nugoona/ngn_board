@@ -3,12 +3,12 @@ import json
 import requests
 
 def load_access_token():
-    token_path = "/home/oscar/ngn_board/config/meta_long_token.json"
-    if not os.path.exists(token_path):
-        return None
-    with open(token_path, "r") as f:
-        data = json.load(f)
-        return data.get("access_token")
+    # 환경변수에서 직접 토큰 가져오기 (Cloud Run 환경변수 사용)
+    token = os.getenv("META_LONG_TOKEN")
+    if token:
+        return token
+    # 로컬 개발용 fallback (선택사항)
+    return None
 
 def get_ad_accounts():
     token = load_access_token()

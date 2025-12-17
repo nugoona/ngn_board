@@ -14,9 +14,6 @@ from google.cloud import bigquery, storage
 KST = timezone(timedelta(hours=9))
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/app/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
 PROJECT_ID   = "winged-precept-443218-v8"
 DATASET_ID   = "ngn_dataset"
 ORDERS_TABLE_ID = "cafe24_orders"

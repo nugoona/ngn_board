@@ -5,7 +5,7 @@ import logging
 import requests
 from datetime import datetime, timedelta, timezone
 from google.cloud import bigquery
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 # ✅ KST 시간대
 KST = timezone(timedelta(hours=9))
@@ -13,12 +13,9 @@ KST = timezone(timedelta(hours=9))
 # ✅ 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ✅ 환경 변수 로드
-load_dotenv(dotenv_path="/app/.env")
+# ✅ 환경 변수 로드 (로컬 개발용, Cloud Run에서는 환경변수 사용)
+load_dotenv(find_dotenv(), override=False)
 ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/app/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
 
 # ✅ BigQuery 설정
 API_VERSION = "v24.0"

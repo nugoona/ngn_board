@@ -9,16 +9,15 @@ from flask import Flask, render_template, session, redirect, url_for, request
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────────
-# 1) 환경변수(.env) 로딩  ─ 절대경로 자동 계산
+# 1) 환경변수(.env) 로딩 (로컬 개발용, Cloud Run에서는 환경변수 사용)
 # ─────────────────────────────────────────────
-BASE_DIR  = Path(__file__).resolve().parents[2]   # ~/ngn_board
-ENV_PATH  = BASE_DIR / "config" / "ngn.env"       # ~/ngn_board/config/ngn.env
-
-if ENV_PATH.exists():
-    load_dotenv(ENV_PATH)                         # ✅ 실제 파일 경로로 로드
-    print(f"[ENV] .env 로드 완료: {ENV_PATH}")
+from dotenv import find_dotenv
+env_file = find_dotenv()
+if env_file:
+    load_dotenv(env_file, override=False)
+    print(f"[ENV] .env 로드 완료: {env_file}")
 else:
-    print(f"[ENV] ⚠️ .env 파일이 없습니다: {ENV_PATH}")
+    print(f"[ENV] .env 파일 없음 (Cloud Run 환경변수 사용)")
 
 # 시스템 토큰 존재 여부를 미리 로그
 TOKEN_LEN = len(os.getenv("META_SYSTEM_USER_TOKEN") or "")
@@ -34,10 +33,11 @@ LOG = logging.getLogger(__name__)
 # 3) Cloud Run 환경변수 처리 (블루프린트 임포트 전)
 # ─────────────────────────────────────────────
 # ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
-# (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
-if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.json":
-    # 파일이 존재하지 않으면 환경변수 제거하여 ADC 사용
-    if not os.path.exists("/app/service-account.json"):
+# GOOGLE_APPLICATION_CREDENTIALS 환경변수가 설정되어 있으면 제거하여 ADC 사용
+if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+    # 키 파일 경로로 보이는 경우 제거하여 ADC 사용
+    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if creds_path and not os.path.exists(creds_path):
         os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
         print("[ENV] Cloud Run 환경 감지 - GOOGLE_APPLICATION_CREDENTIALS 제거, ADC 사용")
 
@@ -71,16 +71,10 @@ print(f"[DEBUG] favicon.ico exists: {os.path.exists(os.path.join(static_folder_p
 # 캐시 헤더 제거 - 버전 파라미터로 대체
 
 # ─────────────────────────────────────────────
-# 6) Google Cloud 인증 경로 확인
+# 6) Google Cloud 인증 확인 (ADC 사용)
 # ─────────────────────────────────────────────
-gcp_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-if gcp_path and os.path.exists(gcp_path):
-    LOG.info("GCP 인증 경로 적용됨: %s", gcp_path)
-else:
-    if gcp_path:
-        LOG.info("GCP 인증 파일이 없지만 ADC(Application Default Credentials) 사용: %s", gcp_path)
-    else:
-        LOG.info("GCP 인증: ADC(Application Default Credentials) 사용")
+# Cloud Run에서는 ADC(Application Default Credentials) 사용
+LOG.info("GCP 인증: ADC(Application Default Credentials) 사용")
 
 # ─────────────────────────────────────────────
 # 6) 모바일 디바이스 감지 함수

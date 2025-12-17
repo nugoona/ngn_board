@@ -11,11 +11,7 @@ today = datetime.now(KST).strftime("%Y-%m-%d")
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# 환경 변수 설정
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/home/oscar/ngn_board/ngn_wep/dashboard/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
-# BigQuery 클라이언트 초기화
+# BigQuery 클라이언트 초기화 (ADC 사용)
 client = bigquery.Client()
 
 def execute_bigquery(process_type="today"):

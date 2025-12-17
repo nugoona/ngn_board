@@ -12,10 +12,6 @@ current_time = datetime.now(timezone.utc).astimezone(KST)
 # ✅ 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ✅ 환경 변수 설정
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/home/oscar/ngn_board/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
 # ✅ GCP 설정
 PROJECT_ID = "winged-precept-443218-v8"
 DATASET_ID = "ngn_dataset"
@@ -24,8 +20,8 @@ REFUNDS_TABLE_ID = "cafe24_refunds_table"
 BUCKET_NAME = "winged-precept-443218-v8.appspot.com"
 TOKEN_FILE_NAME = "tokens.json"
 
-# ✅ BigQuery 클라이언트 초기화
-client = bigquery.Client.from_service_account_json(GOOGLE_APPLICATION_CREDENTIALS)
+# ✅ BigQuery 클라이언트 초기화 (ADC 사용)
+client = bigquery.Client()
 
 # ✅ 안전한 데이터 변환 함수
 def safe_int(value, default=0):

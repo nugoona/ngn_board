@@ -7,16 +7,12 @@ from flask import Blueprint, request, jsonify
 meta_demo_blueprint = Blueprint("meta_demo", __name__)
 
 def load_access_token():
-    token_path = "/home/oscar/ngn_board/config/meta_long_token.json"
-    if not os.path.exists(token_path):
-        return None
-    with open(token_path, "r") as f:
-        data = f.read()
-        try:
-            import json
-            return json.loads(data).get("access_token")
-        except:
-            return None
+    # 환경변수에서 직접 토큰 가져오기 (Cloud Run 환경변수 사용)
+    token = os.getenv("META_LONG_TOKEN")
+    if token:
+        return token
+    # 로컬 개발용 fallback (선택사항)
+    return None
 
 @meta_demo_blueprint.route("/get_data", methods=["POST"])
 def get_meta_demo_data():

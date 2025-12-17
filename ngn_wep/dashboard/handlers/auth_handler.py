@@ -10,10 +10,10 @@ from flask import (
 from google.cloud import bigquery
 
 # ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
-# (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
-if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.json":
-    if not os.path.exists("/app/service-account.json"):
-        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+# GOOGLE_APPLICATION_CREDENTIALS 환경변수가 설정되어 있으면 제거하여 ADC 사용
+creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+if creds_path and not os.path.exists(creds_path):
+    os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 # ───────────────────────────────────────────────
 #  서비스 모듈

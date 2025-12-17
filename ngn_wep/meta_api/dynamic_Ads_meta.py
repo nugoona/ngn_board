@@ -17,10 +17,8 @@ import requests
 from dotenv import load_dotenv
 from google.cloud import bigquery
 
-# ───────── 환경 변수 로드 ─────────
-# ① 컨테이너 내 경로(/app/.env)를 우선 로드
-if os.path.exists("/app/.env"):
-    load_dotenv(dotenv_path="/app/.env", override=True)
+# ───────── 환경 변수 로드 (로컬 개발용, Cloud Run에서는 환경변수 사용) ─────────
+load_dotenv(find_dotenv(), override=False)
 
 
 # ───────── Meta / BigQuery 공통 ─────────

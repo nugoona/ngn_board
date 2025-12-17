@@ -18,16 +18,12 @@ LOG_FILE = "/home/oscar/ngn_board/ngn_wep/logs/product_data_handler.log"
 if not os.path.exists(os.path.dirname(LOG_FILE)):
     os.makedirs(os.path.dirname(LOG_FILE))
 
-# ✅ GCP 인증 정보
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/home/oscar/ngn_board/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS
-
 # ✅ GCP 설정
 BUCKET_NAME = "winged-precept-443218-v8.appspot.com"
 TOKEN_FILE_NAME = "tokens.json"
 
-# ✅ BigQuery 클라이언트
-client = bigquery.Client.from_service_account_json(GOOGLE_APPLICATION_CREDENTIALS)
+# ✅ BigQuery 클라이언트 (ADC 사용)
+client = bigquery.Client()
 
 # ✅ Cloud Storage에서 tokens.json 다운로드
 def download_tokens():

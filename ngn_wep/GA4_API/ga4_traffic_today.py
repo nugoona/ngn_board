@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from google.cloud import bigquery
 from googleapiclient.discovery import build
-from google.oauth2 import service_account
 from datetime import datetime, timezone, timedelta
 import logging
 
@@ -12,23 +11,16 @@ KST = timezone(timedelta(hours=9))
 # ✅ 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ✅ 환경 변수 설정 (Cloud Run 환경)
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/home/oscar/ngn_board/service-account.json")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_APPLICATION_CREDENTIALS  # ✅ 환경변수 적용
-
 PROJECT_ID = "winged-precept-443218-v8"
 DATASET_ID = "ngn_dataset"
 TABLE_ID_TRAFFIC = "ga4_traffic"
 TABLE_ID_TRAFFIC_NGN = "ga4_traffic_ngn"
 
-# ✅ 인증 정보 설정
-credentials = service_account.Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
+# ✅ BigQuery 클라이언트 초기화 (ADC 사용)
+bigquery_client = bigquery.Client(project=PROJECT_ID)
 
-# ✅ BigQuery 클라이언트 초기화
-bigquery_client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
-
-# ✅ GA4 API 클라이언트 초기화
-analytics = build("analyticsdata", "v1beta", credentials=credentials)
+# ✅ GA4 API 클라이언트 초기화 (ADC 사용)
+analytics = build("analyticsdata", "v1beta")
 
 # ✅ company_info 테이블에서 GA4 Property ID 동적으로 가져오기
 def get_ga4_property_ids():

@@ -1,11 +1,10 @@
 import os, sys, logging
 from datetime import datetime, timedelta, timezone
 from google.cloud import bigquery
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-# ✅ 환경설정 --------------------------------------------------------------
-load_dotenv("/app/.env")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+# ✅ 환경설정 (로컬 개발용, Cloud Run에서는 환경변수 사용)
+load_dotenv(find_dotenv(), override=False)
 client = bigquery.Client()
 
 # ✅ 날짜 ------------------------------------------------------------------

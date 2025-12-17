@@ -3,8 +3,7 @@
 import os
 from services.meta_ads_insight import get_meta_ads_insight_table
 
-# ✅ GCP 인증 환경변수
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/home/oscar/ngn_board/config/service-account.json"
+# ✅ GCP 인증: ADC 사용 (로컬 개발 시 gcloud auth application-default login 필요)
 
 # ✅ 공통 파라미터
 company_name = "acoc"

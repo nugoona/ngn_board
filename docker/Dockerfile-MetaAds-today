@@ -8,21 +8,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
  && pip install --no-cache-dir python-dotenv
 
-# 2. 코드 & 설정 복사
+# 2. 코드 복사
 COPY ngn_wep/meta_api/meta_ads_handler.py ./meta_ads_handler.py
-COPY config/service-account.json          ./service-account.json
-# → /app/.env
-COPY config/ngn.env                       ./.env
 
-
-
-# 3. 홈 디렉터리 경로와 호환되도록 심볼릭-링크 생성
-RUN mkdir -p /root/ngn_board/config \
- && ln -s /app/.env /root/ngn_board/config/ngn.env
-
-# 4. 런타임 ENV
-ENV PYTHONUNBUFFERED=1 \
-    GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+# 3. 런타임 ENV
+ENV PYTHONUNBUFFERED=1
 
 # 5. 실행 (기간 파라미터: today)
 ENTRYPOINT ["python", "/app/meta_ads_handler.py", "today"]

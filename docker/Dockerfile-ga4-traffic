@@ -10,11 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # ✅ 프로젝트 관련 파일 복사
 COPY ./ngn_wep/GA4_API/ga4_traffic_today.py /app/ga4_traffic_today.py
-COPY ./config/ngn.env /app/ngn.env
-COPY ./config/service-account.json /app/service-account.json
 
 # ✅ 환경변수 설정 (오늘 모드)
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV RUN_MODE="today"
 
 # ✅ 실행 명령어 설정 (같은 스크립트지만 RUN_MODE가 today이므로 "오늘" 수집)

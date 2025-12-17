@@ -6,10 +6,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./ngn_wep/GA4_API/sheet_update_custom.py /app/sheet_update_custom.py
-COPY ./config/ngn.env /app/ngn.env
-COPY ./config/service-account.json /app/service-account.json
 
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV RUN_MODE="yesterday"
 
 ENTRYPOINT ["python", "/app/sheet_update_custom.py"]

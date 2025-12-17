@@ -5,8 +5,6 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt && pip install python-dotenv
 
 COPY ./ngn_wep/meta_api/Merge_Meta_Ads_Summary.py /app/Merge_Meta_Ads_Summary.py
-COPY ./config/service-account.json /app/service-account.json
-COPY ./config/ngn.env /app/.env
 
 ENV PYTHONUNBUFFERED=1
 

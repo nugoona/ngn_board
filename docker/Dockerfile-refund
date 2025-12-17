@@ -12,11 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 프로젝트 파일 복사
 COPY ./ngn_wep/cafe24_api/cafe24_refund_data_handler.py /app/cafe24_refund_data_handler.py
-COPY config/ngn.env /app/ngn.env
-COPY config/service-account.json /app/service-account.json
 
 # 환경 변수 설정
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV PYTHONUNBUFFERED=1
 
 # 실행 명령어

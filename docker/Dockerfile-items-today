@@ -12,10 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./ngn_wep/cafe24_api/daily_cafe24_items_handler.py /app/daily_cafe24_items_handler.py
 
 COPY ./ngn_wep/cafe24_api/orders_handler.py /app/orders_handler.py
-COPY config/service-account.json /app/service-account.json
 
 # 환경변수 설정
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV PYTHONUNBUFFERED=1
 
 # 실행 명령어 설정 (오늘 기준 실행)

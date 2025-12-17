@@ -6,13 +6,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 필요한 스크립트 및 환경 파일 복사
+# 필요한 스크립트 복사
 COPY ./ngn_wep/cafe24_api/product_catalog_data_handler.py /app/product_catalog_data_handler.py
-COPY config/ngn.env /app/ngn.env
-COPY config/service-account.json /app/service-account.json
 
 # 환경변수 설정  
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/service-account.json"
 ENV PYTHONUNBUFFERED=1
 
 # 실행 명령어 설정 (토큰 갱신 후 데이터 처리 실행)

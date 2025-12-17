@@ -6,6 +6,8 @@ from google.cloud import bigquery
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 from urllib.parse import quote
+from collections import defaultdict
+import threading
 
 # ✅ 로깅 설정
 logger = logging.getLogger(__name__)
@@ -48,51 +50,53 @@ def _safe_meta_api_get(url, timeout=3, context=""):
     Meta Graph API GET 요청을 수행하고, 에러 발생 시 상세 로그를 남깁니다.
     
     Returns:
-        dict: 성공 시 JSON 응답, 실패 시 None
+        tuple: (data, error_reason) - 성공 시 (dict, None), 실패 시 (None, "reason_string")
     """
     try:
         resp = requests.get(url, timeout=timeout)
         
         # ✅ HTTP 상태 코드 체크
         if resp.status_code != 200:
+            reason = f"http_{resp.status_code}"
             logger.error(
                 f"[META_API] HTTP 에러 ({context}): "
                 f"status_code={resp.status_code}, url={url[:100]}..., "
                 f"body={resp.text[:500]}"
             )
-            return None
+            return None, reason
         
         data = resp.json()
         
         # ✅ API 에러 체크
         if "error" in data:
             error_info = data.get("error", {})
+            reason = f"api_error_{error_info.get('code', 'unknown')}"
             logger.error(
                 f"[META_API] API 에러 ({context}): "
                 f"code={error_info.get('code')}, type={error_info.get('type')}, "
                 f"message={error_info.get('message')}, "
                 f"error_subcode={error_info.get('error_subcode')}"
             )
-            return None
+            return None, reason
         
-        return data
+        return data, None
     
     except Timeout as e:
         logger.exception(f"[META_API] Timeout 예외 ({context}): url={url[:100]}...")
-        return None
+        return None, "timeout"
     except RequestsConnectionError as e:
         logger.exception(f"[META_API] ConnectionError 예외 ({context}): url={url[:100]}...")
-        return None
+        return None, "connection_error"
     except RequestException as e:
         logger.exception(f"[META_API] RequestException 예외 ({context}): url={url[:100]}...")
-        return None
+        return None, "request_exception"
     except ValueError as e:
         # JSON 파싱 에러
         logger.exception(f"[META_API] JSON 파싱 에러 ({context}): url={url[:100]}...")
-        return None
+        return None, "json_parse_error"
     except Exception as e:
         logger.exception(f"[META_API] 알 수 없는 예외 ({context}): {type(e).__name__}")
-        return None
+        return None, f"exception_{type(e).__name__}"
 
 
 def get_proxy_image_url(image_url):
@@ -250,6 +254,10 @@ def get_ads_details_parallel(ad_list):
     success_count = 0
     fail_count = 0
     
+    # ✅ 스킵 사유별 카운트 (thread-safe)
+    skip_reasons = defaultdict(int)
+    skip_reasons_lock = threading.Lock()
+    
     # ThreadPoolExecutor를 사용한 병렬 처리
     with ThreadPoolExecutor(max_workers=5) as executor:
         # 각 광고에 대해 병렬로 상세 정보 수집
@@ -262,19 +270,23 @@ def get_ads_details_parallel(ad_list):
         for future in as_completed(future_to_ad):
             ad = future_to_ad[future]
             try:
-                result = future.result()
+                result, skip_reason = future.result()
                 if result:  # 유효한 결과만 추가
                     results.append(result)
                     success_count += 1
                 else:
                     fail_count += 1
-                    logger.warning(f"[META_API] 광고 상세 정보 수집 결과 없음 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')[:30]})")
+                    # ✅ 스킵 사유 카운트
+                    with skip_reasons_lock:
+                        skip_reasons[skip_reason or "unknown"] += 1
             except RuntimeError as e:
                 # 토큰 누락 시 즉시 에러 전파 (조용히 0개 반환 금지)
                 logger.error(f"[META_API] 토큰 에러로 처리 중단: {e}")
                 raise
             except Exception as e:
                 fail_count += 1
+                with skip_reasons_lock:
+                    skip_reasons[f"exception_{type(e).__name__}"] += 1
                 logger.exception(f"[META_API] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}): {type(e).__name__}")
                 continue
     
@@ -287,35 +299,91 @@ def get_ads_details_parallel(ad_list):
         f"경과시간={elapsed_time:.2f}초"
     )
     
+    # ✅ 스킵 사유별 카운트 요약 로그 (1회)
+    if skip_reasons:
+        reasons_str = ", ".join([f"{k}={v}" for k, v in sorted(skip_reasons.items())])
+        logger.info(f"[META_API] 📋 스킵 사유별 카운트: {reasons_str}")
+    
     return results
 
 
 def get_single_ad_details(ad):
     """
     단일 광고의 상세 정보를 수집합니다.
-    """
-    ad_id = ad.get("ad_id", "UNKNOWN")
-    ad_name = ad.get("ad_name", "UNKNOWN")
-    instagram_acc_name = ad.get("instagram_acc_name", "")
     
-    logger.info(f"[META_API] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}")
+    Returns:
+        tuple: (result_dict, skip_reason) - 성공 시 (dict, None), 실패 시 (None, "reason_string")
+    """
+    # ✅ ad dict 검증 및 기본값 추출
+    if not ad or not isinstance(ad, dict):
+        logger.warning(f"[META_API][SKIP] reason=invalid_ad_dict, ad_type={type(ad).__name__}, ad_value={str(ad)[:100]}")
+        return None, "invalid_ad_dict"
+    
+    ad_id = ad.get("ad_id")
+    ad_name = ad.get("ad_name", "UNKNOWN")
+    account_id = ad.get("account_id", "UNKNOWN")
+    instagram_acc_name = ad.get("instagram_acc_name", "")
+    ad_keys = list(ad.keys())
+    
+    # ✅ ad_id 필수 검증
+    if not ad_id:
+        logger.warning(
+            f"[META_API][SKIP] reason=missing_ad_id, "
+            f"account_id={account_id}, ad_name={ad_name[:50]}, "
+            f"keys={ad_keys}"
+        )
+        return None, "missing_ad_id"
+    
+    logger.info(f"[META_API] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}, account_id={account_id}")
     
     # ✅ 호출 시점에 토큰 읽기 (토큰 없으면 RuntimeError 발생)
-    access_token = _get_meta_access_token()
+    try:
+        access_token = _get_meta_access_token()
+    except RuntimeError as e:
+        logger.error(f"[META_API][SKIP] reason=token_missing, ad_id={ad_id}, error={e}")
+        raise  # 토큰 에러는 전파
     
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)
         creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={access_token}"
         logger.info(f"[META_API] 1차 요청(adcreatives) 시작: ad_id={ad_id}")
         
-        creative_data = _safe_meta_api_get(creative_url, timeout=3, context=f"adcreatives ad_id={ad_id}")
+        creative_data, api_error = _safe_meta_api_get(creative_url, timeout=3, context=f"adcreatives ad_id={ad_id}")
         if creative_data is None:
-            return None
+            skip_reason = f"adcreatives_api_{api_error}"
+            logger.warning(
+                f"[META_API][SKIP] reason={skip_reason}, "
+                f"ad_id={ad_id}, account_id={account_id}, ad_name={ad_name[:50]}"
+            )
+            return None, skip_reason
         
-        creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
+        # ✅ adcreatives 응답 구조 검증
+        adcreatives = creative_data.get("adcreatives")
+        if not adcreatives:
+            logger.warning(
+                f"[META_API][SKIP] reason=no_adcreatives_field, "
+                f"ad_id={ad_id}, account_id={account_id}, "
+                f"response_keys={list(creative_data.keys())}"
+            )
+            return None, "no_adcreatives_field"
+        
+        adcreatives_data = adcreatives.get("data", [])
+        if not adcreatives_data or len(adcreatives_data) == 0:
+            logger.warning(
+                f"[META_API][SKIP] reason=empty_adcreatives_data, "
+                f"ad_id={ad_id}, account_id={account_id}, "
+                f"adcreatives={adcreatives}"
+            )
+            return None, "empty_adcreatives_data"
+        
+        creative_id = adcreatives_data[0].get("id")
         if not creative_id:
-            logger.warning(f"[META_API] creative_id 없음 (ad_id={ad_id}): adcreatives.data={creative_data.get('adcreatives', {}).get('data', [])}")
-            return None
+            logger.warning(
+                f"[META_API][SKIP] reason=missing_creative_id, "
+                f"ad_id={ad_id}, account_id={account_id}, "
+                f"adcreatives_data[0]={adcreatives_data[0]}"
+            )
+            return None, "missing_creative_id"
         
         logger.info(f"[META_API] creative_id 조회 성공: ad_id={ad_id}, creative_id={creative_id}")
 
@@ -327,9 +395,14 @@ def get_single_ad_details(ad):
         )
         logger.info(f"[META_API] 2차 요청(creative_detail) 시작: creative_id={creative_id}")
         
-        detail_data = _safe_meta_api_get(detail_url, timeout=3, context=f"creative_detail creative_id={creative_id}")
+        detail_data, api_error = _safe_meta_api_get(detail_url, timeout=3, context=f"creative_detail creative_id={creative_id}")
         if detail_data is None:
-            return None
+            skip_reason = f"creative_detail_api_{api_error}"
+            logger.warning(
+                f"[META_API][SKIP] reason={skip_reason}, "
+                f"ad_id={ad_id}, creative_id={creative_id}, account_id={account_id}"
+            )
+            return None, skip_reason
 
         # asset_feed_spec 추출 (NGN 자동 형식 광고용)
         asset_feed = detail_data.get("asset_feed_spec", {})
@@ -399,16 +472,16 @@ def get_single_ad_details(ad):
                 f"https://graph.facebook.com/v24.0/{extracted_video_id}"
                 f"?fields=source&access_token={access_token}"
             )
-            video_data = _safe_meta_api_get(video_api, timeout=3, context=f"video_source video_id={extracted_video_id}")
+            video_data, video_error = _safe_meta_api_get(video_api, timeout=3, context=f"video_source video_id={extracted_video_id}")
             if video_data:
                 video_url = video_data.get("source")
             else:
-                logger.warning(f"[META_API] 비디오 source 조회 실패 (ad_id={ad_id}), 썸네일로 폴백")
+                logger.warning(f"[META_API] 비디오 source 조회 실패 (ad_id={ad_id}, error={video_error}), 썸네일로 폴백")
             
             # 2단계: 비디오 source가 없거나 실패한 경우, 고화질 썸네일 조회
             if not video_url:
                 thumb_url = f"https://graph.facebook.com/v24.0/{extracted_video_id}?fields=thumbnails&access_token={access_token}"
-                thumb_data = _safe_meta_api_get(thumb_url, timeout=2, context=f"video_thumbnails video_id={extracted_video_id}")
+                thumb_data, thumb_error = _safe_meta_api_get(thumb_url, timeout=2, context=f"video_thumbnails video_id={extracted_video_id}")
                 if thumb_data:
                     thumbnails = thumb_data.get("thumbnails", {}).get("data", [])
                     if thumbnails:
@@ -440,8 +513,12 @@ def get_single_ad_details(ad):
 
         # ✅ 이미지 URL 또는 비디오 URL 중 하나는 있어야 함
         if (not image_url or image_url.strip() == "") and (not video_url or video_url.strip() == ""):
-            logger.warning(f"[META_API] 이미지/비디오 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
-            return None
+            logger.warning(
+                f"[META_API][SKIP] reason=no_image_or_video_url, "
+                f"ad_id={ad_id}, account_id={account_id}, ad_name={ad_name[:50]}, "
+                f"detail_keys={list(detail_data.keys())}"
+            )
+            return None, "no_image_or_video_url"
         
         # ✅ 이미지 URL을 프록시 URL로 변환 (배포 환경 대응)
         proxy_image_url = get_proxy_image_url(image_url) if image_url else ""
@@ -457,8 +534,12 @@ def get_single_ad_details(ad):
             "image_url": proxy_image_url,  # 프록시 URL로 변환된 썸네일 또는 이미지 광고용
             "video_url": video_url,  # 비디오 광고 원본 URL (있을 경우)
             "is_video": bool(extracted_video_id)
-        }
+        }, None  # 성공 시 skip_reason = None
 
     except Exception as e:
-        logger.exception(f"[META_API] 광고 미리보기 정보 가져오기 실패 (ad_id={ad_id}): {type(e).__name__}")
-        return None
+        skip_reason = f"exception_{type(e).__name__}"
+        logger.exception(
+            f"[META_API][SKIP] reason={skip_reason}, "
+            f"ad_id={ad_id}, account_id={account_id}, ad_name={ad_name[:50]}"
+        )
+        return None, skip_reason

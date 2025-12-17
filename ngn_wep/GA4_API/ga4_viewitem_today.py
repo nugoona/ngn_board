@@ -98,6 +98,12 @@ def collect_ga4_events(target_date):
             continue
 
     df_events = pd.DataFrame(all_rows_events)
+    
+    # ✅ 데이터가 없을 경우 빈 DataFrame 처리
+    if df_events.empty or "event_date" not in df_events.columns:
+        logging.warning(f"⚠️ {target_date} 날짜에 GA4 이벤트 데이터가 없습니다.")
+        return
+    
     df_events["event_date"] = pd.to_datetime(df_events["event_date"]).dt.date
     df_events["ga4_property_id"] = df_events["ga4_property_id"].astype(int)
 

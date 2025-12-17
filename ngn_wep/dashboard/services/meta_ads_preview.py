@@ -129,7 +129,9 @@ def get_meta_ads_preview_list(account_id):
     
     # 디버깅: 조회된 광고 목록 출력
     if ad_list:
-        print(f"[BIGQUERY] 조회된 광고 목록 (최대 5개): {[{'ad_id': ad.get('ad_id'), 'ad_name': ad.get('ad_name')} for ad in ad_list[:5]]}")
+        print(f"[BIGQUERY] 조회된 광고 목록 (최대 5개):")
+        for idx, ad in enumerate(ad_list[:5], 1):
+            print(f"  {idx}. ad_id={ad.get('ad_id')}, ad_name={ad.get('ad_name', '')[:50]}")
     else:
         print(f"[BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, 쿼리 조건 확인 필요")
 
@@ -154,6 +156,11 @@ def get_ads_details_parallel(ad_list):
     """
     병렬 처리로 광고 상세 정보를 수집합니다.
     """
+    print(f"[META_API] get_ads_details_parallel 시작: {len(ad_list)}개 광고 처리")
+    if not ad_list:
+        print("[META_API] ⚠️ ad_list가 비어있습니다!")
+        return []
+    
     results = []
     
     # ThreadPoolExecutor를 사용한 병렬 처리
@@ -193,8 +200,11 @@ def get_single_ad_details(ad):
     """
     단일 광고의 상세 정보를 수집합니다.
     """
-    ad_id = ad["ad_id"]
+    ad_id = ad.get("ad_id", "UNKNOWN")
+    ad_name = ad.get("ad_name", "UNKNOWN")
     instagram_acc_name = ad.get("instagram_acc_name", "")
+    
+    print(f"[DEBUG] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}")
     
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)

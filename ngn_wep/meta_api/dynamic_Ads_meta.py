@@ -14,16 +14,13 @@ from typing import Iterable, List, Sequence, Tuple, Dict, Optional
 
 # ───── 외부 패키지 ───────────────────────────────────
 import requests
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from google.cloud import bigquery
 
 # ───────── 환경 변수 로드 ─────────
 # ① 컨테이너 내 경로(/app/.env)를 우선 로드
-load_dotenv(dotenv_path="/app/.env", override=True)
-
-# ② 로컬 테스트용 fallback (로컬 경로에 .env가 존재하면 덮어쓰기 X)
-if not os.getenv("META_SYSTEM_TOKEN") and not os.getenv("META_SYSTEM_USER_TOKEN"):
-    load_dotenv(find_dotenv(os.path.expanduser("~/ngn_board/config/ngn.env")), override=False)
+if os.path.exists("/app/.env"):
+    load_dotenv(dotenv_path="/app/.env", override=True)
 
 
 # ───────── Meta / BigQuery 공통 ─────────

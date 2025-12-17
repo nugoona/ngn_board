@@ -423,7 +423,7 @@ def get_meta_ads_by_account():
 @mobile_blueprint.route("/get_live_ads", methods=["POST"])
 @login_required
 def get_live_ads():
-    """특정 계정의 LIVE 광고 미리보기 조회 - 최적화된 버전"""
+    """특정 계정의 LIVE 광고 미리보기 조회 - 캐시 제거 버전"""
     import logging
     import time
     mobile_logger = logging.getLogger(__name__)
@@ -432,58 +432,19 @@ def get_live_ads():
         data = request.get_json() or {}
         account_id = data.get("account_id")
         
-        mobile_logger.warning(f"[META_API][MOBILE] get_live_ads 요청 시작: account_id={account_id}")
-        
         if not account_id:
             mobile_logger.warning(f"[META_API][MOBILE] account_id 누락")
             return jsonify({"status": "error", "message": "account_id 누락"}), 400
         
-        # ✅ 캐시 키 생성 (계정별 + 날짜별)
-        from datetime import datetime
-        cache_key = f"live_ads_{account_id}_{datetime.now().strftime('%Y%m%d')}"
-        mobile_logger.warning(f"[META_API][MOBILE] cache_key={cache_key}")
+        # ✅ [NO_CACHE] 캐시 완전 제거 - 항상 직접 호출
+        mobile_logger.warning(f"[META_API][NO_CACHE] live preview - cache bypassed, account_id={account_id}")
+        mobile_logger.warning(f"[META_API][ENTER] get_meta_ads_preview_list account_id={account_id}")
         
-        # ✅ 캐시 확인 (Redis 또는 메모리 캐시)
-        try:
-            from ..utils.cache_utils import get_cached_data, set_cached_data
-            cached_result = get_cached_data(cache_key)
-            
-            # ✅ 캐시 히트 여부 및 내용 상세 로깅
-            mobile_logger.warning(
-                f"[META_API][MOBILE][CACHE_CHECK] "
-                f"cache_key={cache_key}, "
-                f"cached_result_type={type(cached_result).__name__}, "
-                f"cached_result_len={len(cached_result) if cached_result else 0}, "
-                f"is_truthy={bool(cached_result)}"
-            )
-            
-            # ⚠️ 빈 리스트는 캐시 히트로 취급하지 않음 (버그 수정)
-            if cached_result and len(cached_result) > 0:
-                mobile_logger.warning(f"[META_API][MOBILE][CACHE_HIT] 🚀 캐시 히트: account_id={account_id}, count={len(cached_result)}")
-                return jsonify({
-                    "status": "success",
-                    "live_ads": cached_result,
-                    "cached": True
-                })
-        except Exception as cache_error:
-            mobile_logger.exception(f"[META_API][MOBILE][CACHE_ERROR] 캐시 확인 실패: {cache_error}")
-        
-        # ✅ 캐시 미스 - 새로운 데이터 조회
-        mobile_logger.warning(f"[META_API][MOBILE][CACHE_MISS] 🔍 캐시 미스: account_id={account_id}, calling get_meta_ads_preview_list()...")
         start_time = time.time()
         live_ads = get_meta_ads_preview_list(account_id)
         processing_time = time.time() - start_time
-        mobile_logger.warning(f"[META_API][MOBILE][RESULT] 결과: {len(live_ads) if live_ads else 0}개, {processing_time:.2f}초")
         
-        # ✅ 결과 캐싱 (30분간 유효) - 빈 리스트는 캐싱하지 않음
-        try:
-            if live_ads and len(live_ads) > 0:
-                set_cached_data(cache_key, live_ads, ttl=1800)  # 30분
-                mobile_logger.warning(f"[META_API][MOBILE][CACHE_SET] 💾 캐시 저장: {len(live_ads)}개")
-            else:
-                mobile_logger.warning(f"[META_API][MOBILE][CACHE_SKIP] ⚠️ 빈 결과는 캐싱하지 않음")
-        except Exception as cache_error:
-            mobile_logger.exception(f"[META_API][MOBILE][CACHE_ERROR] 캐시 저장 실패: {cache_error}")
+        mobile_logger.warning(f"[META_API][RESULT] 결과: {len(live_ads) if live_ads else 0}개, {processing_time:.2f}초")
         
         return jsonify({
             "status": "success",

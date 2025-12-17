@@ -553,8 +553,10 @@ async function fetchLiveAds(accountId) {
         if (liveAdsCache.has(cacheKey)) {
             console.log('🎯 LIVE 광고 미리보기 캐시 사용:', accountId);
             const cachedData = liveAdsCache.get(cacheKey);
-            renderLiveAds(cachedData.live_ads);
+            const liveAds = cachedData.live_ads || [];
+            // 섹션 표시 후 렌더링 (renderLiveAds 내부에서 showLiveAdsContent 호출하여 로딩 상태 해제)
             showLiveAdsSection();
+            renderLiveAds(liveAds);
             return;
         }
 
@@ -576,11 +578,14 @@ async function fetchLiveAds(accountId) {
         const data = await response.json();
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
-        if (data.status === 'success' && data.live_ads) {
+        if (data.status === 'success') {
+            // 빈 배열도 포함하여 항상 renderLiveAds 호출
+            const liveAds = data.live_ads || [];
             // 캐시 저장
             liveAdsCache.set(cacheKey, data);
-            renderLiveAds(data.live_ads);
+            // 섹션 표시 후 렌더링 (renderLiveAds 내부에서 showLiveAdsContent 호출하여 로딩 상태 해제)
             showLiveAdsSection();
+            renderLiveAds(liveAds);
         } else {
             console.warn('🔍 LIVE 광고 미리보기 데이터 없음');
             hideLiveAdsSection();
@@ -1435,12 +1440,17 @@ function renderLiveAds(liveAds) {
     console.log('🖼️ LIVE 광고 미리보기 순차적 렌더링 시작:', liveAds);
     
     const liveAdsScroll = document.getElementById('live-ads-scroll');
-    if (!liveAdsScroll) return;
+    if (!liveAdsScroll) {
+        console.warn('⚠️ live-ads-scroll 요소를 찾을 수 없습니다.');
+        return;
+    }
     
     liveAdsScroll.innerHTML = '';
     
     // 실제 데이터가 없는 경우
-    if (liveAds.length === 0) {
+    if (!liveAds || liveAds.length === 0) {
+        console.log('📭 LIVE 광고 없음 - 메시지 표시');
+        // 로딩 상태 즉시 해제
         showLiveAdsContent();
         liveAdsScroll.innerHTML = '<div class="text-center" style="padding: 20px; color: #6b7280;">미리볼 광고가 없습니다.</div>';
         return;
@@ -1702,10 +1712,29 @@ function showLiveAdsContent() {
     const liveAdsScroll = document.getElementById('live-ads-scroll');
     const loadingStatus = document.getElementById('loading-status');
     
+    console.log('🔄 showLiveAdsContent 호출 - 로딩 상태 해제');
+    
     // 로딩 상태와 스켈레톤 UI 숨기고 실제 컨텐츠 표시
-    if (loadingStatus) loadingStatus.style.display = 'none';
-    if (liveAdsSkeleton) liveAdsSkeleton.style.display = 'none';
-    if (liveAdsScroll) liveAdsScroll.style.display = 'flex';
+    if (loadingStatus) {
+        loadingStatus.style.display = 'none';
+        console.log('✅ loading-status 숨김');
+    } else {
+        console.warn('⚠️ loading-status 요소를 찾을 수 없습니다.');
+    }
+    
+    if (liveAdsSkeleton) {
+        liveAdsSkeleton.style.display = 'none';
+        console.log('✅ live-ads-skeleton 숨김');
+    } else {
+        console.warn('⚠️ live-ads-skeleton 요소를 찾을 수 없습니다.');
+    }
+    
+    if (liveAdsScroll) {
+        liveAdsScroll.style.display = 'flex';
+        console.log('✅ live-ads-scroll 표시');
+    } else {
+        console.warn('⚠️ live-ads-scroll 요소를 찾을 수 없습니다.');
+    }
 }
 
 // ─────────────────────────────────────────────

@@ -31,7 +31,18 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────
-# 3) 블루프린트 임포트
+# 3) Cloud Run 환경변수 처리 (블루프린트 임포트 전)
+# ─────────────────────────────────────────────
+# ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
+# (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
+if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.json":
+    # 파일이 존재하지 않으면 환경변수 제거하여 ADC 사용
+    if not os.path.exists("/app/service-account.json"):
+        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+        print("[ENV] Cloud Run 환경 감지 - GOOGLE_APPLICATION_CREDENTIALS 제거, ADC 사용")
+
+# ─────────────────────────────────────────────
+# 4) 블루프린트 임포트
 # ─────────────────────────────────────────────
 from .handlers.accounts_handler   import accounts_blueprint
 from .handlers.data_handler       import data_blueprint
@@ -40,9 +51,9 @@ from .services.meta_demo_handler  import meta_demo_blueprint
 from .handlers.mobile_handler     import mobile_blueprint
 
 # ─────────────────────────────────────────────
-# 4) Flask 앱 생성 & 기본 설정
+# 5) Flask 앱 생성 & 기본 설정
 # ─────────────────────────────────────────────
-import os
+
 static_folder_path = os.path.join(os.path.dirname(__file__), 'static')
 app = Flask(__name__, 
            static_folder=static_folder_path,
@@ -60,13 +71,16 @@ print(f"[DEBUG] favicon.ico exists: {os.path.exists(os.path.join(static_folder_p
 # 캐시 헤더 제거 - 버전 파라미터로 대체
 
 # ─────────────────────────────────────────────
-# 5) Google Cloud 인증 경로 확인
+# 6) Google Cloud 인증 경로 확인
 # ─────────────────────────────────────────────
 gcp_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 if gcp_path and os.path.exists(gcp_path):
     LOG.info("GCP 인증 경로 적용됨: %s", gcp_path)
 else:
-    LOG.error("GCP 인증 파일이 존재하지 않거나 설정되지 않음: %s", gcp_path)
+    if gcp_path:
+        LOG.info("GCP 인증 파일이 없지만 ADC(Application Default Credentials) 사용: %s", gcp_path)
+    else:
+        LOG.info("GCP 인증: ADC(Application Default Credentials) 사용")
 
 # ─────────────────────────────────────────────
 # 6) 모바일 디바이스 감지 함수

@@ -5,3 +5,24 @@ service-account.json
 *.pyc
 node_modules
 lh_report*.html
+
+# Vim swap files
+*.swp
+*.swo
+*~
+
+# Redis dump files
+dump.rdb
+*.rdb
+
+# Backup directories
+*_backup*/
+*_backup_*/
+
+# Logs
+logs/
+*.log
+
+# Code analysis reports
+bandit.txt
+complexity.txt

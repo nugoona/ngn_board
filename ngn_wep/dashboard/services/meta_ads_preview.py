@@ -3,9 +3,33 @@ import requests
 from google.cloud import bigquery
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from urllib.parse import quote
+
+# ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
+# (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
+if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.json":
+    if not os.path.exists("/app/service-account.json"):
+        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 # ✅ 환경변수에서 장기 토큰 불러오기
 META_ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
+
+def get_proxy_image_url(image_url):
+    """
+    이미지 URL을 프록시 URL로 변환합니다.
+    배포 환경에서 CORS 및 Mixed Content 문제를 해결하기 위해 사용합니다.
+    """
+    if not image_url or image_url.strip() == "":
+        return ""
+    
+    # 로컬 파일 경로인 경우 그대로 반환
+    if image_url.startswith("/static/"):
+        return image_url
+    
+    # 외부 URL인 경우 프록시 URL로 변환
+    # URL 인코딩하여 프록시 엔드포인트에 전달
+    encoded_url = quote(image_url, safe='')
+    return f"/dashboard/proxy_image?url={encoded_url}"
 
 def get_meta_ads_preview_list(account_id):
     """
@@ -102,6 +126,14 @@ def get_meta_ads_preview_list(account_id):
     ad_list = [dict(row) for row in ads]
     query_time = time.time() - query_start
     print(f"[BIGQUERY] 광고 목록 조회 완료: {len(ad_list)}개, {query_time:.2f}초")
+    
+    # 디버깅: 조회된 광고 목록 출력
+    if ad_list:
+        print(f"[BIGQUERY] 조회된 광고 목록 (최대 5개):")
+        for idx, ad in enumerate(ad_list[:5], 1):
+            print(f"  {idx}. ad_id={ad.get('ad_id')}, ad_name={ad.get('ad_name', '')[:50]}")
+    else:
+        print(f"[BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, 쿼리 조건 확인 필요")
 
     if not ad_list:
         print("[RESULT] 활성 광고 없음")
@@ -124,6 +156,11 @@ def get_ads_details_parallel(ad_list):
     """
     병렬 처리로 광고 상세 정보를 수집합니다.
     """
+    print(f"[META_API] get_ads_details_parallel 시작: {len(ad_list)}개 광고 처리")
+    if not ad_list:
+        print("[META_API] ⚠️ ad_list가 비어있습니다!")
+        return []
+    
     results = []
     
     # ThreadPoolExecutor를 사용한 병렬 처리
@@ -135,15 +172,26 @@ def get_ads_details_parallel(ad_list):
         }
         
         # 완료된 작업들을 순서대로 처리
+        success_count = 0
+        fail_count = 0
         for future in as_completed(future_to_ad):
             ad = future_to_ad[future]
             try:
                 result = future.result()
                 if result:  # 유효한 결과만 추가
                     results.append(result)
+                    success_count += 1
+                else:
+                    fail_count += 1
+                    print(f"[WARNING] 광고 상세 정보 수집 결과 없음 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')})")
             except Exception as e:
-                print(f"[WARNING] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}): {e}")
+                fail_count += 1
+                print(f"[ERROR] 광고 상세 정보 수집 실패 (ad_id={ad.get('ad_id', 'unknown')}, ad_name={ad.get('ad_name', 'unknown')}): {type(e).__name__}: {e}")
+                import traceback
+                print(f"[ERROR] 상세 에러: {traceback.format_exc()}")
                 continue
+        
+        print(f"[META_API] 수집 결과: 성공={success_count}개, 실패={fail_count}개, 총={len(ad_list)}개")
     
     return results
 
@@ -152,17 +200,31 @@ def get_single_ad_details(ad):
     """
     단일 광고의 상세 정보를 수집합니다.
     """
-    ad_id = ad["ad_id"]
+    ad_id = ad.get("ad_id", "UNKNOWN")
+    ad_name = ad.get("ad_name", "UNKNOWN")
     instagram_acc_name = ad.get("instagram_acc_name", "")
+    
+    print(f"[DEBUG] get_single_ad_details 시작: ad_id={ad_id}, ad_name={ad_name[:50]}")
     
     try:
         # 1차 요청: 크리에이티브 ID (타임아웃 단축)
         creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+        print(f"[DEBUG] Meta API 요청 시작: ad_id={ad_id}")
         creative_res = requests.get(creative_url, timeout=3)
         creative_data = creative_res.json()
+        
+        # API 에러 확인
+        if "error" in creative_data:
+            error_info = creative_data.get("error", {})
+            print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): code={error_info.get('code')}, message={error_info.get('message')}, type={error_info.get('type')}")
+            return None
+        
         creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
         if not creative_id:
+            print(f"[WARNING] creative_id 없음 (ad_id={ad_id}): adcreatives.data={creative_data.get('adcreatives', {}).get('data', [])}")
             return None
+        
+        print(f"[DEBUG] creative_id 조회 성공: ad_id={ad_id}, creative_id={creative_id}")
 
         # 2차 요청: 상세 정보 (타임아웃 단축) - asset_feed_spec 포함하여 자동 형식 광고 지원
         detail_url = (
@@ -303,13 +365,16 @@ def get_single_ad_details(ad):
             print(f"[FILTERED] 이미지/비디오 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
             return None
         
+        # ✅ 이미지 URL을 프록시 URL로 변환 (배포 환경 대응)
+        proxy_image_url = get_proxy_image_url(image_url) if image_url else ""
+        
         return {
             "ad_id": ad_id,
             "ad_name": ad["ad_name"],
             "instagram_acc_name": instagram_acc_name,
             "message": message,
             "link": link,
-            "image_url": image_url,  # 썸네일 또는 이미지 광고용
+            "image_url": proxy_image_url,  # 프록시 URL로 변환된 썸네일 또는 이미지 광고용
             "video_url": video_url,  # 비디오 광고 원본 URL (있을 경우)
             "is_video": bool(extracted_video_id)
         }

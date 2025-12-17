@@ -304,6 +304,10 @@ def get_meta_accounts():
         data = request.get_json() or {}
         user_id = session.get("user_id")
         
+        # ✅ 웹버전과 동일하게 demo일 때 세션 강제 설정
+        if user_id == "demo":
+            session["company_names"] = ["demo"]
+        
         raw_company_name = data.get("company_name", "all")
         if raw_company_name == "all":
             company_name = ["demo"] if user_id == "demo" else [

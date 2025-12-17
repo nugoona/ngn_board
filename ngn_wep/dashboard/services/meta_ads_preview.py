@@ -209,21 +209,97 @@ def get_meta_ads_preview_list(account_id):
     logger.warning("[META_API][BIGQUERY] 광고 목록 조회 시작")
     query_start = time.time()
     ads = client.query(query).result()
-    ad_list = [dict(row) for row in ads]
+    
+    # ✅ BigQuery 결과를 ad_list로 변환하면서 상세 로깅
+    ad_list = []
+    raw_row_count = 0
+    filtered_count = 0
+    
+    for row in ads:
+        raw_row_count += 1
+        try:
+            ad_dict = dict(row)
+            ad_id = ad_dict.get("ad_id")
+            
+            # ad_id가 없으면 필터링 로그
+            if not ad_id:
+                filtered_count += 1
+                logger.warning(
+                    f"[META_API][FILTERED_BEFORE_PARALLEL] "
+                    f"idx={raw_row_count-1}, reason=missing_ad_id, "
+                    f"keys={list(ad_dict.keys())}, "
+                    f"ad_name={ad_dict.get('ad_name', 'N/A')[:40]}"
+                )
+                continue  # ad_id 없으면 스킵
+            
+            ad_list.append(ad_dict)
+            
+        except Exception as e:
+            filtered_count += 1
+            logger.warning(
+                f"[META_API][FILTERED_BEFORE_PARALLEL] "
+                f"idx={raw_row_count-1}, reason=dict_conversion_error, "
+                f"error={type(e).__name__}: {e}"
+            )
+            continue
+    
     query_time = time.time() - query_start
-    logger.warning(f"[META_API][BIGQUERY] 광고 목록 조회 완료: {len(ad_list)}개, {query_time:.2f}초")
+    logger.warning(
+        f"[META_API][BIGQUERY] 광고 목록 조회 완료: "
+        f"raw_rows={raw_row_count}, valid_ads={len(ad_list)}, filtered={filtered_count}, "
+        f"query_time={query_time:.2f}초"
+    )
     
     # 디버깅: 조회된 광고 목록 출력
     if ad_list:
         logger.warning(f"[META_API][BIGQUERY] 조회된 광고 목록 (최대 5개):")
         for idx, ad in enumerate(ad_list[:5], 1):
-            logger.warning(f"[META_API][BIGQUERY]   {idx}. ad_id={ad.get('ad_id')}, ad_name={ad.get('ad_name', '')[:50]}")
+            logger.warning(
+                f"[META_API][BIGQUERY]   {idx}. "
+                f"ad_id={ad.get('ad_id')}, "
+                f"ad_name={ad.get('ad_name', '')[:50]}, "
+                f"account_id={ad.get('account_id')}"
+            )
     else:
-        logger.warning(f"[META_API][BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, 쿼리 조건 확인 필요")
+        logger.warning(f"[META_API][BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, raw_rows={raw_row_count}, 쿼리 조건 확인 필요")
 
     if not ad_list:
         logger.warning("[META_API][RESULT] 활성 광고 없음")
         return []
+
+    # ✅ [PRE_FILTER] 병렬 처리 직전 ad_list 상태 강제 로깅
+    logger.warning(f"[META_API][PRE_FILTER] ========== 병렬 처리 직전 ad_list 검사 시작 ==========")
+    logger.warning(f"[META_API][PRE_FILTER] total_ads={len(ad_list)}, ad_list_type={type(ad_list).__name__}")
+    
+    for idx, ad in enumerate(ad_list[:3]):
+        ad_id_val = ad.get("ad_id") if isinstance(ad, dict) else None
+        ad_name_val = ad.get("ad_name", "N/A")[:40] if isinstance(ad, dict) else "N/A"
+        account_id_val = ad.get("account_id") if isinstance(ad, dict) else None
+        has_creative_id = "creative_id" in ad if isinstance(ad, dict) else False
+        has_creative = "creative" in ad if isinstance(ad, dict) else False
+        has_object_story_spec = "object_story_spec" in ad if isinstance(ad, dict) else False
+        ad_keys = list(ad.keys()) if isinstance(ad, dict) else []
+        
+        logger.warning(
+            f"[META_API][PRE_FILTER] idx={idx}, "
+            f"ad_id={ad_id_val}, "
+            f"account_id={account_id_val}, "
+            f"ad_name={ad_name_val}, "
+            f"has_creative_id={has_creative_id}, "
+            f"has_creative={has_creative}, "
+            f"has_object_story_spec={has_object_story_spec}, "
+            f"ad_type={type(ad).__name__}, "
+            f"keys={ad_keys}"
+        )
+    
+    # ad_list 요소 중 ad_id가 없는 것이 있는지 사전 검사
+    ads_without_id = [i for i, ad in enumerate(ad_list) if not (isinstance(ad, dict) and ad.get("ad_id"))]
+    if ads_without_id:
+        logger.warning(f"[META_API][PRE_FILTER] ⚠️ ad_id 누락된 인덱스: {ads_without_id[:10]}... (총 {len(ads_without_id)}개)")
+    else:
+        logger.warning(f"[META_API][PRE_FILTER] ✅ 모든 광고에 ad_id 존재함")
+    
+    logger.warning(f"[META_API][PRE_FILTER] ========== 병렬 처리 직전 ad_list 검사 완료 ==========")
 
     # ✅ 병렬 처리로 Meta API 호출 최적화
     logger.warning("[META_API][PARALLEL] 병렬 처리로 광고 상세 정보 수집 시작")

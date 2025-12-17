@@ -3,6 +3,7 @@ import requests
 from google.cloud import bigquery
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from urllib.parse import quote
 
 # ✅ Cloud Run에서는 키 파일 대신 런타임 서비스계정(ADC)을 사용
 # (키 파일 경로가 남아 있으면 /app/service-account.json 찾다가 부팅이 죽음)
@@ -12,6 +13,23 @@ if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") == "/app/service-account.jso
 
 # ✅ 환경변수에서 장기 토큰 불러오기
 META_ACCESS_TOKEN = os.getenv("META_SYSTEM_USER_TOKEN")
+
+def get_proxy_image_url(image_url):
+    """
+    이미지 URL을 프록시 URL로 변환합니다.
+    배포 환경에서 CORS 및 Mixed Content 문제를 해결하기 위해 사용합니다.
+    """
+    if not image_url or image_url.strip() == "":
+        return ""
+    
+    # 로컬 파일 경로인 경우 그대로 반환
+    if image_url.startswith("/static/"):
+        return image_url
+    
+    # 외부 URL인 경우 프록시 URL로 변환
+    # URL 인코딩하여 프록시 엔드포인트에 전달
+    encoded_url = quote(image_url, safe='')
+    return f"/dashboard/proxy_image?url={encoded_url}"
 
 def get_meta_ads_preview_list(account_id):
     """
@@ -108,6 +126,12 @@ def get_meta_ads_preview_list(account_id):
     ad_list = [dict(row) for row in ads]
     query_time = time.time() - query_start
     print(f"[BIGQUERY] 광고 목록 조회 완료: {len(ad_list)}개, {query_time:.2f}초")
+    
+    # 디버깅: 조회된 광고 목록 출력
+    if ad_list:
+        print(f"[BIGQUERY] 조회된 광고 목록 (최대 5개): {[{'ad_id': ad.get('ad_id'), 'ad_name': ad.get('ad_name')} for ad in ad_list[:5]]}")
+    else:
+        print(f"[BIGQUERY] ⚠️ 광고 목록이 비어있습니다. account_id={account_id}, 쿼리 조건 확인 필요")
 
     if not ad_list:
         print("[RESULT] 활성 광고 없음")
@@ -166,8 +190,16 @@ def get_single_ad_details(ad):
         creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
         creative_res = requests.get(creative_url, timeout=3)
         creative_data = creative_res.json()
+        
+        # API 에러 확인
+        if "error" in creative_data:
+            error_info = creative_data.get("error", {})
+            print(f"[ERROR] Meta API 에러 (ad_id={ad_id}): code={error_info.get('code')}, message={error_info.get('message')}")
+            return None
+        
         creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
         if not creative_id:
+            print(f"[WARNING] creative_id 없음 (ad_id={ad_id}): {creative_data}")
             return None
 
         # 2차 요청: 상세 정보 (타임아웃 단축) - asset_feed_spec 포함하여 자동 형식 광고 지원
@@ -309,13 +341,16 @@ def get_single_ad_details(ad):
             print(f"[FILTERED] 이미지/비디오 URL이 없어서 광고 제외 (ad_id={ad_id}, ad_name={ad['ad_name']})")
             return None
         
+        # ✅ 이미지 URL을 프록시 URL로 변환 (배포 환경 대응)
+        proxy_image_url = get_proxy_image_url(image_url) if image_url else ""
+        
         return {
             "ad_id": ad_id,
             "ad_name": ad["ad_name"],
             "instagram_acc_name": instagram_acc_name,
             "message": message,
             "link": link,
-            "image_url": image_url,  # 썸네일 또는 이미지 광고용
+            "image_url": proxy_image_url,  # 프록시 URL로 변환된 썸네일 또는 이미지 광고용
             "video_url": video_url,  # 비디오 광고 원본 URL (있을 경우)
             "is_video": bool(extracted_video_id)
         }

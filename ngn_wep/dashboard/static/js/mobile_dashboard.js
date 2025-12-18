@@ -540,23 +540,33 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
 }
 
 // ─────────────────────────────────────────────
-// 8) LIVE 광고 미리보기 조회 (캐시 적용)
+// 8) LIVE 광고 미리보기 조회 (캐시 적용 + 중복 요청 방지)
 // ─────────────────────────────────────────────
 const liveAdsCache = new Map();
+let currentLiveAdsRequestId = 0; // 현재 요청 ID (중복 요청 방지용)
 
 async function fetchLiveAds(accountId) {
     if (!accountId) return;
+    
+    // 새로운 요청 ID 생성 (이전 요청 무효화)
+    const requestId = ++currentLiveAdsRequestId;
+    console.log(`🔍 LIVE 광고 미리보기 요청 시작 (requestId: ${requestId}):`, accountId);
     
     try {
         // 캐시 체크
         const cacheKey = `${accountId}`;
         if (liveAdsCache.has(cacheKey)) {
+            // 요청 ID 체크 (이 사이에 새 요청이 들어왔으면 무시)
+            if (requestId !== currentLiveAdsRequestId) {
+                console.log(`🚫 LIVE 광고 캐시 무시 (requestId: ${requestId}, current: ${currentLiveAdsRequestId})`);
+                return;
+            }
             console.log('🎯 LIVE 광고 미리보기 캐시 사용:', accountId);
             const cachedData = liveAdsCache.get(cacheKey);
             const liveAds = cachedData.live_ads || [];
             // 섹션 표시 후 렌더링 (renderLiveAds 내부에서 showLiveAdsContent 호출하여 로딩 상태 해제)
             showLiveAdsSection();
-            renderLiveAds(liveAds);
+            renderLiveAds(liveAds, requestId);
             return;
         }
 
@@ -578,6 +588,12 @@ async function fetchLiveAds(accountId) {
         const data = await response.json();
         console.log('✅ LIVE 광고 미리보기 로딩 성공:', data);
         
+        // 요청 ID 체크 (이 사이에 새 요청이 들어왔으면 무시)
+        if (requestId !== currentLiveAdsRequestId) {
+            console.log(`🚫 LIVE 광고 응답 무시 (requestId: ${requestId}, current: ${currentLiveAdsRequestId})`);
+            return;
+        }
+        
         if (data.status === 'success') {
             // 빈 배열도 포함하여 항상 renderLiveAds 호출
             const liveAds = data.live_ads || [];
@@ -585,7 +601,7 @@ async function fetchLiveAds(accountId) {
             liveAdsCache.set(cacheKey, data);
             // 섹션 표시 후 렌더링 (renderLiveAds 내부에서 showLiveAdsContent 호출하여 로딩 상태 해제)
             showLiveAdsSection();
-            renderLiveAds(liveAds);
+            renderLiveAds(liveAds, requestId);
         } else {
             console.warn('🔍 LIVE 광고 미리보기 데이터 없음');
             hideLiveAdsSection();
@@ -1435,9 +1451,13 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
     console.log('✅ 메타 광고별 성과 렌더링 완료');
 }
 
-// LIVE 광고 미리보기 순차적 렌더링 (개선된 버전)
-function renderLiveAds(liveAds) {
-    console.log('🖼️ LIVE 광고 미리보기 순차적 렌더링 시작:', liveAds);
+// LIVE 광고 미리보기 순차적 렌더링 (개선된 버전 + 중복 렌더링 방지)
+let currentRenderSessionId = 0; // 현재 렌더링 세션 ID
+
+function renderLiveAds(liveAds, requestId) {
+    // 새로운 렌더링 세션 시작 (이전 렌더링 무효화)
+    const sessionId = ++currentRenderSessionId;
+    console.log(`🖼️ LIVE 광고 미리보기 순차적 렌더링 시작 (sessionId: ${sessionId}):`, liveAds);
     
     const liveAdsScroll = document.getElementById('live-ads-scroll');
     if (!liveAdsScroll) {
@@ -1461,12 +1481,18 @@ function renderLiveAds(liveAds) {
         showLiveAdsContent();
     }, 300);
     
-    // 순차적 렌더링 시작
-    renderLiveAdsSequentially(liveAds, 0);
+    // 순차적 렌더링 시작 (세션 ID 전달)
+    renderLiveAdsSequentially(liveAds, 0, sessionId);
 }
 
-// 순차적 렌더링 함수
-function renderLiveAdsSequentially(liveAds, index) {
+// 순차적 렌더링 함수 (세션 ID 체크 추가)
+function renderLiveAdsSequentially(liveAds, index, sessionId) {
+    // 세션 ID 체크 (새로운 렌더링이 시작되었으면 이전 렌더링 중단)
+    if (sessionId !== currentRenderSessionId) {
+        console.log(`🚫 LIVE 광고 렌더링 중단 (sessionId: ${sessionId}, current: ${currentRenderSessionId})`);
+        return;
+    }
+    
     if (index >= liveAds.length) {
         console.log('🖼️ 모든 LIVE 광고 렌더링 완료');
         return;
@@ -1497,7 +1523,7 @@ function renderLiveAdsSequentially(liveAds, index) {
             videoElement.style.display = 'block';
             adCard.style.opacity = '1';
             setTimeout(() => {
-                renderLiveAdsSequentially(liveAds, index + 1);
+                renderLiveAdsSequentially(liveAds, index + 1, sessionId);
             }, 200);
         });
         
@@ -1512,7 +1538,7 @@ function renderLiveAdsSequentially(liveAds, index) {
             if (placeholder) placeholder.style.display = 'none';
             adCard.style.opacity = '1';
             setTimeout(() => {
-                renderLiveAdsSequentially(liveAds, index + 1);
+                renderLiveAdsSequentially(liveAds, index + 1, sessionId);
             }, 200);
         });
         
@@ -1527,7 +1553,7 @@ function renderLiveAdsSequentially(liveAds, index) {
             imageElement.style.display = 'block';
             adCard.style.opacity = '1';
             setTimeout(() => {
-                renderLiveAdsSequentially(liveAds, index + 1);
+                renderLiveAdsSequentially(liveAds, index + 1, sessionId);
             }, 200);
         });
         
@@ -1537,7 +1563,7 @@ function renderLiveAdsSequentially(liveAds, index) {
             if (placeholder) placeholder.style.display = 'none';
             adCard.style.opacity = '1';
             setTimeout(() => {
-                renderLiveAdsSequentially(liveAds, index + 1);
+                renderLiveAdsSequentially(liveAds, index + 1, sessionId);
             }, 200);
         });
         
@@ -1549,7 +1575,7 @@ function renderLiveAdsSequentially(liveAds, index) {
         if (placeholder) placeholder.style.display = 'none';
         adCard.style.opacity = '1';
         setTimeout(() => {
-            renderLiveAdsSequentially(liveAds, index + 1);
+            renderLiveAdsSequentially(liveAds, index + 1, sessionId);
         }, 200);
     }
 }

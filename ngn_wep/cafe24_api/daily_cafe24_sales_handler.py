@@ -108,7 +108,7 @@ def run_query(process_date):
           JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
           ON os.mall_id = c.mall_id  
           GROUP BY os.payment_date, os.mall_id, c.company_name
-      ),
+      )
       
       -- ✅ 최종 집계 쿼리 (환불 금액 별도 추가)
       SELECT

@@ -59,41 +59,58 @@ def run_query(process_date):
           GROUP BY oi.mall_id, oi.order_id
       )
 
+      -- ✅ 주문 데이터 중복 제거 (order_id 기준 먼저 집계)
+      order_summary AS (
+          SELECT
+              o.mall_id,
+              o.order_id,
+              DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
+              MAX(
+                  CASE 
+                      WHEN o.order_price_amount = 0 THEN o.payment_amount + o.naverpay_point
+                      ELSE o.order_price_amount
+                  END
+              ) AS item_product_price,
+              MAX(o.shipping_fee) AS shipping_fee,
+              MAX(o.coupon_discount_price) AS coupon_discount_price,
+              MAX(o.payment_amount) AS payment_amount,
+              MAX(o.points_spent_amount) AS points_spent_amount,
+              MAX(o.naverpay_point) AS naverpay_point,
+              MAX(CASE WHEN LOWER(o.payment_method) LIKE '%선불금%' THEN 1 ELSE 0 END) AS is_prepayment,
+              MAX(CASE WHEN o.first_order = TRUE THEN 1 ELSE 0 END) AS is_first_order,
+              MAX(CASE WHEN o.canceled = TRUE THEN 1 ELSE 0 END) AS is_canceled,
+              MAX(CASE WHEN o.naverpay_payment_information = 'N' THEN 1 ELSE 0 END) AS is_naverpay_payment_info
+          FROM `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
+          WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
+          GROUP BY o.mall_id, o.order_id, payment_date
+      ),
+      
       -- ✅ 최종 집계 쿼리
       SELECT
-          DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
-          o.mall_id,
+          os.payment_date,
+          os.mall_id,
           c.company_name,
-          COUNT(DISTINCT o.order_id) AS total_orders,
+          COUNT(DISTINCT os.order_id) AS total_orders,
           0 AS item_orders,  -- 임시로 0으로 설정
-          SUM(
-              CASE 
-                  WHEN o.order_price_amount = 0 THEN o.payment_amount + o.naverpay_point
-                  ELSE o.order_price_amount
-              END
-          ) AS item_product_price,
-          SUM(o.shipping_fee) AS total_shipping_fee,
-          SUM(o.coupon_discount_price) AS total_coupon_discount,
-          SUM(o.payment_amount) + SUM(o.points_spent_amount) + SUM(o.naverpay_point) AS total_payment,
+          SUM(os.item_product_price) AS item_product_price,
+          SUM(os.shipping_fee) AS total_shipping_fee,
+          SUM(os.coupon_discount_price) AS total_coupon_discount,
+          SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) AS total_payment,
           COALESCE(r.total_refund_amount, 0) AS total_refund_amount,
-          (SUM(o.payment_amount) + SUM(o.points_spent_amount) + SUM(o.naverpay_point) - COALESCE(r.total_refund_amount, 0)) AS net_sales,
-          SUM(o.naverpay_point) AS total_naverpay_point,
-          SUM(CASE WHEN LOWER(o.payment_method) LIKE '%선불금%' THEN 1 ELSE 0 END) AS total_prepayment,
-          SUM(CASE WHEN o.first_order = TRUE THEN 1 ELSE 0 END) AS total_first_order,
-          SUM(CASE WHEN o.canceled = TRUE THEN 1 ELSE 0 END) AS total_canceled,
-          SUM(CASE WHEN o.naverpay_payment_information = 'N' THEN 1 ELSE 0 END) AS total_naverpay_payment_info,
+          (SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) - COALESCE(r.total_refund_amount, 0)) AS net_sales,
+          SUM(os.naverpay_point) AS total_naverpay_point,
+          SUM(os.is_prepayment) AS total_prepayment,
+          SUM(os.is_first_order) AS total_first_order,
+          SUM(os.is_canceled) AS total_canceled,
+          SUM(os.is_naverpay_payment_info) AS total_naverpay_payment_info,
           CURRENT_TIMESTAMP() AS updated_at
-      FROM `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
+      FROM order_summary AS os
       JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
-      ON o.mall_id = c.mall_id  
+      ON os.mall_id = c.mall_id  
       LEFT JOIN refund_summary AS r
-      ON o.mall_id = r.mall_id
-      AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = r.refund_date  
-      -- LEFT JOIN order_item_summary AS oi
-      -- ON o.mall_id = oi.mall_id
-      -- AND o.order_id = oi.order_id  
-      WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
-      GROUP BY payment_date, o.mall_id, c.company_name, r.total_refund_amount
+      ON os.mall_id = r.mall_id
+      AND os.payment_date = r.refund_date  
+      GROUP BY os.payment_date, os.mall_id, c.company_name, r.total_refund_amount
     ) AS source
 
     ON target.payment_date = source.payment_date

@@ -34,7 +34,7 @@ def run_query(process_date):
               refund_agg.refund_date,
               SUM(refund_agg.total_refund_amount) AS total_refund_amount
           FROM (
-              SELECT DISTINCT
+              SELECT
                   r.mall_id,
                   c.company_name,
                   DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,
@@ -85,32 +85,52 @@ def run_query(process_date):
           GROUP BY o.mall_id, o.order_id, payment_date
       ),
       
-      -- ✅ 최종 집계 쿼리
+      -- ✅ 주문 집계 (환불 제외)
+      order_agg AS (
+          SELECT
+              os.payment_date,
+              os.mall_id,
+              c.company_name,
+              COUNT(DISTINCT os.order_id) AS total_orders,
+              0 AS item_orders,  -- 임시로 0으로 설정
+              SUM(os.item_product_price) AS item_product_price,
+              SUM(os.shipping_fee) AS total_shipping_fee,
+              SUM(os.coupon_discount_price) AS total_coupon_discount,
+              SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) AS total_payment,
+              SUM(os.naverpay_point) AS total_naverpay_point,
+              SUM(os.is_prepayment) AS total_prepayment,
+              SUM(os.is_first_order) AS total_first_order,
+              SUM(os.is_canceled) AS total_canceled,
+              SUM(os.is_naverpay_payment_info) AS total_naverpay_payment_info
+          FROM order_summary AS os
+          JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
+          ON os.mall_id = c.mall_id  
+          GROUP BY os.payment_date, os.mall_id, c.company_name
+      ),
+      
+      -- ✅ 최종 집계 쿼리 (환불 금액 별도 추가)
       SELECT
-          os.payment_date,
-          os.mall_id,
-          c.company_name,
-          COUNT(DISTINCT os.order_id) AS total_orders,
-          0 AS item_orders,  -- 임시로 0으로 설정
-          SUM(os.item_product_price) AS item_product_price,
-          SUM(os.shipping_fee) AS total_shipping_fee,
-          SUM(os.coupon_discount_price) AS total_coupon_discount,
-          SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) AS total_payment,
+          oa.payment_date,
+          oa.mall_id,
+          oa.company_name,
+          oa.total_orders,
+          oa.item_orders,
+          oa.item_product_price,
+          oa.total_shipping_fee,
+          oa.total_coupon_discount,
+          oa.total_payment,
           COALESCE(r.total_refund_amount, 0) AS total_refund_amount,
-          (SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) - COALESCE(r.total_refund_amount, 0)) AS net_sales,
-          SUM(os.naverpay_point) AS total_naverpay_point,
-          SUM(os.is_prepayment) AS total_prepayment,
-          SUM(os.is_first_order) AS total_first_order,
-          SUM(os.is_canceled) AS total_canceled,
-          SUM(os.is_naverpay_payment_info) AS total_naverpay_payment_info,
+          (oa.total_payment - COALESCE(r.total_refund_amount, 0)) AS net_sales,
+          oa.total_naverpay_point,
+          oa.total_prepayment,
+          oa.total_first_order,
+          oa.total_canceled,
+          oa.total_naverpay_payment_info,
           CURRENT_TIMESTAMP() AS updated_at
-      FROM order_summary AS os
-      JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
-      ON os.mall_id = c.mall_id  
+      FROM order_agg AS oa
       LEFT JOIN refund_summary AS r
-      ON os.mall_id = r.mall_id
-      AND os.payment_date = r.refund_date  
-      GROUP BY os.payment_date, os.mall_id, c.company_name, r.total_refund_amount
+      ON oa.mall_id = r.mall_id
+      AND oa.payment_date = r.refund_date
     ) AS source
 
     ON target.payment_date = source.payment_date

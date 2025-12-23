@@ -27,13 +27,15 @@ def run_query(process_date):
           FROM `winged-precept-443218-v8.ngn_dataset.company_info`
       ),
       refund_summary AS (
-          -- ✅ order_id 기준으로 먼저 집계하여 cafe24_orders 중복 문제 해결
+          -- ✅ order_id 기준으로 먼저 집계하여 중복 문제 완전 해결
+          -- cafe24_refunds_table의 중복 레코드도 처리, cafe24_orders의 중복도 처리
           SELECT
               refund_agg.mall_id,
               refund_agg.company_name,
               refund_agg.refund_date,
               SUM(refund_agg.total_refund_amount) AS total_refund_amount
           FROM (
+              -- order_id별로 먼저 집계 (cafe24_refunds_table의 중복 레코드 처리)
               SELECT
                   r.mall_id,
                   c.company_name,
@@ -57,7 +59,7 @@ def run_query(process_date):
               COUNT(DISTINCT oi.order_item_code) AS total_sold_quantity  
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
           GROUP BY oi.mall_id, oi.order_id
-      )
+      ),
 
       -- ✅ 주문 데이터 중복 제거 (order_id 기준 먼저 집계)
       order_summary AS (
@@ -221,5 +223,8 @@ if __name__ == "__main__":
             logging.info(f"📅 {target_date} 처리 중... ({i+1}/7)")
             run_query(target_date)
         logging.info("✅ 최근 7일간 데이터 처리 완료!")
+    elif len(process_type) == 10 and process_type.count('-') == 2:
+        # 날짜 형식 (YYYY-MM-DD) 직접 지정
+        run_query(process_type)
     else:
-        logging.error("❌ 잘못된 파라미터입니다. 'today', 'yesterday', 또는 'last_7_days'만 지원됩니다.")
+        logging.error("❌ 잘못된 파라미터입니다. 'today', 'yesterday', 'last_7_days', 또는 'YYYY-MM-DD' 형식의 날짜를 지원합니다.")

@@ -10,6 +10,7 @@
 let mobileData = null;
 let isLoading = false;
 let selectedMetaAccount = null;
+let selectedAdPerformanceAccount = null; // 광고 성과 요약용 계정
 
 // 🚀 디바운싱을 위한 변수 추가
 let fetchMobileDataTimeout = null;
@@ -256,7 +257,7 @@ async function fetchMobileData() {
         // 🚀 병렬 처리로 개별 API 호출 (웹버전과 동일한 방식)
         const [performanceSummary, cafe24Products, ga4Sources] = await Promise.all([
             // 1. Performance Summary
-            fetch('/dashboard/get_data', {
+            fetch('/m/get_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -264,7 +265,8 @@ async function fetchMobileData() {
                     company_name: companyName,
                     period: period,
                     start_date: startDateValue,
-                    end_date: endDateValue
+                    end_date: endDateValue,
+                    account_id: selectedAdPerformanceAccount || null // 광고 성과 요약용 계정 ID 추가
                 })
             }).then(response => response.json()),
 
@@ -720,8 +722,13 @@ function setupFilters() {
             
             // 메타 광고 계정 선택 초기화
             selectedMetaAccount = null;
+            selectedAdPerformanceAccount = null; // 광고 성과 요약 계정도 초기화
             if (metaAccountSelect) {
                 metaAccountSelect.value = '';
+            }
+            const adPerformanceAccountSelect = document.getElementById('adPerformanceAccountSelector');
+            if (adPerformanceAccountSelect) {
+                adPerformanceAccountSelect.value = '';
             }
             hideLiveAdsSection();
             
@@ -1093,11 +1100,19 @@ function renderPerformanceSummary(performanceData) {
         }
     });
     
-    // 광고 성과 요약 제목에 광고 미디어 정보 추가
-    const adMedia = data.ad_media || '';
+    // 광고 성과 요약 제목 업데이트 (계정 선택에 따라)
     const adPerformanceSection = document.querySelector('.section:nth-child(3) .section-header');
-    if (adMedia && adPerformanceSection) {
-        adPerformanceSection.textContent = `광고 성과 요약 - ${adMedia}`;
+    if (adPerformanceSection) {
+        const adPerformanceAccountSelect = document.getElementById('adPerformanceAccountSelector');
+        const selectedAccountId = adPerformanceAccountSelect ? adPerformanceAccountSelect.value : null;
+        
+        if (selectedAccountId) {
+            const selectedOption = adPerformanceAccountSelect.options[adPerformanceAccountSelect.selectedIndex];
+            const accountName = selectedOption ? selectedOption.textContent : '선택된 계정';
+            adPerformanceSection.textContent = `광고 성과 요약 - ${accountName}`;
+        } else {
+            adPerformanceSection.textContent = '광고 성과 요약 - Meta';
+        }
     }
 }
 
@@ -1264,23 +1279,74 @@ function renderMetaAccountFilter(accounts) {
         }
     }
     
-    // 계정 선택 이벤트 추가
-    metaAccountSelect.addEventListener('change', function() {
-        const selectedAccountId = this.value;
-        console.log('🏢 선택된 메타 계정:', selectedAccountId);
-        
-        if (selectedAccountId) {
-            fetchMetaAdsByAccount(selectedAccountId);
-            fetchLiveAds(selectedAccountId); // LIVE 광고 미리보기 로드
-        } else {
-            // 계정이 선택되지 않은 경우 테이블 초기화
-            const tbody = document.getElementById('meta-ads-table');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
-            }
-            hideLiveAdsSection(); // LIVE 광고 섹션 숨기기
+    // 계정 선택 이벤트 추가 (기존 이벤트 제거 후 재등록)
+    metaAccountSelect.removeEventListener('change', handleMetaAccountChange);
+    metaAccountSelect.addEventListener('change', handleMetaAccountChange);
+    
+    // 광고 성과 요약용 계정 선택기도 함께 업데이트
+    renderAdPerformanceAccountFilter(accounts);
+}
+
+// 메타 광고 계정 변경 핸들러
+function handleMetaAccountChange(event) {
+    const selectedAccountId = event.target.value;
+    console.log('🏢 선택된 메타 계정:', selectedAccountId);
+    
+    selectedMetaAccount = selectedAccountId;
+    
+    if (selectedAccountId) {
+        fetchMetaAdsByAccount(selectedAccountId);
+        fetchLiveAds(selectedAccountId); // LIVE 광고 미리보기 로드
+    } else {
+        // 계정이 선택되지 않은 경우 테이블 초기화
+        const tbody = document.getElementById('meta-ads-table');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">계정을 선택해주세요</td></tr>';
         }
-    });
+        hideLiveAdsSection(); // LIVE 광고 섹션 숨기기
+    }
+}
+
+// 광고 성과 요약용 계정 필터 렌더링
+function renderAdPerformanceAccountFilter(accounts) {
+    console.log('📊 광고 성과 요약 계정 필터 렌더링:', accounts);
+    
+    const adPerformanceAccountSelect = document.getElementById('adPerformanceAccountSelector');
+    
+    if (!adPerformanceAccountSelect) return;
+    
+    // 기존 옵션 제거
+    adPerformanceAccountSelect.innerHTML = '<option value="">모든 계정</option>';
+    
+    // 계정이 있으면 옵션 추가
+    if (accounts && accounts.length > 0) {
+        accounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.account_id;
+            option.textContent = account.account_name;
+            adPerformanceAccountSelect.appendChild(option);
+        });
+        
+        // 기존 선택값 유지 (있는 경우)
+        if (selectedAdPerformanceAccount) {
+            adPerformanceAccountSelect.value = selectedAdPerformanceAccount;
+        }
+    }
+    
+    // 계정 선택 이벤트 추가 (기존 이벤트 제거 후 재등록)
+    adPerformanceAccountSelect.removeEventListener('change', handleAdPerformanceAccountChange);
+    adPerformanceAccountSelect.addEventListener('change', handleAdPerformanceAccountChange);
+}
+
+// 광고 성과 요약 계정 변경 핸들러
+function handleAdPerformanceAccountChange(event) {
+    const selectedAccountId = event.target.value || null;
+    console.log('📊 선택된 광고 성과 요약 계정:', selectedAccountId);
+    
+    selectedAdPerformanceAccount = selectedAccountId;
+    
+    // 광고 성과 요약 데이터 재로딩
+    debounceFetchMobileData();
 }
 
 // 메타 광고별 성과 렌더링 (광고 탭 기준)

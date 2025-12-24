@@ -8,14 +8,14 @@ def get_bigquery_client():
     return bigquery.Client()
 
 @cached_query(func_name="performance_summary_new", ttl=600)  # 10분 캐싱
-def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None):
+def get_performance_summary_new(company_name, start_date: str, end_date: str, user_id: str = None, account_id: str = None):
     """
     ✅ 새로운 통합 성과 요약 API (최적화됨)
     - 사이트 성과: 카페24 매출 데이터에서 직접 조회
-    - 광고 성과: 메타 광고 계정 단위 성과에서 직접 조회
+    - 광고 성과: 메타 광고 계정 단위 성과에서 직접 조회 (account_id가 있으면 해당 계정만)
     - 계산: 매출 대비 광고비 실시간 계산
     """
-    print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}")
+    print(f"[DEBUG] get_performance_summary_new 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, user_id: {user_id}, account_id: {account_id}")
     
     if not start_date or not end_date:
         raise ValueError("start_date / end_date가 없습니다.")
@@ -34,7 +34,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             # 4개 작업을 동시에 실행
             future_cafe24 = executor.submit(get_cafe24_summary_simple, company_name, start_date, end_date, user_id)
-            future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date)
+            future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date, account_id)
             future_ga4 = executor.submit(get_ga4_visitors_simple, company_name, start_date, end_date, user_id)
             future_product_views = executor.submit(get_ga4_product_views_simple, company_name, start_date, end_date, user_id)
             
@@ -132,11 +132,13 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
         print(f"[ERROR] 카페24 요약 조회 오류: {e}")
         return {"total_revenue": 0, "total_orders": 0}
 
-def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
+def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str, account_id: str = None):
     """
     ✅ 메타 광고 요약 (성과 요약용 최적화) - 계정 레벨만 조회
+    - account_id가 제공되면 해당 계정만 조회
+    - account_id가 없으면 모든 계정 합계 조회 (기존 동작)
     """
-    print(f"[DEBUG] get_meta_ads_summary_simple 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}")
+    print(f"[DEBUG] get_meta_ads_summary_simple 호출 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}, account_id: {account_id}")
     
     query_params = []
     
@@ -164,7 +166,13 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 모든 계정의 합산값 조회 (복수 계정 지원) - GROUP BY 제거하여 모든 업체 합계 구하기
+    # 계정 필터 조건 추가 (account_id가 제공된 경우)
+    account_filter = ""
+    if account_id:
+        account_filter = "AND A.account_id = @account_id"
+        query_params.append(bigquery.ScalarQueryParameter("account_id", "STRING", account_id))
+    
+    # 🔥 account_id가 있으면 해당 계정만, 없으면 모든 계정 합산값 조회
     query = f"""
         WITH latest_accounts AS (
           SELECT * EXCEPT(rn) FROM (
@@ -188,6 +196,7 @@ def get_meta_ads_summary_simple(company_name, start_date: str, end_date: str):
         WHERE A.date BETWEEN @start_date AND @end_date
           AND L.company_name IS NOT NULL
           AND {company_filter}
+          {account_filter}
         LIMIT 1
     """
     

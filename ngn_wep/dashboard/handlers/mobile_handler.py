@@ -185,11 +185,14 @@ def get_data():
                     t1 = time.time()
                     # 🚀 캐시 무효화 파라미터 처리
                     cache_buster = data.get('_cache_buster')
+                    # 🚀 광고 계정 ID 파라미터 처리 (옵셔널)
+                    account_id = data.get('account_id')
                     performance_data = get_performance_summary_new(
                         company_name=company_name,
                         start_date=start_date,
                         end_date=end_date,
-                        user_id=user_id
+                        user_id=user_id,
+                        account_id=account_id
                     )
                     t2 = time.time()
                     timing_log["performance_summary"] = round(t2-t1, 3)

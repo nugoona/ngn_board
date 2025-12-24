@@ -2109,6 +2109,13 @@ th.sortable.desc::after {
   text-overflow: unset !important;
 }
 
+/* ✅ URL 상품 테이블 첫 번째 컬럼(체크박스)은 항상 정렬 유지 */
+#manualProductTableBody td:first-child,
+#manualProductTableBody th:first-child {
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
 /* ✅ 테이블 헤더 고정 */
 .catalog-table th {
   background-color: #f1f1f1;
@@ -2445,6 +2452,39 @@ th.sortable.desc::after {
 .add-product-btn:disabled {
   background: #ccc;
   cursor: default;
+}
+
+/* ✅ 전체 선택/해제 버튼 */
+.toggle-all-btn {
+  padding: 6px 14px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.toggle-all-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ✅ 카탈로그 테이블 체크박스 스타일 */
+.catalog-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #003366;
+}
+
+.catalog-table th:first-child,
+.catalog-table td:first-child {
+  text-align: center;
+  width: 40px;
 }
 
 /* ✅ 선택 목록의 삭제 버튼 */

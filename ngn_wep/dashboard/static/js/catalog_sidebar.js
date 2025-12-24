@@ -11,6 +11,8 @@ let catalogAuthOk         = false;   // ← 추가
 let latestCatalogId       = "-";
 let manualSearchResults   = [];
 let selectedManualItems   = [];
+let urlProductsList       = [];      // URL로 크롤링된 상품 리스트 저장
+let selectedUrlProducts   = new Set(); // 선택된 상품 제품번호 Set
 
 /* ───────── DOM util ───────── */
 const qs  = (sel, root = document) => root.querySelector(sel);
@@ -62,19 +64,127 @@ function renderCatalogTableRows(tbodyId, items = []) {
 function renderManualProductTable(items = []) {
   const tbody = qs("#manualProductTableBody");
   if (!tbody) return;
+  
+  // 상품 리스트 저장
+  urlProductsList = items;
+  
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="2" class="no-data">표시할 상품이 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="no-data">표시할 상품이 없습니다.</td></tr>`;
+    hideUrlProductSelectionUI();
     return;
   }
+  
+  // 초기 상태: 전체 선택
+  selectedUrlProducts = new Set(items.map(item => String(item.product_no)));
+  
+  // 테이블 렌더링 (체크박스 포함)
   tbody.innerHTML = items.map(
-    ({ product_name, product_no }) =>
-      `<tr><td>${product_name}</td><td>${product_no}</td></tr>`
+    ({ product_name, product_no }) => {
+      const productNoStr = String(product_no);
+      const checked = selectedUrlProducts.has(productNoStr) ? 'checked' : '';
+      return `<tr>
+        <td><input type="checkbox" class="url-product-checkbox" data-product-no="${productNoStr}" ${checked}></td>
+        <td>${product_name}</td>
+        <td>${productNoStr}</td>
+      </tr>`;
+    }
   ).join("");
+  
+  // 체크박스 이벤트 리스너 추가
+  qsa(".url-product-checkbox", tbody).forEach(checkbox => {
+    checkbox.addEventListener("change", handleUrlProductCheckboxChange);
+  });
+  
+  // 전체 선택 체크박스 업데이트 및 UI 표시
+  updateSelectAllCheckbox();
+  showUrlProductSelectionUI();
+  updateSelectedUrlProductsCount();
 }
 const clearManualProductTable = () => {
   const tbody = qs("#manualProductTableBody");
-  if (tbody) tbody.innerHTML = `<tr><td colspan="2" class="no-data">상품이 없습니다.</td></tr>`;
+  if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="no-data">상품이 없습니다.</td></tr>`;
+  urlProductsList = [];
+  selectedUrlProducts = new Set();
+  hideUrlProductSelectionUI();
 };
+
+/* ───────── URL 상품 선택 관련 함수 ───────── */
+function showUrlProductSelectionUI() {
+  const toggleBtn = qs("#toggleAllUrlProductsBtn");
+  const countSpan = qs("#selectedUrlProductsCount");
+  const selectAllCheckbox = qs("#selectAllUrlProductsCheckbox");
+  if (toggleBtn) toggleBtn.style.display = "block";
+  if (countSpan) countSpan.style.display = "inline";
+  if (selectAllCheckbox) selectAllCheckbox.style.display = "block";
+}
+
+function hideUrlProductSelectionUI() {
+  const toggleBtn = qs("#toggleAllUrlProductsBtn");
+  const countSpan = qs("#selectedUrlProductsCount");
+  const selectAllCheckbox = qs("#selectAllUrlProductsCheckbox");
+  if (toggleBtn) toggleBtn.style.display = "none";
+  if (countSpan) countSpan.style.display = "none";
+  if (selectAllCheckbox) selectAllCheckbox.style.display = "none";
+}
+
+function handleUrlProductCheckboxChange(event) {
+  const checkbox = event.target;
+  const productNo = checkbox.dataset.productNo;
+  
+  if (checkbox.checked) {
+    selectedUrlProducts.add(productNo);
+  } else {
+    selectedUrlProducts.delete(productNo);
+  }
+  
+  updateSelectAllCheckbox();
+  updateSelectedUrlProductsCount();
+}
+
+function toggleAllUrlProducts() {
+  const allChecked = selectedUrlProducts.size === urlProductsList.length;
+  
+  if (allChecked) {
+    // 전체 해제
+    selectedUrlProducts.clear();
+  } else {
+    // 전체 선택
+    selectedUrlProducts = new Set(urlProductsList.map(item => String(item.product_no)));
+  }
+  
+  // 체크박스 상태 업데이트
+  qsa(".url-product-checkbox").forEach(checkbox => {
+    checkbox.checked = !allChecked;
+  });
+  
+  updateSelectAllCheckbox();
+  updateSelectedUrlProductsCount();
+}
+
+function updateSelectAllCheckbox() {
+  const selectAllCheckbox = qs("#selectAllUrlProductsCheckbox");
+  if (!selectAllCheckbox || urlProductsList.length === 0) return;
+  
+  const allChecked = selectedUrlProducts.size === urlProductsList.length;
+  const someChecked = selectedUrlProducts.size > 0 && selectedUrlProducts.size < urlProductsList.length;
+  
+  selectAllCheckbox.checked = allChecked;
+  selectAllCheckbox.indeterminate = someChecked;
+}
+
+function updateSelectedUrlProductsCount() {
+  const countSpan = qs("#selectedUrlProductsCount");
+  if (!countSpan) return;
+  
+  const total = urlProductsList.length;
+  const selected = selectedUrlProducts.size;
+  countSpan.textContent = `선택: ${selected} / ${total}`;
+}
+
+function handleSelectAllCheckboxChange(event) {
+  const checkbox = event.target;
+  toggleAllUrlProducts();
+}
 
 function renderManualSearchResults() {
   const tbody = qs("#manualSearchResultBody");
@@ -165,9 +275,14 @@ async function showSummaryPopup(setName, retailerIds) {
 function createCatalogSetPreview() {
   const setName = qs("#urlSetNameInput")?.value.trim();
   if (!setName) return showInlinePopup("세트명을 입력하세요.");
-  const ids = qsa("#manualProductTableBody tr")
-    .map(tr => tr.querySelector("td:last-child")?.textContent.trim() || "")
-    .filter(id => /^\d+$/.test(id));
+  
+  // 선택된 상품만 추출
+  const ids = Array.from(selectedUrlProducts).filter(id => /^\d+$/.test(id));
+  
+  if (ids.length === 0) {
+    return showInlinePopup("최소 1개 이상의 상품을 선택해주세요.");
+  }
+  
   showSummaryPopup(setName, ids);
 }
 function createManualSetPopup() {
@@ -245,7 +360,11 @@ async function fetchManualProducts() {
   if (!url) return showInlinePopup("URL을 입력해 주세요.");
 
   isFetchingManualList = true;
-  showManualLoading(); clearManualProductTable();
+  showManualLoading(); 
+  
+  // URL 재입력 시 선택 상태 초기화
+  clearManualProductTable();
+  
   try {
     const res  = await fetch("/dashboard/get_data", {
       method : "POST",
@@ -368,6 +487,8 @@ document.addEventListener("DOMContentLoaded", () => {
   qs("#createUrlSetBtn")       ?.addEventListener("click", createCatalogSetPreview);
   qs("#manualSearchBtn")       ?.addEventListener("click", performManualSearch);
   qs("#createManualSetBtn")    ?.addEventListener("click", createManualSetPopup);
+  qs("#toggleAllUrlProductsBtn")?.addEventListener("click", toggleAllUrlProducts);
+  qs("#selectAllUrlProductsCheckbox")?.addEventListener("change", handleSelectAllCheckboxChange);
 });
 
 /* ───────── export ───────── */

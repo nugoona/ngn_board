@@ -96,13 +96,19 @@
 
           <!-- 수집 결과 -->
           <div class="manual-set-table adjusted" style="margin-top:24px;width:100%;">
-            <div class="catalog-table-title">수집된 상품 리스트</div>
+            <div class="catalog-table-title">
+              수집된 상품 리스트
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);">
+                <button id="toggleAllUrlProductsBtn" class="toggle-all-btn" style="display:none;">전체 선택/해제</button>
+                <span id="selectedUrlProductsCount" style="font-size:12px;opacity:0.9;display:none;"></span>
+              </div>
+            </div>
             <div class="catalog-table-scroll">
               <table class="catalog-table">
-                <colgroup><col style="width:80%"><col style="width:20%"></colgroup>
-                <thead><tr><th>상품명</th><th>제품번호</th></tr></thead>
+                <colgroup><col style="width:40px"><col style="width:calc(100% - 140px)"><col style="width:100px"></colgroup>
+                <thead><tr><th><input type="checkbox" id="selectAllUrlProductsCheckbox" style="display:none;"></th><th>상품명</th><th>제품번호</th></tr></thead>
                 <tbody id="manualProductTableBody">
-                  <tr><td colspan="2" class="no-data">URL 입력 후 실행을 눌러주세요.</td></tr>
+                  <tr><td colspan="3" class="no-data">URL 입력 후 실행을 눌러주세요.</td></tr>
                 </tbody>
               </table>
             </div>

@@ -717,8 +717,13 @@
             font-weight: 600;
             font-size: 15px;
             color: var(--text-primary);
-            background: var(--bg-secondary);
+            background: var(--gray-200);
             text-align: center;
+        }
+
+        /* 다크모드에서는 조금 더 밝은 배경 사용 */
+        [data-theme="dark"] .section-header {
+            background: var(--dark-surface-2);
         }
 
         .section-content {
@@ -1127,28 +1132,6 @@
             color: var(--text-primary);
         }
 
-        /* 다크모드 토글 버튼 */
-        .theme-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #055193 0%, #053056 100%);
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .theme-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
-        }
 
         /* 로딩 스피너 */
         .loading-spinner {
@@ -1573,11 +1556,6 @@
         </div>
     </div>
 
-    <!-- 다크모드 토글 버튼 -->
-    <button class="theme-toggle" onclick="toggleTheme()" title="테마 변경">
-        🌙
-    </button>
-
     <!-- 웹버전과 동일한 전역 변수 설정 -->
     <script>
         const userCompanyList = {{ session['company_names'] | tojson }};
@@ -1586,32 +1564,5 @@
 
     <!-- 모바일 전용 JS -->
     <script src="{{ url_for('static', filename='js/mobile_dashboard.js') }}?v={{ range(1, 1000) | random }}"></script>
-    
-    <!-- 테마 토글 스크립트 -->
-    <script>
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
-            body.setAttribute('data-theme', newTheme);
-            
-            // 버튼 아이콘 변경
-            const themeToggle = document.querySelector('.theme-toggle');
-            themeToggle.innerHTML = newTheme === 'light' ? '🌙' : '☀️';
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('theme', newTheme);
-        }
-        
-        // 페이지 로드 시 저장된 테마 적용
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.body.setAttribute('data-theme', savedTheme);
-            
-            const themeToggle = document.querySelector('.theme-toggle');
-            themeToggle.innerHTML = savedTheme === 'light' ? '🌙' : '☀️';
-        });
-    </script>
 </body>
 </html> 

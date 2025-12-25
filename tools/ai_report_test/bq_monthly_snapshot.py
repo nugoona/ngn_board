@@ -115,6 +115,36 @@ def note_if_base_small(base_value, threshold):
     return base_value < threshold
 
 
+def has_rows(client, table_fq, date_col, company_name, start_date, end_date):
+    """특정 기간에 데이터가 존재하는지 확인"""
+    query = f"""
+    SELECT COUNT(1) AS cnt
+    FROM `{table_fq}`
+    WHERE company_name = @company_name
+      AND {date_col} >= @start_date
+      AND {date_col} <= @end_date
+    LIMIT 1
+    """
+    
+    rows = list(
+        client.query(
+            query,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                    bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+                    bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+                ]
+            ),
+        ).result()
+    )
+    
+    if not rows:
+        return False
+    
+    return int(rows[0].cnt or 0) > 0
+
+
 def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_report_month_ym, select_exprs, where_extra=""):
     """
     13개월 월별 집계 공통 함수 (daily 테이블용)
@@ -122,7 +152,7 @@ def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_repo
     """
     start_ym = shift_month(end_report_month_ym, -12)
     start_date, _ = month_range_exclusive(start_ym)
-    end_exclusive, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    end_exclusive_date, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
     
     query = f"""
     SELECT 
@@ -131,7 +161,7 @@ def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_repo
     FROM `{table_fq}`
     WHERE company_name = @company_name
       AND {date_col} >= @start_date
-      AND {date_col} < @end_exclusive
+      AND {date_col} < @end_exclusive_date
       {where_extra}
     GROUP BY ym
     ORDER BY ym
@@ -144,7 +174,7 @@ def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_repo
                 query_parameters=[
                     bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
                     bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-                    bigquery.ScalarQueryParameter("end_exclusive", "DATE", end_exclusive),
+                    bigquery.ScalarQueryParameter("end_exclusive_date", "DATE", end_exclusive_date),
                 ]
             ),
         ).result()
@@ -170,10 +200,11 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     """
     13개월 월별 집계 함수 (월간 집계 테이블용)
     반환: dict[ym] = metrics
+    중복행에도 안전하도록 GROUP BY ym으로 집계
     """
     start_ym = shift_month(end_report_month_ym, -12)
     start_date, _ = month_range_exclusive(start_ym)
-    end_exclusive, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    end_exclusive_date, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
     
     query = f"""
     SELECT 
@@ -182,7 +213,8 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     FROM `{table_fq}`
     WHERE company_name = @company_name
       AND month_date >= @start_date
-      AND month_date < @end_exclusive
+      AND month_date < @end_exclusive_date
+    GROUP BY ym
     ORDER BY ym
     """
     
@@ -193,7 +225,7 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
                 query_parameters=[
                     bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
                     bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
-                    bigquery.ScalarQueryParameter("end_exclusive", "DATE", end_exclusive),
+                    bigquery.ScalarQueryParameter("end_exclusive_date", "DATE", end_exclusive_date),
                 ]
             ),
         ).result()
@@ -286,10 +318,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         company_name,
         report_month,
         """
-        net_sales,
-        total_orders,
-        total_first_order,
-        total_canceled
+        SUM(net_sales) AS net_sales,
+        SUM(total_orders) AS total_orders,
+        SUM(total_first_order) AS total_first_order,
+        SUM(total_canceled) AS total_canceled
         """
     )
     
@@ -370,11 +402,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         company_name,
         report_month,
         """
-        spend,
-        impressions,
-        clicks,
-        purchases,
-        purchase_value
+        SUM(spend) AS spend,
+        SUM(impressions) AS impressions,
+        SUM(clicks) AS clicks,
+        SUM(purchases) AS purchases,
+        SUM(purchase_value) AS purchase_value
         """
     )
     
@@ -481,7 +513,28 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     
     ga4_this_totals = get_ga4_traffic_totals(this_start, this_end)
     ga4_prev_totals = get_ga4_traffic_totals(prev_start, prev_end)
-    ga4_yoy_totals = get_ga4_traffic_totals(yoy_start, yoy_end)
+    
+    # YoY 데이터 존재 여부 확인
+    ga4_yoy_available = has_rows(
+        client,
+        f"{PROJECT_ID}.{DATASET}.ga4_traffic_ngn",
+        "event_date",
+        company_name,
+        yoy_start,
+        yoy_end
+    )
+    
+    if ga4_yoy_available:
+        ga4_yoy_totals = get_ga4_traffic_totals(yoy_start, yoy_end)
+        ga4_yoy = {
+            "totals": ga4_yoy_totals,
+            "top_sources": get_ga4_top_sources(yoy_start, yoy_end),
+        }
+    else:
+        ga4_yoy = {
+            "totals": None,
+            "top_sources": [],
+        }
     
     ga4_this = {
         "totals": ga4_this_totals,
@@ -491,10 +544,6 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         "totals": ga4_prev_totals,
         "top_sources": get_ga4_top_sources(prev_start, prev_end),
     }
-    ga4_yoy = {
-        "totals": ga4_yoy_totals,
-        "top_sources": get_ga4_top_sources(yoy_start, yoy_end),
-    }
     
     # 월간 집계 테이블 사용 (성능 최적화)
     monthly_13m_ga4_raw = query_monthly_13m_from_monthly_table(
@@ -503,9 +552,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         company_name,
         report_month,
         """
-        total_users,
-        screen_page_views,
-        event_count
+        SUM(total_users) AS total_users,
+        SUM(screen_page_views) AS screen_page_views,
+        SUM(event_count) AS event_count
         """
     )
     
@@ -608,19 +657,18 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     products_this = get_products_block(this_end)
     
     # -----------------------
-    # GA4 view_item
+    # GA4 view_item (월간 집계 테이블 사용)
     # -----------------------
-    q_viewitem = f"""
-    SELECT item_name, SUM(view_item) AS view_item
-    FROM `{PROJECT_ID}.{DATASET}.ga4_viewitem_ngn`
+    q_viewitem_monthly_raw = f"""
+    SELECT item_name, view_item
+    FROM `{PROJECT_ID}.{DATASET}.ga4_viewitem_monthly_raw`
     WHERE company_name = @company_name
-      AND event_date BETWEEN @start_date AND @end_date
-    GROUP BY item_name
+      AND ym = @ym
     ORDER BY view_item DESC
     LIMIT @limit
     """
     
-    def get_viewitem_block(s, e, products_30d):
+    def get_viewitem_block(report_month_ym, products_30d):
         sales_map = {}
         if products_30d:
             for p in products_30d:
@@ -634,12 +682,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         
         rows = list(
             client.query(
-                q_viewitem,
+                q_viewitem_monthly_raw,
                 job_config=bigquery.QueryJobConfig(
                     query_parameters=[
                         bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                        bigquery.ScalarQueryParameter("start_date", "DATE", s),
-                        bigquery.ScalarQueryParameter("end_date", "DATE", e),
+                        bigquery.ScalarQueryParameter("ym", "STRING", report_month_ym),
                         bigquery.ScalarQueryParameter("limit", "INT64", VIEWITEM_TOP_LIMIT * 3),
                     ]
                 ),
@@ -703,7 +750,28 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         return {"top_items_by_view_item": items}
     
     products_30d = products_this.get("rolling", {}).get("d30", {}).get("top_products_by_sales", [])
-    viewitem_this = get_viewitem_block(this_start, this_end, products_30d)
+    viewitem_this = get_viewitem_block(report_month, products_30d)
+    
+    # -----------------------
+    # YoY 데이터 존재 여부 확인
+    # -----------------------
+    mall_sales_yoy_available = has_rows(
+        client,
+        f"{PROJECT_ID}.{DATASET}.daily_cafe24_sales",
+        "payment_date",
+        company_name,
+        yoy_start,
+        yoy_end
+    )
+    
+    meta_ads_yoy_available = has_rows(
+        client,
+        f"{PROJECT_ID}.{DATASET}.meta_ads_account_summary",
+        "date",
+        company_name,
+        yoy_start,
+        yoy_end
+    )
     
     # -----------------------
     # Comparisons
@@ -713,7 +781,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         
         # mall_sales
         net_sales_mom = delta(sales_this["net_sales"], sales_prev["net_sales"])
-        net_sales_yoy = delta(sales_this["net_sales"], sales_yoy["net_sales"])
+        net_sales_yoy = delta(sales_this["net_sales"], sales_yoy["net_sales"]) if mall_sales_yoy_available else None
         comparisons["mall_sales"] = {
             "net_sales_mom": net_sales_mom,
             "net_sales_yoy": net_sales_yoy,
@@ -722,7 +790,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         
         # meta_ads
         spend_mom = delta(meta_ads_this["spend"], meta_ads_prev["spend"])
-        spend_yoy = delta(meta_ads_this["spend"], meta_ads_yoy["spend"])
+        spend_yoy = delta(meta_ads_this["spend"], meta_ads_yoy["spend"]) if meta_ads_yoy_available else None
         roas_mom = delta(meta_ads_this["roas"] or 0, meta_ads_prev["roas"] or 0) if (meta_ads_this["roas"] is not None and meta_ads_prev["roas"] is not None) else None
         cvr_mom = delta(meta_ads_this["cvr"] or 0, meta_ads_prev["cvr"] or 0) if (meta_ads_this["cvr"] is not None and meta_ads_prev["cvr"] is not None) else None
         comparisons["meta_ads"] = {
@@ -735,7 +803,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         
         # ga4_traffic
         total_users_mom = delta(ga4_this_totals["total_users"], ga4_prev_totals["total_users"])
-        total_users_yoy = delta(ga4_this_totals["total_users"], ga4_yoy_totals["total_users"])
+        total_users_yoy = delta(ga4_this_totals["total_users"], ga4_yoy_totals["total_users"]) if ga4_yoy_available and ga4_yoy_totals else None
         comparisons["ga4_traffic"] = {
             "total_users_mom": total_users_mom,
             "total_users_yoy": total_users_yoy,
@@ -845,9 +913,6 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     
     signals = calculate_signals()
     
-    # -----------------------
-    # Output
-    # -----------------------
     out = {
         "report_meta": {
             "company_name": company_name,
@@ -855,6 +920,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             "period_this": {"from": this_start, "to": this_end},
             "period_prev": {"from": prev_start, "to": prev_end},
             "period_yoy": {"from": yoy_start, "to": yoy_end},
+            "yoy_available": {
+                "mall_sales": mall_sales_yoy_available,
+                "meta_ads": meta_ads_yoy_available,
+                "ga4_traffic": ga4_yoy_available,
+            },
         },
         "facts": {
             "mall_sales": {

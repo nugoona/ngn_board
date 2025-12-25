@@ -21,6 +21,8 @@ GA4_TRAFFIC_TOP_LIMIT = 5
 VIEWITEM_TOP_LIMIT = 20
 PRODUCT_ROLLING_WINDOWS = [30, 90]
 VIEWITEM_ATTENTION_MIN_VIEW = 300  # attention_without_conversion 기준 최소 조회수
+VIEWITEM_EFFICIENT_MIN_VIEW = 120  # efficient_conversion 기준 최소 조회수
+VIEWITEM_EFFICIENT_MIN_QTY_PER_VIEW = 0.010  # efficient_conversion 기준 최소 구매율
 
 # 비교 기준 threshold
 MALL_SALES_BASE_SMALL_THRESHOLD = 500000
@@ -29,6 +31,7 @@ GA4_TRAFFIC_BASE_SMALL_THRESHOLD = 100
 
 # Viewitem 스킵 플래그
 SKIP_VIEWITEM = os.environ.get("SKIP_VIEWITEM", "0") == "1"
+SKIP_META_ADS_GOALS = os.environ.get("SKIP_META_ADS_GOALS", "0") == "1"
 
 
 # -----------------------
@@ -102,6 +105,28 @@ def normalize_item_name(name: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
 
     return s
+
+
+def _goal_from_campaign_name(campaign_name: str) -> str:
+    """캠페인명에서 목표 추출: conversion/traffic/awareness/unknown"""
+    if not campaign_name:
+        return "unknown"
+    
+    name_lower = campaign_name.lower()
+    
+    # 전환 (conversion)
+    if "전환" in campaign_name or "conversion" in name_lower:
+        return "conversion"
+    
+    # 유입 (traffic)
+    if "유입" in campaign_name or "traffic" in name_lower:
+        return "traffic"
+    
+    # 도달 (awareness)
+    if "도달" in campaign_name or "awareness" in name_lower or "reach" in name_lower:
+        return "awareness"
+    
+    return "unknown"
 
 
 # -----------------------
@@ -447,6 +472,325 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         })
     
     # -----------------------
+    # Meta Ads Goals (목표별 분해 및 Top Ad)
+    # -----------------------
+    def get_meta_ads_goals(s, e):
+        """목표별 분해 및 Top Ad 조회"""
+        if SKIP_META_ADS_GOALS:
+            return {
+                "by_goal": {
+                    "conversion": {"spend": 0.0, "impressions": 0, "clicks": 0, "purchases": 0, "purchase_value": 0.0, "roas": None, "cpc": None, "ctr": None, "cvr": None, "spend_share_pct": None},
+                    "traffic": {"spend": 0.0, "impressions": 0, "clicks": 0, "purchases": 0, "purchase_value": 0.0, "roas": None, "cpc": None, "ctr": None, "cvr": None, "spend_share_pct": None},
+                    "awareness": {"spend": 0.0, "impressions": 0, "clicks": 0, "purchases": 0, "purchase_value": 0.0, "roas": None, "cpc": None, "ctr": None, "cvr": None, "spend_share_pct": None},
+                    "unknown": {"spend": 0.0, "impressions": 0, "clicks": 0, "purchases": 0, "purchase_value": 0.0, "roas": None, "cpc": None, "ctr": None, "cvr": None, "spend_share_pct": None},
+                },
+                "top_ads": {
+                    "conversion_top_by_purchases": [],
+                    "traffic_top_by_ctr": [],
+                    "awareness_top_by_spend": [],
+                }
+            }
+        
+        q_meta_ads_goals = f"""
+        SELECT
+            ad_id,
+            ad_name,
+            campaign_name,
+            SUM(spend) AS spend,
+            SUM(impressions) AS impressions,
+            SUM(clicks) AS clicks,
+            SUM(purchases) AS purchases,
+            SUM(purchase_value) AS purchase_value
+        FROM `{PROJECT_ID}.{DATASET}.meta_ads_ad_summary`
+        WHERE company_name = @company_name
+          AND date BETWEEN @start_date AND @end_date
+        GROUP BY ad_id, ad_name, campaign_name
+        """
+        
+        rows = list(
+            client.query(
+                q_meta_ads_goals,
+                job_config=bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                        bigquery.ScalarQueryParameter("start_date", "DATE", s),
+                        bigquery.ScalarQueryParameter("end_date", "DATE", e),
+                    ]
+                ),
+            ).result()
+        )
+        
+        # 목표별 집계
+        by_goal = defaultdict(lambda: {
+            "spend": 0.0,
+            "impressions": 0,
+            "clicks": 0,
+            "purchases": 0,
+            "purchase_value": 0.0,
+        })
+        
+        # Top Ad 후보
+        conversion_ads = []
+        traffic_ads = []
+        awareness_ads = []
+        
+        total_spend = 0.0
+        
+        for row in rows:
+            goal = _goal_from_campaign_name(row.campaign_name or "")
+            spend = float(row.spend or 0)
+            impressions = int(row.impressions or 0)
+            clicks = int(row.clicks or 0)
+            purchases = int(row.purchases or 0)
+            purchase_value = float(row.purchase_value or 0)
+            
+            by_goal[goal]["spend"] += spend
+            by_goal[goal]["impressions"] += impressions
+            by_goal[goal]["clicks"] += clicks
+            by_goal[goal]["purchases"] += purchases
+            by_goal[goal]["purchase_value"] += purchase_value
+            total_spend += spend
+            
+            # Top Ad 후보 추가
+            ad_data = {
+                "ad_id": str(row.ad_id) if row.ad_id else None,
+                "ad_name": row.ad_name or "",
+                "campaign_name": row.campaign_name or "",
+                "spend": spend,
+                "impressions": impressions,
+                "clicks": clicks,
+                "purchases": purchases,
+                "purchase_value": purchase_value,
+            }
+            
+            if goal == "conversion":
+                conversion_ads.append(ad_data)
+            elif goal == "traffic":
+                traffic_ads.append(ad_data)
+            elif goal == "awareness":
+                awareness_ads.append(ad_data)
+        
+        # 목표별 지표 계산
+        result_by_goal = {}
+        for goal in ["conversion", "traffic", "awareness", "unknown"]:
+            data = by_goal[goal]
+            spend = data["spend"]
+            impressions = data["impressions"]
+            clicks = data["clicks"]
+            purchases = data["purchases"]
+            purchase_value = data["purchase_value"]
+            
+            result_by_goal[goal] = {
+                "spend": spend,
+                "impressions": impressions,
+                "clicks": clicks,
+                "purchases": purchases,
+                "purchase_value": purchase_value,
+                "roas": (purchase_value / spend * 100) if spend > 0 else None,
+                "cpc": (spend / clicks) if clicks > 0 else None,
+                "ctr": (clicks / impressions * 100) if impressions > 0 else None,
+                "cvr": (purchases / clicks * 100) if clicks > 0 else None,
+                "spend_share_pct": (spend / total_spend * 100) if total_spend > 0 else None,
+            }
+        
+        # Top Ad 정렬 및 선택
+        # 전환: purchases DESC (동률이면 purchase_value DESC, spend DESC)
+        conversion_ads.sort(key=lambda x: (-x["purchases"], -x["purchase_value"], -x["spend"]))
+        conversion_top = []
+        for ad in conversion_ads[:TOP_LIMIT]:
+            ad_spend = ad["spend"]
+            ad_clicks = ad["clicks"]
+            ad_purchases = ad["purchases"]
+            ad_purchase_value = ad["purchase_value"]
+            conversion_top.append({
+                "ad_id": ad["ad_id"],
+                "ad_name": ad["ad_name"],
+                "campaign_name": ad["campaign_name"],
+                "spend": ad_spend,
+                "purchases": ad_purchases,
+                "purchase_value": ad_purchase_value,
+                "roas": (ad_purchase_value / ad_spend * 100) if ad_spend > 0 else None,
+                "cpa": (ad_spend / ad_purchases) if ad_purchases > 0 else None,
+                "cvr": (ad_purchases / ad_clicks * 100) if ad_clicks > 0 else None,
+                "clicks": ad["clicks"],
+                "impressions": ad["impressions"],
+            })
+        
+        # 유입: CTR DESC (단 spend >= TRAFFIC_TOP_MIN_SPEND, 동률이면 clicks DESC)
+        traffic_ads_filtered = [ad for ad in traffic_ads if ad["spend"] >= TRAFFIC_TOP_MIN_SPEND]
+        for ad in traffic_ads_filtered:
+            ad["ctr"] = (ad["clicks"] / ad["impressions"] * 100) if ad["impressions"] > 0 else 0
+            ad["cpc"] = (ad["spend"] / ad["clicks"]) if ad["clicks"] > 0 else None
+        traffic_ads_filtered.sort(key=lambda x: (-x["ctr"], -x["clicks"]))
+        traffic_top = []
+        for ad in traffic_ads_filtered[:TOP_LIMIT]:
+            traffic_top.append({
+                "ad_id": ad["ad_id"],
+                "ad_name": ad["ad_name"],
+                "campaign_name": ad["campaign_name"],
+                "spend": ad["spend"],
+                "ctr": round(ad["ctr"], 2),
+                "cpc": round(ad["cpc"], 2) if ad["cpc"] is not None else None,
+                "clicks": ad["clicks"],
+                "impressions": ad["impressions"],
+            })
+        
+        # 도달: spend DESC
+        awareness_ads.sort(key=lambda x: -x["spend"])
+        awareness_top = []
+        for ad in awareness_ads[:TOP_LIMIT]:
+            ad_spend = ad["spend"]
+            ad_impressions = ad["impressions"]
+            awareness_top.append({
+                "ad_id": ad["ad_id"],
+                "ad_name": ad["ad_name"],
+                "campaign_name": ad["campaign_name"],
+                "spend": ad_spend,
+                "impressions": ad_impressions,
+                "cpm": (ad_spend / ad_impressions * 1000) if ad_impressions > 0 else None,
+            })
+        
+        return {
+            "by_goal": result_by_goal,
+            "top_ads": {
+                "conversion_top_by_purchases": conversion_top,
+                "traffic_top_by_ctr": traffic_top,
+                "awareness_top_by_spend": awareness_top,
+            }
+        }
+    
+    meta_ads_goals_this = get_meta_ads_goals(this_start, this_end)
+    meta_ads_goals_prev = get_meta_ads_goals(prev_start, prev_end)
+    meta_ads_goals_yoy = get_meta_ads_goals(yoy_start, yoy_end) if meta_ads_yoy_available else None
+    
+    # -----------------------
+    # Meta Ads Benchmarks (최근 6개월 기준치)
+    # -----------------------
+    def get_meta_ads_benchmarks():
+        """최근 6개월 기준치 계산"""
+        if SKIP_META_ADS_GOALS:
+            return {
+                "last_6m": {
+                    "traffic": {"avg_cpc": None, "median_cpc": None, "avg_ctr": None, "count_months": 0},
+                    "conversion": {"avg_cvr": None, "median_cvr": None, "avg_cpa": None, "median_cpa": None, "count_months": 0},
+                }
+            }
+        
+        # 최근 6개월 YM 목록
+        end_ym = report_month
+        month_yms = [shift_month(end_ym, -i) for i in range(6)]
+        
+        # 각 월별 goal 집계
+        traffic_cpcs = []
+        traffic_ctrs = []
+        conversion_cvrs = []
+        conversion_cpas = []
+        count_months = 0
+        
+        for ym in month_yms:
+            s, e = month_range_exclusive(ym)
+            s_date = date.fromisoformat(s)
+            e_date = date.fromisoformat(e) - timedelta(days=1)
+            
+            q_monthly_goals = f"""
+            SELECT
+                campaign_name,
+                SUM(spend) AS spend,
+                SUM(impressions) AS impressions,
+                SUM(clicks) AS clicks,
+                SUM(purchases) AS purchases,
+                SUM(purchase_value) AS purchase_value
+            FROM `{PROJECT_ID}.{DATASET}.meta_ads_ad_summary`
+            WHERE company_name = @company_name
+              AND date BETWEEN @start_date AND @end_date
+            GROUP BY campaign_name
+            """
+            
+            rows = list(
+                client.query(
+                    q_monthly_goals,
+                    job_config=bigquery.QueryJobConfig(
+                        query_parameters=[
+                            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                            bigquery.ScalarQueryParameter("start_date", "DATE", s_date),
+                            bigquery.ScalarQueryParameter("end_date", "DATE", e_date),
+                        ]
+                    ),
+                ).result()
+            )
+            
+            if not rows:
+                continue
+            
+            count_months += 1
+            
+            # 목표별 집계
+            traffic_data = {"spend": 0.0, "clicks": 0, "impressions": 0}
+            conversion_data = {"spend": 0.0, "clicks": 0, "purchases": 0}
+            
+            for row in rows:
+                goal = _goal_from_campaign_name(row.campaign_name or "")
+                spend = float(row.spend or 0)
+                clicks = int(row.clicks or 0)
+                impressions = int(row.impressions or 0)
+                purchases = int(row.purchases or 0)
+                
+                if goal == "traffic":
+                    traffic_data["spend"] += spend
+                    traffic_data["clicks"] += clicks
+                    traffic_data["impressions"] += impressions
+                elif goal == "conversion":
+                    conversion_data["spend"] += spend
+                    conversion_data["clicks"] += clicks
+                    conversion_data["purchases"] += purchases
+            
+            # Traffic: CPC, CTR
+            if traffic_data["clicks"] > 0:
+                cpc = traffic_data["spend"] / traffic_data["clicks"]
+                traffic_cpcs.append(cpc)
+            if traffic_data["impressions"] > 0:
+                ctr = (traffic_data["clicks"] / traffic_data["impressions"]) * 100
+                traffic_ctrs.append(ctr)
+            
+            # Conversion: CVR, CPA
+            if conversion_data["clicks"] > 0:
+                cvr = (conversion_data["purchases"] / conversion_data["clicks"]) * 100
+                conversion_cvrs.append(cvr)
+            if conversion_data["purchases"] > 0:
+                cpa = conversion_data["spend"] / conversion_data["purchases"]
+                conversion_cpas.append(cpa)
+        
+        # 평균/중앙값 계산
+        traffic_avg_cpc = statistics.mean(traffic_cpcs) if traffic_cpcs else None
+        traffic_median_cpc = statistics.median(traffic_cpcs) if traffic_cpcs else None
+        traffic_avg_ctr = statistics.mean(traffic_ctrs) if traffic_ctrs else None
+        
+        conversion_avg_cvr = statistics.mean(conversion_cvrs) if conversion_cvrs else None
+        conversion_median_cvr = statistics.median(conversion_cvrs) if conversion_cvrs else None
+        conversion_avg_cpa = statistics.mean(conversion_cpas) if conversion_cpas else None
+        conversion_median_cpa = statistics.median(conversion_cpas) if conversion_cpas else None
+        
+        return {
+            "last_6m": {
+                "traffic": {
+                    "avg_cpc": round(traffic_avg_cpc, 2) if traffic_avg_cpc is not None else None,
+                    "median_cpc": round(traffic_median_cpc, 2) if traffic_median_cpc is not None else None,
+                    "avg_ctr": round(traffic_avg_ctr, 2) if traffic_avg_ctr is not None else None,
+                    "count_months": count_months,
+                },
+                "conversion": {
+                    "avg_cvr": round(conversion_avg_cvr, 2) if conversion_avg_cvr is not None else None,
+                    "median_cvr": round(conversion_median_cvr, 2) if conversion_median_cvr is not None else None,
+                    "avg_cpa": round(conversion_avg_cpa, 2) if conversion_avg_cpa is not None else None,
+                    "median_cpa": round(conversion_median_cpa, 2) if conversion_median_cpa is not None else None,
+                    "count_months": count_months,
+                }
+            }
+        }
+    
+    meta_ads_benchmarks = get_meta_ads_benchmarks()
+    
+    # -----------------------
     # GA4 traffic
     # -----------------------
     q_ga4_traffic = f"""
@@ -751,6 +1095,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
                 (matched_quantity_30d is None or matched_quantity_30d == 0)
             )
             
+            # 효율성 플래그
+            efficient_conversion = (
+                total_view_item >= VIEWITEM_EFFICIENT_MIN_VIEW and
+                qty_per_view is not None and
+                qty_per_view >= VIEWITEM_EFFICIENT_MIN_QTY_PER_VIEW
+            )
+            
+            high_attention_and_high_conversion = (
+                total_view_item >= VIEWITEM_ATTENTION_MIN_VIEW and
+                qty_per_view is not None and
+                qty_per_view >= VIEWITEM_EFFICIENT_MIN_QTY_PER_VIEW
+            )
+            
             items.append({
                 "item_name_normalized": key,
                 "total_view_item": total_view_item,
@@ -760,6 +1117,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
                 "qty_per_view": round(qty_per_view, 4) if qty_per_view is not None else None,
                 "sales_per_view": round(sales_per_view, 2) if sales_per_view is not None else None,
                 "attention_without_conversion": attention_without_conversion,
+                "efficient_conversion": efficient_conversion,
+                "high_attention_and_high_conversion": high_attention_and_high_conversion,
             })
         
         items.sort(key=lambda x: x["total_view_item"], reverse=True)
@@ -898,6 +1257,21 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             item.get("attention_without_conversion", False) for item in viewitem_items
         )
         
+        # efficient_conversion_exists
+        signals["efficient_conversion_exists"] = any(
+            item.get("efficient_conversion", False) for item in viewitem_items
+        )
+        
+        # high_attention_and_high_conversion_exists
+        signals["high_attention_and_high_conversion_exists"] = any(
+            item.get("high_attention_and_high_conversion", False) for item in viewitem_items
+        )
+        
+        # meta_ads_interpretable_monthly
+        signals["meta_ads_interpretable_monthly"] = (
+            meta_ads_this["spend"] >= sales_this["net_sales"] * 0.1
+        ) if sales_this["net_sales"] > 0 else False
+        
         # core_product_risk
         products_90d = products_this.get("rolling", {}).get("d90", {}).get("top_products_by_sales_with_role", [])
         core_products = [p for p in products_90d if p.get("role_90d") == "core"]
@@ -959,6 +1333,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
                 "yoy": meta_ads_yoy,
                 "monthly_13m": monthly_13m_meta,
             },
+            "meta_ads_goals": {
+                "this": meta_ads_goals_this,
+                "prev": meta_ads_goals_prev,
+                "yoy": meta_ads_goals_yoy,
+            },
+            "meta_ads_benchmarks": meta_ads_benchmarks,
             "ga4_traffic": {
                 "this": ga4_this,
                 "prev": ga4_prev,

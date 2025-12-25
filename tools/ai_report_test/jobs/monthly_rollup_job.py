@@ -213,6 +213,7 @@ USING (
     CURRENT_TIMESTAMP() AS updated_at
   FROM `{T_GA_TRAFFIC_DAILY}`
   WHERE event_date BETWEEN @start_date AND @end_date
+    AND company_name IS NOT NULL
   GROUP BY company_name, month_date
 ) S
 ON T.company_name = S.company_name AND T.month_date = S.month_date

@@ -234,17 +234,21 @@ def run(company_name: str, year: int, month: int):
     """
 
     def get_viewitem_block(s, e, products_30d):
-        # 빈 데이터 안전 처리: products_30d가 빈 리스트여도 정상 동작
+        # 핵심: GA4 view_item 결과는 products_30d와 무관하게 항상 출력되어야 함
+        # sales_map은 선택적 매칭 용도로만 사용 (products_30d가 빈 리스트여도 viewitem 결과는 출력)
+        
+        # 선택적 매칭 맵 생성 (products_30d가 없거나 빈 리스트여도 문제없음)
         sales_map = {}
         if products_30d:
             for p in products_30d:
-                # p가 dict이고 "product_name" 키가 있는지 확인
-                product_name = p.get("product_name") if isinstance(p, dict) else None
-                if product_name:
-                    key = normalize_item_name(product_name)
-                    if key:
-                        sales_map[key] = p
+                if isinstance(p, dict):
+                    product_name = p.get("product_name")
+                    if product_name:
+                        key = normalize_item_name(product_name)
+                        if key:
+                            sales_map[key] = p
 
+        # GA4 view_item 쿼리 실행 (products_30d와 무관하게 항상 실행)
         rows = list(
             client.query(
                 q_viewitem,
@@ -259,22 +263,23 @@ def run(company_name: str, year: int, month: int):
             ).result()
         )
 
+        # 모든 GA4 view_item 결과를 항상 출력 (매칭 여부와 무관)
         items = []
         for r in rows:
             raw = r.item_name or ""
             key = normalize_item_name(raw)
-            matched = sales_map.get(key)
+            # sales_map에서 선택적 매칭 시도 (없어도 결과는 출력)
+            matched = sales_map.get(key) if key else None
 
             items.append({
                 "item_name": raw,
                 "item_name_normalized": key,
                 "view_item": int(r.view_item or 0),
-                # matched가 있을 때만 "product_no" 접근, 없으면 None
                 "matched_product_no": matched.get("product_no") if matched else None,
                 "match_type": "normalized_name" if matched else "none",
             })
 
-        # BigQuery 결과가 0 row여도 빈 리스트 반환
+        # 반환 구조 유지: BigQuery 결과가 0 row여도 빈 리스트 반환
         return {"top_items_by_view_item": items}
 
     # -----------------------

@@ -4,6 +4,7 @@ import hashlib
 import re
 import statistics
 from datetime import date, timedelta
+from decimal import Decimal
 from collections import defaultdict
 from google.cloud import bigquery
 
@@ -116,6 +117,17 @@ def delta(curr, base):
 def note_if_base_small(base_value, threshold):
     """기준값이 작은지 여부"""
     return base_value < threshold
+
+
+def json_safe(obj):
+    """Decimal 및 기타 JSON 직렬화 불가능한 타입을 안전하게 변환"""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [json_safe(v) for v in obj]
+    return obj
 
 
 def has_rows(client, table_fq, date_col, company_name, start_date, end_date):
@@ -966,26 +978,30 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     # -----------------------
     # Upsert to BigQuery (optional)
     # -----------------------
-    def upsert_snapshot(client, company_name, report_month, snapshot_data):
+    def upsert_snapshot(client, company_name, month_date_iso, snapshot_data):
         """스냅샷을 BigQuery에 upsert"""
-        snapshot_json_str = json.dumps(snapshot_data, ensure_ascii=False, sort_keys=True)
+        snapshot_data_safe = json_safe(snapshot_data)
+        snapshot_json_str = json.dumps(snapshot_data_safe, ensure_ascii=False, sort_keys=True)
+        snapshot_hash = hashlib.sha256(snapshot_json_str.encode('utf-8')).hexdigest()
         
         query = f"""
         MERGE `{PROJECT_ID}.{DATASET}.report_monthly_snapshot` T
         USING (
             SELECT
                 @company_name AS company_name,
-                @report_month AS report_month,
+                DATE(@month_date) AS month,
                 PARSE_JSON(@snapshot_json) AS snapshot_json,
-                CURRENT_TIMESTAMP() AS generated_at
+                @snapshot_hash AS snapshot_hash,
+                CURRENT_TIMESTAMP() AS updated_at
         ) S
-        ON T.company_name = S.company_name AND T.report_month = S.report_month
+        ON T.company_name = S.company_name AND T.month = S.month
         WHEN MATCHED THEN UPDATE SET
             snapshot_json = S.snapshot_json,
-            generated_at = S.generated_at
+            snapshot_hash = S.snapshot_hash,
+            updated_at = S.updated_at
         WHEN NOT MATCHED THEN
-            INSERT (company_name, report_month, snapshot_json, generated_at)
-            VALUES (S.company_name, S.report_month, S.snapshot_json, S.generated_at)
+            INSERT (company_name, month, snapshot_json, snapshot_hash, updated_at)
+            VALUES (S.company_name, S.month, S.snapshot_json, S.snapshot_hash, S.updated_at)
         """
         
         client.query(
@@ -993,16 +1009,21 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             job_config=bigquery.QueryJobConfig(
                 query_parameters=[
                     bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                    bigquery.ScalarQueryParameter("report_month", "STRING", report_month),
+                    bigquery.ScalarQueryParameter("month_date", "STRING", month_date_iso),
                     bigquery.ScalarQueryParameter("snapshot_json", "STRING", snapshot_json_str),
+                    bigquery.ScalarQueryParameter("snapshot_hash", "STRING", snapshot_hash),
                 ]
             ),
         ).result()
     
-    if upsert_flag:
-        upsert_snapshot(client, company_name, report_month, out)
+    # JSON 안전화 적용
+    out_safe = json_safe(out)
     
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    if upsert_flag:
+        month_date_iso = date(year, month, 1).isoformat()
+        upsert_snapshot(client, company_name, month_date_iso, out)
+    
+    print(json.dumps(out_safe, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

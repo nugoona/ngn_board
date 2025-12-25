@@ -1193,6 +1193,146 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     # -----------------------
     # Comparisons
     # -----------------------
+    def build_meta_ads_goals_comparisons(meta_ads_goals_this, meta_ads_goals_prev, meta_ads_goals_yoy):
+        """Meta Ads Goals별 비교 생성"""
+        if meta_ads_goals_this is None or meta_ads_goals_prev is None:
+            return None
+        
+        by_goal_this = meta_ads_goals_this.get("by_goal", {})
+        by_goal_prev = meta_ads_goals_prev.get("by_goal", {})
+        by_goal_yoy = meta_ads_goals_yoy.get("by_goal", {}) if meta_ads_goals_yoy else {}
+        
+        # 모든 goal 키 수집 (conversion, traffic, awareness, unknown)
+        all_goals = set(["conversion", "traffic", "awareness", "unknown"])
+        all_goals.update(by_goal_this.keys())
+        all_goals.update(by_goal_prev.keys())
+        if meta_ads_goals_yoy:
+            all_goals.update(by_goal_yoy.keys())
+        
+        result_mom = {}
+        result_yoy = {} if meta_ads_goals_yoy else None
+        
+        for goal in sorted(all_goals):
+            goal_this = by_goal_this.get(goal, {})
+            goal_prev = by_goal_prev.get(goal, {})
+            goal_yoy = by_goal_yoy.get(goal, {}) if meta_ads_goals_yoy else {}
+            
+            # 기본값 설정
+            def get_value(data, key, default=0):
+                return data.get(key, default) if data else default
+            
+            def get_rate(data, key):
+                return data.get(key) if data else None
+            
+            # MoM 비교
+            goal_mom = {}
+            
+            # spend
+            spend_this = get_value(goal_this, "spend", 0.0)
+            spend_prev = get_value(goal_prev, "spend", 0.0)
+            goal_mom["spend"] = delta(spend_this, spend_prev)
+            
+            # purchases
+            purchases_this = get_value(goal_this, "purchases", 0)
+            purchases_prev = get_value(goal_prev, "purchases", 0)
+            goal_mom["purchases"] = delta(purchases_this, purchases_prev)
+            
+            # purchase_value
+            purchase_value_this = get_value(goal_this, "purchase_value", 0.0)
+            purchase_value_prev = get_value(goal_prev, "purchase_value", 0.0)
+            goal_mom["purchase_value"] = delta(purchase_value_this, purchase_value_prev)
+            
+            # clicks
+            clicks_this = get_value(goal_this, "clicks", 0)
+            clicks_prev = get_value(goal_prev, "clicks", 0)
+            goal_mom["clicks"] = delta(clicks_this, clicks_prev)
+            
+            # impressions
+            impressions_this = get_value(goal_this, "impressions", 0)
+            impressions_prev = get_value(goal_prev, "impressions", 0)
+            goal_mom["impressions"] = delta(impressions_this, impressions_prev)
+            
+            # rate류: base가 None이면 delta도 None
+            # ctr
+            ctr_this = get_rate(goal_this, "ctr")
+            ctr_prev = get_rate(goal_prev, "ctr")
+            goal_mom["ctr"] = delta(ctr_this, ctr_prev) if (ctr_this is not None and ctr_prev is not None) else None
+            
+            # cpc
+            cpc_this = get_rate(goal_this, "cpc")
+            cpc_prev = get_rate(goal_prev, "cpc")
+            goal_mom["cpc"] = delta(cpc_this, cpc_prev) if (cpc_this is not None and cpc_prev is not None) else None
+            
+            # cvr
+            cvr_this = get_rate(goal_this, "cvr")
+            cvr_prev = get_rate(goal_prev, "cvr")
+            goal_mom["cvr"] = delta(cvr_this, cvr_prev) if (cvr_this is not None and cvr_prev is not None) else None
+            
+            # cpa (purchases가 있으면 계산)
+            cpa_this = (spend_this / purchases_this) if purchases_this > 0 else None
+            cpa_prev = (spend_prev / purchases_prev) if purchases_prev > 0 else None
+            goal_mom["cpa"] = delta(cpa_this, cpa_prev) if (cpa_this is not None and cpa_prev is not None) else None
+            
+            # roas
+            roas_this = get_rate(goal_this, "roas")
+            roas_prev = get_rate(goal_prev, "roas")
+            goal_mom["roas"] = delta(roas_this, roas_prev) if (roas_this is not None and roas_prev is not None) else None
+            
+            # base_small 플래그
+            goal_mom["note_if_base_small_spend"] = note_if_base_small(spend_prev, META_ADS_BASE_SMALL_THRESHOLD)
+            
+            result_mom[goal] = goal_mom
+            
+            # YoY 비교 (meta_ads_goals_yoy가 있으면)
+            if meta_ads_goals_yoy:
+                goal_yoy_dict = {}
+                
+                # spend
+                spend_yoy_val = get_value(goal_yoy, "spend", 0.0)
+                goal_yoy_dict["spend"] = delta(spend_this, spend_yoy_val)
+                
+                # purchases
+                purchases_yoy = get_value(goal_yoy, "purchases", 0)
+                goal_yoy_dict["purchases"] = delta(purchases_this, purchases_yoy)
+                
+                # purchase_value
+                purchase_value_yoy = get_value(goal_yoy, "purchase_value", 0.0)
+                goal_yoy_dict["purchase_value"] = delta(purchase_value_this, purchase_value_yoy)
+                
+                # clicks
+                clicks_yoy = get_value(goal_yoy, "clicks", 0)
+                goal_yoy_dict["clicks"] = delta(clicks_this, clicks_yoy)
+                
+                # impressions
+                impressions_yoy = get_value(goal_yoy, "impressions", 0)
+                goal_yoy_dict["impressions"] = delta(impressions_this, impressions_yoy)
+                
+                # rate류
+                ctr_yoy = get_rate(goal_yoy, "ctr")
+                goal_yoy_dict["ctr"] = delta(ctr_this, ctr_yoy) if (ctr_this is not None and ctr_yoy is not None) else None
+                
+                cpc_yoy = get_rate(goal_yoy, "cpc")
+                goal_yoy_dict["cpc"] = delta(cpc_this, cpc_yoy) if (cpc_this is not None and cpc_yoy is not None) else None
+                
+                cvr_yoy = get_rate(goal_yoy, "cvr")
+                goal_yoy_dict["cvr"] = delta(cvr_this, cvr_yoy) if (cvr_this is not None and cvr_yoy is not None) else None
+                
+                cpa_yoy = (spend_yoy_val / purchases_yoy) if purchases_yoy > 0 else None
+                goal_yoy_dict["cpa"] = delta(cpa_this, cpa_yoy) if (cpa_this is not None and cpa_yoy is not None) else None
+                
+                roas_yoy = get_rate(goal_yoy, "roas")
+                goal_yoy_dict["roas"] = delta(roas_this, roas_yoy) if (roas_this is not None and roas_yoy is not None) else None
+                
+                # base_small 플래그
+                goal_yoy_dict["note_if_base_small_spend"] = note_if_base_small(spend_yoy_val, META_ADS_BASE_SMALL_THRESHOLD)
+                
+                result_yoy[goal] = goal_yoy_dict
+        
+        return {
+            "mom": result_mom,
+            "yoy": result_yoy,
+        }
+    
     def build_comparisons():
         comparisons = {}
         
@@ -1217,6 +1357,15 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             "cvr_mom": cvr_mom,
             "note_if_base_small_mom": note_if_base_small(meta_ads_prev["spend"], META_ADS_BASE_SMALL_THRESHOLD),
         }
+        
+        # meta_ads_goals
+        meta_ads_goals_comparisons = build_meta_ads_goals_comparisons(
+            meta_ads_goals_this,
+            meta_ads_goals_prev,
+            meta_ads_goals_yoy
+        )
+        if meta_ads_goals_comparisons:
+            comparisons["meta_ads_goals"] = meta_ads_goals_comparisons
         
         # ga4_traffic
         total_users_mom = delta(ga4_this_totals["total_users"], ga4_prev_totals["total_users"])

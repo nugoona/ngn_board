@@ -18,6 +18,7 @@ PRODUCT_TOP_LIMIT = 20
 GA4_TRAFFIC_TOP_LIMIT = 5
 VIEWITEM_TOP_LIMIT = 20
 PRODUCT_ROLLING_WINDOWS = [30, 90]
+VIEWITEM_ATTENTION_MIN_VIEW = 300  # attention_without_conversion 기준 최소 조회수
 
 
 def month_range(year: int, month: int):
@@ -248,7 +249,9 @@ def run(company_name: str, year: int, month: int):
     """
 
     def get_viewitem_block(s, e, products_30d):
-        # 선택적 매칭 맵 생성 (products_30d가 없거나 빈 리스트여도 문제없음)
+        # products_30d 매칭 맵 생성 (normalize_item_name 기준, 30일 기준)
+        # 매칭 기준: normalize_item_name(product_name) == normalize_item_name(item_name)
+        # 상품 1개당 1 key 매칭 (fuzzy, 광고명, 부분매칭 제외)
         sales_map = {}
         if products_30d:
             for p in products_30d:
@@ -257,7 +260,9 @@ def run(company_name: str, year: int, month: int):
                     if product_name:
                         key = normalize_item_name(product_name)
                         if key:
-                            sales_map[key] = p
+                            # 동일 key가 이미 있으면 덮어쓰지 않음 (첫 매칭만 유지)
+                            if key not in sales_map:
+                                sales_map[key] = p
 
         # GA4 view_item 쿼리 실행 (products_30d와 무관하게 항상 실행)
         rows = list(
@@ -279,25 +284,35 @@ def run(company_name: str, year: int, month: int):
         
         for r in rows:
             raw = r.item_name or ""
+            view_item_count = int(r.view_item or 0)
+            
+            # view_item = 0 제외
+            if view_item_count == 0:
+                continue
+            
             key = normalize_item_name(raw)
             
-            # "(not set)" / "" 은 통합 대상에서 제외
+            # item_name_normalized == "" 제외 (normalize 단계에서 이미 제거됨)
             if not key:
                 continue
             
-            aggregated[key]["total_view_item"] += int(r.view_item or 0)
+            aggregated[key]["total_view_item"] += view_item_count
             
-            # 매칭 정보는 첫 번째 매칭된 것만 저장
+            # 매칭 정보는 첫 번째 매칭된 것만 저장 (normalize_item_name 기준)
             if aggregated[key]["matched"] is None:
                 matched = sales_map.get(key)
                 if matched:
                     aggregated[key]["matched"] = matched
 
-        # 통합된 결과를 리스트로 변환
+        # 통합된 결과를 리스트로 변환 (정확한 구조만 유지)
         items = []
         for key, data in aggregated.items():
             matched = data["matched"]
             total_view_item = data["total_view_item"]
+            
+            # view_item = 0 제외 (이미 위에서 처리했지만 이중 체크)
+            if total_view_item == 0:
+                continue
             
             matched_product_no = matched.get("product_no") if matched else None
             matched_quantity_30d = matched.get("quantity") if matched else None
@@ -307,6 +322,13 @@ def run(company_name: str, year: int, month: int):
             qty_per_view = (matched_quantity_30d / total_view_item) if (matched_quantity_30d and total_view_item > 0) else None
             sales_per_view = (matched_sales_30d / total_view_item) if (matched_sales_30d and total_view_item > 0) else None
             
+            # attention_without_conversion 플래그 계산
+            # 기준: total_view_item >= 300 AND (matched_quantity_30d is None OR matched_quantity_30d == 0)
+            attention_without_conversion = (
+                total_view_item >= VIEWITEM_ATTENTION_MIN_VIEW and
+                (matched_quantity_30d is None or matched_quantity_30d == 0)
+            )
+            
             items.append({
                 "item_name_normalized": key,
                 "total_view_item": total_view_item,
@@ -315,32 +337,11 @@ def run(company_name: str, year: int, month: int):
                 "matched_sales_30d": matched_sales_30d,
                 "qty_per_view": round(qty_per_view, 4) if qty_per_view is not None else None,
                 "sales_per_view": round(sales_per_view, 2) if sales_per_view is not None else None,
-                "attention_without_conversion": False,  # 나중에 계산
+                "attention_without_conversion": attention_without_conversion,
             })
 
         # total_view_item 기준으로 정렬
         items.sort(key=lambda x: x["total_view_item"], reverse=True)
-        
-        # attention_without_conversion 플래그 계산
-        if items:
-            # 상위 20% 조회수 기준
-            top_20_pct_count = max(1, int(len(items) * 0.2))
-            top_20_pct_threshold = items[top_20_pct_count - 1]["total_view_item"] if top_20_pct_count <= len(items) else 0
-            
-            # sales_per_view가 있는 항목만 필터링
-            items_with_sales = [item for item in items if item["sales_per_view"] is not None]
-            if items_with_sales:
-                # 하위 30% sales_per_view 기준
-                bottom_30_pct_count = max(1, int(len(items_with_sales) * 0.3))
-                items_with_sales_sorted = sorted(items_with_sales, key=lambda x: x["sales_per_view"])
-                bottom_30_pct_threshold = items_with_sales_sorted[bottom_30_pct_count - 1]["sales_per_view"] if bottom_30_pct_count <= len(items_with_sales_sorted) else float('inf')
-                
-                # 플래그 설정
-                for item in items:
-                    if (item["total_view_item"] >= top_20_pct_threshold and 
-                        item["sales_per_view"] is not None and 
-                        item["sales_per_view"] <= bottom_30_pct_threshold):
-                        item["attention_without_conversion"] = True
 
         return {"top_items_by_view_item": items}
 

@@ -134,6 +134,7 @@ USING (
     CURRENT_TIMESTAMP() AS updated_at
   FROM `{T_SALES_DAILY}`
   WHERE payment_date BETWEEN @start_date AND @end_date
+    AND company_name IS NOT NULL
   GROUP BY company_name, month_date
 ) S
 ON T.company_name = S.company_name AND T.month_date = S.month_date
@@ -174,6 +175,7 @@ USING (
     CURRENT_TIMESTAMP() AS updated_at
   FROM `{T_META_DAILY}`
   WHERE date BETWEEN @start_date AND @end_date
+    AND company_name IS NOT NULL
   GROUP BY company_name, month_date
 ) S
 ON T.company_name = S.company_name AND T.month_date = S.month_date
@@ -251,6 +253,7 @@ USING (
     CURRENT_TIMESTAMP() AS updated_at
   FROM `{T_GA_VIEWITEM_DAILY}`
   WHERE event_date BETWEEN @start_date AND @end_date
+    AND company_name IS NOT NULL
   GROUP BY company_name, item_name
 ) S
 ON T.company_name = S.company_name

@@ -674,8 +674,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     # -----------------------
     # GA4 view_item (월간 집계 테이블 사용)
     # -----------------------
-    q_viewitem_monthly_raw = f"""
-    SELECT item_name, view_item
+    q_viewitem_monthly = f"""
+    SELECT
+      item_name,
+      view_item
     FROM `{PROJECT_ID}.{DATASET}.ga4_viewitem_monthly_raw`
     WHERE company_name = @company_name
       AND ym = @ym
@@ -683,7 +685,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     LIMIT @limit
     """
     
-    def get_viewitem_block(report_month_ym, products_30d):
+    def get_viewitem_block(ym, products_30d):
         sales_map = {}
         if products_30d:
             for p in products_30d:
@@ -697,11 +699,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         
         rows = list(
             client.query(
-                q_viewitem_monthly_raw,
+                q_viewitem_monthly,
                 job_config=bigquery.QueryJobConfig(
                     query_parameters=[
                         bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                        bigquery.ScalarQueryParameter("ym", "STRING", report_month_ym),
+                        bigquery.ScalarQueryParameter("ym", "STRING", ym),
                         bigquery.ScalarQueryParameter("limit", "INT64", VIEWITEM_TOP_LIMIT * 3),
                     ]
                 ),

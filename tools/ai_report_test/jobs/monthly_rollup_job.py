@@ -107,8 +107,7 @@ CREATE TABLE IF NOT EXISTS `{T_GA_VIEWITEM_MONTHLY_RAW}` (
   view_item INT64,
   updated_at TIMESTAMP
 )
-PARTITION BY ym
-CLUSTER BY company_name, item_name
+CLUSTER BY company_name, item_name, ym
 """,
         },
     ]

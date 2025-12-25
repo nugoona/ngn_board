@@ -46,6 +46,81 @@ def run_query(client: bigquery.Client, sql: str, params: list[bigquery.ScalarQue
     print(f"[OK] {job.job_id} bytes_processed={job.total_bytes_processed}")
 
 
+def create_tables_if_not_exists(client: bigquery.Client) -> None:
+    """월간 집계 테이블이 없으면 생성"""
+    tables = [
+        {
+            "name": T_SALES_MONTHLY,
+            "sql": f"""
+CREATE TABLE IF NOT EXISTS `{T_SALES_MONTHLY}` (
+  company_name STRING NOT NULL,
+  month_date DATE NOT NULL,
+  net_sales NUMERIC,
+  total_orders INT64,
+  total_first_order INT64,
+  total_canceled INT64,
+  updated_at TIMESTAMP
+)
+PARTITION BY month_date
+CLUSTER BY company_name
+""",
+        },
+        {
+            "name": T_META_MONTHLY,
+            "sql": f"""
+CREATE TABLE IF NOT EXISTS `{T_META_MONTHLY}` (
+  company_name STRING NOT NULL,
+  month_date DATE NOT NULL,
+  spend NUMERIC,
+  impressions INT64,
+  clicks INT64,
+  purchases INT64,
+  purchase_value NUMERIC,
+  updated_at TIMESTAMP
+)
+PARTITION BY month_date
+CLUSTER BY company_name
+""",
+        },
+        {
+            "name": T_GA_TRAFFIC_MONTHLY,
+            "sql": f"""
+CREATE TABLE IF NOT EXISTS `{T_GA_TRAFFIC_MONTHLY}` (
+  company_name STRING NOT NULL,
+  month_date DATE NOT NULL,
+  total_users INT64,
+  screen_page_views INT64,
+  event_count INT64,
+  updated_at TIMESTAMP
+)
+PARTITION BY month_date
+CLUSTER BY company_name
+""",
+        },
+        {
+            "name": T_GA_VIEWITEM_MONTHLY_RAW,
+            "sql": f"""
+CREATE TABLE IF NOT EXISTS `{T_GA_VIEWITEM_MONTHLY_RAW}` (
+  company_name STRING NOT NULL,
+  ym STRING NOT NULL,
+  item_name STRING NOT NULL,
+  view_item INT64,
+  updated_at TIMESTAMP
+)
+PARTITION BY ym
+CLUSTER BY company_name, item_name
+""",
+        },
+    ]
+
+    for table in tables:
+        try:
+            client.query(table["sql"]).result()
+            print(f"[OK] Table checked/created: {table['name']}")
+        except Exception as e:
+            print(f"[WARN] Table creation failed for {table['name']}: {e}")
+
+
 def merge_mall_sales_monthly(client: bigquery.Client, start_date: str, end_date: str) -> None:
     sql = f"""
 MERGE `{T_SALES_MONTHLY}` T
@@ -210,6 +285,11 @@ def main():
     print(f"[INFO] PROJECT_ID={PROJECT_ID} DATASET={DATASET}")
     print(f"[INFO] prev_month ym={ym} range={start_date}..{end_date}")
 
+    # 테이블이 없으면 생성
+    print("[INFO] Checking/creating monthly tables...")
+    create_tables_if_not_exists(client)
+
+    # MERGE 실행
     merge_mall_sales_monthly(client, start_date, end_date)
     merge_meta_ads_monthly(client, start_date, end_date)
     merge_ga4_traffic_monthly(client, start_date, end_date)

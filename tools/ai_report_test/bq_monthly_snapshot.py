@@ -3,6 +3,7 @@ import json
 import hashlib
 import re
 from datetime import date, timedelta
+from collections import defaultdict
 from google.cloud import bigquery
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
@@ -155,16 +156,6 @@ def run(company_name: str, year: int, month: int):
     LIMIT @limit
     """
 
-    q_products_total = f"""
-    SELECT
-      COUNT(DISTINCT product_no) AS products_sold_cnt,
-      SUM(item_quantity) AS total_quantity,
-      SUM(item_product_sales) AS total_sales
-    FROM `{PROJECT_ID}.{DATASET}.daily_cafe24_items`
-    WHERE company_name = @company_name
-      AND payment_date BETWEEN @start_date AND @end_date
-    """
-
     def get_products_block(end_date_iso):
         # 빈 데이터 안전 처리: rolling_top 키 누락 방지
         block = {"rolling": {}}
@@ -200,6 +191,14 @@ def run(company_name: str, year: int, month: int):
 
         s90, e90 = rolling_range(end_date_iso, 90)
         net90 = get_sales(s90, e90)["net_sales"]
+        
+        # 30일 데이터 가져오기 (core/hit 상품 보강용)
+        products_30d_map = {}
+        for p in rolling_top.get(30, []):
+            products_30d_map[p["product_no"]] = {
+                "quantity": p["quantity"],
+                "sales": p["sales"],
+            }
 
         # rolling_top[90]이 없을 수 있으므로 .get() 사용
         for p in rolling_top.get(90, []):
@@ -213,6 +212,21 @@ def run(company_name: str, year: int, month: int):
                 p["role_90d"] = "hit"
             else:
                 p["role_90d"] = "normal"
+            
+            # core/hit 상품에 대해서만 추가 필드
+            if p["role_90d"] in ["core", "hit"]:
+                p30d = products_30d_map.get(p["product_no"])
+                if p30d:
+                    p["quantity_30d"] = p30d["quantity"]
+                    p["sales_30d"] = p30d["sales"]
+                    # 90일 평균 대비 30일 매출 비교
+                    avg_90d_sales = p["sales"] / 90
+                    avg_30d_sales = p30d["sales"] / 30
+                    p["is_declining"] = avg_30d_sales < avg_90d_sales
+                else:
+                    p["quantity_30d"] = None
+                    p["sales_30d"] = None
+                    p["is_declining"] = None
 
         # rolling_top[30], rolling_top[90]이 없을 수 있으므로 .get() 사용하여 기본값 제공
         block["rolling"]["d30"] = {"top_products_by_sales": rolling_top.get(30, [])}
@@ -234,9 +248,6 @@ def run(company_name: str, year: int, month: int):
     """
 
     def get_viewitem_block(s, e, products_30d):
-        # 핵심: GA4 view_item 결과는 products_30d와 무관하게 항상 출력되어야 함
-        # sales_map은 선택적 매칭 용도로만 사용 (products_30d가 빈 리스트여도 viewitem 결과는 출력)
-        
         # 선택적 매칭 맵 생성 (products_30d가 없거나 빈 리스트여도 문제없음)
         sales_map = {}
         if products_30d:
@@ -257,43 +268,175 @@ def run(company_name: str, year: int, month: int):
                         bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
                         bigquery.ScalarQueryParameter("start_date", "DATE", s),
                         bigquery.ScalarQueryParameter("end_date", "DATE", e),
-                        bigquery.ScalarQueryParameter("limit", "INT64", VIEWITEM_TOP_LIMIT),
+                        bigquery.ScalarQueryParameter("limit", "INT64", VIEWITEM_TOP_LIMIT * 3),  # 통합을 위해 더 많이 가져오기
                     ]
                 ),
             ).result()
         )
 
-        # 모든 GA4 view_item 결과를 항상 출력 (매칭 여부와 무관)
-        items = []
+        # normalize_item_name 기준으로 통합 (Python에서 group by)
+        aggregated = defaultdict(lambda: {"total_view_item": 0, "matched": None})
+        
         for r in rows:
             raw = r.item_name or ""
             key = normalize_item_name(raw)
-            # sales_map에서 선택적 매칭 시도 (없어도 결과는 출력)
-            matched = sales_map.get(key) if key else None
+            
+            # "(not set)" / "" 은 통합 대상에서 제외
+            if not key:
+                continue
+            
+            aggregated[key]["total_view_item"] += int(r.view_item or 0)
+            
+            # 매칭 정보는 첫 번째 매칭된 것만 저장
+            if aggregated[key]["matched"] is None:
+                matched = sales_map.get(key)
+                if matched:
+                    aggregated[key]["matched"] = matched
 
+        # 통합된 결과를 리스트로 변환
+        items = []
+        for key, data in aggregated.items():
+            matched = data["matched"]
+            total_view_item = data["total_view_item"]
+            
+            matched_product_no = matched.get("product_no") if matched else None
+            matched_quantity_30d = matched.get("quantity") if matched else None
+            matched_sales_30d = matched.get("sales") if matched else None
+            
+            # qty_per_view, sales_per_view 계산
+            qty_per_view = (matched_quantity_30d / total_view_item) if (matched_quantity_30d and total_view_item > 0) else None
+            sales_per_view = (matched_sales_30d / total_view_item) if (matched_sales_30d and total_view_item > 0) else None
+            
             items.append({
-                "item_name": raw,
                 "item_name_normalized": key,
-                "view_item": int(r.view_item or 0),
-                "matched_product_no": matched.get("product_no") if matched else None,
-                "match_type": "normalized_name" if matched else "none",
+                "total_view_item": total_view_item,
+                "matched_product_no": matched_product_no,
+                "matched_quantity_30d": matched_quantity_30d,
+                "matched_sales_30d": matched_sales_30d,
+                "qty_per_view": round(qty_per_view, 4) if qty_per_view is not None else None,
+                "sales_per_view": round(sales_per_view, 2) if sales_per_view is not None else None,
+                "attention_without_conversion": False,  # 나중에 계산
             })
 
-        # 반환 구조 유지: BigQuery 결과가 0 row여도 빈 리스트 반환
+        # total_view_item 기준으로 정렬
+        items.sort(key=lambda x: x["total_view_item"], reverse=True)
+        
+        # attention_without_conversion 플래그 계산
+        if items:
+            # 상위 20% 조회수 기준
+            top_20_pct_count = max(1, int(len(items) * 0.2))
+            top_20_pct_threshold = items[top_20_pct_count - 1]["total_view_item"] if top_20_pct_count <= len(items) else 0
+            
+            # sales_per_view가 있는 항목만 필터링
+            items_with_sales = [item for item in items if item["sales_per_view"] is not None]
+            if items_with_sales:
+                # 하위 30% sales_per_view 기준
+                bottom_30_pct_count = max(1, int(len(items_with_sales) * 0.3))
+                items_with_sales_sorted = sorted(items_with_sales, key=lambda x: x["sales_per_view"])
+                bottom_30_pct_threshold = items_with_sales_sorted[bottom_30_pct_count - 1]["sales_per_view"] if bottom_30_pct_count <= len(items_with_sales_sorted) else float('inf')
+                
+                # 플래그 설정
+                for item in items:
+                    if (item["total_view_item"] >= top_20_pct_threshold and 
+                        item["sales_per_view"] is not None and 
+                        item["sales_per_view"] <= bottom_30_pct_threshold):
+                        item["attention_without_conversion"] = True
+
         return {"top_items_by_view_item": items}
+
+    # -----------------------
+    # Signals 계산
+    # -----------------------
+    def calculate_signals(sales_this, products_this, viewitem_this):
+        signals = {}
+        
+        # 기존 signals
+        net_this = sales_this.get("net_sales", 0)
+        net_prev = get_sales(prev_start, prev_end).get("net_sales", 0)
+        mom_pct = (net_this - net_prev) / net_prev * 100 if net_prev else None
+        
+        if mom_pct is None:
+            signals["sales_signal"] = "unknown"
+        elif mom_pct >= 3:
+            signals["sales_signal"] = "increase"
+        elif mom_pct <= -3:
+            signals["sales_signal"] = "decrease"
+        else:
+            signals["sales_signal"] = "flat"
+        
+        # attention_without_conversion_exists
+        viewitem_items = viewitem_this.get("top_items_by_view_item", [])
+        signals["attention_without_conversion_exists"] = any(
+            item.get("attention_without_conversion", False) for item in viewitem_items
+        )
+        
+        # core_product_risk
+        products_90d = products_this.get("rolling", {}).get("d90", {}).get("top_products_by_sales_with_role", [])
+        core_products = [p for p in products_90d if p.get("role_90d") == "core"]
+        signals["core_product_risk"] = any(
+            p.get("is_declining") is True for p in core_products
+        )
+        
+        # new_product_dependency
+        products_30d = products_this.get("rolling", {}).get("d30", {}).get("top_products_by_sales", [])
+        first_order_products = []
+        total_30d_sales = sum(p.get("sales", 0) for p in products_30d)
+        
+        # 첫 판매 상품 판별 (간단히 30일 데이터만 있고 90일에는 없는 상품)
+        products_90d_map = {p.get("product_no"): p for p in products_90d}
+        for p in products_30d:
+            product_no = p.get("product_no")
+            if product_no not in products_90d_map:
+                first_order_products.append(p)
+        
+        first_order_sales = sum(p.get("sales", 0) for p in first_order_products)
+        signals["new_product_dependency"] = (
+            (first_order_sales / total_30d_sales * 100) >= 30
+        ) if total_30d_sales > 0 else False
+        
+        return signals
+
+    # -----------------------
+    # Summary sentences 생성
+    # -----------------------
+    def generate_summary_sentences(signals, viewitem_this, products_this):
+        sentences = []
+        
+        # attention_without_conversion_exists
+        if signals.get("attention_without_conversion_exists"):
+            sentences.append("조회수 대비 판매 연결이 낮은 상품이 일부 관측되었습니다.")
+        
+        # core_product_risk
+        if signals.get("core_product_risk"):
+            sentences.append("주력 상품 중 일부는 최근 30일 기준 판매 둔화 신호가 나타납니다.")
+        
+        # new_product_dependency
+        if signals.get("new_product_dependency"):
+            sentences.append("최근 30일 첫 판매 상품이 전체 매출에서 높은 비중을 차지하고 있습니다.")
+        
+        # sales_signal
+        sales_signal = signals.get("sales_signal")
+        if sales_signal == "increase":
+            sentences.append("전월 대비 매출 증가 추세가 확인되었습니다.")
+        elif sales_signal == "decrease":
+            sentences.append("전월 대비 매출 감소 추세가 확인되었습니다.")
+        
+        return sentences[:4]  # 최대 4문장
 
     # -----------------------
     # Fetch
     # -----------------------
     sales_this = get_sales(this_start, this_end)
     products_this = get_products_block(this_end)
-    # products_this["rolling"]["d30"]["top_products_by_sales"]가 없을 수 있으므로 안전하게 접근
     products_30d = products_this.get("rolling", {}).get("d30", {}).get("top_products_by_sales", [])
     viewitem_this = get_viewitem_block(
         this_start,
         this_end,
         products_30d,
     )
+    
+    signals = calculate_signals(sales_this, products_this, viewitem_this)
+    summary_sentences = generate_summary_sentences(signals, viewitem_this, products_this)
 
     out = {
         "report_meta": {
@@ -305,6 +448,8 @@ def run(company_name: str, year: int, month: int):
             "products": {"this": products_this},
             "viewitem": {"this": viewitem_this},
         },
+        "signals": signals,
+        "summary_sentences": summary_sentences,
     }
 
     snapshot_str = json.dumps(out, ensure_ascii=False, sort_keys=True)

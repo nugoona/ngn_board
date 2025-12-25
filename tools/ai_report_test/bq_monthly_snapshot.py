@@ -659,136 +659,169 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             }
         }
     
-    meta_ads_goals_this = get_meta_ads_goals(this_start, this_end)
-    meta_ads_goals_prev = get_meta_ads_goals(prev_start, prev_end)
-    meta_ads_goals_yoy = get_meta_ads_goals(yoy_start, yoy_end) if meta_ads_yoy_available else None
+    # -----------------------
+    # Meta Ads Goals (목표별 분해 및 Top Ad) - SKIP_META_ADS_GOALS 체크
+    # -----------------------
+    # meta_ads_yoy_available은 comparisons에서도 사용되므로 먼저 초기화
+    meta_ads_yoy_available = False
     
-    # -----------------------
-    # Meta Ads Benchmarks (최근 6개월 기준치)
-    # -----------------------
-    def get_meta_ads_benchmarks():
-        """최근 6개월 기준치 계산"""
-        if SKIP_META_ADS_GOALS:
-            return {
-                "last_6m": {
-                    "traffic": {"avg_cpc": None, "median_cpc": None, "avg_ctr": None, "count_months": 0},
-                    "conversion": {"avg_cvr": None, "median_cvr": None, "avg_cpa": None, "median_cpa": None, "count_months": 0},
-                }
-            }
+    if SKIP_META_ADS_GOALS:
+        meta_ads_goals_this = None
+        meta_ads_goals_prev = None
+        meta_ads_goals_yoy = None
+        meta_ads_benchmarks = None
+    else:
+        # (B) YoY rows 존재 체크
+        q_meta_ads_exists = f"""
+        SELECT COUNT(1) AS cnt
+        FROM `{PROJECT_ID}.{DATASET}.meta_ads_account_summary`
+        WHERE company_name = @company_name
+          AND date BETWEEN @start_date AND @end_date
+        """
         
-        # 최근 6개월 YM 목록
-        end_ym = report_month
-        month_yms = [shift_month(end_ym, -i) for i in range(6)]
-        
-        # 각 월별 goal 집계
-        traffic_cpcs = []
-        traffic_ctrs = []
-        conversion_cvrs = []
-        conversion_cpas = []
-        count_months = 0
-        
-        for ym in month_yms:
-            s, e = month_range_exclusive(ym)
-            s_date = date.fromisoformat(s)
-            e_date = date.fromisoformat(e) - timedelta(days=1)
-            
-            q_monthly_goals = f"""
-            SELECT
-                campaign_name,
-                SUM(spend) AS spend,
-                SUM(impressions) AS impressions,
-                SUM(clicks) AS clicks,
-                SUM(purchases) AS purchases,
-                SUM(purchase_value) AS purchase_value
-            FROM `{PROJECT_ID}.{DATASET}.meta_ads_ad_summary`
-            WHERE company_name = @company_name
-              AND date BETWEEN @start_date AND @end_date
-            GROUP BY campaign_name
-            """
-            
+        def has_meta_ads_rows(s, e):
             rows = list(
                 client.query(
-                    q_monthly_goals,
+                    q_meta_ads_exists,
                     job_config=bigquery.QueryJobConfig(
                         query_parameters=[
                             bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                            bigquery.ScalarQueryParameter("start_date", "DATE", s_date),
-                            bigquery.ScalarQueryParameter("end_date", "DATE", e_date),
+                            bigquery.ScalarQueryParameter("start_date", "DATE", s),
+                            bigquery.ScalarQueryParameter("end_date", "DATE", e),
                         ]
                     ),
                 ).result()
             )
-            
             if not rows:
-                continue
+                return False
+            return int(rows[0].cnt or 0) > 0
+        
+        meta_ads_yoy_available = has_meta_ads_rows(yoy_start, yoy_end)
+        
+        # (C) goals 블록 생성
+        meta_ads_goals_this = get_meta_ads_goals(this_start, this_end)
+        meta_ads_goals_prev = get_meta_ads_goals(prev_start, prev_end)
+        meta_ads_goals_yoy = get_meta_ads_goals(yoy_start, yoy_end) if meta_ads_yoy_available else None
+        
+        # -----------------------
+        # Meta Ads Benchmarks (최근 6개월 기준치)
+        # -----------------------
+        def build_meta_ads_benchmarks_from_monthly_13m(monthly_13m_data):
+            """최근 6개월 기준치 계산 (monthly_13m_meta 기반, goal별 분해는 ad_summary에서)"""
+            # 최근 6개월 YM 목록
+            end_ym = report_month
+            month_yms = [shift_month(end_ym, -i) for i in range(6)]
             
-            count_months += 1
+            # 각 월별 goal 집계
+            traffic_cpcs = []
+            traffic_ctrs = []
+            conversion_cvrs = []
+            conversion_cpas = []
+            count_months = 0
             
-            # 목표별 집계
-            traffic_data = {"spend": 0.0, "clicks": 0, "impressions": 0}
-            conversion_data = {"spend": 0.0, "clicks": 0, "purchases": 0}
-            
-            for row in rows:
-                goal = _goal_from_campaign_name(row.campaign_name or "")
-                spend = float(row.spend or 0)
-                clicks = int(row.clicks or 0)
-                impressions = int(row.impressions or 0)
-                purchases = int(row.purchases or 0)
+            for ym in month_yms:
+                s, e = month_range_exclusive(ym)
+                s_date = date.fromisoformat(s)
+                e_date = date.fromisoformat(e) - timedelta(days=1)
                 
-                if goal == "traffic":
-                    traffic_data["spend"] += spend
-                    traffic_data["clicks"] += clicks
-                    traffic_data["impressions"] += impressions
-                elif goal == "conversion":
-                    conversion_data["spend"] += spend
-                    conversion_data["clicks"] += clicks
-                    conversion_data["purchases"] += purchases
+                q_monthly_goals = f"""
+                SELECT
+                    campaign_name,
+                    SUM(spend) AS spend,
+                    SUM(impressions) AS impressions,
+                    SUM(clicks) AS clicks,
+                    SUM(purchases) AS purchases,
+                    SUM(purchase_value) AS purchase_value
+                FROM `{PROJECT_ID}.{DATASET}.meta_ads_ad_summary`
+                WHERE company_name = @company_name
+                  AND date BETWEEN @start_date AND @end_date
+                GROUP BY campaign_name
+                """
+                
+                rows = list(
+                    client.query(
+                        q_monthly_goals,
+                        job_config=bigquery.QueryJobConfig(
+                            query_parameters=[
+                                bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                                bigquery.ScalarQueryParameter("start_date", "DATE", s_date),
+                                bigquery.ScalarQueryParameter("end_date", "DATE", e_date),
+                            ]
+                        ),
+                    ).result()
+                )
+                
+                if not rows:
+                    continue
+                
+                count_months += 1
+                
+                # 목표별 집계
+                traffic_data = {"spend": 0.0, "clicks": 0, "impressions": 0}
+                conversion_data = {"spend": 0.0, "clicks": 0, "purchases": 0}
+                
+                for row in rows:
+                    goal = _goal_from_campaign_name(row.campaign_name or "")
+                    spend = float(row.spend or 0)
+                    clicks = int(row.clicks or 0)
+                    impressions = int(row.impressions or 0)
+                    purchases = int(row.purchases or 0)
+                    
+                    if goal == "traffic":
+                        traffic_data["spend"] += spend
+                        traffic_data["clicks"] += clicks
+                        traffic_data["impressions"] += impressions
+                    elif goal == "conversion":
+                        conversion_data["spend"] += spend
+                        conversion_data["clicks"] += clicks
+                        conversion_data["purchases"] += purchases
+                
+                # Traffic: CPC, CTR
+                if traffic_data["clicks"] > 0:
+                    cpc = traffic_data["spend"] / traffic_data["clicks"]
+                    traffic_cpcs.append(cpc)
+                if traffic_data["impressions"] > 0:
+                    ctr = (traffic_data["clicks"] / traffic_data["impressions"]) * 100
+                    traffic_ctrs.append(ctr)
+                
+                # Conversion: CVR, CPA
+                if conversion_data["clicks"] > 0:
+                    cvr = (conversion_data["purchases"] / conversion_data["clicks"]) * 100
+                    conversion_cvrs.append(cvr)
+                if conversion_data["purchases"] > 0:
+                    cpa = conversion_data["spend"] / conversion_data["purchases"]
+                    conversion_cpas.append(cpa)
             
-            # Traffic: CPC, CTR
-            if traffic_data["clicks"] > 0:
-                cpc = traffic_data["spend"] / traffic_data["clicks"]
-                traffic_cpcs.append(cpc)
-            if traffic_data["impressions"] > 0:
-                ctr = (traffic_data["clicks"] / traffic_data["impressions"]) * 100
-                traffic_ctrs.append(ctr)
+            # 평균/중앙값 계산
+            traffic_avg_cpc = statistics.mean(traffic_cpcs) if traffic_cpcs else None
+            traffic_median_cpc = statistics.median(traffic_cpcs) if traffic_cpcs else None
+            traffic_avg_ctr = statistics.mean(traffic_ctrs) if traffic_ctrs else None
             
-            # Conversion: CVR, CPA
-            if conversion_data["clicks"] > 0:
-                cvr = (conversion_data["purchases"] / conversion_data["clicks"]) * 100
-                conversion_cvrs.append(cvr)
-            if conversion_data["purchases"] > 0:
-                cpa = conversion_data["spend"] / conversion_data["purchases"]
-                conversion_cpas.append(cpa)
-        
-        # 평균/중앙값 계산
-        traffic_avg_cpc = statistics.mean(traffic_cpcs) if traffic_cpcs else None
-        traffic_median_cpc = statistics.median(traffic_cpcs) if traffic_cpcs else None
-        traffic_avg_ctr = statistics.mean(traffic_ctrs) if traffic_ctrs else None
-        
-        conversion_avg_cvr = statistics.mean(conversion_cvrs) if conversion_cvrs else None
-        conversion_median_cvr = statistics.median(conversion_cvrs) if conversion_cvrs else None
-        conversion_avg_cpa = statistics.mean(conversion_cpas) if conversion_cpas else None
-        conversion_median_cpa = statistics.median(conversion_cpas) if conversion_cpas else None
-        
-        return {
-            "last_6m": {
-                "traffic": {
-                    "avg_cpc": round(traffic_avg_cpc, 2) if traffic_avg_cpc is not None else None,
-                    "median_cpc": round(traffic_median_cpc, 2) if traffic_median_cpc is not None else None,
-                    "avg_ctr": round(traffic_avg_ctr, 2) if traffic_avg_ctr is not None else None,
-                    "count_months": count_months,
-                },
-                "conversion": {
-                    "avg_cvr": round(conversion_avg_cvr, 2) if conversion_avg_cvr is not None else None,
-                    "median_cvr": round(conversion_median_cvr, 2) if conversion_median_cvr is not None else None,
-                    "avg_cpa": round(conversion_avg_cpa, 2) if conversion_avg_cpa is not None else None,
-                    "median_cpa": round(conversion_median_cpa, 2) if conversion_median_cpa is not None else None,
-                    "count_months": count_months,
+            conversion_avg_cvr = statistics.mean(conversion_cvrs) if conversion_cvrs else None
+            conversion_median_cvr = statistics.median(conversion_cvrs) if conversion_cvrs else None
+            conversion_avg_cpa = statistics.mean(conversion_cpas) if conversion_cpas else None
+            conversion_median_cpa = statistics.median(conversion_cpas) if conversion_cpas else None
+            
+            return {
+                "last_6m": {
+                    "traffic": {
+                        "avg_cpc": round(traffic_avg_cpc, 2) if traffic_avg_cpc is not None else None,
+                        "median_cpc": round(traffic_median_cpc, 2) if traffic_median_cpc is not None else None,
+                        "avg_ctr": round(traffic_avg_ctr, 2) if traffic_avg_ctr is not None else None,
+                        "count_months": count_months,
+                    },
+                    "conversion": {
+                        "avg_cvr": round(conversion_avg_cvr, 2) if conversion_avg_cvr is not None else None,
+                        "median_cvr": round(conversion_median_cvr, 2) if conversion_median_cvr is not None else None,
+                        "avg_cpa": round(conversion_avg_cpa, 2) if conversion_avg_cpa is not None else None,
+                        "median_cpa": round(conversion_median_cpa, 2) if conversion_median_cpa is not None else None,
+                        "count_months": count_months,
+                    }
                 }
             }
-        }
-    
-    meta_ads_benchmarks = get_meta_ads_benchmarks()
+        
+        # (D) 6개월 벤치마크는 monthly_13m_meta 기반으로 계산
+        meta_ads_benchmarks = build_meta_ads_benchmarks_from_monthly_13m(monthly_13m_meta)
     
     # -----------------------
     # GA4 traffic
@@ -1143,14 +1176,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         yoy_end
     )
     
-    meta_ads_yoy_available = has_rows(
-        client,
-        f"{PROJECT_ID}.{DATASET}.meta_ads_account_summary",
-        "date",
-        company_name,
-        yoy_start,
-        yoy_end
-    )
+    # meta_ads_yoy_available은 goals 블록에서 체크됨
+    # SKIP_META_ADS_GOALS=1일 때는 False로 유지됨
+    # comparisons에서 사용하기 위해 goals 블록 밖에서도 체크 필요
+    if SKIP_META_ADS_GOALS:
+        # SKIP_META_ADS_GOALS=1일 때만 여기서 체크 (goals 블록이 실행되지 않으므로)
+        meta_ads_yoy_available = has_rows(
+            client,
+            f"{PROJECT_ID}.{DATASET}.meta_ads_account_summary",
+            "date",
+            company_name,
+            yoy_start,
+            yoy_end
+        )
     
     # -----------------------
     # Comparisons

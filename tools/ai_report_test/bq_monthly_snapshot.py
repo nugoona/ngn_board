@@ -26,6 +26,9 @@ MALL_SALES_BASE_SMALL_THRESHOLD = 500000
 META_ADS_BASE_SMALL_THRESHOLD = 100000
 GA4_TRAFFIC_BASE_SMALL_THRESHOLD = 100
 
+# Viewitem 스킵 플래그
+SKIP_VIEWITEM = os.environ.get("SKIP_VIEWITEM", "0") == "1"
+
 
 # -----------------------
 # 날짜 헬퍼
@@ -750,7 +753,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         return {"top_items_by_view_item": items}
     
     products_30d = products_this.get("rolling", {}).get("d30", {}).get("top_products_by_sales", [])
-    viewitem_this = get_viewitem_block(report_month, products_30d)
+    if SKIP_VIEWITEM:
+        viewitem_this = {"top_items_by_view_item": []}
+    else:
+        viewitem_this = get_viewitem_block(report_month, products_30d)
     
     # -----------------------
     # YoY 데이터 존재 여부 확인

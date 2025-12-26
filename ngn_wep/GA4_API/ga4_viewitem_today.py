@@ -192,13 +192,30 @@ def update_ga4_viewitem_ngn(target_date=None):
                 v.item_id
         ),
         item_names AS (
-            -- 각 item_id에 대해 가장 많이 사용된 item_name 선택
+            -- 각 item_id에 대해 실제로 가장 많이 사용된 item_name 선택
+            -- ga4_viewItem과 JOIN하여 실제 사용 빈도 기반으로 선택
+            WITH item_name_counts AS (
+                SELECT 
+                    v.ga4_property_id,
+                    v.item_id,
+                    i.item_name,
+                    COUNT(*) AS usage_count
+                FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_EVENTS}` v
+                JOIN `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_ITEMS}` i
+                    ON v.ga4_property_id = i.ga4_property_id 
+                    AND v.item_id = i.item_id
+                WHERE DATE(v.event_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+                GROUP BY v.ga4_property_id, v.item_id, i.item_name
+            )
             SELECT 
-                i.ga4_property_id,
-                i.item_id,
-                ARRAY_AGG(i.item_name ORDER BY i.item_name LIMIT 1)[OFFSET(0)] AS item_name
-            FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_ITEMS}` i
-            GROUP BY i.ga4_property_id, i.item_id
+                ga4_property_id,
+                item_id,
+                item_name
+            FROM item_name_counts
+            QUALIFY ROW_NUMBER() OVER (
+                PARTITION BY ga4_property_id, item_id 
+                ORDER BY usage_count DESC, item_name
+            ) = 1
         )
         SELECT 
             ia.event_date, 

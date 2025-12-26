@@ -83,7 +83,9 @@ def parse_date(date_value):
 def fetch_customer_data(mall_id, start_date, end_date):
     """
     카페24 회원/고객 API 호출
-    API 엔드포인트: /api/v2/admin/customers (예상, 실제 API 문서 확인 필요)
+    API 엔드포인트: GET /api/v2/admin/customers
+    파라미터: join_start_date, join_end_date (YYYY-MM-DD 형식)
+    응답: {"count": 가입자수, "customers": [...]}
     """
     token_info = get_token_info(mall_id)
     if not token_info:
@@ -93,20 +95,21 @@ def fetch_customer_data(mall_id, start_date, end_date):
     access_token = token_info["access_token"]
     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
     
-    # TODO: 실제 API 엔드포인트 확인 필요
-    # 가능한 엔드포인트들:
-    # - /api/v2/admin/customers
-    # - /api/v2/admin/members
-    # - /api/v2/admin/customers/search
+    # 카페24 회원 목록 조회 API
+    # 엔드포인트: GET /api/v2/admin/customers
+    # 파라미터: join_start_date, join_end_date (YYYY-MM-DD 형식)
+    # 응답: count (가입자 수), customers (회원 목록)
     url = f"https://{mall_id}.cafe24api.com/api/v2/admin/customers"
     
     all_customers = []
     offset = 0
 
     while True:
+        # 카페24 회원 목록 조회 파라미터
+        # join_start_date, join_end_date: 회원가입일 기준 (YYYY-MM-DD 형식)
         params = {
-            "start_date": f"{start_date}T00:00:00+09:00",  # 회원가입일 기준 (예상)
-            "end_date": f"{end_date}T23:59:59+09:00",
+            "join_start_date": start_date,  # YYYY-MM-DD 형식
+            "join_end_date": end_date,      # YYYY-MM-DD 형식
             "limit": 100,
             "offset": offset
         }
@@ -126,29 +129,37 @@ def fetch_customer_data(mall_id, start_date, end_date):
                 logging.error(f"   Response Text: {response.text}")
                 logging.error(f"   Response Headers: {dict(response.headers)}")
                 
+                # 422 에러: 파라미터 문제
+                if response.status_code == 422:
+                    error_data = response.json().get("error", {})
+                    logging.error(f"   💡 422 에러: 파라미터가 올바르지 않습니다.")
+                    logging.error(f"   💡 에러 메시지: {error_data.get('message', 'N/A')}")
+                    logging.error(f"   💡 현재 엔드포인트: {url}")
+                    logging.error(f"   💡 요청 파라미터: {params}")
+                    logging.error(f"   💡 올바른 파라미터: join_start_date, join_end_date (YYYY-MM-DD 형식)")
+                    logging.error(f"   💡 예시: ?join_start_date=2024-12-23&join_end_date=2024-12-23")
                 # 404 에러인 경우 다른 엔드포인트 시도 안내
-                if response.status_code == 404:
+                elif response.status_code == 404:
                     logging.error(f"   💡 404 에러: 이 엔드포인트가 존재하지 않을 수 있습니다.")
                     logging.error(f"   💡 다른 가능한 엔드포인트:")
                     logging.error(f"      - /api/v2/admin/members")
-                    logging.error(f"      - /api/v2/admin/customers/search")
                     logging.error(f"      - /api/v2/admin/customers/list")
                 
                 break
 
-            # TODO: 실제 API 응답 구조 확인 필요 (customers? members? customers_list?)
+            # 카페24 API 응답 구조: { "count": 숫자, "customers": [...] }
             data = response.json()
             
             # 응답 구조 디버깅을 위한 로그
-            logging.info(f"{mall_id} - API 응답 키 목록: {list(data.keys())}")
-            if len(data) > 0 and isinstance(data, dict):
-                logging.info(f"{mall_id} - 응답 데이터 샘플 (첫 200자): {str(data)[:200]}")
+            total_count = data.get("count", 0)  # 해당 기간의 총 가입자 수
+            customers = data.get("customers", [])
             
-            customers = data.get("customers", []) or data.get("members", []) or data.get("customers_list", []) or []
+            if offset == 0:  # 첫 요청에서만 총 개수 로그 출력
+                logging.info(f"{mall_id} - {start_date} ~ {end_date} 기간 총 가입자 수: {total_count}명")
             
             if not customers:
-                logging.warning(f"{mall_id} - 응답에 customers/members 데이터가 없습니다.")
-                logging.warning(f"{mall_id} - 전체 응답 구조: {list(data.keys()) if isinstance(data, dict) else type(data)}")
+                if offset == 0:  # 첫 요청에서 데이터가 없으면 실제로 없는 것
+                    logging.info(f"{mall_id} - {start_date} ~ {end_date} 기간에 가입한 회원이 없습니다.")
                 break
 
             for customer in customers:
@@ -281,8 +292,29 @@ def merge_temp_to_main_table():
         client.query(query).result()
         logging.info("✅ 테이블 병합 완료!")
     except Exception as e:
+        error_str = str(e)
         logging.error(f"❌ 병합 실패: {e}")
-        logging.error("💡 테이블이 존재하지 않을 수 있습니다. 먼저 BigQuery에서 테이블을 생성해주세요.")
+        if "was not found" in error_str or "404" in error_str:
+            logging.error("💡 테이블이 존재하지 않습니다.")
+            logging.error(f"💡 BigQuery에서 다음 테이블을 생성해주세요: {PROJECT_ID}.{DATASET_ID}.{CUSTOMERS_TABLE_ID}")
+            logging.error("💡 테이블 스키마 예시:")
+            logging.error("   - mall_id: STRING (필수)")
+            logging.error("   - customer_id: STRING (필수)")
+            logging.error("   - member_id: STRING")
+            logging.error("   - email: STRING")
+            logging.error("   - name: STRING")
+            logging.error("   - phone: STRING")
+            logging.error("   - created_date: TIMESTAMP")
+            logging.error("   - last_login_date: TIMESTAMP")
+            logging.error("   - grade: STRING")
+            logging.error("   - status: STRING")
+            logging.error("   - total_order_count: INTEGER")
+            logging.error("   - total_order_amount: FLOAT")
+            logging.error("   - birth_date: TIMESTAMP")
+            logging.error("   - gender: STRING")
+            logging.error("   - postcode: STRING")
+            logging.error("   - address: STRING")
+            logging.error("   - address_detail: STRING")
 
 # ✅ 메인 실행 함수 (테스트용)
 def main():

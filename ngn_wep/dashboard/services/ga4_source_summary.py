@@ -44,7 +44,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         else:
             print(f"[DEBUG] 'all'이므로 필터 제외: {company_name}")
 
-    # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화
+    # ✅ 최적화된 쿼리: LIMIT 추가, 필터링 조건 강화, 이탈율 추가
     query = f"""
     SELECT
       company_name,
@@ -80,7 +80,12 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         -- 나머지는 원본 유지
         ELSE LOWER(first_user_source)
       END AS source,
-      SUM(total_users) AS total_users
+      SUM(total_users) AS total_users,
+      -- 이탈율 가중평균 계산 (bounce_rate * total_users의 합 / total_users의 합)
+      SAFE_DIVIDE(
+        SUM(IFNULL(bounce_rate, 0) * total_users),
+        SUM(total_users)
+      ) AS bounce_rate
     FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
     WHERE
       event_date BETWEEN @start_date AND @end_date

@@ -1178,7 +1178,7 @@ function renderGa4SourceSummary(sources) {
     tbody.innerHTML = '';
     
     if (sources.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="text-center">데이터가 없습니다</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">데이터가 없습니다</td></tr>';
         return;
     }
     
@@ -1191,9 +1191,14 @@ function renderGa4SourceSummary(sources) {
     
     filteredSources.forEach(source => {
         const row = document.createElement('tr');
+        // 이탈율 계산 및 포맷팅
+        const bounceRate = source.bounce_rate !== null && source.bounce_rate !== undefined 
+            ? `${parseFloat(source.bounce_rate).toFixed(1)}%` 
+            : '-';
         row.innerHTML = `
             <td class="text-truncate">${source.source || '-'}</td>
             <td class="text-right">${formatNumber(source.total_users || 0)}</td>
+            <td class="text-right">${bounceRate}</td>
         `;
         tbody.appendChild(row);
     });

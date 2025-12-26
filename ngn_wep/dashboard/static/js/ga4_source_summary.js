@@ -157,10 +157,20 @@ function renderGa4SourceSummaryTable() {
       tr.append(`<td>${row.company_name || ""}</td>`);
       tr.append(`<td>${row.source || ""}</td>`);
       tr.append(`<td>${(row.total_users || 0).toLocaleString()}</td>`);
+      // 이탈율 컬럼 추가 (맨 오른쪽)
+      const bounceRate = row.bounce_rate !== null && row.bounce_rate !== undefined 
+        ? `${parseFloat(row.bounce_rate).toFixed(1)}%` 
+        : "-";
+      tr.append(`<td class="text-right">${bounceRate}</td>`);
     } else {
       tr.append(`<td>${row.source}</td>`);
       tr.append(`<td>${row.country}</td>`);
       tr.append(`<td>${(row.total_users || 0).toLocaleString()}</td>`);
+      // 이탈율 컬럼 추가 (맨 오른쪽)
+      const bounceRate = row.bounce_rate !== null && row.bounce_rate !== undefined 
+        ? `${parseFloat(row.bounce_rate).toFixed(1)}%` 
+        : "-";
+      tr.append(`<td class="text-right">${bounceRate}</td>`);
     }
     tbody.append(tr);
   });

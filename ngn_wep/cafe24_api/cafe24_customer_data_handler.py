@@ -4,7 +4,7 @@
 import os
 import json
 import requests
-from google.cloud import bigquery, storage
+from google.cloud import storage  # BigQuery 제거
 from datetime import datetime, timedelta, timezone
 import logging
 
@@ -15,16 +15,9 @@ current_time = datetime.now(timezone.utc).astimezone(KST)
 # ✅ 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# ✅ GCP 설정
-PROJECT_ID = "winged-precept-443218-v8"
-DATASET_ID = "ngn_dataset"
-TEMP_CUSTOMERS_TABLE_ID = "temp_cafe24_customers_table"
-CUSTOMERS_TABLE_ID = "cafe24_customers_table"
+# ✅ GCP 설정 (테스트용 - BigQuery 전송 제거됨)
 BUCKET_NAME = "winged-precept-443218-v8.appspot.com"
 TOKEN_FILE_NAME = "tokens.json"
-
-# ✅ BigQuery 클라이언트 초기화 (ADC 사용)
-client = bigquery.Client()
 
 # ✅ 안전한 데이터 변환 함수
 def safe_int(value, default=0):
@@ -221,100 +214,7 @@ def fetch_customer_data(mall_id, start_date, end_date):
     logging.info(f"{mall_id} - {len(all_customers)}건의 회원 데이터 수집 완료")
     return all_customers
 
-# ✅ 임시 테이블에 데이터 업로드
-def upload_to_temp_customers_table(mall_id, customers_data):
-    if not customers_data:
-        logging.warning(f"{mall_id} - 업로드할 데이터 없음")
-        return
-
-    table_ref = f"{PROJECT_ID}.{DATASET_ID}.{TEMP_CUSTOMERS_TABLE_ID}"
-
-    try:
-        errors = client.insert_rows_json(table_ref, customers_data)
-        if errors:
-            logging.error(f"{mall_id} - BigQuery 업로드 실패: {errors}")
-        else:
-            logging.info(f"{mall_id} - BigQuery 업로드 성공! ({len(customers_data)}건)")
-    except Exception as e:
-        logging.error(f"{mall_id} - BigQuery 업로드 오류: {e}")
-
-# ✅ 메인 테이블로 병합
-def merge_temp_to_main_table():
-    """
-    임시 테이블의 데이터를 메인 테이블로 MERGE
-    TODO: 실제 테이블 스키마에 맞게 수정 필요
-    """
-    query = f"""
-    MERGE {PROJECT_ID}.{DATASET_ID}.{CUSTOMERS_TABLE_ID} AS target
-    USING (
-        SELECT *
-        FROM (
-            SELECT
-                t.*,
-                ROW_NUMBER() OVER (
-                    PARTITION BY t.mall_id, t.customer_id
-                    ORDER BY t.created_date DESC
-                ) AS rn
-            FROM {PROJECT_ID}.{DATASET_ID}.{TEMP_CUSTOMERS_TABLE_ID} t
-        )
-        WHERE rn = 1
-    ) AS source
-    ON target.mall_id = source.mall_id
-       AND target.customer_id = source.customer_id
-
-    WHEN MATCHED THEN
-    UPDATE SET
-        target.email = source.email,
-        target.name = source.name,
-        target.phone = source.phone,
-        target.last_login_date = source.last_login_date,
-        target.grade = source.grade,
-        target.status = source.status,
-        target.total_order_count = source.total_order_count,
-        target.total_order_amount = source.total_order_amount
-
-    WHEN NOT MATCHED THEN
-    INSERT (
-        mall_id, customer_id, member_id, email, name, phone,
-        created_date, last_login_date, grade, status,
-        total_order_count, total_order_amount, birth_date,
-        gender, postcode, address, address_detail
-    )
-    VALUES (
-        source.mall_id, source.customer_id, source.member_id, source.email, source.name, source.phone,
-        source.created_date, source.last_login_date, source.grade, source.status,
-        source.total_order_count, source.total_order_amount, source.birth_date,
-        source.gender, source.postcode, source.address, source.address_detail
-    );
-    """
-
-    try:
-        client.query(query).result()
-        logging.info("✅ 테이블 병합 완료!")
-    except Exception as e:
-        error_str = str(e)
-        logging.error(f"❌ 병합 실패: {e}")
-        if "was not found" in error_str or "404" in error_str:
-            logging.error("💡 테이블이 존재하지 않습니다.")
-            logging.error(f"💡 BigQuery에서 다음 테이블을 생성해주세요: {PROJECT_ID}.{DATASET_ID}.{CUSTOMERS_TABLE_ID}")
-            logging.error("💡 테이블 스키마 예시:")
-            logging.error("   - mall_id: STRING (필수)")
-            logging.error("   - customer_id: STRING (필수)")
-            logging.error("   - member_id: STRING")
-            logging.error("   - email: STRING")
-            logging.error("   - name: STRING")
-            logging.error("   - phone: STRING")
-            logging.error("   - created_date: TIMESTAMP")
-            logging.error("   - last_login_date: TIMESTAMP")
-            logging.error("   - grade: STRING")
-            logging.error("   - status: STRING")
-            logging.error("   - total_order_count: INTEGER")
-            logging.error("   - total_order_amount: FLOAT")
-            logging.error("   - birth_date: TIMESTAMP")
-            logging.error("   - gender: STRING")
-            logging.error("   - postcode: STRING")
-            logging.error("   - address: STRING")
-            logging.error("   - address_detail: STRING")
+# 테스트 코드이므로 BigQuery 업로드 기능 제거
 
 # ✅ 메인 실행 함수 (테스트용)
 def main():
@@ -341,21 +241,22 @@ def main():
     
     logging.info(f"🔍 총 {len(mall_ids)}개 몰 ID 발견: {mall_ids}")
 
-    # 각 mall_id로 회원 데이터 수집
+    # 각 mall_id로 회원 데이터 수집 (테스트용 - BigQuery 전송 없음)
     for mall_id in mall_ids:
         logging.info(f"🔄 {mall_id} - 회원 데이터 수집 시작")
         try:
             customers_data = fetch_customer_data(mall_id, start_date, end_date)
             if customers_data:
-                upload_to_temp_customers_table(mall_id, customers_data)
+                logging.info(f"✅ {mall_id} - {len(customers_data)}건의 회원 데이터 수집 완료")
+                # 테스트용: 첫 번째 회원 데이터 샘플 출력
+                if customers_data:
+                    logging.info(f"📋 {mall_id} - 첫 번째 회원 데이터 샘플: {customers_data[0]}")
             else:
                 logging.info(f"{mall_id} - 수집된 데이터 없음")
         except Exception as e:
             logging.error(f"{mall_id} - 데이터 수집 중 오류: {e}")
-
-    # 임시 테이블 → 메인 테이블 MERGE
-    logging.info("🔄 임시 테이블을 메인 테이블로 병합 시작...")
-    merge_temp_to_main_table()
+    
+    logging.info("🎉 테스트 완료 (BigQuery 전송 기능 제거됨)")
 
 if __name__ == "__main__":
     main()

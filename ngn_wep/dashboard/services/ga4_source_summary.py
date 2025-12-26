@@ -49,10 +49,35 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
     SELECT
       company_name,
       CASE
-        WHEN LOWER(first_user_source) IN ('insta_linktree', 'linktr.ee', 'ig', 'l.instagram.com', 'instagram.com', 'lookbook') THEN 'instagram'
+        -- Instagram 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%instagram%' 
+             OR LOWER(first_user_source) LIKE '%insta%'
+             OR LOWER(first_user_source) IN ('ig', 'linktr.ee', 'lookbook', 'igshopping') THEN 'instagram'
+        -- Naver 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%naver%' THEN 'naver.com'
+        -- Meta/Facebook 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%meta_ad%'
+             OR LOWER(first_user_source) LIKE '%facebook%'
+             OR LOWER(first_user_source) = 'fb' THEN 'meta_ad'
+        -- YouTube 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%youtube%' THEN 'youtube.com'
+        -- TikTok
+        WHEN LOWER(first_user_source) LIKE '%tiktok%' 
+             OR LOWER(first_user_source) LIKE '%tt.%' THEN 'tiktok'
+        -- Direct 관련 통합
+        WHEN LOWER(first_user_source) IN ('(direct)', 'direct')
+             OR LOWER(first_user_source) LIKE '%piscess%'
+             OR LOWER(first_user_source) = '파이시스' THEN '(direct)'
+        -- Google 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%google%' THEN 'google'
+        -- Daum
+        WHEN LOWER(first_user_source) = 'daum' THEN 'daum'
+        -- Cafe24 관련 통합
+        WHEN LOWER(first_user_source) LIKE '%cafe24%' THEN 'cafe24.com'
+        -- 특수 케이스
         WHEN LOWER(first_user_source) = '인트로 mdgt' THEN 'from madgoat'
-        WHEN LOWER(first_user_source) = 'naver' THEN 'naver.com'
-        WHEN LOWER(first_user_source) IN ('파이시스', 'piscess') THEN '(direct)'
+        WHEN LOWER(first_user_source) IN ('(data not available)', 'data not available') THEN '(data not available)'
+        -- 나머지는 원본 유지
         ELSE LOWER(first_user_source)
       END AS source,
       SUM(total_users) AS total_users

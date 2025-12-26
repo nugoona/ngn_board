@@ -79,9 +79,27 @@ function renderViewItemSummaryFilters(data) {
     }
   });
 
-  const topSources = Object.entries(sourcesMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
+  // 주요 소스 우선순위 (항상 표시)
+  const prioritySources = [
+    '(direct)', 'instagram', 'meta_ad', 'naver.com', 'youtube.com', 
+    'tiktok', 'google', 'daum', 'cafe24.com'
+  ];
+
+  // 소스 정렬: 우선순위 소스 먼저, 나머지는 유입수 순
+  const sortedSources = Object.entries(sourcesMap)
+    .sort((a, b) => {
+      const aPriority = prioritySources.indexOf(a[0]);
+      const bPriority = prioritySources.indexOf(b[0]);
+      
+      // 우선순위 소스가 있으면 먼저
+      if (aPriority !== -1 && bPriority !== -1) return aPriority - bPriority;
+      if (aPriority !== -1) return -1;
+      if (bPriority !== -1) return 1;
+      
+      // 나머지는 유입수 순
+      return b[1] - a[1];
+    })
+    .slice(0, 15) // 최대 15개까지 표시
     .map(entry => entry[0]);
 
   const topCountries = Object.entries(countriesMap)
@@ -89,7 +107,7 @@ function renderViewItemSummaryFilters(data) {
     .slice(0, 3)
     .map(entry => entry[0]);
 
-  renderDropdown("#sourceFilter", new Set(topSources), "소스");
+  renderDropdown("#sourceFilter", new Set(sortedSources), "소스");
   renderDropdown("#countryFilter", new Set(topCountries), "국가");
 }
 

@@ -149,6 +149,7 @@ def json_safe(obj):
     if isinstance(obj, Decimal):
         return float(obj)
     if isinstance(obj, dict):
+        # None 값도 유지 (특히 meta_ads_goals 같은 필수 키)
         return {k: json_safe(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [json_safe(v) for v in obj]

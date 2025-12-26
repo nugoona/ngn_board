@@ -168,28 +168,50 @@ def update_ga4_viewitem_ngn(target_date=None):
     merge_query = f"""
     MERGE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TARGET}` AS target
     USING (
+        WITH item_aggregated AS (
+            -- item_id 기준으로 먼저 집계 (중복 제거)
+            SELECT 
+                v.event_date, 
+                c.company_name,
+                v.ga4_property_id, 
+                v.country, 
+                v.first_user_source, 
+                v.item_id,
+                SUM(v.view_item) AS view_item_sum
+            FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_EVENTS}` v
+            LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.company_info` c 
+                ON v.ga4_property_id = c.ga4_property_id
+            WHERE 1=1 {date_filter}
+              AND c.company_name IS NOT NULL
+            GROUP BY 
+                v.event_date, 
+                c.company_name, 
+                v.ga4_property_id, 
+                v.country, 
+                v.first_user_source, 
+                v.item_id
+        ),
+        item_names AS (
+            -- 각 item_id에 대해 가장 많이 사용된 item_name 선택
+            SELECT 
+                i.ga4_property_id,
+                i.item_id,
+                ARRAY_AGG(i.item_name ORDER BY i.item_name LIMIT 1)[OFFSET(0)] AS item_name
+            FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_ITEMS}` i
+            GROUP BY i.ga4_property_id, i.item_id
+        )
         SELECT 
-            v.event_date, 
-            c.company_name,
-            v.ga4_property_id, 
-            v.country, 
-            v.first_user_source, 
-            i.item_name,
-            MAX(v.view_item) AS view_item  -- 동일 그룹 내 하나의 값만 유지
-        FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_EVENTS}` v
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.company_info` c 
-            ON v.ga4_property_id = c.ga4_property_id
-        LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_ITEMS}` i 
-            ON v.ga4_property_id = i.ga4_property_id 
-            AND v.item_id = i.item_id
-        WHERE 1=1 {date_filter}
-        GROUP BY 
-            v.event_date, 
-            c.company_name, 
-            v.ga4_property_id, 
-            v.country, 
-            v.first_user_source, 
-            i.item_name
+            ia.event_date, 
+            ia.company_name,
+            ia.ga4_property_id, 
+            ia.country, 
+            ia.first_user_source, 
+            COALESCE(inames.item_name, CAST(ia.item_id AS STRING)) AS item_name,
+            ia.view_item_sum AS view_item
+        FROM item_aggregated ia
+        LEFT JOIN item_names inames
+            ON ia.ga4_property_id = inames.ga4_property_id 
+            AND ia.item_id = inames.item_id
     ) AS source
     ON target.event_date = source.event_date
        AND target.company_name = source.company_name

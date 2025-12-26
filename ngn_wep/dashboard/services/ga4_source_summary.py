@@ -81,7 +81,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         ELSE LOWER(first_user_source)
       END AS source,
       SUM(total_users) AS total_users,
-      -- 이탈율 가중평균 계산 (bounce_rate * total_users의 합 / total_users의 합)
+      -- 이탈율 가중평균 계산 (bounce_rate가 NULL이 아닌 경우만 계산)
       SAFE_DIVIDE(
         SUM(IFNULL(bounce_rate, 0) * total_users),
         SUM(total_users)

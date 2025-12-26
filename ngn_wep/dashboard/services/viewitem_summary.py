@@ -37,7 +37,15 @@ def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: in
     query = f"""
     SELECT
       LOWER(c.company_name) AS company_name,
-      REGEXP_REPLACE(t.item_name, r'^\\[(?i)(?!set\\])[^\\]]+\\]\\s*', '') AS product_name_cleaned,
+      -- [SET] 또는 [set]을 제외하고 다른 [ ] 제거
+      CASE 
+        WHEN REGEXP_CONTAINS(LOWER(t.item_name), r'^\\[set\\]') THEN 
+          -- [SET]이 있으면 그대로 유지 (변화 없음)
+          t.item_name
+        ELSE 
+          -- [SET]이 없으면 모든 [ ] 제거
+          REGEXP_REPLACE(t.item_name, r'^\\[[^\\]]+\\]\\s*', '')
+      END AS product_name_cleaned,
 
       CASE
         -- Instagram 관련 통합

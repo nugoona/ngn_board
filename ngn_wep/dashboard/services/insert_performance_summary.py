@@ -174,7 +174,7 @@ def insert_performance_summary(target_date):
       END AS avg_order_value,
       0 AS cart_users,  -- 임시로 0 설정, 이후 Python 로직에서 업데이트
       0 AS signup_count,  -- 임시로 0 설정, 이후 Python 로직에서 업데이트
-      FORMAT_TIMESTAMP('%Y-%m-%d-%H-%M', CURRENT_TIMESTAMP(), 'Asia/Seoul') AS updated_at
+      CAST(FORMAT_TIMESTAMP('%Y-%m-%d-%H-%M', CURRENT_TIMESTAMP(), 'Asia/Seoul') AS STRING) AS updated_at
     
     FROM base b
     LEFT JOIN filtered_ads a
@@ -274,9 +274,22 @@ def insert_performance_summary(target_date):
         avg_order_value = temp.avg_order_value,
         cart_users = temp.cart_users,
         signup_count = temp.signup_count,
-        updated_at = temp.updated_at
+        updated_at = CAST(temp.updated_at AS STRING)
     WHEN NOT MATCHED THEN
-      INSERT ROW
+      INSERT (
+        date, company_name, ad_media, ad_spend, total_clicks, total_purchases,
+        total_purchase_value, roas_percentage, avg_cpc, click_through_rate,
+        conversion_rate, site_revenue, total_visitors, product_views,
+        views_per_visit, ad_spend_ratio, avg_order_value, cart_users,
+        signup_count, updated_at
+      )
+      VALUES (
+        temp.date, temp.company_name, temp.ad_media, temp.ad_spend, temp.total_clicks, temp.total_purchases,
+        temp.total_purchase_value, temp.roas_percentage, temp.avg_cpc, temp.click_through_rate,
+        temp.conversion_rate, temp.site_revenue, temp.total_visitors, temp.product_views,
+        temp.views_per_visit, temp.ad_spend_ratio, temp.avg_order_value, temp.cart_users,
+        temp.signup_count, CAST(temp.updated_at AS STRING)
+      )
     """
 
     client.query(merge_query).result()

@@ -92,6 +92,8 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
       {company_filter}
       AND first_user_source IS NOT NULL
       AND first_user_source != ''
+      AND first_user_source != '(not set)'
+      AND first_user_source != 'not set'
       AND total_users > 0
     GROUP BY company_name, source
     HAVING total_users > 0

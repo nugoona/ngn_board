@@ -108,7 +108,24 @@ def fetch_ga4_cart_signup_data(property_id, target_date_str):
             result['signup_count'] += int(row["metricValues"][0]["value"])
             
     except Exception as e:
-        print(f"[WARN] GA4 장바구니/회원가입 데이터 조회 실패 (property_id={property_id}, date={target_date_str}): {e}")
+        error_msg = str(e)
+        error_type = type(e).__name__
+        print(f"[WARN] GA4 장바구니/회원가입 데이터 조회 실패 (property_id={property_id}, date={target_date_str})")
+        print(f"[WARN] 오류 타입: {error_type}")
+        print(f"[WARN] 오류 메시지: {error_msg}")
+        
+        # HTTP 오류 상세 정보
+        if hasattr(e, 'status_code'):
+            print(f"[WARN] HTTP 상태 코드: {e.status_code}")
+        if hasattr(e, 'content'):
+            try:
+                import json
+                error_content = json.loads(e.content) if isinstance(e.content, (str, bytes)) else e.content
+                print(f"[WARN] 오류 상세: {error_content}")
+            except:
+                print(f"[WARN] 오류 내용 (원문): {e.content}")
+        
+        sys.stdout.flush()
         # 오류 발생 시 0 반환
         return result
     
@@ -135,7 +152,7 @@ def update_cart_signup_for_date(target_date, client):
         return
     
     if not companies:
-        print(f"[INFO] {date_str}: 업데이트할 업체가 없습니다.")
+        print(f"[INFO] {date_str}: performance_summary_ngn 테이블에 데이터가 없습니다. insert_performance_summary.py를 먼저 실행하여 기본 데이터를 생성해주세요.")
         return
     
     updated_count = 0

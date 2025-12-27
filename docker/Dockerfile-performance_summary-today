@@ -12,5 +12,5 @@ COPY ./requirements.txt /app/requirements.txt
 # 라이브러리 설치
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 실행 명령 (오늘 기준)
-CMD ["python", "insert_performance_summary.py"]
+# 실행 명령 (오늘 기준, 장바구니/회원가입만 업데이트 - 효율적)
+CMD ["python", "insert_performance_summary.py", "today", "update_only"]

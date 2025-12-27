@@ -109,10 +109,82 @@ def fetch_ga4_cart_signup_data(property_id, target_date_str):
     
     return result
 
-def insert_performance_summary(target_date):
+def insert_performance_summary(target_date, update_cart_signup_only=False):
+    """
+    performance_summary_ngn 테이블에 데이터 삽입/업데이트
+    
+    Args:
+        target_date: 처리할 날짜
+        update_cart_signup_only: True이면 cart_users, signup_count만 업데이트 (기존 레코드가 있을 때)
+    """
     date_str = target_date.strftime("%Y-%m-%d")
-    # updated_at은 BigQuery에서 FORMAT_TIMESTAMP로 생성
     client = get_bq_client()
+    
+    # ✅ update_cart_signup_only 모드: 기존 레코드가 있으면 UPDATE만 수행
+    if update_cart_signup_only:
+        # 해당 날짜의 업체 목록 조회 (performance_summary_ngn 테이블에서)
+        company_query = f"""
+        SELECT DISTINCT company_name
+        FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}`
+        WHERE DATE(date) = DATE('{date_str}')
+        """
+        
+        try:
+            companies = [row.company_name for row in client.query(company_query).result()]
+        except Exception as e:
+            print(f"[WARN] {date_str}: 업체 목록 조회 실패: {e}")
+            sys.stdout.flush()
+            return
+        
+        if not companies:
+            print(f"[INFO] {date_str}: performance_summary_ngn 테이블에 데이터가 없습니다. update_cart_signup_only=False로 전체 데이터를 생성하세요.")
+            sys.stdout.flush()
+            return
+        
+        print(f"[INFO] {date_str}: 장바구니/회원가입 데이터만 업데이트 중... ({len(companies)}개 업체)")
+        sys.stdout.flush()
+        
+        updated_count = 0
+        for company_name in companies:
+            property_id = get_ga4_property_ids_by_company(company_name, client)
+            if property_id:
+                cart_signup_data = fetch_ga4_cart_signup_data(property_id, date_str)
+                
+                # UPDATE 쿼리 실행
+                update_query = f"""
+                UPDATE `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}`
+                SET 
+                  cart_users = @cart_users,
+                  signup_count = @signup_count
+                WHERE company_name = @company_name
+                  AND DATE(date) = DATE(@target_date)
+                """
+                job_config = bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ScalarQueryParameter("cart_users", "INTEGER", cart_signup_data['cart_users']),
+                        bigquery.ScalarQueryParameter("signup_count", "INTEGER", cart_signup_data['signup_count']),
+                        bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                        bigquery.ScalarQueryParameter("target_date", "DATE", date_str)
+                    ]
+                )
+                
+                try:
+                    client.query(update_query, job_config=job_config).result()
+                    print(f"[INFO] {date_str} {company_name}: 장바구니={cart_signup_data['cart_users']}명, 회원가입={cart_signup_data['signup_count']}건 업데이트 완료")
+                    sys.stdout.flush()
+                    updated_count += 1
+                except Exception as e:
+                    print(f"[ERROR] {date_str} {company_name}: 업데이트 실패: {e}")
+                    sys.stdout.flush()
+            else:
+                print(f"[WARN] {date_str} {company_name}: GA4 Property ID를 찾을 수 없습니다.")
+                sys.stdout.flush()
+        
+        print(f"[SUCCESS] {date_str}: {updated_count}개 업체 업데이트 완료")
+        sys.stdout.flush()
+        return
+    
+    # ✅ 기존 로직: 전체 데이터 생성 (update_cart_signup_only=False일 때)
     # 날짜별로 고유한 임시 테이블 사용 (동시 실행 시 충돌 방지)
     temp_table = f"{DATASET_ID}.performance_summary_temp_{date_str.replace('-', '_')}"
 
@@ -127,6 +199,7 @@ def insert_performance_summary(target_date):
       FROM `{PROJECT_ID}.{DATASET_ID}.meta_ads_campaign_summary`
       WHERE campaign_name IS NOT NULL
         AND LOWER(campaign_name) LIKE '%instagram%'
+        AND date = DATE('{date_str}')  -- ✅ 날짜 필터링 추가
     ),
 
     filtered_ads AS (
@@ -135,6 +208,7 @@ def insert_performance_summary(target_date):
       WHERE campaign_name IS NOT NULL
         AND campaign_id NOT IN (SELECT campaign_id FROM excluded_campaigns)
         AND company_name IS NOT NULL
+        AND date = DATE('{date_str}')  -- ✅ 날짜 필터링 추가
     ),
 
     base AS (
@@ -308,26 +382,35 @@ def insert_performance_summary(target_date):
         print(f"[WARN] 임시테이블 삭제 실패 또는 테이블 없음 → {temp_table}: {e}")
         sys.stdout.flush()
 
-def run(mode="today"):
+def run(mode="today", update_cart_signup_only=False):
+    """
+    performance summary 삽입/업데이트 실행
+    
+    Args:
+        mode: "today", "yesterday", "last_7_days"
+        update_cart_signup_only: True이면 cart_users, signup_count만 업데이트
+    """
     if mode == "yesterday":
         target_date = datetime.now(KST).date() - timedelta(days=1)
-        print(f"[INFO] performance summary 삽입 실행 → {target_date}")
+        print(f"[INFO] performance summary {'업데이트' if update_cart_signup_only else '삽입'} 실행 → {target_date}")
         sys.stdout.flush()
-        insert_performance_summary(target_date)
+        insert_performance_summary(target_date, update_cart_signup_only=update_cart_signup_only)
     elif mode == "last_7_days":
         # 최근 7일간 일괄 실행
         for i in range(7):
             target_date = datetime.now(KST).date() - timedelta(days=i)
-            print(f"[INFO] performance summary 삽입 실행 → {target_date} ({i+1}/7)")
+            print(f"[INFO] performance summary {'업데이트' if update_cart_signup_only else '삽입'} 실행 → {target_date} ({i+1}/7)")
             sys.stdout.flush()
-            insert_performance_summary(target_date)
+            insert_performance_summary(target_date, update_cart_signup_only=update_cart_signup_only)
         print("[SUCCESS] 최근 7일간 performance summary 처리 완료!")
     else:
         target_date = datetime.now(KST).date()
-        print(f"[INFO] performance summary 삽입 실행 → {target_date}")
+        print(f"[INFO] performance summary {'업데이트' if update_cart_signup_only else '삽입'} 실행 → {target_date}")
         sys.stdout.flush()
-        insert_performance_summary(target_date)
+        insert_performance_summary(target_date, update_cart_signup_only=update_cart_signup_only)
 
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else "today"
-    run(arg)
+    # ✅ 두 번째 인자가 "update_only"이면 cart_users, signup_count만 업데이트
+    update_only = len(sys.argv) > 2 and sys.argv[2] == "update_only"
+    run(arg, update_cart_signup_only=update_only)

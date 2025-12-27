@@ -16,9 +16,9 @@ TRAFFIC_TOP_MIN_SPEND = 10_000
 TOP_LIMIT = 5
 
 # 4축 확장 상수
-PRODUCT_TOP_LIMIT = 20
+PRODUCT_TOP_LIMIT = 50
 GA4_TRAFFIC_TOP_LIMIT = 5
-VIEWITEM_TOP_LIMIT = 20
+VIEWITEM_TOP_LIMIT = 50
 PRODUCT_ROLLING_WINDOWS = [30, 90]
 VIEWITEM_ATTENTION_MIN_VIEW = 300  # attention_without_conversion 기준 최소 조회수
 VIEWITEM_EFFICIENT_MIN_VIEW = 120  # efficient_conversion 기준 최소 조회수
@@ -831,7 +831,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     SELECT
         SUM(total_users) AS total_users,
         SUM(screen_page_views) AS screen_page_views,
-        SUM(event_count) AS event_count
+        SUM(event_count) AS event_count,
+        -- 장바구니/회원가입 사용자 수 (추후 GA4 이벤트 수집 코드 추가 시 실제 값 반환)
+        CAST(0 AS INT64) AS add_to_cart_users,
+        CAST(0 AS INT64) AS sign_up_users
     FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
     WHERE company_name = @company_name
       AND event_date BETWEEN @start_date AND @end_date
@@ -856,6 +859,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
                 "total_users": 0,
                 "screen_page_views": 0,
                 "event_count": 0,
+                "add_to_cart_users": 0,
+                "sign_up_users": 0,
             }
         
         row = rows[0]
@@ -863,13 +868,20 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
             "total_users": int(row.total_users or 0),
             "screen_page_views": int(row.screen_page_views or 0),
             "event_count": int(row.event_count or 0),
+            "add_to_cart_users": int(row.add_to_cart_users or 0),
+            "sign_up_users": int(row.sign_up_users or 0),
         }
     
     q_ga4_top_sources = f"""
     SELECT
         first_user_source AS source,
         SUM(total_users) AS total_users,
-        SUM(screen_page_views) AS screen_page_views
+        SUM(screen_page_views) AS screen_page_views,
+        -- 이탈율 가중평균 계산
+        SAFE_DIVIDE(
+            SUM(IFNULL(bounce_rate, 0) * total_users),
+            SUM(total_users)
+        ) AS bounce_rate
     FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
     WHERE company_name = @company_name
       AND event_date BETWEEN @start_date AND @end_date
@@ -900,6 +912,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
                 "source": r.source,
                 "total_users": int(r.total_users or 0),
                 "screen_page_views": int(r.screen_page_views or 0),
+                "bounce_rate": round(float(r.bounce_rate or 0), 2) if r.bounce_rate is not None else None,
             }
             for r in rows
         ]

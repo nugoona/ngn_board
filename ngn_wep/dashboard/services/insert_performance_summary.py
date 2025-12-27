@@ -113,7 +113,8 @@ def insert_performance_summary(target_date):
     date_str = target_date.strftime("%Y-%m-%d")
     # updated_at은 BigQuery에서 FORMAT_TIMESTAMP로 생성
     client = get_bq_client()
-    temp_table = f"{DATASET_ID}.performance_summary_temp"
+    # 날짜별로 고유한 임시 테이블 사용 (동시 실행 시 충돌 방지)
+    temp_table = f"{DATASET_ID}.performance_summary_temp_{date_str.replace('-', '_')}"
 
     print(f"[INFO] 임시테이블 생성 중: {temp_table}")
     sys.stdout.flush()

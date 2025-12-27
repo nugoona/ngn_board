@@ -828,16 +828,32 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     # GA4 traffic
     # -----------------------
     q_ga4_traffic = f"""
+    WITH ga4_totals AS (
+        SELECT
+            SUM(total_users) AS total_users,
+            SUM(screen_page_views) AS screen_page_views,
+            SUM(event_count) AS event_count
+        FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
+        WHERE company_name = @company_name
+          AND event_date BETWEEN @start_date AND @end_date
+    ),
+    cart_signup_totals AS (
+        SELECT
+            COALESCE(SUM(cart_users), 0) AS add_to_cart_users,
+            COALESCE(SUM(signup_count), 0) AS sign_up_users
+        FROM `{PROJECT_ID}.{DATASET}.performance_summary_ngn`
+        WHERE company_name = @company_name
+          AND DATE(date) BETWEEN @start_date AND @end_date
+    )
     SELECT
-        SUM(total_users) AS total_users,
-        SUM(screen_page_views) AS screen_page_views,
-        SUM(event_count) AS event_count,
-        -- 장바구니/회원가입 사용자 수 (추후 GA4 이벤트 수집 코드 추가 시 실제 값 반환)
-        CAST(0 AS INT64) AS add_to_cart_users,
-        CAST(0 AS INT64) AS sign_up_users
-    FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
-    WHERE company_name = @company_name
-      AND event_date BETWEEN @start_date AND @end_date
+        COALESCE(g.total_users, 0) AS total_users,
+        COALESCE(g.screen_page_views, 0) AS screen_page_views,
+        COALESCE(g.event_count, 0) AS event_count,
+        COALESCE(c.add_to_cart_users, 0) AS add_to_cart_users,
+        COALESCE(c.sign_up_users, 0) AS sign_up_users
+    FROM (SELECT 1 AS dummy) dummy
+    LEFT JOIN ga4_totals g ON TRUE
+    LEFT JOIN cart_signup_totals c ON TRUE
     """
     
     def get_ga4_traffic_totals(s, e):

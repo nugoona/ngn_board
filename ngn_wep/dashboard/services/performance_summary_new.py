@@ -273,13 +273,14 @@ def get_ga4_visitors_simple(company_name, start_date: str, end_date: str, user_i
         bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
     ])
     
-    # 🔥 더 간단한 쿼리로 최적화
+    # 🔥 더 간단한 쿼리로 최적화 (not set 제외)
     query = f"""
         SELECT COALESCE(SUM(total_users), 0) AS total_visitors
         FROM `winged-precept-443218-v8.ngn_dataset.ga4_traffic_ngn`
         WHERE {company_filter}
           AND event_date BETWEEN @start_date AND @end_date
           AND total_users > 0
+          AND (first_user_source != '(not set)' AND first_user_source != 'not set' AND first_user_source IS NOT NULL)
         LIMIT 1
     """
     
@@ -341,7 +342,57 @@ def get_ga4_product_views_simple(company_name, start_date: str, end_date: str, u
         print(f"[ERROR] GA4 상품 조회수 조회 오류: {e}")
         return 0
 
-def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date):
+def get_cart_signup_from_summary_table(company_name, start_date: str, end_date: str, user_id: str = None):
+    """performance_summary_ngn 테이블에서 장바구니 사용자 수와 회원가입 수 조회"""
+    query_params = []
+    
+    # 업체 필터 처리
+    if isinstance(company_name, list):
+        filtered_companies = [name.lower() for name in company_name]
+        filtered_companies = (
+            ["demo"] if user_id == "demo"
+            else [name for name in filtered_companies if name != "demo"]
+        )
+        if not filtered_companies:
+            return {'cart_users': 0, 'signup_count': 0}
+        company_filter = "LOWER(company_name) IN UNNEST(@company_name_list)"
+        query_params.append(bigquery.ArrayQueryParameter("company_name_list", "STRING", filtered_companies))
+    else:
+        company_name = company_name.lower()
+        if company_name == "demo" and user_id != "demo":
+            return {'cart_users': 0, 'signup_count': 0}
+        company_filter = "LOWER(company_name) = @company_name"
+        query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name))
+    
+    # 날짜 파라미터
+    query_params.extend([
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date)
+    ])
+    
+    query = f"""
+        SELECT 
+            COALESCE(SUM(cart_users), 0) AS cart_users,
+            COALESCE(SUM(signup_count), 0) AS signup_count
+        FROM `winged-precept-443218-v8.ngn_dataset.performance_summary_ngn`
+        WHERE {company_filter}
+          AND DATE(date) BETWEEN @start_date AND @end_date
+        LIMIT 1
+    """
+    
+    try:
+        client = get_bigquery_client()
+        result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
+        row = list(result)[0]
+        return {
+            'cart_users': int(row.cart_users or 0),
+            'signup_count': int(row.signup_count or 0)
+        }
+    except Exception as e:
+        print(f"[ERROR] 장바구니/회원가입 데이터 조회 오류: {e}")
+        return {'cart_users': 0, 'signup_count': 0}
+
+def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date, cart_signup_data=None):
     """
     카페24 매출과 메타 광고 데이터를 조합하여 성과 요약 생성
     """
@@ -370,6 +421,10 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
         print(f"[DEBUG] ad_spend 타입: {type(ad_spend)}, 값: {ad_spend}")
         print(f"[DEBUG] ad_spend > 0 조건: {ad_spend > 0}")
         
+        # 장바구니/회원가입 데이터 추출
+        cart_users = cart_signup_data.get('cart_users', 0) if cart_signup_data else 0
+        signup_count = cart_signup_data.get('signup_count', 0) if cart_signup_data else 0
+        
         # 결과 구성
         result = {
             "date_range": f"{start_date} ~ {end_date}",
@@ -385,6 +440,8 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
             "total_visitors": int(total_visitors or 0),
             "product_views": int(product_views or 0),  # ← 상품 조회수 추가
             "ad_spend_ratio": round(ad_spend_ratio, 2),
+            "cart_users": int(cart_users),  # ← 장바구니 사용자 수 (GA)
+            "signup_count": int(signup_count),  # ← 회원가입 수 (GA)
             "updated_at": updated_at  # ← 업데이트 시간 정보
         }
         
@@ -407,5 +464,7 @@ def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors
             "total_visitors": 0,
             "product_views": 0,  # ← 상품 조회수 기본값 추가
             "ad_spend_ratio": 0,
+            "cart_users": 0,  # ← 장바구니 사용자 수 기본값
+            "signup_count": 0,  # ← 회원가입 수 기본값
             "updated_at": None
         }] 

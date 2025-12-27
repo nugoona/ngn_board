@@ -216,6 +216,8 @@ function updatePerformanceSummaryCards(data) {
     setCardValue("total_visitors", row.total_visitors);
     setCardValue("product_views", row.product_views); // ← 상품 조회수
     setCardValue("ad_spend_ratio", row.ad_spend_ratio, 2, "%");
+    setCardValue("cart_users", row.cart_users || 0); // ← 장바구니 사용자 수 (GA)
+    setCardValue("signup_count", row.signup_count || 0); // ← 회원가입 수 (GA)
     
     // 🔥 진행중인 광고 표시 로직 개선
     const adMedia = row.ad_media || "없음";

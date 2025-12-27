@@ -355,6 +355,50 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     sales_prev = get_sales(prev_start, prev_end)
     sales_yoy = get_sales(yoy_start, yoy_end)
     
+    # 일자별 성과 데이터
+    q_sales_daily = f"""
+    SELECT
+        payment_date AS date,
+        SUM(net_sales) AS net_sales,
+        SUM(total_orders) AS total_orders,
+        SUM(total_first_order) AS total_first_order,
+        SUM(total_canceled) AS total_canceled
+    FROM `{PROJECT_ID}.{DATASET}.daily_cafe24_sales`
+    WHERE company_name = @company_name
+      AND payment_date BETWEEN @start_date AND @end_date
+    GROUP BY payment_date
+    ORDER BY payment_date
+    """
+    
+    def get_sales_daily(s, e):
+        rows = list(
+            client.query(
+                q_sales_daily,
+                job_config=bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                        bigquery.ScalarQueryParameter("start_date", "DATE", s),
+                        bigquery.ScalarQueryParameter("end_date", "DATE", e),
+                    ]
+                ),
+            ).result()
+        )
+        
+        return [
+            {
+                "date": row.date.isoformat() if row.date else None,
+                "net_sales": float(row.net_sales or 0),
+                "total_orders": int(row.total_orders or 0),
+                "total_first_order": int(row.total_first_order or 0),
+                "total_canceled": int(row.total_canceled or 0),
+            }
+            for row in rows
+        ]
+    
+    daily_this = get_sales_daily(this_start, this_end)
+    daily_prev = get_sales_daily(prev_start, prev_end)
+    daily_yoy = get_sales_daily(yoy_start, yoy_end)
+    
     # 월간 집계 테이블 사용 (성능 최적화)
     monthly_13m_raw = query_monthly_13m_from_monthly_table(
         client,
@@ -1546,6 +1590,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 "prev": sales_prev,
                 "yoy": sales_yoy,
                 "monthly_13m": monthly_13m,
+                "daily_this": daily_this,
+                "daily_prev": daily_prev,
+                "daily_yoy": daily_yoy,
             },
             "meta_ads": {
                 "this": meta_ads_this,

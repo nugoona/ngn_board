@@ -296,10 +296,16 @@ def insert_performance_summary(target_date):
     print(f"[SUCCESS] 메인 테이블 병합 완료 → {TABLE_ID}")
     sys.stdout.flush()
 
-    drop_query = f"DROP TABLE `{PROJECT_ID}.{temp_table}`"
-    client.query(drop_query).result()
-    print(f"[SUCCESS] 임시테이블 삭제 완료 → {temp_table}")
-    sys.stdout.flush()
+    # 임시 테이블 삭제 (존재하지 않을 수 있으므로 예외 처리)
+    try:
+        drop_query = f"DROP TABLE IF EXISTS `{PROJECT_ID}.{temp_table}`"
+        client.query(drop_query).result()
+        print(f"[SUCCESS] 임시테이블 삭제 완료 → {temp_table}")
+        sys.stdout.flush()
+    except Exception as e:
+        # 테이블이 이미 없거나 삭제 실패해도 계속 진행
+        print(f"[WARN] 임시테이블 삭제 실패 또는 테이블 없음 → {temp_table}: {e}")
+        sys.stdout.flush()
 
 def run(mode="today"):
     if mode == "yesterday":

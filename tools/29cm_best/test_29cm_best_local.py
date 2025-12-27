@@ -1,7 +1,9 @@
 # test_29cm_best_local.py  (Cloud Run Job에서도 그대로 실행 가능)
-# - 29CM BEST: 전체 + 중분류 탭별 1~100위 수집 (WEEKLY 스냅샷)
+# - 29CM BEST: 전체 + 중분류 탭별 1~100위 수집 (WEEKLY/MONTHLY 스냅샷)
 # - 핵심: facets.categoryFacetInputs 에 largeId + middleId 를 넣어야 탭별 랭킹이 실제로 적용됨
-# - run_id는 ISO 주차 기반(YYYYWww_...)으로 같은 주에는 1회만 적재
+# - run_id 형식:
+#   * 주간: {year}W{week:02d}_WEEKLY_{RANKING_TYPE}_{GENDER}_{AGE} (같은 주에는 1회만 적재)
+#   * 월간: {year}-{month:02d}_MONTHLY_{RANKING_TYPE}_{GENDER}_{AGE} (전월 데이터, 매월 1일 수집)
 # - run_id 중복이면 스킵(Streaming Buffer 이슈 때문에 DELETE/UPDATE는 Job에서 하지 않음)
 
 import os
@@ -119,16 +121,20 @@ def upload_to_gcs(local_path: str, bucket_name: str, blob_path: str):
     return f"gs://{bucket_name}/{blob_path}"
 
 
-def bq_run_already_loaded(bq: bigquery.Client, run_id: str) -> bool:
+def bq_run_already_loaded(bq: bigquery.Client, run_id: str, period_type: str) -> bool:
     sql = f"""
     SELECT COUNT(1) AS cnt
     FROM `{bq_table_fqn()}`
     WHERE run_id = @run_id
+      AND period_type = @period_type
     """
     job = bq.query(
         sql,
         job_config=bigquery.QueryJobConfig(
-            query_parameters=[bigquery.ScalarQueryParameter("run_id", "STRING", run_id)]
+            query_parameters=[
+                bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
+                bigquery.ScalarQueryParameter("period_type", "STRING", period_type)
+            ]
         ),
     )
     rows = list(job.result())
@@ -240,23 +246,38 @@ def resolve_best_page_name(payload: dict, category_map: dict) -> str:
 def main():
     now = datetime.now(KST)
     collected_at = now.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # period_type은 환경변수에서 직접 가져오기
+    period_type = PERIOD_TYPE.upper()  # "WEEKLY" 또는 "MONTHLY"
 
-    # ✅ 주간 스냅샷 run_id (같은 주에는 1번만 적재)
-    iso = now.isocalendar()  # (year, week, weekday)
-    run_id = f"{iso.year}W{iso.week:02d}_{PERIOD_TYPE}_{RANKING_TYPE}_{GENDER}_{AGE}"
+    # ✅ run_id 생성 (주간/월간 구분)
+    if period_type == "MONTHLY":
+        # 월간: 전월 데이터 수집 (매월 1일 새벽 3시 실행 시 전월)
+        if now.month == 1:
+            target_year = now.year - 1
+            target_month = 12
+        else:
+            target_year = now.year
+            target_month = now.month - 1
+        run_id = f"{target_year}-{target_month:02d}_{PERIOD_TYPE}_{RANKING_TYPE}_{GENDER}_{AGE}"
+    else:
+        # 주간: ISO 주차 기반
+        iso = now.isocalendar()  # (year, week, weekday)
+        run_id = f"{iso.year}W{iso.week:02d}_{PERIOD_TYPE}_{RANKING_TYPE}_{GENDER}_{AGE}"
 
     print("[INFO] PROJECT_ID:", PROJECT_ID)
     print("[INFO] BQ TABLE:", bq_table_fqn())
     print("[INFO] GCS BUCKET:", GCS_BUCKET)
     print("[INFO] run_id:", run_id)
+    print("[INFO] period_type:", period_type)
     print("[INFO] collected_at:", collected_at)
     print("[INFO] BEST_LARGE_ID:", BEST_LARGE_ID)
     print("[INFO] PERIOD_TYPE:", PERIOD_TYPE)
 
     # 0) BigQuery 중복 체크 (먼저 해서 불필요한 크롤링/비용 방지)
     bq = bigquery.Client(project=PROJECT_ID)
-    if bq_run_already_loaded(bq, run_id):
-        print(f"⏭️ 이미 적재된 run_id라서 스킵: {run_id}")
+    if bq_run_already_loaded(bq, run_id, period_type):
+        print(f"⏭️ 이미 적재된 run_id라서 스킵: {run_id} (period_type: {period_type})")
         return
 
     # 1) 카테고리 트리 로드 → medium 탭 생성
@@ -333,6 +354,7 @@ def main():
                 "thumbnail_url": info.get("thumbnailUrl"),
                 "collected_at": collected_at,
                 "run_id": run_id,
+                "period_type": period_type,
             })
 
     if not results:
@@ -375,8 +397,8 @@ def main():
 
     # 5) BigQuery 적재 (중복 방지)
     # (크롤링 후 재확인: 아주 드물게 동시 실행되면 여기서도 방어)
-    if bq_run_already_loaded(bq, run_id):
-        print(f"⏭️ 이미 적재된 run_id라서 스킵(재확인): {run_id}")
+    if bq_run_already_loaded(bq, run_id, period_type):
+        print(f"⏭️ 이미 적재된 run_id라서 스킵(재확인): {run_id} (period_type: {period_type})")
         return
 
     bq_insert_rows(bq, results)

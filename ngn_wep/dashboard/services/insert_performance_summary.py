@@ -174,7 +174,7 @@ def insert_performance_summary(target_date):
       END AS avg_order_value,
       0 AS cart_users,  -- 임시로 0 설정, 이후 Python 로직에서 업데이트
       0 AS signup_count,  -- 임시로 0 설정, 이후 Python 로직에서 업데이트
-      '{now_str}' AS updated_at
+      CAST('{now_str}' AS STRING) AS updated_at
     
     FROM base b
     LEFT JOIN filtered_ads a
@@ -200,7 +200,7 @@ def insert_performance_summary(target_date):
     ) v ON b.company_name = v.company_name AND b.date = v.date
     -- ✅ demo 제외
     WHERE LOWER(b.company_name) != 'demo'
-    GROUP BY b.date, b.company_name, s.site_revenue, t.total_visitors, v.product_views
+    GROUP BY b.date, b.company_name, s.site_revenue, t.total_visitors, v.product_views, updated_at
 
     """
 

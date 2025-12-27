@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import hashlib
 import re
@@ -7,9 +8,11 @@ from datetime import date, timedelta
 from decimal import Decimal
 from collections import defaultdict
 from google.cloud import bigquery
+from google.cloud import storage
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
 DATASET = "ngn_dataset"
+GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
 
 # 광고 기준
 TRAFFIC_TOP_MIN_SPEND = 10_000
@@ -288,7 +291,7 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     return result
 
 
-def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
+def run(company_name: str, year: int, month: int, upsert_flag: bool = False, save_to_gcs_flag: bool = False):
     client = bigquery.Client(project=PROJECT_ID)
     
     report_month = month_to_ym(year, month)
@@ -1575,6 +1578,32 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
     }
     
     # -----------------------
+    # Save to GCS (optional)
+    # -----------------------
+    def save_snapshot_to_gcs(company_name, year, month, snapshot_data):
+        """스냅샷을 GCS 버킷에 저장"""
+        try:
+            client = storage.Client(project=PROJECT_ID)
+            bucket = client.bucket(GCS_BUCKET)
+            
+            # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json
+            blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json"
+            blob = bucket.blob(blob_path)
+            
+            snapshot_json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2, sort_keys=True)
+            blob.upload_from_string(
+                snapshot_json_str,
+                content_type='application/json; charset=utf-8'
+            )
+            
+            gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
+            print(f"✅ 스냅샷이 GCS에 저장되었습니다: {gcs_url}", file=sys.stderr)
+            return gcs_url
+        except Exception as e:
+            print(f"❌ GCS 저장 실패: {e}", file=sys.stderr)
+            return None
+    
+    # -----------------------
     # Upsert to BigQuery (optional)
     # -----------------------
     def upsert_snapshot(client, company_name, month_date_iso, snapshot_data):
@@ -1622,18 +1651,21 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False):
         month_date_iso = date(year, month, 1).isoformat()
         upsert_snapshot(client, company_name, month_date_iso, out)
     
+    if save_to_gcs_flag:
+        save_snapshot_to_gcs(company_name, year, month, out_safe)
+    
     print(json.dumps(out_safe, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) < 4:
-        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert]")
+        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert] [--save-to-gcs]")
         sys.exit(1)
     
     company_name = sys.argv[1]
     year = int(sys.argv[2])
     month = int(sys.argv[3])
     upsert_flag = "--upsert" in sys.argv
+    save_to_gcs_flag = "--save-to-gcs" in sys.argv
     
-    run(company_name, year, month, upsert_flag)
+    run(company_name, year, month, upsert_flag, save_to_gcs_flag)

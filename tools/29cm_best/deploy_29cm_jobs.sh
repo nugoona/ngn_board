@@ -157,38 +157,48 @@ done
 # 주간 스케줄러 생성 (매주 월요일 새벽 3시)
 SCHEDULER_WEEKLY="29cm-best-weekly-scheduler"
 echo "주간 스케줄러 생성 중: 매주 월요일 새벽 3시"
-gcloud scheduler jobs create pubsub "$SCHEDULER_WEEKLY" \
-  --location="$REGION_RUN" \
-  --schedule="0 3 * * 1" \
-  --topic="$TOPIC_WEEKLY" \
-  --message-body='{"trigger":"weekly"}' \
-  --time-zone="Asia/Seoul" \
-  --project="$PROJECT" 2>/dev/null || \
-gcloud scheduler jobs update pubsub "$SCHEDULER_WEEKLY" \
-  --location="$REGION_RUN" \
-  --schedule="0 3 * * 1" \
-  --topic="$TOPIC_WEEKLY" \
-  --message-body='{"trigger":"weekly"}' \
-  --time-zone="Asia/Seoul" \
-  --project="$PROJECT"
+if gcloud scheduler jobs describe "$SCHEDULER_WEEKLY" --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
+  echo "주간 스케줄러 업데이트 중..."
+  gcloud scheduler jobs update pubsub "$SCHEDULER_WEEKLY" \
+    --location="$REGION_RUN" \
+    --schedule="0 3 * * 1" \
+    --topic="$TOPIC_WEEKLY" \
+    --message-body='{"trigger":"weekly"}' \
+    --time-zone="Asia/Seoul" \
+    --project="$PROJECT"
+else
+  echo "주간 스케줄러 생성 중..."
+  gcloud scheduler jobs create pubsub "$SCHEDULER_WEEKLY" \
+    --location="$REGION_RUN" \
+    --schedule="0 3 * * 1" \
+    --topic="$TOPIC_WEEKLY" \
+    --message-body='{"trigger":"weekly"}' \
+    --time-zone="Asia/Seoul" \
+    --project="$PROJECT"
+fi
 
 # 월간 스케줄러 생성 (매월 1일 새벽 3시)
 SCHEDULER_MONTHLY="29cm-best-monthly-scheduler"
 echo "월간 스케줄러 생성 중: 매월 1일 새벽 3시"
-gcloud scheduler jobs create pubsub "$SCHEDULER_MONTHLY" \
-  --location="$REGION_RUN" \
-  --schedule="0 3 1 * *" \
-  --topic="$TOPIC_MONTHLY" \
-  --message-body='{"trigger":"monthly"}' \
-  --time-zone="Asia/Seoul" \
-  --project="$PROJECT" 2>/dev/null || \
-gcloud scheduler jobs update pubsub "$SCHEDULER_MONTHLY" \
-  --location="$REGION_RUN" \
-  --schedule="0 3 1 * *" \
-  --topic="$TOPIC_MONTHLY" \
-  --message-body='{"trigger":"monthly"}' \
-  --time-zone="Asia/Seoul" \
-  --project="$PROJECT"
+if gcloud scheduler jobs describe "$SCHEDULER_MONTHLY" --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
+  echo "월간 스케줄러 업데이트 중..."
+  gcloud scheduler jobs update pubsub "$SCHEDULER_MONTHLY" \
+    --location="$REGION_RUN" \
+    --schedule="0 3 1 * *" \
+    --topic="$TOPIC_MONTHLY" \
+    --message-body='{"trigger":"monthly"}' \
+    --time-zone="Asia/Seoul" \
+    --project="$PROJECT"
+else
+  echo "월간 스케줄러 생성 중..."
+  gcloud scheduler jobs create pubsub "$SCHEDULER_MONTHLY" \
+    --location="$REGION_RUN" \
+    --schedule="0 3 1 * *" \
+    --topic="$TOPIC_MONTHLY" \
+    --message-body='{"trigger":"monthly"}' \
+    --time-zone="Asia/Seoul" \
+    --project="$PROJECT"
+fi
 
 echo ""
 echo "✅ 모든 설정 완료!"

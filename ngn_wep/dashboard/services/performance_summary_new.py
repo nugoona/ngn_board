@@ -30,13 +30,15 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         default_cafe24 = {"total_revenue": 0, "total_orders": 0}
         default_meta = {"total_spend": 0, "total_clicks": 0, "total_purchases": 0, "total_purchase_value": 0, "updated_at": None}
         default_ga4 = 0
+        default_cart_signup = {'cart_users': 0, 'signup_count': 0}
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            # 4개 작업을 동시에 실행
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # 5개 작업을 동시에 실행
             future_cafe24 = executor.submit(get_cafe24_summary_simple, company_name, start_date, end_date, user_id)
             future_meta = executor.submit(get_meta_ads_summary_simple, company_name, start_date, end_date, account_id)
             future_ga4 = executor.submit(get_ga4_visitors_simple, company_name, start_date, end_date, user_id)
             future_product_views = executor.submit(get_ga4_product_views_simple, company_name, start_date, end_date, user_id)
+            future_cart_signup = executor.submit(get_cart_signup_from_summary_table, company_name, start_date, end_date, user_id)
             
             # 결과 수집 (개별 오류 처리)
             try:
@@ -62,12 +64,18 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
             except Exception as e:
                 print(f"[ERROR] GA4 상품 조회수 데이터 조회 실패: {e}")
                 product_views = 0
+            
+            try:
+                cart_signup_data = future_cart_signup.result(timeout=30)
+            except Exception as e:
+                print(f"[ERROR] 장바구니/회원가입 데이터 조회 실패: {e}")
+                cart_signup_data = default_cart_signup
         
         end_time = time.time()
-        print(f"[DEBUG] 병렬 처리 완료 ({end_time - start_time:.2f}초) - 카페24: {cafe24_data}, 메타: {meta_ads_data}, GA4: {total_visitors}")
+        print(f"[DEBUG] 병렬 처리 완료 ({end_time - start_time:.2f}초) - 카페24: {cafe24_data}, 메타: {meta_ads_data}, GA4: {total_visitors}, 장바구니/회원가입: {cart_signup_data}")
         
         # 4. 데이터 조합 및 계산
-        result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date)
+        result = combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date, cart_signup_data)
         
         print(f"[DEBUG] performance_summary_new 결과: {len(result)}개")
         if result:
@@ -384,12 +392,18 @@ def get_cart_signup_from_summary_table(company_name, start_date: str, end_date: 
         client = get_bigquery_client()
         result = client.query(query, job_config=bigquery.QueryJobConfig(query_parameters=query_params)).result()
         row = list(result)[0]
+        cart_users_val = int(row.cart_users or 0)
+        signup_count_val = int(row.signup_count or 0)
+        print(f"[DEBUG] 장바구니/회원가입 데이터 조회 - company_name: {company_name}, start_date: {start_date}, end_date: {end_date}")
+        print(f"[DEBUG] 조회 결과 - cart_users: {cart_users_val}, signup_count: {signup_count_val}")
         return {
-            'cart_users': int(row.cart_users or 0),
-            'signup_count': int(row.signup_count or 0)
+            'cart_users': cart_users_val,
+            'signup_count': signup_count_val
         }
     except Exception as e:
         print(f"[ERROR] 장바구니/회원가입 데이터 조회 오류: {e}")
+        import traceback
+        print(f"[ERROR] 상세 오류: {traceback.format_exc()}")
         return {'cart_users': 0, 'signup_count': 0}
 
 def combine_performance_data_parallel(cafe24_data, meta_ads_data, total_visitors, product_views, start_date, end_date, cart_signup_data=None):

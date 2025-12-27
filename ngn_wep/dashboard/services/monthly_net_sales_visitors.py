@@ -48,6 +48,7 @@ def get_monthly_net_sales_visitors(company_name):
                              AND CURRENT_DATE()  -- ✅ 오늘 포함되도록 수정
           AND total_users > 0
           AND company_name IS NOT NULL
+          AND (first_user_source != '(not set)' AND first_user_source != 'not set' AND first_user_source IS NOT NULL)
         GROUP BY company_name, month
       )
     SELECT

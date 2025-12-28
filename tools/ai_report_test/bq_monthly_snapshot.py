@@ -1081,7 +1081,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         """
         SUM(total_users) AS total_users,
         SUM(screen_page_views) AS screen_page_views,
-        SUM(event_count) AS event_count
+        SUM(event_count) AS event_count,
+        SUM(add_to_cart_users) AS add_to_cart_users,
+        SUM(sign_up_users) AS sign_up_users
         """
     )
     
@@ -1102,34 +1104,31 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "total_users": 0,
             "screen_page_views": 0,
             "event_count": 0,
+            "add_to_cart_users": 0,
+            "sign_up_users": 0,
         }
     
     ga4_this_data = get_monthly_ga4_from_13m(monthly_13m_ga4, report_month)
     ga4_prev_data = get_monthly_ga4_from_13m(monthly_13m_ga4, prev_month)
     ga4_yoy_data = get_monthly_ga4_from_13m(monthly_13m_ga4, yoy_month)
     
-    # add_to_cart_users와 sign_up_users는 performance_summary_ngn에서 가져와야 함 (별도 조회 필요)
-    # totals는 월간 집계 테이블에서, top_sources는 raw 테이블에서 (소스별 집계는 월간 테이블에 없음)
-    ga4_this_totals_raw = get_ga4_traffic_totals(this_start, this_end)
-    ga4_prev_totals_raw = get_ga4_traffic_totals(prev_start, prev_end)
-    
-    # 월간 집계 테이블 데이터와 raw 데이터 병합 (add_to_cart_users, sign_up_users는 raw에서)
+    # ✅ 최적화: 모든 totals 데이터를 월간 집계 테이블에서 가져옴 (raw 테이블 조회 제거)
     ga4_this_totals = {
         "total_users": int(ga4_this_data.get("total_users", 0)),
         "screen_page_views": int(ga4_this_data.get("screen_page_views", 0)),
         "event_count": int(ga4_this_data.get("event_count", 0)),
-        "add_to_cart_users": ga4_this_totals_raw.get("add_to_cart_users", 0),
-        "sign_up_users": ga4_this_totals_raw.get("sign_up_users", 0),
+        "add_to_cart_users": int(ga4_this_data.get("add_to_cart_users", 0)),
+        "sign_up_users": int(ga4_this_data.get("sign_up_users", 0)),
     }
     ga4_prev_totals = {
         "total_users": int(ga4_prev_data.get("total_users", 0)),
         "screen_page_views": int(ga4_prev_data.get("screen_page_views", 0)),
         "event_count": int(ga4_prev_data.get("event_count", 0)),
-        "add_to_cart_users": ga4_prev_totals_raw.get("add_to_cart_users", 0),
-        "sign_up_users": ga4_prev_totals_raw.get("sign_up_users", 0),
+        "add_to_cart_users": int(ga4_prev_data.get("add_to_cart_users", 0)),
+        "sign_up_users": int(ga4_prev_data.get("sign_up_users", 0)),
     }
     
-    # YoY 데이터 존재 여부 확인
+    # YoY 데이터 존재 여부 확인 (top_sources는 여전히 raw 테이블 필요)
     ga4_yoy_available = has_rows(
         client,
         f"{PROJECT_ID}.{DATASET}.ga4_traffic_ngn",
@@ -1140,13 +1139,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     )
     
     if ga4_yoy_available:
-        ga4_yoy_totals_raw = get_ga4_traffic_totals(yoy_start, yoy_end)
         ga4_yoy_totals = {
             "total_users": int(ga4_yoy_data.get("total_users", 0)),
             "screen_page_views": int(ga4_yoy_data.get("screen_page_views", 0)),
             "event_count": int(ga4_yoy_data.get("event_count", 0)),
-            "add_to_cart_users": ga4_yoy_totals_raw.get("add_to_cart_users", 0),
-            "sign_up_users": ga4_yoy_totals_raw.get("sign_up_users", 0),
+            "add_to_cart_users": int(ga4_yoy_data.get("add_to_cart_users", 0)),
+            "sign_up_users": int(ga4_yoy_data.get("sign_up_users", 0)),
         }
         ga4_yoy = {
             "totals": ga4_yoy_totals,

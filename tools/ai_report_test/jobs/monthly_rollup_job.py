@@ -91,6 +91,8 @@ CREATE TABLE IF NOT EXISTS `{T_GA_TRAFFIC_MONTHLY}` (
   total_users INT64,
   screen_page_views INT64,
   event_count INT64,
+  add_to_cart_users INT64,
+  sign_up_users INT64,
   updated_at TIMESTAMP
 )
 PARTITION BY month_date
@@ -206,28 +208,55 @@ def merge_ga4_traffic_monthly(client: bigquery.Client, start_date: str, end_date
     sql = f"""
 MERGE `{T_GA_TRAFFIC_MONTHLY}` T
 USING (
+  WITH ga4_monthly AS (
+    SELECT
+      company_name,
+      DATE_TRUNC(event_date, MONTH) AS month_date,
+      SUM(total_users) AS total_users,
+      SUM(screen_page_views) AS screen_page_views,
+      SUM(event_count) AS event_count
+    FROM `{T_GA_TRAFFIC_DAILY}`
+    WHERE event_date BETWEEN @start_date AND @end_date
+      AND company_name IS NOT NULL
+    GROUP BY company_name, month_date
+  ),
+  cart_signup_monthly AS (
+    SELECT
+      company_name,
+      DATE_TRUNC(DATE(date), MONTH) AS month_date,
+      COALESCE(SUM(cart_users), 0) AS add_to_cart_users,
+      COALESCE(SUM(signup_count), 0) AS sign_up_users
+    FROM `{PROJECT_ID}.{DATASET}.performance_summary_ngn`
+    WHERE DATE(date) BETWEEN @start_date AND @end_date
+      AND company_name IS NOT NULL
+    GROUP BY company_name, month_date
+  )
   SELECT
-    company_name,
-    DATE_TRUNC(event_date, MONTH) AS month_date,
-    SUM(total_users) AS total_users,
-    SUM(screen_page_views) AS screen_page_views,
-    SUM(event_count) AS event_count,
+    COALESCE(g.company_name, c.company_name) AS company_name,
+    COALESCE(g.month_date, c.month_date) AS month_date,
+    COALESCE(g.total_users, 0) AS total_users,
+    COALESCE(g.screen_page_views, 0) AS screen_page_views,
+    COALESCE(g.event_count, 0) AS event_count,
+    COALESCE(c.add_to_cart_users, 0) AS add_to_cart_users,
+    COALESCE(c.sign_up_users, 0) AS sign_up_users,
     CURRENT_TIMESTAMP() AS updated_at
-  FROM `{T_GA_TRAFFIC_DAILY}`
-  WHERE event_date BETWEEN @start_date AND @end_date
-    AND company_name IS NOT NULL
-  GROUP BY company_name, month_date
+  FROM ga4_monthly g
+  FULL OUTER JOIN cart_signup_monthly c
+    ON g.company_name = c.company_name
+    AND g.month_date = c.month_date
 ) S
 ON T.company_name = S.company_name AND T.month_date = S.month_date
 WHEN MATCHED THEN UPDATE SET
   total_users=S.total_users,
   screen_page_views=S.screen_page_views,
   event_count=S.event_count,
+  add_to_cart_users=S.add_to_cart_users,
+  sign_up_users=S.sign_up_users,
   updated_at=S.updated_at
 WHEN NOT MATCHED THEN INSERT (
-  company_name, month_date, total_users, screen_page_views, event_count, updated_at
+  company_name, month_date, total_users, screen_page_views, event_count, add_to_cart_users, sign_up_users, updated_at
 ) VALUES (
-  S.company_name, S.month_date, S.total_users, S.screen_page_views, S.event_count, S.updated_at
+  S.company_name, S.month_date, S.total_users, S.screen_page_views, S.event_count, S.add_to_cart_users, S.sign_up_users, S.updated_at
 );
 """
     run_query(

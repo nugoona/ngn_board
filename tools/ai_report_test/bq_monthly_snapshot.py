@@ -168,24 +168,16 @@ def crawl_29cm_best():
     
     def get_json(url: str, headers=None) -> dict:
         """JSON 요청"""
-        try:
-            req = Request(url, headers=headers or HEADERS, method="GET")
-            with urlopen(req, timeout=10) as resp:
-                return json.loads(resp.read().decode("utf-8", errors="replace"))
-        except Exception as e:
-            print(f"⚠️ 29CM API 요청 실패 ({url}): {e}", file=sys.stderr)
-            return {}
+        req = Request(url, headers=headers or HEADERS, method="GET")
+        with urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8", errors="replace"))
     
     def post_json(payload: dict) -> dict:
         """POST JSON 요청"""
-        try:
-            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-            req = Request(API_URL, data=body, headers=HEADERS, method="POST")
-            with urlopen(req, timeout=10) as resp:
-                return json.loads(resp.read().decode("utf-8", errors="replace"))
-        except Exception as e:
-            print(f"⚠️ 29CM API POST 실패: {e}", file=sys.stderr)
-            return {}
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        req = Request(API_URL, data=body, headers=HEADERS, method="POST")
+        with urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8", errors="replace"))
     
     def clean_text(text):
         """텍스트 정리"""
@@ -208,23 +200,19 @@ def crawl_29cm_best():
     
     def get_target_tabs():
         """타겟 카테고리 ID 추출"""
-        try:
-            tree = get_json(CATEGORY_TREE_URL)
-            tabs = [{"name": "전체", "middle_id": None}]  # 기본 포함
-            
-            # 트리에서 중분류 추출
-            for group in tree.get("data", {}).get("categoryGroups", []):
-                for large in group.get("largeCategories", []):
-                    if int(large.get("categoryCode", 0)) == BEST_LARGE_ID:
-                        for mid in large.get("mediumCategories", []):
-                            c_name = mid.get("categoryName", "")
-                            # 설정에 있는 카테고리만 추가
-                            if c_name in CRAWL_29CM_TARGET_TABS:
-                                tabs.append({"name": c_name, "middle_id": int(mid["categoryCode"])})
-            return tabs
-        except Exception as e:
-            print(f"⚠️ 29CM 카테고리 트리 조회 실패: {e}", file=sys.stderr)
-            return [{"name": "전체", "middle_id": None}]
+        tree = get_json(CATEGORY_TREE_URL)
+        tabs = [{"name": "전체", "middle_id": None}]  # 기본 포함
+        
+        # 트리에서 중분류 추출
+        for group in tree.get("data", {}).get("categoryGroups", []):
+            for large in group.get("largeCategories", []):
+                if int(large.get("categoryCode", 0)) == BEST_LARGE_ID:
+                    for mid in large.get("mediumCategories", []):
+                        c_name = mid.get("categoryName", "")
+                        # 설정에 있는 카테고리만 추가
+                        if c_name in CRAWL_29CM_TARGET_TABS:
+                            tabs.append({"name": c_name, "middle_id": int(mid["categoryCode"])})
+        return tabs
     
     def fetch_item_reviews(item_id):
         """리뷰 수집 (최신순/베스트순 시도)"""

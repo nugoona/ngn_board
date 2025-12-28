@@ -1,0 +1,98 @@
+<!-- ✅ 월간 리포트 모달 -->
+<div id="monthlyReportModal" class="monthly-report-modal hidden">
+  <div class="monthly-report-backdrop" id="monthlyReportBackdrop"></div>
+  <div class="monthly-report-container">
+    
+    <!-- 헤더 -->
+    <div class="monthly-report-header">
+      <div class="monthly-report-title">
+        <span id="monthlyReportTitle">2026.01 Monthly Strategy Report</span>
+      </div>
+      <div class="monthly-report-header-actions">
+        <button id="downloadMonthlyReportBtn" class="monthly-report-download-btn" aria-label="다운로드" title="다운로드">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 9H15V3H9V9H5L12 16L19 9ZM5 18V20H19V18H5Z" fill="currentColor"/>
+          </svg>
+        </button>
+        <button id="closeMonthlyReportBtn" class="monthly-report-close-btn" aria-label="닫기">×</button>
+      </div>
+    </div>
+    
+    <!-- 본문 -->
+    <div class="monthly-report-content">
+      
+      <!-- 섹션 1: 매크로 성적표 -->
+      <section class="monthly-report-section scorecard-section">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title">매크로 성적표</h3>
+            <div class="scorecard-table-wrapper">
+              <table class="scorecard-table" id="scorecardTable">
+                <thead>
+                  <tr>
+                    <th>지표</th>
+                    <th>이번 달</th>
+                    <th>지난 달</th>
+                    <th>변화율</th>
+                  </tr>
+                </thead>
+                <tbody id="scorecardTableBody">
+                  <!-- 데이터로 채워짐 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="scorecardAiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 2: 마켓 트렌드 -->
+      <section class="monthly-report-section market-trend-section">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title" id="marketTrendTitle">29CM 아우터 카테고리 Top 3</h3>
+            <div class="market-trend-grid" id="marketTrendGrid">
+              <!-- 데이터로 채워짐 -->
+            </div>
+            <div class="market-trend-keywords" id="marketTrendKeywords">
+              <!-- 키워드 태그 -->
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="marketTrendAiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 3: AI 전략 인사이트 (전용 섹션) -->
+      <section class="monthly-report-section ai-insights-section">
+        <h3 class="section-title">AI 전략 인사이트</h3>
+        <div class="ai-insights-content" id="aiInsightsContent">
+          <div class="ai-insights-empty-state">
+            <div class="empty-state-icon">🤖</div>
+            <div class="empty-state-text">AI가 데이터를 분석할 준비가 되었습니다.</div>
+            <div class="empty-state-subtext">분석이 완료되면 전략 인사이트가 표시됩니다.</div>
+          </div>
+        </div>
+      </section>
+      
+    </div>
+  </div>
+</div>
+

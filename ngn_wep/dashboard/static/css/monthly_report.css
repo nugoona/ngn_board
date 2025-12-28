@@ -1,0 +1,479 @@
+/* ============================================
+   월간 프리미엄 전략 리포트 스타일
+   ============================================ */
+
+/* ✅ 성과 요약 섹션에 position: relative 추가 (버튼 배치용) */
+.performance-summary-wrapper {
+  position: relative;
+}
+
+/* ✅ 월간 리포트 버튼 (성과 요약 섹션 우측 하단) */
+.monthly-report-toggle-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background-color: #003366;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.monthly-report-toggle-btn:hover {
+  background-color: #ffffff;
+  color: #d2455a;
+  border: 1px solid #d2455a;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.monthly-report-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ✅ 모달 백드롭 */
+.monthly-report-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.monthly-report-modal.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.monthly-report-modal.hidden {
+  display: none;
+}
+
+.monthly-report-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+/* ✅ 모달 컨테이너 */
+.monthly-report-container {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2001;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.monthly-report-modal.active .monthly-report-container {
+  transform: scale(1);
+}
+
+/* ✅ 헤더 */
+.monthly-report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #E9ECEF;
+  background: #ffffff;
+}
+
+.monthly-report-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #212529;
+  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.monthly-report-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.monthly-report-download-btn,
+.monthly-report-close-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: #495057;
+  font-size: 28px;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.monthly-report-download-btn:hover,
+.monthly-report-close-btn:hover {
+  background-color: #F8F9FA;
+  color: #212529;
+}
+
+.monthly-report-close-btn {
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* ✅ 본문 컨텐츠 */
+.monthly-report-content {
+  padding: 32px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ✅ 섹션 공통 스타일 */
+.monthly-report-section {
+  margin-bottom: 48px;
+}
+
+.monthly-report-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 24px;
+  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ✅ 섹션 컨텐츠 래퍼 (메인 + AI 분석) */
+.section-content-wrapper {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.section-main {
+  flex: 1;
+}
+
+.section-ai-analysis {
+  width: 320px;
+  flex-shrink: 0;
+  background: #F8F9FA;
+  border-radius: 8px;
+  padding: 20px;
+  border-left: 3px solid #003366;
+}
+
+/* ✅ AI 분석 라벨 */
+.ai-analysis-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #868E96;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* ✅ AI 분석 컨텐츠 */
+.ai-analysis-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #495057;
+}
+
+/* ✅ 스켈레톤 UI */
+.ai-analysis-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(90deg, #E9ECEF 25%, #F1F3F5 50%, #E9ECEF 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ✅ 매크로 성적표 테이블 */
+.scorecard-table-wrapper {
+  overflow-x: auto;
+}
+
+.scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.scorecard-table thead {
+  background-color: #F8F9FA;
+}
+
+.scorecard-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  color: #495057;
+  border-bottom: 1px solid #E9ECEF;
+}
+
+.scorecard-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #212529;
+  border-bottom: 1px solid #E9ECEF;
+}
+
+.scorecard-table tbody tr:hover {
+  background-color: #F8F9FA;
+}
+
+.scorecard-table .value-current {
+  font-weight: 600;
+  text-align: right;
+}
+
+.scorecard-table .value-prev {
+  text-align: right;
+  color: #868E96;
+}
+
+.scorecard-table .value-change {
+  text-align: right;
+  font-weight: 600;
+}
+
+.scorecard-table .value-change.up {
+  color: #0066CC;
+}
+
+.scorecard-table .value-change.down {
+  color: #DC3545;
+}
+
+/* ✅ 마켓 트렌드 그리드 */
+.market-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.market-trend-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.market-trend-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.market-trend-rank {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #003366;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.market-trend-image-wrapper {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #F8F9FA;
+}
+
+.market-trend-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.market-trend-info {
+  padding: 16px;
+}
+
+.market-trend-brand {
+  font-size: 12px;
+  color: #868E96;
+  margin-bottom: 4px;
+}
+
+.market-trend-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  line-height: 1.4;
+}
+
+.market-trend-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.keyword-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #E9ECEF;
+  color: #495057;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+/* ✅ AI 인사이트 섹션 (전용) */
+.ai-insights-section {
+  background: #F8F9FA;
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.ai-insights-content {
+  min-height: 200px;
+}
+
+.ai-insights-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.empty-state-subtext {
+  font-size: 14px;
+  color: #868E96;
+}
+
+/* ✅ 토스트 메시지 */
+.toast-message {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #212529;
+  color: #ffffff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.toast-message.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ✅ 반응형 디자인 */
+@media (max-width: 1024px) {
+  .section-content-wrapper {
+    flex-direction: column;
+  }
+  
+  .section-ai-analysis {
+    width: 100%;
+  }
+  
+  .market-trend-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .monthly-report-container {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .monthly-report-header {
+    padding: 16px 20px;
+  }
+  
+  .monthly-report-title {
+    font-size: 18px;
+  }
+  
+  .monthly-report-content {
+    padding: 20px;
+  }
+  
+  .market-trend-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .monthly-report-toggle-btn {
+    bottom: 10px;
+    right: 10px;
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+}
+

@@ -1,8 +1,10 @@
 # File: services/data_service.py
 import os   
 import datetime
+import json
 from flask import Blueprint, request, jsonify, session, Response
 from google.cloud import bigquery
+from google.cloud import storage
 import time
 from concurrent.futures import ThreadPoolExecutor
 import requests
@@ -613,6 +615,53 @@ def catalog_set_route():
 @data_blueprint.route("/test", methods=["GET"])
 def test():
     return "Hello World"
+
+
+@data_blueprint.route("/monthly_report", methods=["POST"])
+def get_monthly_report():
+    """월간 리포트 스냅샷 데이터 조회 (GCS 버킷에서)"""
+    try:
+        data = request.get_json()
+        company_name = data.get("company_name")
+        year = int(data.get("year"))
+        month = int(data.get("month"))
+        
+        if not company_name or company_name == "all":
+            return jsonify({"status": "error", "message": "업체를 선택해주세요"}), 400
+        
+        # GCS 버킷에서 스냅샷 파일 읽기
+        PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
+        GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
+        
+        blob_path = f"ai-reports/monthly/{company_name.lower()}/{year}-{month:02d}/snapshot.json"
+        
+        try:
+            client = storage.Client(project=PROJECT_ID)
+            bucket = client.bucket(GCS_BUCKET)
+            blob = bucket.blob(blob_path)
+            
+            if not blob.exists():
+                return jsonify({
+                    "status": "error",
+                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다."
+                }), 404
+            
+            snapshot_json_str = blob.download_as_text()
+            snapshot_data = json.loads(snapshot_json_str)
+            
+            return jsonify({
+                "status": "success",
+                "data": snapshot_data
+            }), 200
+            
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"스냅샷 파일을 읽는 중 오류가 발생했습니다: {str(e)}"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @data_blueprint.route("/proxy_image", methods=["GET"])
 def proxy_image():

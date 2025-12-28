@@ -60,3 +60,6 @@ echo "  - Pub/Sub Subscription: ${SUBSCRIPTION_NAME}"
 echo "  - Cloud Scheduler: bigquery-cleanup-monthly (매월 1일 새벽 2시 실행)"
 
 
+
+
+

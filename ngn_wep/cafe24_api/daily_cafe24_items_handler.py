@@ -82,7 +82,7 @@ def execute_bigquery(process_type="today"):
         oi.order_id,
         REGEXP_REPLACE(
           ARRAY_AGG(oi.product_name ORDER BY oi.ordered_date DESC LIMIT 1)[SAFE_OFFSET(0)],
-          r'^\\[[^\\]]+\\]\\s*',
+          r'^\\[(?i)(?!set\\])[^\\]]+\\]\\s*',
           ''
         ) AS product_name,
         CAST(oi.product_price AS FLOAT64) AS product_price,

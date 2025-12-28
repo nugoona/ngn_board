@@ -88,7 +88,7 @@ def get_product_sales_ratio(
             REGEXP_REPLACE(
                 REGEXP_REPLACE(
                     product_name,
-                    r'\[.*\]',         -- [브랜드] 제거
+                    r'\[(?i)(?!set\])[^\]]+\]',         -- [SET]/[set] 제외하고 [브랜드] 등 제거
                     ''
                 ),
                 r'_.*$',                              -- _컬러 제거

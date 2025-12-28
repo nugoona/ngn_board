@@ -45,6 +45,7 @@ function showToast(message) {
  * 모달 열기
  */
 function openMonthlyReportModal() {
+  console.log("[월간 리포트] 모달 열기 시작");
   const companyName = getSelectedCompany();
   if (!companyName) {
     showToast("업체를 먼저 선택해주세요");
@@ -52,11 +53,21 @@ function openMonthlyReportModal() {
   }
   
   const modal = document.getElementById("monthlyReportModal");
-  if (!modal) return;
+  console.log("[월간 리포트] 모달 요소:", modal);
+  if (!modal) {
+    console.error("[월간 리포트] 모달 요소를 찾을 수 없습니다!");
+    return;
+  }
   
+  console.log("[월간 리포트] 모달 클래스 (열기 전):", modal.className);
   modal.classList.remove("hidden");
+  console.log("[월간 리포트] hidden 클래스 제거 후:", modal.className);
+  
   requestAnimationFrame(() => {
     modal.classList.add("active");
+    console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
+    console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
+    console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
   });
   
   const now = new Date();
@@ -197,10 +208,28 @@ async function loadMonthlyReport(companyName, year, month) {
         const sections = Array.from(contentEl.querySelectorAll(".monthly-report-section"));
         console.log("[월간 리포트] 찾은 섹션 개수:", sections.length);
         sections.forEach((section, index) => {
+          console.log(`[월간 리포트] 섹션 ${index + 1} 표시 전 - display:`, window.getComputedStyle(section).display);
           section.style.display = "block";
+          console.log(`[월간 리포트] 섹션 ${index + 1} 표시 후 - display:`, window.getComputedStyle(section).display);
           console.log(`[월간 리포트] 섹션 ${index + 1} 표시:`, section.className);
+          console.log(`[월간 리포트] 섹션 ${index + 1} innerHTML 길이:`, section.innerHTML.length);
         });
         console.log("[월간 리포트] 모든 섹션 표시 완료");
+        
+        // 섹션 1의 실제 DOM 상태 확인
+        const section1 = document.querySelector(".section-1-key-metrics");
+        if (section1) {
+          console.log("[월간 리포트] 섹션 1 최종 상태:");
+          console.log("  - display:", window.getComputedStyle(section1).display);
+          console.log("  - visibility:", window.getComputedStyle(section1).visibility);
+          console.log("  - opacity:", window.getComputedStyle(section1).opacity);
+          console.log("  - height:", window.getComputedStyle(section1).height);
+          const scorecard = section1.querySelector("#section1Scorecard");
+          if (scorecard) {
+            console.log("  - scorecard children:", scorecard.children.length);
+            console.log("  - scorecard innerHTML 길이:", scorecard.innerHTML.length);
+          }
+        }
       } else {
         console.error("[월간 리포트] contentEl을 찾을 수 없습니다!");
       }
@@ -369,10 +398,10 @@ function renderSection1(data) {
   ];
   
   const container = document.getElementById("section1Scorecard");
-  console.log("[섹션 1] container 요소:", container);
+    console.log("[섹션 1] container 요소:", container);
   if (container) {
     console.log("[섹션 1] 스코어카드 데이터:", scorecardData);
-    container.innerHTML = scorecardData.map(item => `
+    const htmlContent = scorecardData.map(item => `
       <div class="scorecard-item">
         <div class="scorecard-label">${item.label}</div>
         <div class="scorecard-value">${item.value}</div>
@@ -383,7 +412,12 @@ function renderSection1(data) {
         </div>
       </div>
     `).join("");
+    container.innerHTML = htmlContent;
     console.log("[섹션 1] 스코어카드 렌더링 완료");
+    console.log("[섹션 1] container.innerHTML 길이:", container.innerHTML.length);
+    console.log("[섹션 1] container.children 개수:", container.children.length);
+    console.log("[섹션 1] container computed style display:", window.getComputedStyle(container).display);
+    console.log("[섹션 1] container computed style visibility:", window.getComputedStyle(container).visibility);
   } else {
     console.error("[섹션 1] container 요소를 찾을 수 없습니다!");
   }

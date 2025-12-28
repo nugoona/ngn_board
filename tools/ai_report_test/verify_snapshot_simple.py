@@ -28,17 +28,14 @@ def verify_snapshot(company_name: str, year: int, month: int):
         JSON_EXTRACT_SCALAR(snapshot_json, '$.period.this_month') AS this_month,
         JSON_EXTRACT_SCALAR(snapshot_json, '$.period.prev_month') AS prev_month,
         JSON_EXTRACT_SCALAR(snapshot_json, '$.period.yoy_month') AS yoy_month,
-        -- 핵심 메트릭 (객체에서 값 추출)
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.mall_sales.net_sales') AS FLOAT64) AS net_sales,
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.meta_ads.spend') AS FLOAT64) AS meta_spend,
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.ga4_traffic.totals.total_users') AS INT64) AS ga4_users,
-        -- YoY 비교 확인 (객체에서 abs 값 추출)
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.mall_sales.net_sales_yoy.abs') AS FLOAT64) AS net_sales_yoy_abs,
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.mall_sales.net_sales_yoy') AS net_sales_yoy,
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.meta_ads.spend_yoy.abs') AS FLOAT64) AS spend_yoy_abs,
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.meta_ads.spend_yoy') AS spend_yoy,
-        CAST(JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.ga4_traffic.total_users_yoy.abs') AS INT64) AS total_users_yoy_abs,
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.data.comparisons.ga4_traffic.total_users_yoy') AS total_users_yoy
+        -- 핵심 메트릭 (JSON_EXTRACT로 먼저 추출 후 값 확인)
+        JSON_EXTRACT(snapshot_json, '$.data.mall_sales') AS mall_sales_json,
+        JSON_EXTRACT(snapshot_json, '$.data.meta_ads') AS meta_ads_json,
+        JSON_EXTRACT(snapshot_json, '$.data.ga4_traffic.totals') AS ga4_totals_json,
+        -- YoY 비교 확인 (JSON_EXTRACT로 먼저 추출)
+        JSON_EXTRACT(snapshot_json, '$.data.comparisons.mall_sales.net_sales_yoy') AS net_sales_yoy_json,
+        JSON_EXTRACT(snapshot_json, '$.data.comparisons.meta_ads.spend_yoy') AS spend_yoy_json,
+        JSON_EXTRACT(snapshot_json, '$.data.comparisons.ga4_traffic.total_users_yoy') AS total_users_yoy_json
     FROM `{PROJECT_ID}.{DATASET}.report_monthly_snapshot`
     WHERE company_name = @company_name 
       AND month = DATE(@month_date)
@@ -62,25 +59,44 @@ def verify_snapshot(company_name: str, year: int, month: int):
         print(f"❌ 스냅샷이 없습니다: {company_name} {year}-{month:02d}")
         return False
     
+    import json
+    
     row = rows[0]
     print(f"✅ 스냅샷 확인: {company_name} {year}-{month:02d}")
     print(f"   업데이트 시간: {row.updated_at}")
     print(f"   기간: {row.this_month} (prev: {row.prev_month}, yoy: {row.yoy_month})")
+    
+    # JSON 파싱
+    mall_sales = json.loads(row.mall_sales_json) if row.mall_sales_json else {}
+    meta_ads = json.loads(row.meta_ads_json) if row.meta_ads_json else {}
+    ga4_totals = json.loads(row.ga4_totals_json) if row.ga4_totals_json else {}
+    net_sales_yoy = json.loads(row.net_sales_yoy_json) if row.net_sales_yoy_json else None
+    spend_yoy = json.loads(row.spend_yoy_json) if row.spend_yoy_json else None
+    total_users_yoy = json.loads(row.total_users_yoy_json) if row.total_users_yoy_json else None
+    
     print(f"   핵심 메트릭:")
-    print(f"     - Mall Sales: {row.net_sales:,.0f}" if row.net_sales else "     - Mall Sales: None")
-    print(f"     - Meta Ads Spend: {row.meta_spend:,.0f}" if row.meta_spend else "     - Meta Ads Spend: None")
-    print(f"     - GA4 Users: {row.ga4_users:,}" if row.ga4_users else "     - GA4 Users: None")
+    net_sales = mall_sales.get("net_sales")
+    print(f"     - Mall Sales: {net_sales:,.0f}" if net_sales is not None else "     - Mall Sales: None")
+    
+    meta_spend = meta_ads.get("spend")
+    print(f"     - Meta Ads Spend: {meta_spend:,.0f}" if meta_spend is not None else "     - Meta Ads Spend: None")
+    
+    ga4_users = ga4_totals.get("total_users")
+    print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
+    
     print(f"   YoY 비교:")
-    if row.net_sales_yoy_abs is not None:
-        print(f"     - net_sales_yoy: {row.net_sales_yoy_abs:,.0f} (데이터 있음)")
+    if net_sales_yoy and isinstance(net_sales_yoy, dict) and "abs" in net_sales_yoy:
+        print(f"     - net_sales_yoy: {net_sales_yoy['abs']:,.0f} (데이터 있음)")
     else:
         print(f"     - net_sales_yoy: null (데이터 없음)")
-    if row.spend_yoy_abs is not None:
-        print(f"     - spend_yoy: {row.spend_yoy_abs:,.0f} (데이터 있음)")
+    
+    if spend_yoy and isinstance(spend_yoy, dict) and "abs" in spend_yoy:
+        print(f"     - spend_yoy: {spend_yoy['abs']:,.0f} (데이터 있음)")
     else:
         print(f"     - spend_yoy: null (데이터 없음)")
-    if row.total_users_yoy_abs is not None:
-        print(f"     - total_users_yoy: {row.total_users_yoy_abs:,} (데이터 있음)")
+    
+    if total_users_yoy and isinstance(total_users_yoy, dict) and "abs" in total_users_yoy:
+        print(f"     - total_users_yoy: {total_users_yoy['abs']:,} (데이터 있음)")
     else:
         print(f"     - total_users_yoy: null (데이터 없음)")
     

@@ -1,5 +1,6 @@
 # File: services/data_service.py
 import os   
+import sys
 import datetime
 import json
 from flask import Blueprint, request, jsonify, session, Response
@@ -7,8 +8,6 @@ from google.cloud import bigquery
 from google.cloud import storage
 import time
 from concurrent.futures import ThreadPoolExecutor
-import requests
-from urllib.parse import quote, unquote
 import requests
 from urllib.parse import quote, unquote
 
@@ -636,32 +635,39 @@ def get_monthly_report():
         # 경로 형식: ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json (실제 저장 경로)
         month_str = f"{year}-{month:02d}"
         
-        # 두 가지 경로 시도 (실제 저장 경로 우선)
+        # 여러 경로 시도 (원본 company_name 우선, 그 다음 소문자)
         blob_paths = [
-            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",  # 실제 저장 경로
-            f"ai-reports/{company_name.lower()}/{month_str}.json"  # 대체 경로
+            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json",  # 원본 company_name
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",  # 소문자 변환
+            f"ai-reports/{company_name}/{month_str}.json",  # 대체 경로 (원본)
+            f"ai-reports/{company_name.lower()}/{month_str}.json"  # 대체 경로 (소문자)
         ]
         
         try:
             client = storage.Client(project=PROJECT_ID)
             bucket = client.bucket(GCS_BUCKET)
             
-            # 두 가지 경로 시도
+            # 여러 경로 시도
             blob = None
+            found_path = None
             for blob_path in blob_paths:
                 test_blob = bucket.blob(blob_path)
                 if test_blob.exists():
                     blob = test_blob
+                    found_path = blob_path
                     break
             
             if not blob:
                 return jsonify({
                     "status": "error",
-                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다. (경로: {blob_paths[0]} 또는 {blob_paths[1]})"
+                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다. (시도한 경로: {', '.join(blob_paths[:2])})"
                 }), 404
             
-            snapshot_json_str = blob.download_as_text()
+            # UTF-8 인코딩으로 명시적으로 읽기
+            snapshot_json_str = blob.download_as_text(encoding='utf-8')
             snapshot_data = json.loads(snapshot_json_str)
+            
+            print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path}", file=sys.stderr)
             
             return jsonify({
                 "status": "success",

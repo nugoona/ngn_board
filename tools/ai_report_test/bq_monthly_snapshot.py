@@ -506,7 +506,58 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     return result
 
 
-def run(company_name: str, year: int, month: int, upsert_flag: bool = False, save_to_gcs_flag: bool = False):
+def load_snapshot_from_gcs(company_name: str, year: int, month: int):
+    """GCS 버킷에서 스냅샷 JSON 파일 읽기"""
+    try:
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        
+        # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json
+        blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json"
+        blob = bucket.blob(blob_path)
+        
+        # 파일 존재 확인
+        if not blob.exists():
+            print(f"⚠️ GCS에 스냅샷 파일이 없습니다: {blob_path}", file=sys.stderr)
+            return None
+        
+        # JSON 파일 읽기
+        snapshot_json_str = blob.download_as_text(encoding='utf-8')
+        snapshot_data = json.loads(snapshot_json_str)
+        
+        gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
+        print(f"✅ GCS에서 스냅샷을 불러왔습니다: {gcs_url}", file=sys.stderr)
+        return snapshot_data
+    except Exception as e:
+        print(f"❌ GCS에서 스냅샷 읽기 실패: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run(company_name: str, year: int, month: int, upsert_flag: bool = False, save_to_gcs_flag: bool = False, load_from_gcs_flag: bool = True):
+    """
+    Args:
+        company_name: 회사명
+        year: 연도
+        month: 월
+        upsert_flag: BigQuery에 upsert할지 여부
+        save_to_gcs_flag: GCS에 저장할지 여부
+        load_from_gcs_flag: GCS에서 먼저 읽을지 여부 (기본값: True)
+    """
+    # -----------------------
+    # GCS에서 스냅샷 읽기 (우선)
+    # -----------------------
+    if load_from_gcs_flag:
+        snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
+        if snapshot_from_gcs:
+            print(f"✅ GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
+            print(json.dumps(snapshot_from_gcs, ensure_ascii=False, indent=2))
+            return
+    
+    # -----------------------
+    # BigQuery에서 데이터 조회 (GCS에 없을 때만)
+    # -----------------------
     client = bigquery.Client(project=PROJECT_ID)
     
     report_month = month_to_ym(year, month)

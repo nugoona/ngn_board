@@ -2321,6 +2321,57 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # -----------------------
     crawl_29cm_result = crawl_29cm_best()
     
+    # -----------------------
+    # Event 데이터 조회 (지난달 이벤트)
+    # -----------------------
+    def get_prev_month_events():
+        """지난달 이벤트 정보 조회"""
+        try:
+            query = f"""
+            SELECT 
+                mall,
+                date,
+                event,
+                event_first,
+                event_end,
+                memo
+            FROM `{PROJECT_ID}.{DATASET}.sheets_event_data`
+            WHERE mall = @company_name
+              AND FORMAT_DATE('%Y-%m', date) = @prev_month
+            ORDER BY event_first ASC, event ASC
+            """
+            
+            rows = list(
+                client.query(
+                    query,
+                    job_config=bigquery.QueryJobConfig(
+                        query_parameters=[
+                            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+                            bigquery.ScalarQueryParameter("prev_month", "STRING", prev_month),
+                        ]
+                    ),
+                ).result()
+            )
+            
+            events = []
+            for row in rows:
+                events.append({
+                    "event": row.event,
+                    "event_first": row.event_first.isoformat() if row.event_first else None,
+                    "event_end": row.event_end.isoformat() if row.event_end else None,
+                    "memo": row.memo if row.memo else None,
+                })
+            
+            return {
+                "month": prev_month,
+                "events": events,
+            } if events else None
+        except Exception as e:
+            print(f"⚠️ Event 데이터 조회 실패: {e}", file=sys.stderr)
+            return None
+    
+    prev_month_events = get_prev_month_events()
+    
     out = {
         "report_meta": {
             "company_name": company_name,
@@ -2371,6 +2422,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "comparisons": comparisons,
             "forecast_next_month": forecast_next_month,
             "29cm_best": crawl_29cm_result,
+            "events": prev_month_events,
         },
         "signals": signals,
     }

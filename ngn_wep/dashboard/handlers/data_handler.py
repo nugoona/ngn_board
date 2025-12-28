@@ -633,13 +633,13 @@ def get_monthly_report():
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
-        # 경로 형식: ai-reports/{company}/{YYYY-MM}.json 또는 ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json
+        # 경로 형식: ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json (실제 저장 경로)
         month_str = f"{year}-{month:02d}"
         
-        # 두 가지 경로 시도 (새 형식 우선, 구 형식 fallback)
+        # 두 가지 경로 시도 (실제 저장 경로 우선)
         blob_paths = [
-            f"ai-reports/{company_name.lower()}/{month_str}.json",  # 새 형식
-            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json"  # 구 형식
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",  # 실제 저장 경로
+            f"ai-reports/{company_name.lower()}/{month_str}.json"  # 대체 경로
         ]
         
         try:

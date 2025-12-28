@@ -24,18 +24,8 @@ def verify_snapshot(company_name: str, year: int, month: int):
         month,
         snapshot_hash,
         updated_at,
-        -- 기간 정보
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.period.this_month') AS this_month,
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.period.prev_month') AS prev_month,
-        JSON_EXTRACT_SCALAR(snapshot_json, '$.period.yoy_month') AS yoy_month,
-        -- 핵심 메트릭 (JSON_EXTRACT로 먼저 추출 후 값 확인)
-        JSON_EXTRACT(snapshot_json, '$.data.mall_sales') AS mall_sales_json,
-        JSON_EXTRACT(snapshot_json, '$.data.meta_ads') AS meta_ads_json,
-        JSON_EXTRACT(snapshot_json, '$.data.ga4_traffic.totals') AS ga4_totals_json,
-        -- YoY 비교 확인 (JSON_EXTRACT로 먼저 추출)
-        JSON_EXTRACT(snapshot_json, '$.data.comparisons.mall_sales.net_sales_yoy') AS net_sales_yoy_json,
-        JSON_EXTRACT(snapshot_json, '$.data.comparisons.meta_ads.spend_yoy') AS spend_yoy_json,
-        JSON_EXTRACT(snapshot_json, '$.data.comparisons.ga4_traffic.total_users_yoy') AS total_users_yoy_json
+        -- 전체 JSON을 문자열로 가져와서 Python에서 파싱
+        TO_JSON_STRING(snapshot_json) AS snapshot_json_str
     FROM `{PROJECT_ID}.{DATASET}.report_monthly_snapshot`
     WHERE company_name = @company_name 
       AND month = DATE(@month_date)
@@ -62,17 +52,26 @@ def verify_snapshot(company_name: str, year: int, month: int):
     import json
     
     row = rows[0]
+    
+    # 전체 JSON 파싱
+    snapshot = json.loads(row.snapshot_json_str)
+    
     print(f"✅ 스냅샷 확인: {company_name} {year}-{month:02d}")
     print(f"   업데이트 시간: {row.updated_at}")
-    print(f"   기간: {row.this_month} (prev: {row.prev_month}, yoy: {row.yoy_month})")
     
-    # JSON 파싱
-    mall_sales = json.loads(row.mall_sales_json) if row.mall_sales_json else {}
-    meta_ads = json.loads(row.meta_ads_json) if row.meta_ads_json else {}
-    ga4_totals = json.loads(row.ga4_totals_json) if row.ga4_totals_json else {}
-    net_sales_yoy = json.loads(row.net_sales_yoy_json) if row.net_sales_yoy_json else None
-    spend_yoy = json.loads(row.spend_yoy_json) if row.spend_yoy_json else None
-    total_users_yoy = json.loads(row.total_users_yoy_json) if row.total_users_yoy_json else None
+    # period 정보
+    period = snapshot.get("period", {})
+    this_month = period.get("this_month")
+    prev_month = period.get("prev_month")
+    yoy_month = period.get("yoy_month")
+    print(f"   기간: {this_month} (prev: {prev_month}, yoy: {yoy_month})")
+    
+    # data 정보
+    data = snapshot.get("data", {})
+    mall_sales = data.get("mall_sales", {})
+    meta_ads = data.get("meta_ads", {})
+    ga4_traffic = data.get("ga4_traffic", {})
+    ga4_totals = ga4_traffic.get("totals", {})
     
     print(f"   핵심 메트릭:")
     net_sales = mall_sales.get("net_sales")
@@ -84,21 +83,36 @@ def verify_snapshot(company_name: str, year: int, month: int):
     ga4_users = ga4_totals.get("total_users")
     print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
     
+    # comparisons 정보
+    comparisons = data.get("comparisons", {})
+    mall_sales_comp = comparisons.get("mall_sales", {})
+    meta_ads_comp = comparisons.get("meta_ads", {})
+    ga4_traffic_comp = comparisons.get("ga4_traffic", {})
+    
     print(f"   YoY 비교:")
+    net_sales_yoy = mall_sales_comp.get("net_sales_yoy")
     if net_sales_yoy and isinstance(net_sales_yoy, dict) and "abs" in net_sales_yoy:
         print(f"     - net_sales_yoy: {net_sales_yoy['abs']:,.0f} (데이터 있음)")
-    else:
+    elif net_sales_yoy is None:
         print(f"     - net_sales_yoy: null (데이터 없음)")
+    else:
+        print(f"     - net_sales_yoy: {net_sales_yoy} (형식 확인 필요)")
     
+    spend_yoy = meta_ads_comp.get("spend_yoy")
     if spend_yoy and isinstance(spend_yoy, dict) and "abs" in spend_yoy:
         print(f"     - spend_yoy: {spend_yoy['abs']:,.0f} (데이터 있음)")
-    else:
+    elif spend_yoy is None:
         print(f"     - spend_yoy: null (데이터 없음)")
+    else:
+        print(f"     - spend_yoy: {spend_yoy} (형식 확인 필요)")
     
+    total_users_yoy = ga4_traffic_comp.get("total_users_yoy")
     if total_users_yoy and isinstance(total_users_yoy, dict) and "abs" in total_users_yoy:
         print(f"     - total_users_yoy: {total_users_yoy['abs']:,} (데이터 있음)")
-    else:
+    elif total_users_yoy is None:
         print(f"     - total_users_yoy: null (데이터 없음)")
+    else:
+        print(f"     - total_users_yoy: {total_users_yoy} (형식 확인 필요)")
     
     return True
 

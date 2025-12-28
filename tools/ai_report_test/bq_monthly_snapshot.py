@@ -302,9 +302,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     else:
         prev_y, prev_m = year, month - 1
     prev_start, prev_end = month_range(prev_y, prev_m)
+    prev_month = month_to_ym(prev_y, prev_m)
     
     yoy_y, yoy_m = year - 1, month
     yoy_start, yoy_end = month_range(yoy_y, yoy_m)
+    yoy_month = month_to_ym(yoy_y, yoy_m)
     
     # -----------------------
     # Mall sales
@@ -350,12 +352,65 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "total_canceled": int(row.total_canceled or 0),
         }
     
-    # Mall sales: this/prev/yoy + monthly_13m
-    sales_this = get_sales(this_start, this_end)
-    sales_prev = get_sales(prev_start, prev_end)
-    sales_yoy = get_sales(yoy_start, yoy_end)
+    # ✅ 최적화 1단계: 월간 집계 테이블에서 this/prev/yoy 추출 (raw 테이블 조회 제거)
+    # 월간 집계 테이블 사용 (성능 최적화) - 먼저 조회
+    monthly_13m_raw = query_monthly_13m_from_monthly_table(
+        client,
+        f"{PROJECT_ID}.{DATASET}.mall_sales_monthly",
+        company_name,
+        report_month,
+        """
+        SUM(net_sales) AS net_sales,
+        SUM(total_orders) AS total_orders,
+        SUM(total_first_order) AS total_first_order,
+        SUM(total_canceled) AS total_canceled
+        """
+    )
     
-    # 일자별 성과 데이터
+    monthly_13m = [
+        {"ym": ym, **metrics}
+        for ym, metrics in sorted(monthly_13m_raw.items())
+    ]
+    
+    # monthly_13m에서 this/prev/yoy 추출
+    def get_monthly_data_from_13m(monthly_list, target_ym):
+        """monthly_13m 리스트에서 특정 월 데이터 추출"""
+        for item in monthly_list:
+            if item.get("ym") == target_ym:
+                return item
+        # 데이터가 없으면 기본값 반환
+        return {
+            "ym": target_ym,
+            "net_sales": 0.0,
+            "total_orders": 0,
+            "total_first_order": 0,
+            "total_canceled": 0,
+        }
+    
+    sales_this_data = get_monthly_data_from_13m(monthly_13m, report_month)
+    sales_prev_data = get_monthly_data_from_13m(monthly_13m, prev_month)
+    sales_yoy_data = get_monthly_data_from_13m(monthly_13m, yoy_month)
+    
+    sales_this = {
+        "net_sales": float(sales_this_data.get("net_sales", 0)),
+        "total_orders": int(sales_this_data.get("total_orders", 0)),
+        "total_first_order": int(sales_this_data.get("total_first_order", 0)),
+        "total_canceled": int(sales_this_data.get("total_canceled", 0)),
+    }
+    sales_prev = {
+        "net_sales": float(sales_prev_data.get("net_sales", 0)),
+        "total_orders": int(sales_prev_data.get("total_orders", 0)),
+        "total_first_order": int(sales_prev_data.get("total_first_order", 0)),
+        "total_canceled": int(sales_prev_data.get("total_canceled", 0)),
+    }
+    sales_yoy = {
+        "net_sales": float(sales_yoy_data.get("net_sales", 0)),
+        "total_orders": int(sales_yoy_data.get("total_orders", 0)),
+        "total_first_order": int(sales_yoy_data.get("total_first_order", 0)),
+        "total_canceled": int(sales_yoy_data.get("total_canceled", 0)),
+    }
+    
+    # 일자별 성과 데이터 (daily는 여전히 raw 테이블 사용 - 2단계에서 최적화)
     q_sales_daily = f"""
     SELECT
         payment_date AS date,
@@ -398,25 +453,6 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     daily_this = get_sales_daily(this_start, this_end)
     daily_prev = get_sales_daily(prev_start, prev_end)
     daily_yoy = get_sales_daily(yoy_start, yoy_end)
-    
-    # 월간 집계 테이블 사용 (성능 최적화)
-    monthly_13m_raw = query_monthly_13m_from_monthly_table(
-        client,
-        f"{PROJECT_ID}.{DATASET}.mall_sales_monthly",
-        company_name,
-        report_month,
-        """
-        SUM(net_sales) AS net_sales,
-        SUM(total_orders) AS total_orders,
-        SUM(total_first_order) AS total_first_order,
-        SUM(total_canceled) AS total_canceled
-        """
-    )
-    
-    monthly_13m = [
-        {"ym": ym, **metrics}
-        for ym, metrics in sorted(monthly_13m_raw.items())
-    ]
     
     # -----------------------
     # Meta ads
@@ -479,11 +515,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "cvr": (purchases / clicks * 100) if clicks > 0 else None,
         }
     
-    meta_ads_this = get_meta_ads(this_start, this_end)
-    meta_ads_prev = get_meta_ads(prev_start, prev_end)
-    meta_ads_yoy = get_meta_ads(yoy_start, yoy_end)
-    
-    # 월간 집계 테이블 사용 (성능 최적화)
+    # ✅ 최적화 1단계: 월간 집계 테이블에서 this/prev/yoy 추출 (raw 테이블 조회 제거)
+    # 월간 집계 테이블 사용 (성능 최적화) - 먼저 조회
     monthly_13m_meta_raw = query_monthly_13m_from_monthly_table(
         client,
         f"{PROJECT_ID}.{DATASET}.meta_ads_monthly",
@@ -518,6 +551,64 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "ctr": (clicks / impressions * 100) if impressions > 0 else None,
             "cvr": (purchases / clicks * 100) if clicks > 0 else None,
         })
+    
+    # monthly_13m_meta에서 this/prev/yoy 추출
+    def get_monthly_meta_from_13m(monthly_list, target_ym):
+        """monthly_13m_meta 리스트에서 특정 월 데이터 추출"""
+        for item in monthly_list:
+            if item.get("ym") == target_ym:
+                return item
+        # 데이터가 없으면 기본값 반환
+        return {
+            "ym": target_ym,
+            "spend": 0.0,
+            "impressions": 0,
+            "clicks": 0,
+            "purchases": 0,
+            "purchase_value": 0.0,
+            "roas": None,
+            "cpc": None,
+            "ctr": None,
+            "cvr": None,
+        }
+    
+    meta_ads_this_data = get_monthly_meta_from_13m(monthly_13m_meta, report_month)
+    meta_ads_prev_data = get_monthly_meta_from_13m(monthly_13m_meta, prev_month)
+    meta_ads_yoy_data = get_monthly_meta_from_13m(monthly_13m_meta, yoy_month)
+    
+    meta_ads_this = {
+        "spend": float(meta_ads_this_data.get("spend", 0)),
+        "impressions": int(meta_ads_this_data.get("impressions", 0)),
+        "clicks": int(meta_ads_this_data.get("clicks", 0)),
+        "purchases": int(meta_ads_this_data.get("purchases", 0)),
+        "purchase_value": float(meta_ads_this_data.get("purchase_value", 0)),
+        "roas": meta_ads_this_data.get("roas"),
+        "cpc": meta_ads_this_data.get("cpc"),
+        "ctr": meta_ads_this_data.get("ctr"),
+        "cvr": meta_ads_this_data.get("cvr"),
+    }
+    meta_ads_prev = {
+        "spend": float(meta_ads_prev_data.get("spend", 0)),
+        "impressions": int(meta_ads_prev_data.get("impressions", 0)),
+        "clicks": int(meta_ads_prev_data.get("clicks", 0)),
+        "purchases": int(meta_ads_prev_data.get("purchases", 0)),
+        "purchase_value": float(meta_ads_prev_data.get("purchase_value", 0)),
+        "roas": meta_ads_prev_data.get("roas"),
+        "cpc": meta_ads_prev_data.get("cpc"),
+        "ctr": meta_ads_prev_data.get("ctr"),
+        "cvr": meta_ads_prev_data.get("cvr"),
+    }
+    meta_ads_yoy = {
+        "spend": float(meta_ads_yoy_data.get("spend", 0)),
+        "impressions": int(meta_ads_yoy_data.get("impressions", 0)),
+        "clicks": int(meta_ads_yoy_data.get("clicks", 0)),
+        "purchases": int(meta_ads_yoy_data.get("purchases", 0)),
+        "purchase_value": float(meta_ads_yoy_data.get("purchase_value", 0)),
+        "roas": meta_ads_yoy_data.get("roas"),
+        "cpc": meta_ads_yoy_data.get("cpc"),
+        "ctr": meta_ads_yoy_data.get("ctr"),
+        "cvr": meta_ads_yoy_data.get("cvr"),
+    }
     
     # -----------------------
     # Meta Ads Goals (목표별 분해 및 Top Ad)
@@ -980,8 +1071,63 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             for r in rows
         ]
     
-    ga4_this_totals = get_ga4_traffic_totals(this_start, this_end)
-    ga4_prev_totals = get_ga4_traffic_totals(prev_start, prev_end)
+    # ✅ 최적화 1단계: 월간 집계 테이블에서 this/prev/yoy 추출 (raw 테이블 조회 제거)
+    # 월간 집계 테이블 사용 (성능 최적화) - 먼저 조회
+    monthly_13m_ga4_raw = query_monthly_13m_from_monthly_table(
+        client,
+        f"{PROJECT_ID}.{DATASET}.ga4_traffic_monthly",
+        company_name,
+        report_month,
+        """
+        SUM(total_users) AS total_users,
+        SUM(screen_page_views) AS screen_page_views,
+        SUM(event_count) AS event_count
+        """
+    )
+    
+    monthly_13m_ga4 = [
+        {"ym": ym, **metrics}
+        for ym, metrics in sorted(monthly_13m_ga4_raw.items())
+    ]
+    
+    # monthly_13m_ga4에서 this/prev/yoy totals 추출
+    def get_monthly_ga4_from_13m(monthly_list, target_ym):
+        """monthly_13m_ga4 리스트에서 특정 월 데이터 추출"""
+        for item in monthly_list:
+            if item.get("ym") == target_ym:
+                return item
+        # 데이터가 없으면 기본값 반환
+        return {
+            "ym": target_ym,
+            "total_users": 0,
+            "screen_page_views": 0,
+            "event_count": 0,
+        }
+    
+    ga4_this_data = get_monthly_ga4_from_13m(monthly_13m_ga4, report_month)
+    ga4_prev_data = get_monthly_ga4_from_13m(monthly_13m_ga4, prev_month)
+    ga4_yoy_data = get_monthly_ga4_from_13m(monthly_13m_ga4, yoy_month)
+    
+    # add_to_cart_users와 sign_up_users는 performance_summary_ngn에서 가져와야 함 (별도 조회 필요)
+    # totals는 월간 집계 테이블에서, top_sources는 raw 테이블에서 (소스별 집계는 월간 테이블에 없음)
+    ga4_this_totals_raw = get_ga4_traffic_totals(this_start, this_end)
+    ga4_prev_totals_raw = get_ga4_traffic_totals(prev_start, prev_end)
+    
+    # 월간 집계 테이블 데이터와 raw 데이터 병합 (add_to_cart_users, sign_up_users는 raw에서)
+    ga4_this_totals = {
+        "total_users": int(ga4_this_data.get("total_users", 0)),
+        "screen_page_views": int(ga4_this_data.get("screen_page_views", 0)),
+        "event_count": int(ga4_this_data.get("event_count", 0)),
+        "add_to_cart_users": ga4_this_totals_raw.get("add_to_cart_users", 0),
+        "sign_up_users": ga4_this_totals_raw.get("sign_up_users", 0),
+    }
+    ga4_prev_totals = {
+        "total_users": int(ga4_prev_data.get("total_users", 0)),
+        "screen_page_views": int(ga4_prev_data.get("screen_page_views", 0)),
+        "event_count": int(ga4_prev_data.get("event_count", 0)),
+        "add_to_cart_users": ga4_prev_totals_raw.get("add_to_cart_users", 0),
+        "sign_up_users": ga4_prev_totals_raw.get("sign_up_users", 0),
+    }
     
     # YoY 데이터 존재 여부 확인
     ga4_yoy_available = has_rows(
@@ -994,7 +1140,14 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     )
     
     if ga4_yoy_available:
-        ga4_yoy_totals = get_ga4_traffic_totals(yoy_start, yoy_end)
+        ga4_yoy_totals_raw = get_ga4_traffic_totals(yoy_start, yoy_end)
+        ga4_yoy_totals = {
+            "total_users": int(ga4_yoy_data.get("total_users", 0)),
+            "screen_page_views": int(ga4_yoy_data.get("screen_page_views", 0)),
+            "event_count": int(ga4_yoy_data.get("event_count", 0)),
+            "add_to_cart_users": ga4_yoy_totals_raw.get("add_to_cart_users", 0),
+            "sign_up_users": ga4_yoy_totals_raw.get("sign_up_users", 0),
+        }
         ga4_yoy = {
             "totals": ga4_yoy_totals,
             "top_sources": get_ga4_top_sources(yoy_start, yoy_end),
@@ -1013,24 +1166,6 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         "totals": ga4_prev_totals,
         "top_sources": get_ga4_top_sources(prev_start, prev_end),
     }
-    
-    # 월간 집계 테이블 사용 (성능 최적화)
-    monthly_13m_ga4_raw = query_monthly_13m_from_monthly_table(
-        client,
-        f"{PROJECT_ID}.{DATASET}.ga4_traffic_monthly",
-        company_name,
-        report_month,
-        """
-        SUM(total_users) AS total_users,
-        SUM(screen_page_views) AS screen_page_views,
-        SUM(event_count) AS event_count
-        """
-    )
-    
-    monthly_13m_ga4 = [
-        {"ym": ym, **metrics}
-        for ym, metrics in sorted(monthly_13m_ga4_raw.items())
-    ]
     
     # -----------------------
     # Products (30d / 90d)

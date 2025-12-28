@@ -163,6 +163,10 @@ async function loadMonthlyReport(companyName, year, month) {
     }
     
     const data = result.data;
+    console.log("[월간 리포트] 받은 데이터:", data);
+    console.log("[월간 리포트] 데이터 구조 확인 - facts:", data?.facts);
+    console.log("[월간 리포트] 데이터 구조 확인 - mall_sales:", data?.facts?.mall_sales);
+    
     currentReportData = data;
     
     // 캐시에 저장
@@ -176,17 +180,29 @@ async function loadMonthlyReport(companyName, year, month) {
     updateLoadingProgress(85);
     
     // 모든 섹션 렌더링
+    console.log("[월간 리포트] 섹션 렌더링 시작");
     renderAllSections(data);
+    console.log("[월간 리포트] 섹션 렌더링 완료");
     
     updateLoadingProgress(100);
     
     // 로딩 숨김, 섹션 표시
     setTimeout(() => {
-      if (loadingEl) loadingEl.style.display = "none";
+      console.log("[월간 리포트] 섹션 표시 시작");
+      if (loadingEl) {
+        loadingEl.style.display = "none";
+        console.log("[월간 리포트] 로딩 요소 숨김 완료");
+      }
       if (contentEl) {
-        Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
+        const sections = Array.from(contentEl.querySelectorAll(".monthly-report-section"));
+        console.log("[월간 리포트] 찾은 섹션 개수:", sections.length);
+        sections.forEach((section, index) => {
           section.style.display = "block";
+          console.log(`[월간 리포트] 섹션 ${index + 1} 표시:`, section.className);
         });
+        console.log("[월간 리포트] 모든 섹션 표시 완료");
+      } else {
+        console.error("[월간 리포트] contentEl을 찾을 수 없습니다!");
       }
     }, 300);
     
@@ -235,21 +251,70 @@ function updateReportHeader(companyName, year, month) {
  * 모든 섹션 렌더링
  */
 function renderAllSections(data) {
-  renderSection1(data); // 지난달 매출 요약
-  renderSection2(data); // 고객 방문 및 구매 여정
-  renderSection3(data); // 베스트 상품 성과
-  renderSection4(data); // 외부 시장 트렌드 (29CM)
-  renderSection5(data); // 주요 유입 채널
-  renderSection6(data); // 광고 매체 효율
-  renderSection7(data); // 우리와 시장의 차이점
-  renderSection8(data); // 다음 달 목표 및 전망
-  renderSection9(data); // AI 제안 전략 액션
+  console.log("[월간 리포트] 렌더링 시작, 데이터 구조:", data);
+  
+  try {
+    renderSection1(data); // 지난달 매출 요약
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 1 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection2(data); // 고객 방문 및 구매 여정
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 2 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection3(data); // 베스트 상품 성과
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 3 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection4(data); // 외부 시장 트렌드 (29CM)
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 4 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection5(data); // 주요 유입 채널
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 5 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection6(data); // 광고 매체 효율
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 6 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection7(data); // 우리와 시장의 차이점
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 7 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection8(data); // 다음 달 목표 및 전망
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 8 렌더링 실패:", e);
+  }
+  
+  try {
+    renderSection9(data); // AI 제안 전략 액션
+  } catch (e) {
+    console.error("[월간 리포트] 섹션 9 렌더링 실패:", e);
+  }
+  
+  console.log("[월간 리포트] 모든 섹션 렌더링 완료");
 }
 
 // ============================================
 // 섹션 1: 지난달 매출 요약
 // ============================================
 function renderSection1(data) {
+  console.log("[섹션 1] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const mallSales = facts.mall_sales || {};
   const thisMonth = mallSales.this || {};
@@ -257,12 +322,19 @@ function renderSection1(data) {
   const comparisons = facts.comparisons || {};
   const comp = comparisons.mall_sales || {};
   
+  console.log("[섹션 1] facts:", facts);
+  console.log("[섹션 1] mallSales:", mallSales);
+  console.log("[섹션 1] thisMonth:", thisMonth);
+  console.log("[섹션 1] prevMonth:", prevMonth);
+  
   const netSalesThis = thisMonth.net_sales || 0;
   const netSalesPrev = prevMonth.net_sales || 0;
   const ordersThis = thisMonth.total_orders || 0;
   const ordersPrev = prevMonth.total_orders || 0;
   const aovThis = ordersThis > 0 ? netSalesThis / ordersThis : 0;
   const aovPrev = ordersPrev > 0 ? netSalesPrev / ordersPrev : 0;
+  
+  console.log("[섹션 1] 계산된 값:", { netSalesThis, netSalesPrev, ordersThis, ordersPrev, aovThis, aovPrev });
   
   // 절대값 계산
   const salesDiff = netSalesThis - netSalesPrev;
@@ -297,7 +369,9 @@ function renderSection1(data) {
   ];
   
   const container = document.getElementById("section1Scorecard");
+  console.log("[섹션 1] container 요소:", container);
   if (container) {
+    console.log("[섹션 1] 스코어카드 데이터:", scorecardData);
     container.innerHTML = scorecardData.map(item => `
       <div class="scorecard-item">
         <div class="scorecard-label">${item.label}</div>
@@ -309,6 +383,9 @@ function renderSection1(data) {
         </div>
       </div>
     `).join("");
+    console.log("[섹션 1] 스코어카드 렌더링 완료");
+  } else {
+    console.error("[섹션 1] container 요소를 찾을 수 없습니다!");
   }
   
   // AI 분석

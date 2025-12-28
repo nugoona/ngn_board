@@ -453,6 +453,7 @@ function renderSection2(data) {
   console.log("[섹션 2] GA4 전체 구조:", ga4);
   console.log("[섹션 2] GA4 데이터:", ga4This);
   console.log("[섹션 2] GA4 데이터 키 목록:", Object.keys(ga4This || {}));
+  console.log("[섹션 2] GA4 데이터 전체 내용:", JSON.stringify(ga4This, null, 2));
   console.log("[섹션 2] 매출 데이터:", salesThis);
   
   // GA4 데이터 매핑 수정 - 여러 경로 시도
@@ -688,6 +689,7 @@ function renderSection5(data) {
   console.log("[섹션 5] GA4 전체 구조:", ga4);
   console.log("[섹션 5] GA4 this 데이터:", ga4This);
   console.log("[섹션 5] GA4 this 키 목록:", Object.keys(ga4This || {}));
+  console.log("[섹션 5] GA4 this 전체 내용:", JSON.stringify(ga4This, null, 2));
   
   // top_sources가 없을 수 있으므로 다른 경로 확인
   let topSources = ga4This.top_sources || ga4This.topSources || [];
@@ -709,10 +711,16 @@ function renderSection5(data) {
   console.log("[섹션 5] 최종 topSources:", topSources);
   
   const container = document.getElementById("section5DonutChart");
+  console.log("[섹션 5] container 요소:", container);
   if (container) {
+    console.log("[섹션 5] topSources 첫 번째 항목:", topSources[0]);
     const total = topSources.reduce((sum, s) => sum + (s.users || s.value || 0), 0);
+    console.log("[섹션 5] 계산된 total:", total);
+    console.log("[섹션 5] ApexCharts 존재 여부:", typeof ApexCharts !== "undefined");
+    console.log("[섹션 5] topSources.length:", topSources.length);
     
     if (typeof ApexCharts !== "undefined" && topSources.length > 0 && total > 0) {
+      console.log("[섹션 5] 차트 렌더링 시작");
       const chartData = topSources.map(s => ({
         name: s.source || s.name || "Unknown",
         value: s.users || s.value || 0
@@ -744,13 +752,21 @@ function renderSection5(data) {
       
       chart.render();
       container._apexChart = chart;
+      console.log("[섹션 5] 차트 렌더링 완료");
     } else {
+      console.log("[섹션 5] 차트 렌더링 조건 불만족:", {
+        hasApexCharts: typeof ApexCharts !== "undefined",
+        hasData: topSources.length > 0,
+        hasTotal: total > 0
+      });
       container.innerHTML = `
         <div class="donut-chart-fallback">
           <div class="fallback-text">유입 채널 데이터가 없습니다.</div>
         </div>
       `;
     }
+  } else {
+    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
   }
   
   renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
@@ -768,6 +784,7 @@ function renderSection6(data) {
   console.log("[섹션 6] meta_ads_goals 전체 구조:", metaAdsGoals);
   console.log("[섹션 6] goalsThis 데이터:", goalsThis);
   console.log("[섹션 6] goalsThis 키 목록:", Object.keys(goalsThis || {}));
+  console.log("[섹션 6] goalsThis 전체 내용:", JSON.stringify(goalsThis, null, 2));
   
   const container = document.getElementById("section6AdsContent");
   if (container) {

@@ -633,17 +633,31 @@ def get_monthly_report():
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
-        blob_path = f"ai-reports/monthly/{company_name.lower()}/{year}-{month:02d}/snapshot.json"
+        # 경로 형식: ai-reports/{company}/{YYYY-MM}.json 또는 ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json
+        month_str = f"{year}-{month:02d}"
+        
+        # 두 가지 경로 시도 (새 형식 우선, 구 형식 fallback)
+        blob_paths = [
+            f"ai-reports/{company_name.lower()}/{month_str}.json",  # 새 형식
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json"  # 구 형식
+        ]
         
         try:
             client = storage.Client(project=PROJECT_ID)
             bucket = client.bucket(GCS_BUCKET)
-            blob = bucket.blob(blob_path)
             
-            if not blob.exists():
+            # 두 가지 경로 시도
+            blob = None
+            for blob_path in blob_paths:
+                test_blob = bucket.blob(blob_path)
+                if test_blob.exists():
+                    blob = test_blob
+                    break
+            
+            if not blob:
                 return jsonify({
                     "status": "error",
-                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다."
+                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다. (경로: {blob_paths[0]} 또는 {blob_paths[1]})"
                 }), 404
             
             snapshot_json_str = blob.download_as_text()

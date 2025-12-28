@@ -4,7 +4,8 @@
  * 성능 최적화: lazy loading, skeleton UI, 가로 스크롤
  */
 
-const GCS_BASE_URL = "https://storage.googleapis.com/winged-precept-443218-v8.appspot.com/ai-reports";
+// GCS 직접 접근 대신 백엔드 API 사용
+// const GCS_BASE_URL = "https://storage.googleapis.com/winged-precept-443218-v8.appspot.com/ai-reports";
 
 let currentReportData = null;
 let currentCompany = null;
@@ -85,14 +86,20 @@ function closeMonthlyReportModal() {
 }
 
 /**
- * GCS에서 월간 리포트 데이터 로드
+ * 백엔드 API를 통해 월간 리포트 데이터 로드
  */
 async function loadMonthlyReport(companyName, year, month) {
   const loadingEl = document.getElementById("monthlyReportLoading");
   const contentEl = document.getElementById("monthlyReportContent");
   
   // 로딩 상태 표시
-  if (loadingEl) loadingEl.style.display = "block";
+  if (loadingEl) {
+    loadingEl.style.display = "block";
+    loadingEl.innerHTML = `
+      <div class="loading-spinner"></div>
+      <div class="loading-text">리포트를 불러오는 중...</div>
+    `;
+  }
   if (contentEl) {
     Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
       section.style.display = "none";
@@ -100,19 +107,30 @@ async function loadMonthlyReport(companyName, year, month) {
   }
   
   try {
-    // GCS URL 구성: {company}/{YYYY-MM}.json
-    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-    const gcsUrl = `${GCS_BASE_URL}/${companyName.toLowerCase()}/${monthStr}.json`;
+    // 백엔드 API를 통해 데이터 로드 (GCS 직접 접근 대신)
+    const response = await fetch("/dashboard/monthly_report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        company_name: companyName,
+        year: year,
+        month: month
+      })
+    });
     
-    console.log(`[월간 리포트] GCS URL: ${gcsUrl}`);
+    const result = await response.json();
     
-    const response = await fetch(gcsUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (result.status === "error") {
+      throw new Error(result.message || "리포트를 불러올 수 없습니다");
     }
     
-    const data = await response.json();
+    if (!result.data) {
+      throw new Error("리포트 데이터가 없습니다");
+    }
+    
+    const data = result.data;
     currentReportData = data;
     
     // 헤더 업데이트

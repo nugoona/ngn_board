@@ -19,32 +19,26 @@
     </div>
     
     <!-- 본문 -->
-    <div class="monthly-report-content">
+    <div class="monthly-report-content" id="monthlyReportContent">
       
-      <!-- 섹션 1: 매크로 성적표 -->
-      <section class="monthly-report-section scorecard-section">
+      <!-- 로딩 상태 -->
+      <div id="monthlyReportLoading" class="monthly-report-loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">리포트를 불러오는 중...</div>
+      </div>
+      
+      <!-- 섹션 1: 월간 핵심 지표 요약 -->
+      <section class="monthly-report-section section-1-key-metrics" style="display: none;">
         <div class="section-content-wrapper">
           <div class="section-main">
-            <h3 class="section-title">매크로 성적표</h3>
-            <div class="scorecard-table-wrapper">
-              <table class="scorecard-table" id="scorecardTable">
-                <thead>
-                  <tr>
-                    <th>지표</th>
-                    <th>이번 달</th>
-                    <th>지난 달</th>
-                    <th>변화율</th>
-                  </tr>
-                </thead>
-                <tbody id="scorecardTableBody">
-                  <!-- 데이터로 채워짐 -->
-                </tbody>
-              </table>
+            <h3 class="section-title">월간 핵심 지표 요약</h3>
+            <div class="scorecard-grid" id="section1Scorecard">
+              <!-- 스코어 카드 (매출, 주문수, 객단가) -->
             </div>
           </div>
           <div class="section-ai-analysis">
             <div class="ai-analysis-label">AI 분석</div>
-            <div class="ai-analysis-content" id="scorecardAiAnalysis">
+            <div class="ai-analysis-content" id="section1AiAnalysis">
               <div class="ai-analysis-skeleton">
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line"></div>
@@ -55,21 +49,18 @@
         </div>
       </section>
       
-      <!-- 섹션 2: 마켓 트렌드 -->
-      <section class="monthly-report-section market-trend-section">
+      <!-- 섹션 2: 고객 방문 및 구매 여정 -->
+      <section class="monthly-report-section section-2-funnel" style="display: none;">
         <div class="section-content-wrapper">
           <div class="section-main">
-            <h3 class="section-title" id="marketTrendTitle">29CM 아우터 카테고리 Top 3</h3>
-            <div class="market-trend-grid" id="marketTrendGrid">
-              <!-- 데이터로 채워짐 -->
-            </div>
-            <div class="market-trend-keywords" id="marketTrendKeywords">
-              <!-- 키워드 태그 -->
+            <h3 class="section-title">고객 방문 및 구매 여정</h3>
+            <div class="funnel-chart-wrapper" id="section2Funnel">
+              <!-- 깔때기 차트 -->
             </div>
           </div>
           <div class="section-ai-analysis">
             <div class="ai-analysis-label">AI 분석</div>
-            <div class="ai-analysis-content" id="marketTrendAiAnalysis">
+            <div class="ai-analysis-content" id="section2AiAnalysis">
               <div class="ai-analysis-skeleton">
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line"></div>
@@ -80,14 +71,166 @@
         </div>
       </section>
       
-      <!-- 섹션 3: AI 전략 인사이트 (전용 섹션) -->
-      <section class="monthly-report-section ai-insights-section">
-        <h3 class="section-title">AI 전략 인사이트</h3>
-        <div class="ai-insights-content" id="aiInsightsContent">
-          <div class="ai-insights-empty-state">
-            <div class="empty-state-icon">🤖</div>
-            <div class="empty-state-text">AI가 데이터를 분석할 준비가 되었습니다.</div>
-            <div class="empty-state-subtext">분석이 완료되면 전략 인사이트가 표시됩니다.</div>
+      <!-- 섹션 3: 베스트 상품 성과 -->
+      <section class="monthly-report-section section-3-products" style="display: none;">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title">베스트 상품 성과</h3>
+            <div class="bar-chart-wrapper" id="section3BarChart">
+              <!-- 가로 막대 그래프 -->
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="section3AiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 4: 외부 시장 트렌드 (29CM) -->
+      <section class="monthly-report-section section-4-market-trend" style="display: none;">
+        <div class="section-main-full">
+          <h3 class="section-title">외부 시장 트렌드 (29CM)</h3>
+          
+          <!-- 카테고리 탭 -->
+          <div class="market-trend-tabs-wrapper">
+            <div class="market-trend-tabs" id="section4Tabs">
+              <button class="market-trend-tab-btn active" data-tab="전체">전체</button>
+              <button class="market-trend-tab-btn" data-tab="아우터">아우터</button>
+              <button class="market-trend-tab-btn" data-tab="상의">상의</button>
+              <button class="market-trend-tab-btn" data-tab="니트웨어">니트</button>
+              <button class="market-trend-tab-btn" data-tab="바지">바지</button>
+              <button class="market-trend-tab-btn" data-tab="스커트">스커트</button>
+            </div>
+          </div>
+          
+          <!-- 상품 카드 가로 스크롤 갤러리 -->
+          <div class="market-trend-content-wrapper">
+            <div class="market-trend-horizontal-scroll" id="section4MarketTrend">
+              <!-- 선택된 탭의 10개 아이템만 렌더링 -->
+            </div>
+          </div>
+          
+          <!-- AI 분석 -->
+          <div class="section-ai-analysis-full">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="section4AiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 5: 주요 유입 채널 -->
+      <section class="monthly-report-section section-5-channels" style="display: none;">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title">주요 유입 채널</h3>
+            <div class="donut-chart-wrapper" id="section5DonutChart">
+              <!-- 도넛 차트 -->
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="section5AiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 6: 광고 매체 효율 -->
+      <section class="monthly-report-section section-6-ads" style="display: none;">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title">광고 매체 효율</h3>
+            <div class="ads-tabs-wrapper">
+              <div class="ads-tabs">
+                <button class="ads-tab-btn active" data-tab="conversion">전환</button>
+                <button class="ads-tab-btn" data-tab="traffic">유입</button>
+              </div>
+              <div class="ads-content" id="section6AdsContent">
+                <!-- 소재 랭킹 리스트 -->
+              </div>
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="section6AiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 7: 우리와 시장의 차이점 -->
+      <section class="monthly-report-section section-7-comparison" style="display: none;">
+        <div class="section-main-full">
+          <h3 class="section-title">우리와 시장의 차이점</h3>
+          <div class="comparison-boxes" id="section7Comparison">
+            <div class="comparison-box market-box">
+              <div class="comparison-box-header">시장</div>
+              <div class="comparison-box-content" id="section7MarketContent">
+                <!-- 시장 키워드/분석 -->
+              </div>
+            </div>
+            <div class="comparison-box vs-divider">VS</div>
+            <div class="comparison-box our-box">
+              <div class="comparison-box-header">우리</div>
+              <div class="comparison-box-content" id="section7OurContent">
+                <!-- 우리 키워드/분석 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 8: 다음 달 목표 및 전망 -->
+      <section class="monthly-report-section section-8-forecast" style="display: none;">
+        <div class="section-content-wrapper">
+          <div class="section-main">
+            <h3 class="section-title">다음 달 목표 및 전망</h3>
+            <div class="forecast-progress-wrapper" id="section8Forecast">
+              <!-- 예측 vs 목표 프로그레스 바 -->
+            </div>
+          </div>
+          <div class="section-ai-analysis">
+            <div class="ai-analysis-label">AI 분석</div>
+            <div class="ai-analysis-content" id="section8AiAnalysis">
+              <div class="ai-analysis-skeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- 섹션 9: AI 제안 전략 액션 -->
+      <section class="monthly-report-section section-9-strategy" style="display: none;">
+        <div class="section-main-full">
+          <h3 class="section-title">AI 제안 전략 액션</h3>
+          <div class="strategy-cards-grid" id="section9StrategyCards">
+            <!-- 전략 카드들 -->
           </div>
         </div>
       </section>
@@ -95,4 +238,3 @@
     </div>
   </div>
 </div>
-

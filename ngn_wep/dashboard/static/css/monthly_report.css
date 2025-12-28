@@ -81,7 +81,7 @@
 .monthly-report-container {
   position: relative;
   width: 90%;
-  max-width: 1200px;
+  max-width: 1400px;
   max-height: 90vh;
   background: #ffffff;
   border-radius: 12px;
@@ -106,6 +106,7 @@
   padding: 24px 32px;
   border-bottom: 1px solid #E9ECEF;
   background: #ffffff;
+  flex-shrink: 0;
 }
 
 .monthly-report-title {
@@ -155,6 +156,58 @@
   flex: 1;
 }
 
+/* ✅ 로딩 상태 */
+.monthly-report-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #E9ECEF;
+  border-top: 4px solid #003366;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #868E96;
+}
+
+.error-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #DC3545;
+  margin-bottom: 8px;
+}
+
+.error-subtext {
+  font-size: 14px;
+  color: #868E96;
+}
+
 /* ✅ 섹션 공통 스타일 */
 .monthly-report-section {
   margin-bottom: 48px;
@@ -183,9 +236,21 @@
   flex: 1;
 }
 
+.section-main-full {
+  width: 100%;
+}
+
 .section-ai-analysis {
   width: 320px;
   flex-shrink: 0;
+  background: #F8F9FA;
+  border-radius: 8px;
+  padding: 20px;
+  border-left: 3px solid #003366;
+}
+
+.section-ai-analysis-full {
+  margin-top: 24px;
   background: #F8F9FA;
   border-radius: 8px;
   padding: 20px;
@@ -207,6 +272,11 @@
   font-size: 14px;
   line-height: 1.6;
   color: #495057;
+}
+
+.ai-analysis-text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ✅ 스켈레톤 UI */
@@ -233,87 +303,255 @@
   100% { background-position: -200% 0; }
 }
 
-/* ✅ 매크로 성적표 테이블 */
-.scorecard-table-wrapper {
-  overflow-x: auto;
+/* ============================================
+   섹션 1: 월간 핵심 지표 요약
+   ============================================ */
+.scorecard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
-.scorecard-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+.scorecard-item {
+  background: #ffffff;
+  border: 1px solid #E9ECEF;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
-.scorecard-table thead {
-  background-color: #F8F9FA;
-}
-
-.scorecard-table th {
-  padding: 16px;
-  text-align: left;
-  font-weight: 600;
+.scorecard-label {
   font-size: 14px;
-  color: #495057;
-  border-bottom: 1px solid #E9ECEF;
-}
-
-.scorecard-table td {
-  padding: 16px;
-  font-size: 14px;
-  color: #212529;
-  border-bottom: 1px solid #E9ECEF;
-}
-
-.scorecard-table tbody tr:hover {
-  background-color: #F8F9FA;
-}
-
-.scorecard-table .value-current {
-  font-weight: 600;
-  text-align: right;
-}
-
-.scorecard-table .value-prev {
-  text-align: right;
   color: #868E96;
+  margin-bottom: 8px;
 }
 
-.scorecard-table .value-change {
-  text-align: right;
+.scorecard-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.scorecard-prev {
+  font-size: 12px;
+  color: #868E96;
+  margin-bottom: 8px;
+}
+
+.scorecard-change {
+  font-size: 14px;
   font-weight: 600;
 }
 
-.scorecard-table .value-change.up {
+.scorecard-change.up {
   color: #0066CC;
 }
 
-.scorecard-table .value-change.down {
+.scorecard-change.down {
   color: #DC3545;
 }
 
-/* ✅ 마켓 트렌드 그리드 */
-.market-trend-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 20px;
+/* ============================================
+   섹션 2: 고객 방문 및 구매 여정 (깔때기)
+   ============================================ */
+.funnel-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.market-trend-card {
+.funnel-item {
+  width: 100%;
+}
+
+.funnel-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.funnel-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.funnel-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.funnel-conversion {
+  font-size: 12px;
+  color: #868E96;
+  margin-left: 8px;
+}
+
+.funnel-bar-wrapper {
+  width: 100%;
+  height: 40px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  overflow: hidden;
   position: relative;
+}
+
+.funnel-bar {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.5s ease;
+}
+
+/* ============================================
+   섹션 3: 베스트 상품 성과 (가로 막대)
+   ============================================ */
+.bar-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bar-chart-item {
+  width: 100%;
+}
+
+.bar-chart-label-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.bar-chart-rank {
+  width: 24px;
+  height: 24px;
+  background: #003366;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.bar-chart-name {
+  flex: 1;
+  font-size: 14px;
+  color: #212529;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-chart-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+  flex-shrink: 0;
+}
+
+.bar-chart-bar-wrapper {
+  width: 100%;
+  height: 32px;
+  background: #F8F9FA;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-chart-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ============================================
+   섹션 4: 외부 시장 트렌드 (29CM) - 카테고리 탭 방식
+   ============================================ */
+.market-trend-tabs-wrapper {
+  margin-bottom: 24px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.market-trend-tabs-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.market-trend-tabs {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.market-trend-tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: #F8F9FA;
+  color: #212529;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.market-trend-tab-btn:hover {
+  background: #E9ECEF;
+}
+
+.market-trend-tab-btn.active {
+  background: #212529;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.market-trend-content-wrapper {
+  margin-bottom: 24px;
+}
+
+.market-trend-horizontal-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 20px 0;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.market-trend-horizontal-scroll::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.market-trend-card-horizontal {
+  flex: 0 0 280px;
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  position: relative;
+  scroll-snap-align: start;
+  transition: transform 0.2s ease;
 }
 
-.market-trend-card:hover {
+.market-trend-card-horizontal:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-.market-trend-rank {
+.market-trend-rank-badge {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -326,86 +564,372 @@
   z-index: 10;
 }
 
-.market-trend-image-wrapper {
+.market-trend-image-wrapper-horizontal {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
   background: #F8F9FA;
+  position: relative;
 }
 
-.market-trend-image {
+.image-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #E9ECEF 25%, #F1F3F5 50%, #E9ECEF 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  z-index: 1;
+}
+
+.market-trend-image-horizontal {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  position: relative;
+  z-index: 2;
 }
 
-.market-trend-info {
+.market-trend-info-horizontal {
   padding: 16px;
+  position: relative;
 }
 
-.market-trend-brand {
+.market-trend-brand-horizontal {
   font-size: 12px;
   color: #868E96;
   margin-bottom: 4px;
 }
 
-.market-trend-name {
+.market-trend-name-horizontal {
   font-size: 14px;
   font-weight: 500;
   color: #212529;
   line-height: 1.4;
+  margin-bottom: 8px;
 }
 
-.market-trend-keywords {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
+.market-trend-review-bubble {
+  margin-top: 8px;
+  position: relative;
 }
 
-.keyword-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #E9ECEF;
-  color: #495057;
+.review-bubble-text {
+  background: #F8F9FA;
+  padding: 8px 12px;
   border-radius: 12px;
   font-size: 12px;
+  color: #495057;
+  line-height: 1.4;
+  position: relative;
 }
 
-/* ✅ AI 인사이트 섹션 (전용) */
-.ai-insights-section {
-  background: #F8F9FA;
-  border-radius: 8px;
-  padding: 32px;
+.review-bubble-text::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #F8F9FA;
 }
 
-.ai-insights-content {
-  min-height: 200px;
+/* ============================================
+   섹션 5: 주요 유입 채널 (도넛 차트)
+   ============================================
+   ApexCharts가 자동으로 스타일링하므로 최소한만 설정 */
+.donut-chart-wrapper {
+  min-height: 300px;
 }
 
-.ai-insights-empty-state {
+.donut-chart-fallback {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px;
-  text-align: center;
+  min-height: 300px;
+  background: #F8F9FA;
+  border-radius: 8px;
 }
 
-.empty-state-icon {
+.fallback-text {
+  font-size: 14px;
+  color: #868E96;
+}
+
+/* ============================================
+   섹션 6: 광고 매체 효율
+   ============================================ */
+.ads-tabs-wrapper {
+  width: 100%;
+}
+
+.ads-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #E9ECEF;
+}
+
+.ads-tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #868E96;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.ads-tab-btn:hover {
+  color: #212529;
+}
+
+.ads-tab-btn.active {
+  color: #003366;
+  border-bottom-color: #003366;
+}
+
+.ads-tab-content {
+  display: none;
+}
+
+.ads-tab-content.active {
+  display: block;
+}
+
+.ads-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #E9ECEF;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ads-ranking-rank {
+  width: 32px;
+  height: 32px;
+  background: #003366;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ads-ranking-info {
+  flex: 1;
+}
+
+.ads-ranking-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+  margin-bottom: 4px;
+}
+
+.ads-ranking-metrics {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #868E96;
+}
+
+.ads-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #868E96;
+  font-size: 14px;
+}
+
+/* ============================================
+   섹션 7: 우리와 시장의 차이점
+   ============================================ */
+.comparison-boxes {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.comparison-box {
+  background: #ffffff;
+  border: 1px solid #E9ECEF;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.comparison-box.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: #868E96;
+  padding: 0;
+}
+
+.comparison-box-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #E9ECEF;
+}
+
+.market-box .comparison-box-header {
+  color: #0066CC;
+  border-bottom-color: #0066CC;
+}
+
+.our-box .comparison-box-header {
+  color: #DC3545;
+  border-bottom-color: #DC3545;
+}
+
+.comparison-box-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #495057;
+}
+
+.comparison-keyword {
+  padding: 8px 12px;
+  background: #F8F9FA;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.comparison-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ============================================
+   섹션 8: 다음 달 목표 및 전망
+   ============================================ */
+.forecast-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.forecast-item {
+  width: 100%;
+}
+
+.forecast-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.forecast-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.forecast-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.forecast-progress-bar-wrapper {
+  width: 100%;
+  height: 32px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.forecast-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 8px;
+  transition: width 0.5s ease;
+}
+
+.forecast-progress-bar.target {
+  background: linear-gradient(90deg, #10b981, #059669);
+  opacity: 0.3;
+}
+
+/* ============================================
+   섹션 9: AI 제안 전략 액션
+   ============================================ */
+.strategy-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.strategy-card {
+  background: #ffffff;
+  border: 1px solid #E9ECEF;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.strategy-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.strategy-card-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.strategy-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 12px;
+}
+
+.strategy-card-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #495057;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.strategy-empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
   opacity: 0.5;
 }
 
-.empty-state-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 8px;
-}
-
-.empty-state-subtext {
+.empty-text {
   font-size: 14px;
   color: #868E96;
 }
@@ -442,8 +966,21 @@
     width: 100%;
   }
   
-  .market-trend-grid {
+  .scorecard-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .comparison-boxes {
+    grid-template-columns: 1fr;
+  }
+  
+  .comparison-box.vs-divider {
+    transform: rotate(90deg);
+    margin: -12px 0;
+  }
+  
+  .strategy-cards-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -465,8 +1002,12 @@
     padding: 20px;
   }
   
-  .market-trend-grid {
+  .scorecard-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .market-trend-card-horizontal {
+    flex: 0 0 240px;
   }
   
   .monthly-report-toggle-btn {
@@ -476,4 +1017,3 @@
     padding: 10px 16px;
   }
 }
-

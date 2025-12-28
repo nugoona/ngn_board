@@ -2779,11 +2779,14 @@ div#catalogLoadingPopup div.catalog-loading-content div.loading-text {
 .modal-content {
   width: 90%;
   max-width: 500px;
-  padding: 24px 28px;
+  padding: 0;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* 모달 헤더 */
@@ -2791,13 +2794,30 @@ div#catalogLoadingPopup div.catalog-loading-content div.loading-text {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  padding: 20px 24px;
+  background-color: #003366;
+  color: #ffffff;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.modal-header .close-btn {
+  color: #ffffff;
+}
+
+.modal-header .close-btn:hover {
+  color: #ffffff;
+  opacity: 0.8;
 }
 
 .modal-title {
   font-size: 18px;
   font-weight: 700;
   color: #333;
+}
+
+#formModal .modal-title {
+  color: #ffffff;
 }
 
 /* 닫기 버튼 */
@@ -2812,6 +2832,126 @@ div#catalogLoadingPopup div.catalog-loading-content div.loading-text {
 
 /* 숨김 util */
 .hidden { display: none !important; }
+
+/* ======================= Form Modal Styles ======================= */
+
+/* Form Modal Form Container */
+.form-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Form Group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Form Label */
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+/* Form Input */
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #003366;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-select {
+  cursor: pointer;
+  background-color: #fff;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+/* Form Buttons */
+.form-btn {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.form-btn:hover {
+  transform: translateY(-1px);
+}
+
+.form-btn:active {
+  transform: translateY(0);
+}
+
+.form-btn-cancel {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.form-btn-cancel:hover {
+  background-color: #e0e0e0;
+}
+
+.form-btn-submit {
+  background-color: #003366;
+  color: #fff;
+}
+
+.form-btn-submit:hover {
+  background-color: #004488;
+}
+
+/* Form Modal Trigger in Hamburger Menu */
+.form-modal-trigger {
+  cursor: pointer;
+}
+
+/* Modal Body for Forms - Override monospace font */
+#formModal .modal-body {
+  padding: 24px;
+  font-family: inherit;
+  font-size: 14px;
+  overflow-y: auto;
+  flex-grow: 1;
+  max-height: calc(90vh - 120px);
+  white-space: normal;
+  word-break: normal;
+}
 
 /* 등장 애니메이션 */
 @keyframes fadeIn {

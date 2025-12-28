@@ -54,7 +54,13 @@ def verify_snapshot(company_name: str, year: int, month: int):
     row = rows[0]
     
     # 전체 JSON 파싱
-    snapshot = json.loads(row.snapshot_json_str)
+    try:
+        snapshot = json.loads(row.snapshot_json_str)
+    except Exception as e:
+        print(f"❌ JSON 파싱 실패: {e}")
+        print(f"   JSON 길이: {len(row.snapshot_json_str)}")
+        print(f"   JSON 처음 500자: {row.snapshot_json_str[:500]}")
+        return False
     
     print(f"✅ 스냅샷 확인: {company_name} {year}-{month:02d}")
     print(f"   업데이트 시간: {row.updated_at}")
@@ -68,51 +74,75 @@ def verify_snapshot(company_name: str, year: int, month: int):
     
     # data 정보
     data = snapshot.get("data", {})
-    mall_sales = data.get("mall_sales", {})
-    meta_ads = data.get("meta_ads", {})
+    if not data:
+        print(f"   ⚠️  data 섹션이 비어있습니다. JSON 구조 확인 필요.")
+        print(f"   JSON 최상위 키: {list(snapshot.keys())}")
+        return True
+    
+    mall_sales = data.get("mall_sales")
+    meta_ads = data.get("meta_ads")
     ga4_traffic = data.get("ga4_traffic", {})
-    ga4_totals = ga4_traffic.get("totals", {})
     
-    print(f"   핵심 메트릭:")
-    net_sales = mall_sales.get("net_sales")
-    print(f"     - Mall Sales: {net_sales:,.0f}" if net_sales is not None else "     - Mall Sales: None")
+    # mall_sales가 None인지 dict인지 확인
+    if mall_sales is None:
+        print(f"   ⚠️  mall_sales가 None입니다.")
+    elif isinstance(mall_sales, dict):
+        net_sales = mall_sales.get("net_sales")
+        print(f"   핵심 메트릭:")
+        print(f"     - Mall Sales: {net_sales:,.0f}" if net_sales is not None else "     - Mall Sales: None")
+    else:
+        print(f"   ⚠️  mall_sales 타입: {type(mall_sales)}")
     
-    meta_spend = meta_ads.get("spend")
-    print(f"     - Meta Ads Spend: {meta_spend:,.0f}" if meta_spend is not None else "     - Meta Ads Spend: None")
+    # meta_ads 확인
+    if meta_ads is None:
+        print(f"   ⚠️  meta_ads가 None입니다.")
+    elif isinstance(meta_ads, dict):
+        meta_spend = meta_ads.get("spend")
+        print(f"     - Meta Ads Spend: {meta_spend:,.0f}" if meta_spend is not None else "     - Meta Ads Spend: None")
+    else:
+        print(f"   ⚠️  meta_ads 타입: {type(meta_ads)}")
     
-    ga4_users = ga4_totals.get("total_users")
-    print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
+    # ga4_traffic 확인
+    if isinstance(ga4_traffic, dict):
+        ga4_totals = ga4_traffic.get("totals", {})
+        ga4_users = ga4_totals.get("total_users") if isinstance(ga4_totals, dict) else None
+        print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
+    else:
+        print(f"   ⚠️  ga4_traffic 타입: {type(ga4_traffic)}")
     
     # comparisons 정보
     comparisons = data.get("comparisons", {})
-    mall_sales_comp = comparisons.get("mall_sales", {})
-    meta_ads_comp = comparisons.get("meta_ads", {})
-    ga4_traffic_comp = comparisons.get("ga4_traffic", {})
-    
-    print(f"   YoY 비교:")
-    net_sales_yoy = mall_sales_comp.get("net_sales_yoy")
-    if net_sales_yoy and isinstance(net_sales_yoy, dict) and "abs" in net_sales_yoy:
-        print(f"     - net_sales_yoy: {net_sales_yoy['abs']:,.0f} (데이터 있음)")
-    elif net_sales_yoy is None:
-        print(f"     - net_sales_yoy: null (데이터 없음)")
+    if comparisons:
+        mall_sales_comp = comparisons.get("mall_sales", {})
+        meta_ads_comp = comparisons.get("meta_ads", {})
+        ga4_traffic_comp = comparisons.get("ga4_traffic", {})
+        
+        print(f"   YoY 비교:")
+        net_sales_yoy = mall_sales_comp.get("net_sales_yoy") if isinstance(mall_sales_comp, dict) else None
+        if net_sales_yoy and isinstance(net_sales_yoy, dict) and "abs" in net_sales_yoy:
+            print(f"     - net_sales_yoy: {net_sales_yoy['abs']:,.0f} (데이터 있음)")
+        elif net_sales_yoy is None:
+            print(f"     - net_sales_yoy: null (데이터 없음)")
+        else:
+            print(f"     - net_sales_yoy: {net_sales_yoy} (타입: {type(net_sales_yoy)})")
+        
+        spend_yoy = meta_ads_comp.get("spend_yoy") if isinstance(meta_ads_comp, dict) else None
+        if spend_yoy and isinstance(spend_yoy, dict) and "abs" in spend_yoy:
+            print(f"     - spend_yoy: {spend_yoy['abs']:,.0f} (데이터 있음)")
+        elif spend_yoy is None:
+            print(f"     - spend_yoy: null (데이터 없음)")
+        else:
+            print(f"     - spend_yoy: {spend_yoy} (타입: {type(spend_yoy)})")
+        
+        total_users_yoy = ga4_traffic_comp.get("total_users_yoy") if isinstance(ga4_traffic_comp, dict) else None
+        if total_users_yoy and isinstance(total_users_yoy, dict) and "abs" in total_users_yoy:
+            print(f"     - total_users_yoy: {total_users_yoy['abs']:,} (데이터 있음)")
+        elif total_users_yoy is None:
+            print(f"     - total_users_yoy: null (데이터 없음)")
+        else:
+            print(f"     - total_users_yoy: {total_users_yoy} (타입: {type(total_users_yoy)})")
     else:
-        print(f"     - net_sales_yoy: {net_sales_yoy} (형식 확인 필요)")
-    
-    spend_yoy = meta_ads_comp.get("spend_yoy")
-    if spend_yoy and isinstance(spend_yoy, dict) and "abs" in spend_yoy:
-        print(f"     - spend_yoy: {spend_yoy['abs']:,.0f} (데이터 있음)")
-    elif spend_yoy is None:
-        print(f"     - spend_yoy: null (데이터 없음)")
-    else:
-        print(f"     - spend_yoy: {spend_yoy} (형식 확인 필요)")
-    
-    total_users_yoy = ga4_traffic_comp.get("total_users_yoy")
-    if total_users_yoy and isinstance(total_users_yoy, dict) and "abs" in total_users_yoy:
-        print(f"     - total_users_yoy: {total_users_yoy['abs']:,} (데이터 있음)")
-    elif total_users_yoy is None:
-        print(f"     - total_users_yoy: null (데이터 없음)")
-    else:
-        print(f"     - total_users_yoy: {total_users_yoy} (형식 확인 필요)")
+        print(f"   ⚠️  comparisons 섹션이 없습니다.")
     
     return True
 

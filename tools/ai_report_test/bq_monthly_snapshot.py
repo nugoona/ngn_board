@@ -4,9 +4,14 @@ import json
 import hashlib
 import re
 import statistics
-from datetime import date, timedelta
+import time
+import random
+from datetime import date, timedelta, datetime, timezone
 from decimal import Decimal
 from collections import defaultdict
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from urllib.parse import urlencode
 from google.cloud import bigquery
 from google.cloud import storage
 
@@ -35,6 +40,14 @@ GA4_TRAFFIC_BASE_SMALL_THRESHOLD = 100
 # Viewitem 스킵 플래그
 SKIP_VIEWITEM = os.environ.get("SKIP_VIEWITEM", "0") == "1"
 SKIP_META_ADS_GOALS = os.environ.get("SKIP_META_ADS_GOALS", "0") == "1"
+SKIP_29CM_CRAWL = os.environ.get("SKIP_29CM_CRAWL", "0") == "1"
+
+# 29CM 크롤링 설정
+CRAWL_29CM_TARGET_TABS = ["전체", "아우터", "니트웨어", "바지", "스커트", "상의"]
+CRAWL_29CM_TOP_N = 10
+CRAWL_29CM_REVIEWS_PER_ITEM = 10
+CRAWL_29CM_SLEEP_MIN = 0.5
+CRAWL_29CM_SLEEP_MAX = 1.0
 
 
 # -----------------------
@@ -123,6 +136,187 @@ def normalize_item_name(name: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
 
     return s
+
+
+# -----------------------
+# 29CM 크롤링 함수
+# -----------------------
+def crawl_29cm_best():
+    """29CM 베스트 상품 및 리뷰 크롤링"""
+    if SKIP_29CM_CRAWL:
+        return None
+    
+    API_URL = "https://display-bff-api.29cm.co.kr/api/v1/plp/best/items"
+    CATEGORY_TREE_URL = "https://display-bff-api.29cm.co.kr/api/v1/category-groups/tree?categoryGroupNo=1"
+    REVIEW_API_URL = "https://review-api.29cm.co.kr/api/v4/reviews"
+    
+    BEST_LARGE_ID = 268100100   # 여성의류
+    PERIOD_TYPE = "MONTHLY"     # 월간 베스트
+    RANKING_TYPE = "POPULARITY" # 인기순
+    GENDER = "F"
+    AGE = "THIRTIES"            # 30대 여성 타겟
+    
+    KST = timezone(timedelta(hours=9))
+    
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Origin": "https://home.29cm.co.kr",
+        "Referer": "https://home.29cm.co.kr/",
+    }
+    
+    def get_json(url: str, headers=None) -> dict:
+        """JSON 요청"""
+        try:
+            req = Request(url, headers=headers or HEADERS, method="GET")
+            with urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode("utf-8", errors="replace"))
+        except Exception as e:
+            print(f"⚠️ 29CM API 요청 실패 ({url}): {e}", file=sys.stderr)
+            return {}
+    
+    def post_json(payload: dict) -> dict:
+        """POST JSON 요청"""
+        try:
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            req = Request(API_URL, data=body, headers=HEADERS, method="POST")
+            with urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode("utf-8", errors="replace"))
+        except Exception as e:
+            print(f"⚠️ 29CM API POST 실패: {e}", file=sys.stderr)
+            return {}
+    
+    def clean_text(text):
+        """텍스트 정리"""
+        if not text:
+            return ""
+        # 이모지 제거, 과도한 공백 제거
+        text = re.sub(r'[^\w\s.,?!%~+()-]', '', str(text))
+        return re.sub(r'\s+', ' ', text).strip()
+    
+    def pick_thumbnail(it, info):
+        """썸네일 URL 추출"""
+        candidates = [
+            info.get("thumbnailUrl"), info.get("imageUrl"),
+            it.get("thumbnailUrl"), it.get("imageUrl")
+        ]
+        for url in candidates:
+            if url and "http" in url:
+                return url
+        return ""
+    
+    def get_target_tabs():
+        """타겟 카테고리 ID 추출"""
+        try:
+            tree = get_json(CATEGORY_TREE_URL)
+            tabs = [{"name": "전체", "middle_id": None}]  # 기본 포함
+            
+            # 트리에서 중분류 추출
+            for group in tree.get("data", {}).get("categoryGroups", []):
+                for large in group.get("largeCategories", []):
+                    if int(large.get("categoryCode", 0)) == BEST_LARGE_ID:
+                        for mid in large.get("mediumCategories", []):
+                            c_name = mid.get("categoryName", "")
+                            # 설정에 있는 카테고리만 추가
+                            if c_name in CRAWL_29CM_TARGET_TABS:
+                                tabs.append({"name": c_name, "middle_id": int(mid["categoryCode"])})
+            return tabs
+        except Exception as e:
+            print(f"⚠️ 29CM 카테고리 트리 조회 실패: {e}", file=sys.stderr)
+            return [{"name": "전체", "middle_id": None}]
+    
+    def fetch_item_reviews(item_id):
+        """리뷰 수집 (최신순/베스트순 시도)"""
+        for sort_type in ["RECENT", "BEST"]:
+            try:
+                params = {
+                    "itemId": item_id,
+                    "page": 1,
+                    "size": CRAWL_29CM_REVIEWS_PER_ITEM,
+                    "sort": sort_type
+                }
+                url = f"{REVIEW_API_URL}?{urlencode(params)}"
+                data = get_json(url)
+                
+                reviews = []
+                for r in data.get("data", {}).get("results", []):
+                    content = clean_text(r.get("contents"))
+                    if not content:
+                        continue
+                    reviews.append({
+                        "txt": content[:200],  # 너무 긴 리뷰는 자름
+                        "score": r.get("point"),
+                        "opt": r.get("optionValue")  # 구매 옵션(색상/사이즈)
+                    })
+                
+                if reviews:
+                    return reviews  # 리뷰 있으면 반환
+            except Exception:
+                continue
+        return []
+    
+    # 메인 실행
+    try:
+        print(f"🚀 29CM 베스트 수집 시작 (Target: {CRAWL_29CM_TARGET_TABS})", file=sys.stderr)
+        
+        tabs = get_target_tabs()
+        final_data = []
+        
+        for t in tabs:
+            print(f"📂 [{t['name']}] 수집 중... (Top {CRAWL_29CM_TOP_N})", file=sys.stderr)
+            
+            # 랭킹 요청 payload
+            payload = {
+                "pageRequest": {"page": 1, "size": CRAWL_29CM_TOP_N},
+                "userSegment": {"gender": GENDER, "age": AGE},
+                "facets": {
+                    "categoryFacetInputs": [{"largeId": BEST_LARGE_ID, "middleId": t["middle_id"]} if t["middle_id"] else {"largeId": BEST_LARGE_ID}],
+                    "periodFacetInput": {"type": PERIOD_TYPE, "order": "DESC"},
+                    "rankingFacetInput": {"type": RANKING_TYPE},
+                },
+            }
+            
+            try:
+                resp = post_json(payload)
+                items = resp.get("data", {}).get("list", [])
+            except Exception as e:
+                print(f"  ❌ API Error: {e}", file=sys.stderr)
+                continue
+            
+            for rank, it in enumerate(items, 1):
+                info = it.get("itemInfo", {})
+                item_id = it.get("itemId")
+                name = clean_text(info.get("productName"))
+                
+                if not item_id:
+                    continue
+                
+                print(f"  - {rank}위: {name[:20]}...", file=sys.stderr)
+                
+                # 리뷰 수집 (잠시 대기 후 호출)
+                time.sleep(random.uniform(CRAWL_29CM_SLEEP_MIN, CRAWL_29CM_SLEEP_MAX))
+                reviews = fetch_item_reviews(item_id)
+                
+                # 데이터 경량화 저장
+                final_data.append({
+                    "tab": t["name"],
+                    "rank": rank,
+                    "name": name,
+                    "brand": info.get("brandName"),
+                    "price": info.get("displayPrice"),
+                    "img": pick_thumbnail(it, info),  # 썸네일 URL (분석용)
+                    "reviews": reviews  # 리뷰 리스트 (최대 10개)
+                })
+        
+        print(f"✅ 29CM 수집 완료! 총 {len(final_data)}개 상품", file=sys.stderr)
+        return {
+            "collected_at": datetime.now(KST).isoformat(),
+            "items": final_data
+        }
+    except Exception as e:
+        print(f"❌ 29CM 크롤링 실패: {e}", file=sys.stderr)
+        return None
 
 
 def _goal_from_campaign_name(campaign_name: str) -> str:
@@ -2134,6 +2328,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     signals = calculate_signals()
     
+    # -----------------------
+    # 29CM 크롤링 실행
+    # -----------------------
+    crawl_29cm_result = crawl_29cm_best()
+    
     out = {
         "report_meta": {
             "company_name": company_name,
@@ -2183,6 +2382,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             },
             "comparisons": comparisons,
             "forecast_next_month": forecast_next_month,
+            "29cm_best": crawl_29cm_result,
         },
         "signals": signals,
     }

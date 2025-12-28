@@ -156,6 +156,38 @@
   flex: 1;
 }
 
+/* 커스텀 스크롤바 디자인 */
+.monthly-report-content::-webkit-scrollbar,
+.section-ai-analysis::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.monthly-report-content::-webkit-scrollbar-track,
+.section-ai-analysis::-webkit-scrollbar-track {
+  background: #F8F9FA;
+  border-radius: 4px;
+}
+
+.monthly-report-content::-webkit-scrollbar-thumb,
+.section-ai-analysis::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.monthly-report-content::-webkit-scrollbar-thumb:hover,
+.section-ai-analysis::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+/* Firefox 스크롤바 */
+.monthly-report-content,
+.section-ai-analysis {
+  scrollbar-width: thin;
+  scrollbar-color: #D1D5DB #F8F9FA;
+}
+
 /* ✅ 로딩 상태 (0~100% 진행바) */
 .monthly-report-loading {
   display: flex;
@@ -251,13 +283,12 @@
 .section-content-wrapper {
   display: flex;
   gap: 32px;
-  align-items: stretch;
-  min-height: 300px;
+  align-items: flex-start;
+  position: relative;
 }
 
 .section-main {
   flex: 0 0 60%;
-  min-height: 100%;
 }
 
 .section-main-full {
@@ -272,7 +303,11 @@
   border-left: 3px solid #003366;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  position: sticky;
+  top: 80px; /* 섹션 제목 아래 위치 */
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .section-ai-analysis-full {
@@ -548,11 +583,48 @@
 }
 
 .market-trend-grid-compact {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  align-items: center;
   gap: 16px;
   opacity: 1;
   transition: opacity 0.3s ease;
+  position: relative;
+}
+
+.market-trend-cards-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  flex: 1;
+}
+
+.market-trend-nav-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #ffffff;
+  color: #003366;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.market-trend-nav-btn:hover {
+  background: #003366;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
+}
+
+.market-trend-nav-spacer {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .market-trend-card-compact {

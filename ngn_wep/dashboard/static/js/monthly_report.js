@@ -128,7 +128,13 @@ async function loadMonthlyReport(companyName, year, month) {
   }
   
   try {
-    updateLoadingProgress(20);
+    // 점진적 로딩 진행률 시뮬레이션
+    const progressInterval = setInterval(() => {
+      const currentPercent = parseInt(document.getElementById("loadingPercent")?.textContent || "0");
+      if (currentPercent < 30) {
+        updateLoadingProgress(currentPercent + 2);
+      }
+    }, 100);
     
     // 백엔드 API를 통해 데이터 로드
     const response = await fetch("/dashboard/monthly_report", {
@@ -143,7 +149,8 @@ async function loadMonthlyReport(companyName, year, month) {
       })
     });
     
-    updateLoadingProgress(60);
+    clearInterval(progressInterval);
+    updateLoadingProgress(50);
     
     const result = await response.json();
     
@@ -161,10 +168,12 @@ async function loadMonthlyReport(companyName, year, month) {
     // 캐시에 저장
     reportCache.set(cacheKey, data);
     
-    updateLoadingProgress(80);
+    updateLoadingProgress(70);
     
     // 헤더 업데이트
     updateReportHeader(companyName, year, month);
+    
+    updateLoadingProgress(85);
     
     // 모든 섹션 렌더링
     renderAllSections(data);
@@ -310,16 +319,22 @@ function renderSection1(data) {
 // 섹션 2: 고객 방문 및 구매 여정
 // ============================================
 function renderSection2(data) {
+  console.log("[섹션 2] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const ga4 = facts.ga4_traffic || {};
   const ga4This = ga4.this || {};
   const mallSales = facts.mall_sales || {};
   const salesThis = mallSales.this || {};
   
+  console.log("[섹션 2] GA4 데이터:", ga4This);
+  console.log("[섹션 2] 매출 데이터:", salesThis);
+  
   // GA4 데이터 매핑 수정
   const visitors = ga4This.total_users || 0;
-  const cartUsers = ga4This.add_to_cart_users || 0; // cart_users가 아니라 add_to_cart_users
+  const cartUsers = ga4This.add_to_cart_users || ga4This.cart_users || 0;
   const purchases = salesThis.total_orders || 0;
+  
+  console.log("[섹션 2] 계산된 값:", { visitors, cartUsers, purchases });
   
   const funnelData = [
     { label: "방문", value: visitors, color: "#6366f1" },
@@ -360,12 +375,22 @@ function renderSection2(data) {
 // 섹션 3: 베스트 상품 성과
 // ============================================
 function renderSection3(data) {
+  console.log("[섹션 3] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const products = facts.products || {};
+  console.log("[섹션 3] products:", products);
+  
   const productsThis = products.this || {};
+  console.log("[섹션 3] products.this:", productsThis);
+  
   const rolling = productsThis.rolling || {};
+  console.log("[섹션 3] rolling:", rolling);
+  
   const d30 = rolling.d30 || {};
+  console.log("[섹션 3] d30:", d30);
+  
   const topProducts = d30.top_products_by_sales || [];
+  console.log("[섹션 3] top_products_by_sales:", topProducts);
   
   const container = document.getElementById("section3BarChart");
   if (container) {
@@ -410,7 +435,7 @@ function renderSection4(data) {
   section4Data = items;
   
   setupSection4Tabs(items);
-  renderSection4ByTab("전체", items);
+  renderSection4ByTab("전체", items, 1);
   
   renderAiAnalysis("section4AiAnalysis", data.signals?.section_4_analysis);
 }
@@ -423,12 +448,15 @@ function setupSection4Tabs(items) {
       const selectedTab = this.dataset.tab;
       tabButtons.forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-      renderSection4ByTab(selectedTab, items);
+      renderSection4ByTab(selectedTab, items, 1); // 페이지 리셋
     });
   });
 }
 
-function renderSection4ByTab(tabName, items) {
+// 섹션 4 페이지네이션 상태
+let section4CurrentPage = 1;
+
+function renderSection4ByTab(tabName, items, page = 1) {
   const container = document.getElementById("section4MarketTrend");
   if (!container) return;
   
@@ -447,46 +475,68 @@ function renderSection4ByTab(tabName, items) {
     filteredItems = items.filter(item => item.tab === dataTabName);
   }
   
-  // Top 5만 렌더링
-  const itemsToRender = filteredItems.slice(0, 5);
+  section4CurrentPage = page;
+  const startIdx = (page - 1) * 5;
+  const endIdx = startIdx + 5;
+  const itemsToRender = filteredItems.slice(startIdx, endIdx);
+  const hasNext = filteredItems.length > endIdx;
+  const hasPrev = page > 1;
   
   container.style.opacity = "0";
   container.style.transition = "opacity 0.3s ease";
   
   setTimeout(() => {
-    container.innerHTML = itemsToRender.map((item, index) => {
-      const rank = item.rank || (index + 1);
-      const brand = item.brand || "Unknown";
-      const name = item.name || "Unknown";
-      const img = item.img || "";
-      // 29CM 상품 URL 생성 (실제 URL 구조에 맞게 수정 필요)
-      const productUrl = `https://www.29cm.co.kr/products/${item.item_id || ''}`;
-      
-      return `
-        <div class="market-trend-card-compact">
-          <div class="market-trend-rank-badge">Rank ${rank}</div>
-          <div class="market-trend-image-wrapper-compact">
-            <div class="image-skeleton"></div>
-            <img 
-              src="${img}" 
-              alt="${name}" 
-              class="market-trend-image-compact"
-              loading="lazy"
-              decoding="async"
-              onload="this.parentElement.querySelector('.image-skeleton')?.remove()"
-              onerror="
-                this.parentElement.querySelector('.image-skeleton')?.remove();
-                this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'200\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'200\\' height=\\'200\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3ENo Image%3C/text%3E%3C/svg%3E';
-              ">
-          </div>
-          <div class="market-trend-info-compact">
-            <div class="market-trend-brand-compact">${brand}</div>
-            <div class="market-trend-name-compact">${name}</div>
-            <a href="${productUrl}" target="_blank" class="market-trend-link-btn">바로가기</a>
-          </div>
-        </div>
-      `;
-    }).join("");
+    container.innerHTML = `
+      ${hasPrev ? `
+        <button class="market-trend-nav-btn market-trend-nav-prev" onclick="renderSection4ByTab('${tabName}', section4Data, ${page - 1})">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      ` : '<div class="market-trend-nav-spacer"></div>'}
+      <div class="market-trend-cards-container">
+        ${itemsToRender.map((item, index) => {
+          const rank = item.rank || (startIdx + index + 1);
+          const brand = item.brand || "Unknown";
+          const name = item.name || "Unknown";
+          const img = item.img || "";
+          const itemId = item.item_id || item.itemId || '';
+          const productUrl = itemId ? `https://www.29cm.co.kr/products/${itemId}` : '#';
+          
+          return `
+            <div class="market-trend-card-compact">
+              <div class="market-trend-rank-badge">Rank ${rank}</div>
+              <div class="market-trend-image-wrapper-compact">
+                <div class="image-skeleton"></div>
+                <img 
+                  src="${img}" 
+                  alt="${name}" 
+                  class="market-trend-image-compact"
+                  loading="lazy"
+                  decoding="async"
+                  onload="this.parentElement.querySelector('.image-skeleton')?.remove()"
+                  onerror="
+                    this.parentElement.querySelector('.image-skeleton')?.remove();
+                    this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'200\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'200\\' height=\\'200\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3ENo Image%3C/text%3E%3C/svg%3E';
+                  ">
+              </div>
+              <div class="market-trend-info-compact">
+                <div class="market-trend-brand-compact">${brand}</div>
+                <div class="market-trend-name-compact">${name}</div>
+                <a href="${productUrl}" target="_blank" class="market-trend-link-btn">바로가기</a>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      ${hasNext ? `
+        <button class="market-trend-nav-btn market-trend-nav-next" onclick="renderSection4ByTab('${tabName}', section4Data, ${page + 1})">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      ` : '<div class="market-trend-nav-spacer"></div>'}
+    `;
     
     requestAnimationFrame(() => {
       container.style.opacity = "1";
@@ -677,18 +727,21 @@ function renderSection7(data) {
 function renderSection8(data) {
   const facts = data.facts || {};
   const forecast = facts.forecast_next_month || {};
+  const mallSales = facts.mall_sales || {};
+  const yoy = mallSales.yoy || {};
   
   const container = document.getElementById("section8Forecast");
   if (container) {
-    const predicted = forecast.predicted_sales || 0;
-    const target = forecast.target_sales || predicted * 1.1;
+    // 작년 동월 매출 (yoy 데이터 사용)
+    const lastYearSales = yoy.net_sales || forecast.predicted_sales || 0;
+    const target = forecast.target_sales || lastYearSales * 1.1;
     
     // 차트 대신 텍스트로 표시
     container.innerHTML = `
       <div class="forecast-text-content">
         <div class="forecast-item-text">
-          <div class="forecast-label">예측 매출</div>
-          <div class="forecast-value-large">${formatMoney(predicted)}</div>
+          <div class="forecast-label">작년 동월 매출</div>
+          <div class="forecast-value-large">${formatMoney(lastYearSales)}</div>
         </div>
         <div class="forecast-item-text">
           <div class="forecast-label">목표 매출</div>

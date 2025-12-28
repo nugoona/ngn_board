@@ -450,15 +450,23 @@ function renderSection2(data) {
   const mallSales = facts.mall_sales || {};
   const salesThis = mallSales.this || {};
   
+  console.log("[섹션 2] GA4 전체 구조:", ga4);
   console.log("[섹션 2] GA4 데이터:", ga4This);
+  console.log("[섹션 2] GA4 데이터 키 목록:", Object.keys(ga4This || {}));
   console.log("[섹션 2] 매출 데이터:", salesThis);
   
-  // GA4 데이터 매핑 수정
-  const visitors = ga4This.total_users || 0;
-  const cartUsers = ga4This.add_to_cart_users || ga4This.cart_users || 0;
+  // GA4 데이터 매핑 수정 - 여러 경로 시도
+  const visitors = ga4This.total_users || ga4This.users || ga4This.visitors || ga4This.total_visitors || 0;
+  const cartUsers = ga4This.add_to_cart_users || ga4This.cart_users || ga4This.addToCartUsers || 0;
   const purchases = salesThis.total_orders || 0;
   
   console.log("[섹션 2] 계산된 값:", { visitors, cartUsers, purchases });
+  console.log("[섹션 2] visitors 경로 확인:", {
+    "total_users": ga4This.total_users,
+    "users": ga4This.users,
+    "visitors": ga4This.visitors,
+    "total_visitors": ga4This.total_visitors
+  });
   
   const funnelData = [
     { label: "방문", value: visitors, color: "#6366f1" },
@@ -672,17 +680,33 @@ function renderSection4ByTab(tabName, items, page = 1) {
 // 섹션 5: 주요 유입 채널
 // ============================================
 function renderSection5(data) {
+  console.log("[섹션 5] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const ga4 = facts.ga4_traffic || {};
   const ga4This = ga4.this || {};
   
+  console.log("[섹션 5] GA4 전체 구조:", ga4);
+  console.log("[섹션 5] GA4 this 데이터:", ga4This);
+  console.log("[섹션 5] GA4 this 키 목록:", Object.keys(ga4This || {}));
+  
   // top_sources가 없을 수 있으므로 다른 경로 확인
-  let topSources = ga4This.top_sources || [];
+  let topSources = ga4This.top_sources || ga4This.topSources || [];
+  
+  console.log("[섹션 5] top_sources (첫 시도):", topSources);
   
   // 대체 경로 시도
   if (topSources.length === 0 && ga4This.sources) {
     topSources = ga4This.sources;
+    console.log("[섹션 5] sources 경로 사용:", topSources);
   }
+  
+  // 추가 경로 시도
+  if (topSources.length === 0 && ga4.top_sources) {
+    topSources = ga4.top_sources;
+    console.log("[섹션 5] ga4.top_sources 경로 사용:", topSources);
+  }
+  
+  console.log("[섹션 5] 최종 topSources:", topSources);
   
   const container = document.getElementById("section5DonutChart");
   if (container) {
@@ -736,15 +760,23 @@ function renderSection5(data) {
 // 섹션 6: 광고 매체 효율
 // ============================================
 function renderSection6(data) {
+  console.log("[섹션 6] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const metaAdsGoals = facts.meta_ads_goals || {};
   const goalsThis = metaAdsGoals.this || {};
   
+  console.log("[섹션 6] meta_ads_goals 전체 구조:", metaAdsGoals);
+  console.log("[섹션 6] goalsThis 데이터:", goalsThis);
+  console.log("[섹션 6] goalsThis 키 목록:", Object.keys(goalsThis || {}));
+  
   const container = document.getElementById("section6AdsContent");
   if (container) {
     // 데이터 구조 확인 및 매핑
-    const conversionAds = goalsThis.conversion_ads || goalsThis.conversion || [];
-    const trafficAds = goalsThis.traffic_ads || goalsThis.traffic || [];
+    const conversionAds = goalsThis.conversion_ads || goalsThis.conversion || goalsThis.conversionAds || [];
+    const trafficAds = goalsThis.traffic_ads || goalsThis.traffic || goalsThis.trafficAds || [];
+    
+    console.log("[섹션 6] conversionAds:", conversionAds);
+    console.log("[섹션 6] trafficAds:", trafficAds);
     
     container.innerHTML = `
       <div class="ads-tab-content active" data-content="conversion">

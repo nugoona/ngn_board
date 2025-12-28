@@ -122,11 +122,17 @@ def upload_to_gcs(local_path: str, bucket_name: str, blob_path: str):
 
 
 def bq_run_already_loaded(bq: bigquery.Client, run_id: str, period_type: str) -> bool:
+    """
+    중복 체크: LIMIT 1 사용으로 스캔 최소화
+    - COUNT 대신 LIMIT 1 사용 (첫 번째 행만 찾으면 중단)
+    - 클러스터링과 함께 사용하면 효과 극대화
+    """
     sql = f"""
-    SELECT COUNT(1) AS cnt
+    SELECT 1
     FROM `{bq_table_fqn()}`
     WHERE run_id = @run_id
       AND period_type = @period_type
+    LIMIT 1
     """
     job = bq.query(
         sql,
@@ -138,7 +144,7 @@ def bq_run_already_loaded(bq: bigquery.Client, run_id: str, period_type: str) ->
         ),
     )
     rows = list(job.result())
-    return (rows[0]["cnt"] or 0) > 0
+    return len(rows) > 0
 
 
 def bq_insert_rows(bq: bigquery.Client, rows: list[dict]):
@@ -395,12 +401,8 @@ def main():
     except Exception as e:
         print("[WARN] GCS upload failed:", e)
 
-    # 5) BigQuery 적재 (중복 방지)
-    # (크롤링 후 재확인: 아주 드물게 동시 실행되면 여기서도 방어)
-    if bq_run_already_loaded(bq, run_id, period_type):
-        print(f"⏭️ 이미 적재된 run_id라서 스킵(재확인): {run_id} (period_type: {period_type})")
-        return
-
+    # 5) BigQuery 적재
+    # (크롤링 전에 이미 중복 체크했으므로 여기서는 재확인 생략 - 비용 절감)
     bq_insert_rows(bq, results)
     print(f"✅ BigQuery 적재 완료: {bq_table_fqn()} (rows={len(results)})")
 

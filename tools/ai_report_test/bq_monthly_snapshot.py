@@ -196,7 +196,10 @@ def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_repo
     """
     start_ym = shift_month(end_report_month_ym, -12)
     start_date, _ = month_range_exclusive(start_ym)
-    end_exclusive_date, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    _, end_exclusive_date = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    
+    # 디버그: 쿼리 기간 확인
+    print(f"[DEBUG] query_monthly_13m_generic: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
     
     query = f"""
     SELECT 
@@ -248,7 +251,10 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     """
     start_ym = shift_month(end_report_month_ym, -12)
     start_date, _ = month_range_exclusive(start_ym)
-    end_exclusive_date, _ = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    _, end_exclusive_date = month_range_exclusive(shift_month(end_report_month_ym, 1))
+    
+    # 디버그: 쿼리 기간 확인
+    print(f"[DEBUG] query_monthly_13m_from_monthly_table: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
     
     query = f"""
     SELECT 
@@ -1848,17 +1854,23 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         for item in monthly_13m:
             item_month = int(item["ym"].split("-")[1])
             if item_month == next_month_num:
-                mall_sales_same_month.append(item.get("net_sales", 0))
+                v = item.get("net_sales")
+                if v is not None:
+                    mall_sales_same_month.append(v)
         
         for item in monthly_13m_meta:
             item_month = int(item["ym"].split("-")[1])
             if item_month == next_month_num:
-                meta_ads_same_month.append(item.get("spend", 0))
+                v = item.get("spend")
+                if v is not None:
+                    meta_ads_same_month.append(v)
         
         for item in monthly_13m_ga4:
             item_month = int(item["ym"].split("-")[1])
             if item_month == next_month_num:
-                ga4_traffic_same_month.append(item.get("total_users", 0))
+                v = item.get("total_users")
+                if v is not None:
+                    ga4_traffic_same_month.append(v)
         
         def calc_stats(values):
             if not values:

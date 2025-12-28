@@ -65,53 +65,45 @@ def verify_snapshot(company_name: str, year: int, month: int):
     print(f"✅ 스냅샷 확인: {company_name} {year}-{month:02d}")
     print(f"   업데이트 시간: {row.updated_at}")
     
-    # period 정보
-    period = snapshot.get("period", {})
-    this_month = period.get("this_month")
-    prev_month = period.get("prev_month")
-    yoy_month = period.get("yoy_month")
-    print(f"   기간: {this_month} (prev: {prev_month}, yoy: {yoy_month})")
+    # report_meta에서 period 정보 확인
+    report_meta = snapshot.get("report_meta", {})
+    report_month = report_meta.get("report_month")
+    period_this = report_meta.get("period_this", {})
+    period_prev = report_meta.get("period_prev", {})
+    period_yoy = report_meta.get("period_yoy", {})
+    print(f"   기간: {report_month} (prev: {period_prev.get('from')}, yoy: {period_yoy.get('from')})")
     
-    # data 정보
-    data = snapshot.get("data", {})
-    if not data:
-        print(f"   ⚠️  data 섹션이 비어있습니다. JSON 구조 확인 필요.")
+    # facts에서 데이터 확인
+    facts = snapshot.get("facts", {})
+    if not facts:
+        print(f"   ⚠️  facts 섹션이 비어있습니다. JSON 구조 확인 필요.")
         print(f"   JSON 최상위 키: {list(snapshot.keys())}")
         return True
     
-    mall_sales = data.get("mall_sales")
-    meta_ads = data.get("meta_ads")
-    ga4_traffic = data.get("ga4_traffic", {})
+    # facts 구조: {mall_sales: {this, prev, yoy}, meta_ads: {this, prev, yoy}, ...}
+    mall_sales_facts = facts.get("mall_sales", {})
+    meta_ads_facts = facts.get("meta_ads", {})
+    ga4_traffic_facts = facts.get("ga4_traffic", {})
+    comparisons = facts.get("comparisons", {})
     
-    # mall_sales가 None인지 dict인지 확인
-    if mall_sales is None:
-        print(f"   ⚠️  mall_sales가 None입니다.")
-    elif isinstance(mall_sales, dict):
-        net_sales = mall_sales.get("net_sales")
-        print(f"   핵심 메트릭:")
-        print(f"     - Mall Sales: {net_sales:,.0f}" if net_sales is not None else "     - Mall Sales: None")
-    else:
-        print(f"   ⚠️  mall_sales 타입: {type(mall_sales)}")
+    print(f"   핵심 메트릭:")
+    # mall_sales.this에서 net_sales 추출
+    mall_sales_this = mall_sales_facts.get("this", {}) if isinstance(mall_sales_facts, dict) else {}
+    net_sales = mall_sales_this.get("net_sales") if isinstance(mall_sales_this, dict) else None
+    print(f"     - Mall Sales: {net_sales:,.0f}" if net_sales is not None else "     - Mall Sales: None")
     
-    # meta_ads 확인
-    if meta_ads is None:
-        print(f"   ⚠️  meta_ads가 None입니다.")
-    elif isinstance(meta_ads, dict):
-        meta_spend = meta_ads.get("spend")
-        print(f"     - Meta Ads Spend: {meta_spend:,.0f}" if meta_spend is not None else "     - Meta Ads Spend: None")
-    else:
-        print(f"   ⚠️  meta_ads 타입: {type(meta_ads)}")
+    # meta_ads.this에서 spend 추출
+    meta_ads_this = meta_ads_facts.get("this", {}) if isinstance(meta_ads_facts, dict) else {}
+    meta_spend = meta_ads_this.get("spend") if isinstance(meta_ads_this, dict) else None
+    print(f"     - Meta Ads Spend: {meta_spend:,.0f}" if meta_spend is not None else "     - Meta Ads Spend: None")
     
-    # ga4_traffic 확인
-    if isinstance(ga4_traffic, dict):
-        ga4_totals = ga4_traffic.get("totals", {})
-        ga4_users = ga4_totals.get("total_users") if isinstance(ga4_totals, dict) else None
-        print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
-    else:
-        print(f"   ⚠️  ga4_traffic 타입: {type(ga4_traffic)}")
+    # ga4_traffic.this.totals에서 total_users 추출
+    ga4_traffic_this = ga4_traffic_facts.get("this", {}) if isinstance(ga4_traffic_facts, dict) else {}
+    ga4_totals = ga4_traffic_this.get("totals", {}) if isinstance(ga4_traffic_this, dict) else {}
+    ga4_users = ga4_totals.get("total_users") if isinstance(ga4_totals, dict) else None
+    print(f"     - GA4 Users: {ga4_users:,}" if ga4_users is not None else "     - GA4 Users: None")
     
     # comparisons 정보
-    comparisons = data.get("comparisons", {})
     if comparisons:
         mall_sales_comp = comparisons.get("mall_sales", {})
         meta_ads_comp = comparisons.get("meta_ads", {})

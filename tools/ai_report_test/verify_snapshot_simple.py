@@ -143,27 +143,49 @@ def check_query_history(company_name: str, year: int, month: int, hours: int = 1
     """최근 N시간 동안의 쿼리 히스토리 확인"""
     client = bigquery.Client(project=PROJECT_ID)
     
-    query = f"""
-    SELECT 
-        job_id,
-        creation_time,
-        total_bytes_processed,
-        total_slot_ms,
-        -- 쿼리 수 카운트
-        COUNT(*) OVER() AS total_queries,
-        -- 비용 추정 (TB당 $5)
-        (total_bytes_processed / 1024.0 / 1024.0 / 1024.0 / 1024.0) * 5.0 AS estimated_cost_usd
-    FROM `{PROJECT_ID}.{DATASET}.__TABLES__`
-    WHERE FALSE  -- 이 쿼리는 실제로는 INFORMATION_SCHEMA.JOBS_BY_PROJECT를 사용해야 함
-    LIMIT 1
-    """
-    
-    # 실제로는 INFORMATION_SCHEMA를 사용해야 하지만, 권한 문제가 있을 수 있음
-    # 대신 간단한 메시지만 출력
-    print(f"📊 쿼리 히스토리 확인:")
-    print(f"   BigQuery 콘솔에서 확인: https://console.cloud.google.com/bigquery?project={PROJECT_ID}")
-    print(f"   최근 {hours}시간 동안의 쿼리를 확인하세요")
-    print(f"   검색어: {company_name} {year}-{month:02d}")
+    try:
+        query = f"""
+        SELECT 
+            COUNT(*) AS total_queries,
+            SUM(total_bytes_processed) / 1024.0 / 1024.0 / 1024.0 / 1024.0 AS total_tb,
+            SUM(total_bytes_processed / 1024.0 / 1024.0 / 1024.0 / 1024.0) * 5.0 AS total_estimated_cost_usd,
+            AVG(total_bytes_processed) / 1024.0 / 1024.0 / 1024.0 / 1024.0 AS avg_tb_per_query
+        FROM `region-asia-northeast1.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+        WHERE creation_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {hours} HOUR)
+          AND state = 'DONE'
+          AND job_type = 'QUERY'
+          AND total_bytes_processed > 0
+          AND (
+            query LIKE '%mall_sales_monthly%'
+            OR query LIKE '%meta_ads_monthly%'
+            OR query LIKE '%ga4_traffic_monthly%'
+            OR query LIKE '%daily_cafe24_sales%'
+            OR query LIKE '%meta_ads_account_summary%'
+            OR query LIKE '%ga4_traffic_ngn%'
+            OR query LIKE '%performance_summary_ngn%'
+            OR query LIKE '%report_monthly_snapshot%'
+            OR query LIKE '%{company_name}%'
+          )
+        """
+        
+        rows = list(client.query(query).result())
+        if rows:
+            row = rows[0]
+            print(f"\n📊 쿼리 비용 요약 (최근 {hours}시간):")
+            print(f"   총 쿼리 수: {row.total_queries:,}")
+            print(f"   총 처리 데이터: {row.total_tb:.4f} TB")
+            print(f"   예상 비용: ${row.total_estimated_cost_usd:.4f}")
+            print(f"   쿼리당 평균: {row.avg_tb_per_query:.6f} TB")
+        else:
+            print(f"\n📊 쿼리 히스토리:")
+            print(f"   최근 {hours}시간 동안 스냅샷 관련 쿼리가 없습니다.")
+    except Exception as e:
+        print(f"\n📊 쿼리 히스토리 확인:")
+        print(f"   BigQuery 콘솔에서 확인: https://console.cloud.google.com/bigquery?project={PROJECT_ID}")
+        print(f"   최근 {hours}시간 동안의 쿼리를 확인하세요")
+        print(f"   검색어: {company_name} {year}-{month:02d}")
+        print(f"   또는 check_snapshot_query_cost.sql 파일 실행")
+        print(f"   (권한 문제로 자동 확인 실패: {e})")
 
 
 if __name__ == "__main__":

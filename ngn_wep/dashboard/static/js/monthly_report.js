@@ -63,11 +63,20 @@ function openMonthlyReportModal() {
   modal.classList.remove("hidden");
   console.log("[월간 리포트] hidden 클래스 제거 후:", modal.className);
   
+  // display를 먼저 flex로 설정 (hidden 클래스가 display: none을 설정했을 수 있음)
+  modal.style.display = "flex";
+  
+  // requestAnimationFrame을 두 번 사용하여 브라우저가 스타일을 계산할 시간을 줌
   requestAnimationFrame(() => {
-    modal.classList.add("active");
-    console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
-    console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
-    console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
+    requestAnimationFrame(() => {
+      modal.classList.add("active");
+      // 인라인 스타일로 opacity를 강제로 설정 (CSS transition이 작동하도록)
+      modal.style.opacity = "1";
+      modal.style.pointerEvents = "all";
+      console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
+      console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
+      console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
+    });
   });
   
   const now = new Date();
@@ -89,8 +98,12 @@ function closeMonthlyReportModal() {
   if (!modal) return;
   
   modal.classList.remove("active");
+  // 인라인 스타일도 제거
+  modal.style.opacity = "";
+  modal.style.pointerEvents = "";
   setTimeout(() => {
     modal.classList.add("hidden");
+    modal.style.display = "";
     // 데이터 초기화
     currentReportData = null;
   }, 300);

@@ -97,12 +97,27 @@ def normalize_item_name(name: str) -> str:
     if not s or s == "(not set)":
         return ""
 
-    # [ ] 제거 (단, [SET]은 보호)
+    # [ ] 제거 (단, [SET]은 보호) - 여러 개 반복 제거
     if not s.startswith("[SET]"):
-        s = re.sub(r"^\[[^\]]+\]\s*", "", s)
+        while True:
+            new_s = re.sub(r"^\[[^\]]+\]\s*", "", s)
+            if new_s == s:
+                break
+            # 제거 과정에서 [SET]이 맨 앞으로 오면 즉시 중단
+            if new_s.startswith("[SET]"):
+                s = new_s
+                break
+            s = new_s
 
-    # 옵션 제거 (_컬러 / _사이즈 / _4Color 등)
-    s = re.sub(r"_.*$", "", s)
+    # 옵션 제거: "옵션 토큰" + "옵션 경계"일 때만 절단
+    # - 토큰 길이 제한으로 과삭제 방지 (한글 1~6자, 영문 1~12자)
+    # - 옵션 뒤는 EOL/공백/괄호/대괄호 등 옵션스러운 경계만 허용
+    s = re.sub(
+        r"_(?:\d{1,2}color|xs|s|m|l|xl|xxl|free|[a-z]{1,12}|[가-힣]{1,6})(?=($|[\s\(\[])).*$",
+        "",
+        s,
+        flags=re.IGNORECASE
+    )
 
     # 공백 정리
     s = re.sub(r"\s+", " ", s).strip()
@@ -136,14 +151,29 @@ def _goal_from_campaign_name(campaign_name: str) -> str:
 # 공통 헬퍼
 # -----------------------
 def delta(curr, base):
-    """변화량 계산: {"abs": ..., "pct": ...} (base==0이면 pct None)"""
-    abs_diff = curr - base
-    pct = (abs_diff / base * 100) if base != 0 else None
+    """변화량 계산: {"abs": ..., "pct": ...}
+    - curr/base가 None이면 None 반환
+    - base==0이면 pct None
+    - BigQuery/JSON/계산 중 Decimal 등이 섞여도 안정적으로 처리
+    """
+    if curr is None or base is None:
+        return None
+    # BigQuery/JSON/계산 중 Decimal 등이 섞여도 안정적으로 처리
+    try:
+        c = float(curr)
+        b = float(base)
+    except (TypeError, ValueError):
+        return None
+    
+    abs_diff = c - b
+    pct = (abs_diff / b * 100) if b != 0 else None
     return {"abs": abs_diff, "pct": pct}
 
 
 def note_if_base_small(base_value, threshold):
     """기준값이 작은지 여부"""
+    if base_value is None:
+        return None
     return base_value < threshold
 
 
@@ -160,9 +190,9 @@ def json_safe(obj):
 
 
 def has_rows(client, table_fq, date_col, company_name, start_date, end_date):
-    """특정 기간에 데이터가 존재하는지 확인"""
+    """특정 기간에 데이터가 존재하는지 확인 (첫 번째 행만 찾으면 중단)"""
     query = f"""
-    SELECT COUNT(1) AS cnt
+    SELECT 1
     FROM `{table_fq}`
     WHERE company_name = @company_name
       AND {date_col} >= @start_date
@@ -183,10 +213,7 @@ def has_rows(client, table_fq, date_col, company_name, start_date, end_date):
         ).result()
     )
     
-    if not rows:
-        return False
-    
-    return int(rows[0].cnt or 0) > 0
+    return len(rows) > 0
 
 
 def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_report_month_ym, select_exprs, where_extra=""):
@@ -413,49 +440,85 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         "total_canceled": int(sales_yoy_data.get("total_canceled", 0)) if sales_yoy_data else None,
     } if sales_yoy_data else None
     
-    # 일자별 성과 데이터 (daily는 여전히 raw 테이블 사용 - 2단계에서 최적화)
-    q_sales_daily = f"""
-    SELECT
-        payment_date AS date,
-        SUM(net_sales) AS net_sales,
-        SUM(total_orders) AS total_orders,
-        SUM(total_first_order) AS total_first_order,
-        SUM(total_canceled) AS total_canceled
-    FROM `{PROJECT_ID}.{DATASET}.daily_cafe24_sales`
-    WHERE company_name = @company_name
-      AND payment_date BETWEEN @start_date AND @end_date
-    GROUP BY payment_date
-    ORDER BY payment_date
-    """
-    
-    def get_sales_daily(s, e):
+    # ✅ 최적화: 일자별 성과 데이터를 한 번에 조회 후 Python에서 분해
+    def get_sales_daily_multi(ranges):
+        """this/prev/yoy를 한 번에 조회 후 Python에서 분해"""
+        # 전체 기간(this/prev/yoy) 최소~최대 날짜 계산
+        all_dates = []
+        for key, (s, e) in ranges.items():
+            if s and e:
+                all_dates.extend([s, e])
+        
+        if not all_dates:
+            return {"this": [], "prev": [], "yoy": []}
+        
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        
+        # 전체 기간을 한 번에 조회
+        q_sales_daily_multi = f"""
+        SELECT
+            payment_date AS date,
+            SUM(net_sales) AS net_sales,
+            SUM(total_orders) AS total_orders,
+            SUM(total_first_order) AS total_first_order,
+            SUM(total_canceled) AS total_canceled
+        FROM `{PROJECT_ID}.{DATASET}.daily_cafe24_sales`
+        WHERE company_name = @company_name
+          AND payment_date >= @min_date
+          AND payment_date <= @max_date
+        GROUP BY payment_date
+        ORDER BY payment_date
+        """
+        
         rows = list(
             client.query(
-                q_sales_daily,
+                q_sales_daily_multi,
                 job_config=bigquery.QueryJobConfig(
                     query_parameters=[
                         bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                        bigquery.ScalarQueryParameter("start_date", "DATE", s),
-                        bigquery.ScalarQueryParameter("end_date", "DATE", e),
+                        bigquery.ScalarQueryParameter("min_date", "DATE", min_date),
+                        bigquery.ScalarQueryParameter("max_date", "DATE", max_date),
                     ]
                 ),
             ).result()
         )
         
-        return [
-            {
-                "date": row.date.isoformat() if row.date else None,
+        # 각 기간별로 분류
+        result = {"this": [], "prev": [], "yoy": []}
+        for row in rows:
+            row_date = row.date
+            if not row_date:
+                continue
+            
+            row_data = {
+                "date": row_date.isoformat(),
                 "net_sales": float(row.net_sales or 0),
                 "total_orders": int(row.total_orders or 0),
                 "total_first_order": int(row.total_first_order or 0),
                 "total_canceled": int(row.total_canceled or 0),
             }
-            for row in rows
-        ]
+            
+            # 각 기간에 속하는지 확인
+            for period_key, (period_start, period_end) in ranges.items():
+                if period_start and period_end:
+                    period_start_date = date.fromisoformat(period_start)
+                    period_end_date = date.fromisoformat(period_end)
+                    if period_start_date <= row_date <= period_end_date:
+                        result[period_key].append(row_data)
+                        break
+        
+        return result
     
-    daily_this = get_sales_daily(this_start, this_end)
-    daily_prev = get_sales_daily(prev_start, prev_end)
-    daily_yoy = get_sales_daily(yoy_start, yoy_end)
+    daily_ranges = {
+        "this": (this_start, this_end),
+        "prev": (prev_start, prev_end),
+        "yoy": (yoy_start, yoy_end),
+    }
+    daily_multi = get_sales_daily_multi(daily_ranges)
+    daily_this = daily_multi.get("this", [])
+    daily_prev = daily_multi.get("prev", [])
+    daily_yoy = daily_multi.get("yoy", [])
     
     # -----------------------
     # Meta ads
@@ -795,6 +858,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     def get_meta_ads_goals_multi(ranges):
         """✅ 최적화: this/prev/yoy를 한 번에 조회 후 Python에서 분해
+        ⚠️ 월간 리포트 전용: period 분리는 ym(YYYY-MM) 기준으로만 수행.
         ranges: {"this": (start, end), "prev": (start, end), "yoy": (start, end)} 형태
         """
         if SKIP_META_ADS_GOALS:
@@ -864,7 +928,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         # 각 기간별로 분류 (월(ym) 기준)
         period_ym_map = {}
         for period_key, (period_start, _period_end) in ranges.items():
-            if period_start:
+            if period_start and isinstance(period_start, str) and len(period_start) >= 7:
                 period_ym_map[period_key] = period_start[:7]  # "YYYY-MM"
         
         rows_by_period = defaultdict(list)
@@ -1062,7 +1126,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 return False
             return int(rows[0].cnt or 0) > 0
         
-        meta_ads_yoy_available = has_meta_ads_rows(yoy_start, yoy_end)
+        # 월간 집계(meta_ads_yoy_data)가 있으면 우선 true
+        meta_ads_yoy_available = (meta_ads_yoy_data is not None)
+        if not meta_ads_yoy_available:
+            # 월간 집계가 비어있을 때만 raw fallback
+            meta_ads_yoy_available = has_meta_ads_rows(yoy_start, yoy_end)
         
         # ✅ 최적화: this/prev/yoy를 한 번에 조회
         ranges = {
@@ -1273,50 +1341,111 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "sign_up_users": int(row.sign_up_users or 0),
         }
     
-    q_ga4_top_sources = f"""
-    SELECT
-        first_user_source AS source,
-        SUM(total_users) AS total_users,
-        SUM(screen_page_views) AS screen_page_views,
-        -- 이탈율 가중평균 계산
-        SAFE_DIVIDE(
-            SUM(IFNULL(bounce_rate, 0) * total_users),
-            SUM(total_users)
-        ) AS bounce_rate
-    FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
-    WHERE company_name = @company_name
-      AND event_date BETWEEN @start_date AND @end_date
-      AND first_user_source IS NOT NULL
-      AND first_user_source != '(not set)'
-    GROUP BY source
-    ORDER BY total_users DESC
-    LIMIT @top_n
-    """
-    
-    def get_ga4_top_sources(s, e, top_n=10):
+    # ✅ 최적화: this/prev/yoy를 한 번에 조회 후 Python에서 분해
+    def get_ga4_top_sources_multi(ranges, top_n=10):
+        """this/prev/yoy를 한 번에 조회 후 Python에서 분해"""
+        # 전체 기간(this/prev/yoy) 최소~최대 날짜 계산
+        all_dates = []
+        for key, (s, e) in ranges.items():
+            if s and e:
+                all_dates.extend([s, e])
+        
+        if not all_dates:
+            return {"this": [], "prev": [], "yoy": []}
+        
+        min_date = min(all_dates)
+        max_date = max(all_dates)
+        
+        # 전체 기간을 한 번에 조회 (날짜별로 집계 후 Python에서 기간별 분류)
+        q_ga4_top_sources_multi = f"""
+        SELECT
+            event_date,
+            first_user_source AS source,
+            SUM(total_users) AS total_users,
+            SUM(screen_page_views) AS screen_page_views,
+            -- 이탈율 가중평균 계산 (날짜별)
+            SAFE_DIVIDE(
+                SUM(IFNULL(bounce_rate, 0) * total_users),
+                SUM(total_users)
+            ) AS bounce_rate
+        FROM `{PROJECT_ID}.{DATASET}.ga4_traffic_ngn`
+        WHERE company_name = @company_name
+          AND event_date >= @min_date
+          AND event_date <= @max_date
+          AND first_user_source IS NOT NULL
+          AND first_user_source != '(not set)'
+        GROUP BY event_date, source
+        """
+        
         rows = list(
             client.query(
-                q_ga4_top_sources,
+                q_ga4_top_sources_multi,
                 job_config=bigquery.QueryJobConfig(
                     query_parameters=[
                         bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                        bigquery.ScalarQueryParameter("start_date", "DATE", s),
-                        bigquery.ScalarQueryParameter("end_date", "DATE", e),
-                        bigquery.ScalarQueryParameter("top_n", "INT64", top_n),
+                        bigquery.ScalarQueryParameter("min_date", "DATE", min_date),
+                        bigquery.ScalarQueryParameter("max_date", "DATE", max_date),
                     ]
                 ),
             ).result()
         )
         
-        return [
-            {
-                "source": r.source,
-                "total_users": int(r.total_users or 0),
-                "screen_page_views": int(r.screen_page_views or 0),
-                "bounce_rate": round(float(r.bounce_rate or 0), 2) if r.bounce_rate is not None else None,
-            }
-            for r in rows
-        ]
+        # 각 기간별로 분류 및 집계
+        by_period = defaultdict(lambda: defaultdict(lambda: {
+            "total_users": 0,
+            "screen_page_views": 0,
+            "bounce_rate_sum": 0.0,
+            "bounce_rate_weight": 0,
+        }))
+        
+        for row in rows:
+            row_date = row.event_date
+            if not row_date:
+                continue
+            
+            # 각 기간에 속하는지 확인
+            for period_key, (period_start, period_end) in ranges.items():
+                if period_start and period_end:
+                    period_start_date = date.fromisoformat(period_start)
+                    period_end_date = date.fromisoformat(period_end)
+                    if period_start_date <= row_date <= period_end_date:
+                        source_data = by_period[period_key][row.source]
+                        users = int(row.total_users or 0)
+                        source_data["total_users"] += users
+                        source_data["screen_page_views"] += int(row.screen_page_views or 0)
+                        if row.bounce_rate is not None:
+                            source_data["bounce_rate_sum"] += float(row.bounce_rate) * users
+                            source_data["bounce_rate_weight"] += users
+                        break
+        
+        # 각 기간별로 Top N 선택
+        result = {}
+        for period_key in ["this", "prev", "yoy"]:
+            if period_key not in by_period:
+                result[period_key] = []
+                continue
+            
+            period_sources = []
+            for source, data in by_period[period_key].items():
+                bounce_rate = (data["bounce_rate_sum"] / data["bounce_rate_weight"]) if data["bounce_rate_weight"] > 0 else None
+                period_sources.append({
+                    "source": source,
+                    "total_users": data["total_users"],
+                    "screen_page_views": data["screen_page_views"],
+                    "bounce_rate": round(bounce_rate, 2) if bounce_rate is not None else None,
+                })
+            
+            # total_users DESC로 정렬 후 Top N
+            period_sources.sort(key=lambda x: x["total_users"], reverse=True)
+            result[period_key] = period_sources[:top_n]
+        
+        return result
+    
+    def get_ga4_top_sources(s, e, top_n=10):
+        """단일 기간용 (하위 호환성 유지)"""
+        ranges = {"single": (s, e)}
+        result = get_ga4_top_sources_multi(ranges, top_n)
+        return result.get("single", [])
     
     # ✅ 최적화 1단계: 월간 집계 테이블에서 this/prev/yoy 추출 (raw 테이블 조회 제거)
     # 월간 집계 테이블 사용 (성능 최적화) - 먼저 조회
@@ -1370,15 +1499,30 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         "sign_up_users": int(ga4_prev_data.get("sign_up_users", 0)) if ga4_prev_data else None,
     } if ga4_prev_data else None
     
-    # YoY 데이터 존재 여부 확인 (top_sources는 여전히 raw 테이블 필요)
-    ga4_yoy_available = has_rows(
-        client,
-        f"{PROJECT_ID}.{DATASET}.ga4_traffic_ngn",
-        "event_date",
-        company_name,
-        yoy_start,
-        yoy_end
-    )
+    # YoY 데이터 존재 여부 확인 (월간 집계 우선, 없으면 raw fallback)
+    # 월간 집계(ga4_yoy_data)가 있으면 우선 true
+    ga4_yoy_available = (ga4_yoy_data is not None)
+    if not ga4_yoy_available:
+        # 월간 집계가 비어있을 때만 raw fallback (top_sources는 여전히 raw 테이블 필요)
+        ga4_yoy_available = has_rows(
+            client,
+            f"{PROJECT_ID}.{DATASET}.ga4_traffic_ngn",
+            "event_date",
+            company_name,
+            yoy_start,
+            yoy_end
+        )
+    
+    # ✅ 최적화: this/prev/yoy를 한 번에 조회
+    ga4_top_sources_ranges = {
+        "this": (this_start, this_end),
+        "prev": (prev_start, prev_end),
+        "yoy": (yoy_start, yoy_end) if ga4_yoy_available else None,
+    }
+    if ga4_top_sources_ranges["yoy"] is None:
+        del ga4_top_sources_ranges["yoy"]
+    
+    ga4_top_sources_multi = get_ga4_top_sources_multi(ga4_top_sources_ranges, GA4_TRAFFIC_TOP_LIMIT)
     
     if ga4_yoy_available and ga4_yoy_data:
         ga4_yoy_totals = {
@@ -1390,7 +1534,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         }
         ga4_yoy = {
             "totals": ga4_yoy_totals,
-            "top_sources": get_ga4_top_sources(yoy_start, yoy_end),
+            "top_sources": ga4_top_sources_multi.get("yoy", []),
         }
     else:
         ga4_yoy = {
@@ -1400,11 +1544,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     ga4_this = {
         "totals": ga4_this_totals,
-        "top_sources": get_ga4_top_sources(this_start, this_end),
+        "top_sources": ga4_top_sources_multi.get("this", []),
     }
     ga4_prev = {
         "totals": ga4_prev_totals,
-        "top_sources": get_ga4_top_sources(prev_start, prev_end),
+        "top_sources": ga4_top_sources_multi.get("prev", []),
     }
     
     # -----------------------
@@ -1617,30 +1761,37 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         viewitem_this = get_viewitem_block(report_month, products_30d)
     
     # -----------------------
-    # YoY 데이터 존재 여부 확인
+    # YoY 데이터 존재 여부 확인 (월간 집계 우선, 없으면 raw fallback)
     # -----------------------
-    mall_sales_yoy_available = has_rows(
-        client,
-        f"{PROJECT_ID}.{DATASET}.daily_cafe24_sales",
-        "payment_date",
-        company_name,
-        yoy_start,
-        yoy_end
-    )
+    # 월간 집계(sales_yoy_data)가 있으면 우선 true
+    mall_sales_yoy_available = (sales_yoy_data is not None)
+    if not mall_sales_yoy_available:
+        # 월간 집계가 비어있을 때만 raw fallback
+        mall_sales_yoy_available = has_rows(
+            client,
+            f"{PROJECT_ID}.{DATASET}.daily_cafe24_sales",
+            "payment_date",
+            company_name,
+            yoy_start,
+            yoy_end
+        )
     
     # meta_ads_yoy_available은 goals 블록에서 체크됨
     # SKIP_META_ADS_GOALS=1일 때는 False로 유지됨
     # comparisons에서 사용하기 위해 goals 블록 밖에서도 체크 필요
     if SKIP_META_ADS_GOALS:
-        # SKIP_META_ADS_GOALS=1일 때만 여기서 체크 (goals 블록이 실행되지 않으므로)
-        meta_ads_yoy_available = has_rows(
-            client,
-            f"{PROJECT_ID}.{DATASET}.meta_ads_account_summary",
-            "date",
-            company_name,
-            yoy_start,
-            yoy_end
-        )
+        # goals 블록이 스킵되면 여기서만 보완 필요
+        meta_ads_yoy_available = (meta_ads_yoy_data is not None)
+        if not meta_ads_yoy_available:
+            # 월간 집계가 비어있을 때만 raw fallback
+            meta_ads_yoy_available = has_rows(
+                client,
+                f"{PROJECT_ID}.{DATASET}.meta_ads_account_summary",
+                "date",
+                company_name,
+                yoy_start,
+                yoy_end
+            )
     
     # -----------------------
     # Comparisons
@@ -1789,25 +1940,33 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         comparisons = {}
         
         # mall_sales
-        net_sales_mom = delta(sales_this["net_sales"], sales_prev["net_sales"]) if (sales_this and sales_prev) else None
-        net_sales_yoy = delta(sales_this["net_sales"], sales_yoy["net_sales"]) if (mall_sales_yoy_available and sales_yoy and sales_this) else None
+        net_sales_mom = delta(sales_this.get("net_sales"), sales_prev.get("net_sales")) if (sales_this and sales_prev) else None
+        net_sales_yoy = delta(sales_this.get("net_sales"), sales_yoy.get("net_sales")) if (mall_sales_yoy_available and sales_yoy and sales_this) else None
         comparisons["mall_sales"] = {
             "net_sales_mom": net_sales_mom,
             "net_sales_yoy": net_sales_yoy,
-            "note_if_base_small_mom": note_if_base_small(sales_prev["net_sales"], MALL_SALES_BASE_SMALL_THRESHOLD) if sales_prev else None,
+            "note_if_base_small_mom": note_if_base_small(sales_prev.get("net_sales"), MALL_SALES_BASE_SMALL_THRESHOLD) if sales_prev else None,
         }
         
         # meta_ads
-        spend_mom = delta(meta_ads_this["spend"], meta_ads_prev["spend"]) if (meta_ads_this and meta_ads_prev) else None
-        spend_yoy = delta(meta_ads_this["spend"], meta_ads_yoy["spend"]) if (meta_ads_yoy_available and meta_ads_yoy and meta_ads_this) else None
-        roas_mom = delta(meta_ads_this["roas"] or 0, meta_ads_prev["roas"] or 0) if (meta_ads_this["roas"] is not None and meta_ads_prev["roas"] is not None) else None
-        cvr_mom = delta(meta_ads_this["cvr"] or 0, meta_ads_prev["cvr"] or 0) if (meta_ads_this["cvr"] is not None and meta_ads_prev["cvr"] is not None) else None
+        spend_mom = delta(meta_ads_this.get("spend"), meta_ads_prev.get("spend")) if (meta_ads_this and meta_ads_prev) else None
+        spend_yoy = delta(meta_ads_this.get("spend"), meta_ads_yoy.get("spend")) if (meta_ads_yoy_available and meta_ads_yoy and meta_ads_this) else None
+        roas_mom = (
+            delta(meta_ads_this.get("roas"), meta_ads_prev.get("roas"))
+            if (meta_ads_this and meta_ads_prev and meta_ads_this.get("roas") is not None and meta_ads_prev.get("roas") is not None)
+            else None
+        )
+        cvr_mom = (
+            delta(meta_ads_this.get("cvr"), meta_ads_prev.get("cvr"))
+            if (meta_ads_this and meta_ads_prev and meta_ads_this.get("cvr") is not None and meta_ads_prev.get("cvr") is not None)
+            else None
+        )
         comparisons["meta_ads"] = {
             "spend_mom": spend_mom,
             "spend_yoy": spend_yoy,
             "roas_mom": roas_mom,
             "cvr_mom": cvr_mom,
-            "note_if_base_small_mom": note_if_base_small(meta_ads_prev["spend"], META_ADS_BASE_SMALL_THRESHOLD) if meta_ads_prev else None,
+            "note_if_base_small_mom": note_if_base_small(meta_ads_prev.get("spend"), META_ADS_BASE_SMALL_THRESHOLD) if meta_ads_prev else None,
         }
         
         # meta_ads_goals
@@ -1820,12 +1979,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             comparisons["meta_ads_goals"] = meta_ads_goals_comparisons
         
         # ga4_traffic
-        total_users_mom = delta(ga4_this_totals["total_users"], ga4_prev_totals["total_users"]) if (ga4_this_totals and ga4_prev_totals) else None
-        total_users_yoy = delta(ga4_this_totals["total_users"], ga4_yoy_totals["total_users"]) if (ga4_yoy_available and ga4_yoy_totals and ga4_this_totals) else None
+        total_users_mom = delta(ga4_this_totals.get("total_users"), ga4_prev_totals.get("total_users")) if (ga4_this_totals and ga4_prev_totals) else None
+        total_users_yoy = delta(ga4_this_totals.get("total_users"), ga4_yoy_totals.get("total_users")) if (ga4_yoy_available and ga4_yoy_totals and ga4_this_totals) else None
         comparisons["ga4_traffic"] = {
             "total_users_mom": total_users_mom,
             "total_users_yoy": total_users_yoy,
-            "note_if_base_small_mom": note_if_base_small(ga4_prev_totals["total_users"], GA4_TRAFFIC_BASE_SMALL_THRESHOLD) if ga4_prev_totals else None,
+            "note_if_base_small_mom": note_if_base_small(ga4_prev_totals.get("total_users"), GA4_TRAFFIC_BASE_SMALL_THRESHOLD) if ga4_prev_totals else None,
         }
         
         return comparisons
@@ -1852,25 +2011,43 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         ga4_traffic_same_month = []
         
         for item in monthly_13m:
-            item_month = int(item["ym"].split("-")[1])
-            if item_month == next_month_num:
-                v = item.get("net_sales")
-                if v is not None:
-                    mall_sales_same_month.append(v)
+            ym = item.get("ym", "")
+            ym_parts = ym.split("-")
+            if len(ym_parts) >= 2:
+                try:
+                    item_month = int(ym_parts[1])
+                    if item_month == next_month_num:
+                        v = item.get("net_sales")
+                        if v is not None:
+                            mall_sales_same_month.append(v)
+                except (ValueError, IndexError):
+                    continue
         
         for item in monthly_13m_meta:
-            item_month = int(item["ym"].split("-")[1])
-            if item_month == next_month_num:
-                v = item.get("spend")
-                if v is not None:
-                    meta_ads_same_month.append(v)
+            ym = item.get("ym", "")
+            ym_parts = ym.split("-")
+            if len(ym_parts) >= 2:
+                try:
+                    item_month = int(ym_parts[1])
+                    if item_month == next_month_num:
+                        v = item.get("spend")
+                        if v is not None:
+                            meta_ads_same_month.append(v)
+                except (ValueError, IndexError):
+                    continue
         
         for item in monthly_13m_ga4:
-            item_month = int(item["ym"].split("-")[1])
-            if item_month == next_month_num:
-                v = item.get("total_users")
-                if v is not None:
-                    ga4_traffic_same_month.append(v)
+            ym = item.get("ym", "")
+            ym_parts = ym.split("-")
+            if len(ym_parts) >= 2:
+                try:
+                    item_month = int(ym_parts[1])
+                    if item_month == next_month_num:
+                        v = item.get("total_users")
+                        if v is not None:
+                            ga4_traffic_same_month.append(v)
+                except (ValueError, IndexError):
+                    continue
         
         def calc_stats(values):
             if not values:
@@ -1928,6 +2105,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         )
         
         # new_product_dependency
+        # ⚠️ 90d top 리스트 기준이므로 "신상품" 확정이 아니라
+        # "최근 30d 상위권에만 등장" 정도로 해석하는 게 안전
         products_30d = products_this.get("rolling", {}).get("d30", {}).get("top_products_by_sales", [])
         first_order_products = []
         total_30d_sales = sum(p.get("sales", 0) for p in products_30d)

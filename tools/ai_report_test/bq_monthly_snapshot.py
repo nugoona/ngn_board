@@ -811,7 +811,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 "yoy": empty_result if "yoy" in ranges else None
             }
         
-        # 3개월 전체 기간 계산
+        # 전체 기간(this/prev/yoy) 최소~최대 날짜 계산
         all_dates = []
         for key, (s, e) in ranges.items():
             if s and e:
@@ -823,7 +823,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         min_date = min(all_dates)
         max_date = max(all_dates)
         
-        # 3개월 전체를 한 번에 조회
+        # 전체 기간을 한 번에 조회
         q_meta_ads_goals_multi = f"""
         SELECT
             FORMAT_DATE('%Y-%m', date) AS ym,
@@ -855,21 +855,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             ).result()
         )
         
-        # 각 기간별로 분류
+        # 각 기간별로 분류 (월(ym) 기준)
+        period_ym_map = {}
+        for period_key, (period_start, _period_end) in ranges.items():
+            if period_start:
+                period_ym_map[period_key] = period_start[:7]  # "YYYY-MM"
+        
         rows_by_period = defaultdict(list)
         for row in rows:
-            # row.ym은 "YYYY-MM" 형식, 각 기간의 시작일/종료일과 비교
-            row_ym = row.ym
-            row_year, row_month = map(int, row_ym.split("-"))
-            row_first_day = date(row_year, row_month, 1)
-            
-            # 각 기간에 속하는지 확인
-            for period_key, (period_start, period_end) in ranges.items():
-                if period_start and period_end:
-                    # 해당 월의 첫 날이 기간에 속하는지 확인
-                    if period_start <= row_first_day <= period_end:
-                        rows_by_period[period_key].append(row)
-                        break
+            row_ym = row.ym  # "YYYY-MM"
+            for period_key, target_ym in period_ym_map.items():
+                if row_ym == target_ym:
+                    rows_by_period[period_key].append(row)
+                    break
         
         # 각 기간별로 get_meta_ads_goals와 동일한 로직 적용
         result = {}
@@ -1790,7 +1788,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         comparisons["mall_sales"] = {
             "net_sales_mom": net_sales_mom,
             "net_sales_yoy": net_sales_yoy,
-            "note_if_base_small_mom": note_if_base_small(sales_prev["net_sales"], MALL_SALES_BASE_SMALL_THRESHOLD),
+            "note_if_base_small_mom": note_if_base_small(sales_prev["net_sales"], MALL_SALES_BASE_SMALL_THRESHOLD) if sales_prev else None,
         }
         
         # meta_ads
@@ -1803,7 +1801,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "spend_yoy": spend_yoy,
             "roas_mom": roas_mom,
             "cvr_mom": cvr_mom,
-            "note_if_base_small_mom": note_if_base_small(meta_ads_prev["spend"], META_ADS_BASE_SMALL_THRESHOLD),
+            "note_if_base_small_mom": note_if_base_small(meta_ads_prev["spend"], META_ADS_BASE_SMALL_THRESHOLD) if meta_ads_prev else None,
         }
         
         # meta_ads_goals
@@ -1821,7 +1819,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         comparisons["ga4_traffic"] = {
             "total_users_mom": total_users_mom,
             "total_users_yoy": total_users_yoy,
-            "note_if_base_small_mom": note_if_base_small(ga4_prev_totals["total_users"], GA4_TRAFFIC_BASE_SMALL_THRESHOLD),
+            "note_if_base_small_mom": note_if_base_small(ga4_prev_totals["total_users"], GA4_TRAFFIC_BASE_SMALL_THRESHOLD) if ga4_prev_totals else None,
         }
         
         return comparisons
@@ -1903,9 +1901,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         )
         
         # meta_ads_interpretable_monthly
-        signals["meta_ads_interpretable_monthly"] = (
-            meta_ads_this["spend"] >= sales_this["net_sales"] * 0.1
-        ) if sales_this["net_sales"] > 0 else False
+        if sales_this and meta_ads_this and (sales_this.get("net_sales") or 0) > 0:
+            signals["meta_ads_interpretable_monthly"] = (
+                (meta_ads_this.get("spend") or 0) >= (sales_this.get("net_sales") or 0) * 0.1
+            )
+        else:
+            signals["meta_ads_interpretable_monthly"] = False
         
         # core_product_risk
         products_90d = products_this.get("rolling", {}).get("d90", {}).get("top_products_by_sales_with_role", [])
@@ -1931,8 +1932,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         ) if total_30d_sales > 0 else False
         
         # mall_sales_mom_pct (수치만)
-        net_this = sales_this.get("net_sales", 0)
-        net_prev = sales_prev.get("net_sales", 0)
+        net_this = (sales_this or {}).get("net_sales", 0)
+        net_prev = (sales_prev or {}).get("net_sales", 0)
         signals["mall_sales_mom_pct"] = ((net_this - net_prev) / net_prev * 100) if net_prev else None
         
         # note_if_base_small_mom

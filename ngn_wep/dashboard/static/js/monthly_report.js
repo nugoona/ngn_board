@@ -456,9 +456,10 @@ function renderSection2(data) {
   console.log("[섹션 2] GA4 데이터 전체 내용:", JSON.stringify(ga4This, null, 2));
   console.log("[섹션 2] 매출 데이터:", salesThis);
   
-  // GA4 데이터 매핑 수정 - 여러 경로 시도
-  const visitors = ga4This.total_users || ga4This.users || ga4This.visitors || ga4This.total_visitors || 0;
-  const cartUsers = ga4This.add_to_cart_users || ga4This.cart_users || ga4This.addToCartUsers || 0;
+  // GA4 데이터 매핑 수정 - totals 객체에서 가져오기
+  const totals = ga4This.totals || {};
+  const visitors = totals.total_users || 0;
+  const cartUsers = totals.add_to_cart_users || 0;
   const purchases = salesThis.total_orders || 0;
   
   console.log("[섹션 2] 계산된 값:", { visitors, cartUsers, purchases });
@@ -711,19 +712,16 @@ function renderSection5(data) {
   console.log("[섹션 5] 최종 topSources:", topSources);
   
   const container = document.getElementById("section5DonutChart");
-  console.log("[섹션 5] container 요소:", container);
   if (container) {
-    console.log("[섹션 5] topSources 첫 번째 항목:", topSources[0]);
-    const total = topSources.reduce((sum, s) => sum + (s.users || s.value || 0), 0);
+    const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);
     console.log("[섹션 5] 계산된 total:", total);
     console.log("[섹션 5] ApexCharts 존재 여부:", typeof ApexCharts !== "undefined");
     console.log("[섹션 5] topSources.length:", topSources.length);
     
     if (typeof ApexCharts !== "undefined" && topSources.length > 0 && total > 0) {
-      console.log("[섹션 5] 차트 렌더링 시작");
       const chartData = topSources.map(s => ({
         name: s.source || s.name || "Unknown",
-        value: s.users || s.value || 0
+        value: s.total_users || s.users || s.value || 0
       }));
       
       // 기존 차트 제거
@@ -752,21 +750,13 @@ function renderSection5(data) {
       
       chart.render();
       container._apexChart = chart;
-      console.log("[섹션 5] 차트 렌더링 완료");
     } else {
-      console.log("[섹션 5] 차트 렌더링 조건 불만족:", {
-        hasApexCharts: typeof ApexCharts !== "undefined",
-        hasData: topSources.length > 0,
-        hasTotal: total > 0
-      });
       container.innerHTML = `
         <div class="donut-chart-fallback">
           <div class="fallback-text">유입 채널 데이터가 없습니다.</div>
         </div>
       `;
     }
-  } else {
-    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
   }
   
   renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
@@ -788,12 +778,10 @@ function renderSection6(data) {
   
   const container = document.getElementById("section6AdsContent");
   if (container) {
-    // 데이터 구조 확인 및 매핑
-    const conversionAds = goalsThis.conversion_ads || goalsThis.conversion || goalsThis.conversionAds || [];
-    const trafficAds = goalsThis.traffic_ads || goalsThis.traffic || goalsThis.trafficAds || [];
-    
-    console.log("[섹션 6] conversionAds:", conversionAds);
-    console.log("[섹션 6] trafficAds:", trafficAds);
+    // 데이터 구조 확인 및 매핑 - top_ads 객체에서 가져오기
+    const topAds = goalsThis.top_ads || {};
+    const conversionAds = topAds.conversion_top_by_purchases || [];
+    const trafficAds = topAds.traffic_top_by_ctr || [];
     
     container.innerHTML = `
       <div class="ads-tab-content active" data-content="conversion">

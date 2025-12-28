@@ -1,11 +1,11 @@
 /**
  * 월간 전략 리포트 뷰어
- * GCS에서 직접 JSON 데이터를 로드하여 9개 섹션을 렌더링
- * 성능 최적화: lazy loading, skeleton UI, 가로 스크롤
+ * 백엔드 API를 통해 JSON 데이터를 로드하여 9개 섹션을 렌더링
+ * 성능 최적화: lazy loading, skeleton UI, 가로 스크롤, 캐시
  */
 
-// GCS 직접 접근 대신 백엔드 API 사용
-// const GCS_BASE_URL = "https://storage.googleapis.com/winged-precept-443218-v8.appspot.com/ai-reports";
+// 캐시 저장소
+const reportCache = new Map();
 
 let currentReportData = null;
 let currentCompany = null;
@@ -86,19 +86,40 @@ function closeMonthlyReportModal() {
 }
 
 /**
- * 백엔드 API를 통해 월간 리포트 데이터 로드
+ * 백엔드 API를 통해 월간 리포트 데이터 로드 (캐시 지원)
  */
 async function loadMonthlyReport(companyName, year, month) {
   const loadingEl = document.getElementById("monthlyReportLoading");
   const contentEl = document.getElementById("monthlyReportContent");
   
-  // 로딩 상태 표시
+  // 캐시 키 생성
+  const cacheKey = `${companyName}-${year}-${month}`;
+  
+  // 캐시 확인
+  if (reportCache.has(cacheKey)) {
+    const cachedData = reportCache.get(cacheKey);
+    currentReportData = cachedData;
+    updateReportHeader(companyName, year, month);
+    renderAllSections(cachedData);
+    if (loadingEl) loadingEl.style.display = "none";
+    if (contentEl) {
+      Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
+        section.style.display = "block";
+      });
+    }
+    return;
+  }
+  
+  // 로딩바 초기화
   if (loadingEl) {
     loadingEl.style.display = "block";
     loadingEl.innerHTML = `
-      <div class="loading-spinner"></div>
-      <div class="loading-text">리포트를 불러오는 중...</div>
+      <div class="loading-progress-wrapper">
+        <div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%"></div>
+        <div class="loading-text">리포트를 불러오는 중... <span id="loadingPercent">0%</span></div>
+      </div>
     `;
+    updateLoadingProgress(0);
   }
   if (contentEl) {
     Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
@@ -107,7 +128,9 @@ async function loadMonthlyReport(companyName, year, month) {
   }
   
   try {
-    // 백엔드 API를 통해 데이터 로드 (GCS 직접 접근 대신)
+    updateLoadingProgress(20);
+    
+    // 백엔드 API를 통해 데이터 로드
     const response = await fetch("/dashboard/monthly_report", {
       method: "POST",
       headers: {
@@ -119,6 +142,8 @@ async function loadMonthlyReport(companyName, year, month) {
         month: month
       })
     });
+    
+    updateLoadingProgress(60);
     
     const result = await response.json();
     
@@ -133,19 +158,28 @@ async function loadMonthlyReport(companyName, year, month) {
     const data = result.data;
     currentReportData = data;
     
+    // 캐시에 저장
+    reportCache.set(cacheKey, data);
+    
+    updateLoadingProgress(80);
+    
     // 헤더 업데이트
     updateReportHeader(companyName, year, month);
     
     // 모든 섹션 렌더링
     renderAllSections(data);
     
+    updateLoadingProgress(100);
+    
     // 로딩 숨김, 섹션 표시
-    if (loadingEl) loadingEl.style.display = "none";
-    if (contentEl) {
-      Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
-        section.style.display = "block";
-      });
-    }
+    setTimeout(() => {
+      if (loadingEl) loadingEl.style.display = "none";
+      if (contentEl) {
+        Array.from(contentEl.querySelectorAll(".monthly-report-section")).forEach(section => {
+          section.style.display = "block";
+        });
+      }
+    }, 300);
     
   } catch (error) {
     console.error("[월간 리포트] 로드 실패:", error);
@@ -164,13 +198,27 @@ async function loadMonthlyReport(companyName, year, month) {
 }
 
 /**
+ * 로딩 진행률 업데이트
+ */
+function updateLoadingProgress(percent) {
+  const progressBar = document.getElementById("loadingProgressBar");
+  const percentText = document.getElementById("loadingPercent");
+  if (progressBar) {
+    progressBar.style.width = `${percent}%`;
+  }
+  if (percentText) {
+    percentText.textContent = `${percent}%`;
+  }
+}
+
+/**
  * 리포트 헤더 업데이트
  */
 function updateReportHeader(companyName, year, month) {
   const titleEl = document.getElementById("monthlyReportTitle");
   if (titleEl) {
     const monthStr = String(month).padStart(2, '0');
-    titleEl.textContent = `${year}.${monthStr} Monthly Strategy Report - ${companyName.toUpperCase()}`;
+    titleEl.textContent = `${year}.${monthStr} 월간 AI 리포트 - ${companyName.toUpperCase()}`;
   }
 }
 
@@ -178,7 +226,7 @@ function updateReportHeader(companyName, year, month) {
  * 모든 섹션 렌더링
  */
 function renderAllSections(data) {
-  renderSection1(data); // 월간 핵심 지표
+  renderSection1(data); // 지난달 매출 요약
   renderSection2(data); // 고객 방문 및 구매 여정
   renderSection3(data); // 베스트 상품 성과
   renderSection4(data); // 외부 시장 트렌드 (29CM)
@@ -190,20 +238,15 @@ function renderAllSections(data) {
 }
 
 // ============================================
-// 섹션 1: 월간 핵심 지표 요약
+// 섹션 1: 지난달 매출 요약
 // ============================================
 function renderSection1(data) {
   const facts = data.facts || {};
   const mallSales = facts.mall_sales || {};
-  const monthly13m = mallSales.monthly_13m || [];
   const thisMonth = mallSales.this || {};
   const prevMonth = mallSales.prev || {};
   const comparisons = facts.comparisons || {};
   const comp = comparisons.mall_sales || {};
-  
-  // 최근 2개월 데이터
-  const latest = monthly13m[monthly13m.length - 1] || {};
-  const prev = monthly13m[monthly13m.length - 2] || {};
   
   const netSalesThis = thisMonth.net_sales || 0;
   const netSalesPrev = prevMonth.net_sales || 0;
@@ -212,12 +255,18 @@ function renderSection1(data) {
   const aovThis = ordersThis > 0 ? netSalesThis / ordersThis : 0;
   const aovPrev = ordersPrev > 0 ? netSalesPrev / ordersPrev : 0;
   
+  // 절대값 계산
+  const salesDiff = netSalesThis - netSalesPrev;
+  const ordersDiff = ordersThis - ordersPrev;
+  const aovDiff = aovThis - aovPrev;
+  
   const scorecardData = [
     {
       label: "월 매출",
       value: formatMoney(netSalesThis),
       prev: formatMoney(netSalesPrev),
       change: comp.net_sales_mom ? formatChange(comp.net_sales_mom.pct) : "-",
+      diff: formatMoney(Math.abs(salesDiff)),
       status: comp.net_sales_mom?.pct >= 0 ? "up" : "down"
     },
     {
@@ -225,6 +274,7 @@ function renderSection1(data) {
       value: formatNumber(ordersThis) + "건",
       prev: formatNumber(ordersPrev) + "건",
       change: comp.orders_mom ? formatChange(comp.orders_mom.pct) : "-",
+      diff: `${Math.abs(ordersDiff)}건`,
       status: comp.orders_mom?.pct >= 0 ? "up" : "down"
     },
     {
@@ -232,6 +282,7 @@ function renderSection1(data) {
       value: formatMoney(aovThis),
       prev: formatMoney(aovPrev),
       change: aovPrev > 0 ? formatChange(((aovThis - aovPrev) / aovPrev) * 100) : "-",
+      diff: formatMoney(Math.abs(aovDiff)),
       status: aovThis >= aovPrev ? "up" : "down"
     }
   ];
@@ -245,6 +296,7 @@ function renderSection1(data) {
         <div class="scorecard-prev">전월: ${item.prev}</div>
         <div class="scorecard-change ${item.status}">
           ${item.change !== "-" ? (item.status === "up" ? "▲" : "▼") : ""} ${item.change}
+          ${item.diff && item.status === "down" ? ` (${item.diff})` : item.diff && item.status === "up" ? ` (+${item.diff})` : ""}
         </div>
       </div>
     `).join("");
@@ -264,8 +316,9 @@ function renderSection2(data) {
   const mallSales = facts.mall_sales || {};
   const salesThis = mallSales.this || {};
   
+  // GA4 데이터 매핑 수정
   const visitors = ga4This.total_users || 0;
-  const cartUsers = ga4This.cart_users || 0;
+  const cartUsers = ga4This.add_to_cart_users || 0; // cart_users가 아니라 add_to_cart_users
   const purchases = salesThis.total_orders || 0;
   
   const funnelData = [
@@ -276,7 +329,7 @@ function renderSection2(data) {
   
   const container = document.getElementById("section2Funnel");
   if (container) {
-    const maxValue = Math.max(...funnelData.map(d => d.value));
+    const maxValue = Math.max(...funnelData.map(d => d.value), 1);
     
     container.innerHTML = funnelData.map((item, index) => {
       const width = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
@@ -323,13 +376,13 @@ function renderSection3(data) {
       const sales = product.sales || 0;
       const width = maxSales > 0 ? (sales / maxSales) * 100 : 0;
       const name = product.product_name || "상품명 없음";
-      const truncatedName = name.length > 30 ? name.substring(0, 30) + "..." : name;
+      // 상품명 전체 표시 (줄바꿈 허용)
       
       return `
         <div class="bar-chart-item">
           <div class="bar-chart-label-row">
             <span class="bar-chart-rank">${index + 1}</span>
-            <span class="bar-chart-name" title="${name}">${truncatedName}</span>
+            <span class="bar-chart-name" title="${name}">${name}</span>
             <span class="bar-chart-value">${formatMoney(sales)}</span>
           </div>
           <div class="bar-chart-bar-wrapper">
@@ -345,61 +398,44 @@ function renderSection3(data) {
 }
 
 // ============================================
-// 섹션 4: 외부 시장 트렌드 (29CM) - 카테고리 탭 방식
+// 섹션 4: 외부 시장 트렌드 (29CM) - Top 5 카드
 // ============================================
-let section4Data = null; // 전체 데이터 저장
+let section4Data = null;
 
 function renderSection4(data) {
   const facts = data.facts || {};
   const cm29Data = facts["29cm_best"] || {};
   const items = cm29Data.items || [];
   
-  // 전체 데이터 저장 (탭 전환 시 사용)
   section4Data = items;
   
-  // 탭 이벤트 리스너 설정
   setupSection4Tabs(items);
-  
-  // 초기 로딩: 전체 탭의 10개만 렌더링
   renderSection4ByTab("전체", items);
   
-  // AI 분석
   renderAiAnalysis("section4AiAnalysis", data.signals?.section_4_analysis);
 }
 
-/**
- * 섹션 4 탭 설정
- */
 function setupSection4Tabs(items) {
   const tabButtons = document.querySelectorAll("#section4Tabs .market-trend-tab-btn");
   
   tabButtons.forEach(btn => {
     btn.addEventListener("click", function() {
       const selectedTab = this.dataset.tab;
-      
-      // 탭 활성화 상태 변경
       tabButtons.forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-      
-      // 해당 탭의 데이터 렌더링
       renderSection4ByTab(selectedTab, items);
     });
   });
 }
 
-/**
- * 선택된 탭에 해당하는 아이템 렌더링 (최대 10개)
- */
 function renderSection4ByTab(tabName, items) {
   const container = document.getElementById("section4MarketTrend");
   if (!container) return;
   
-  // 선택된 탭에 해당하는 아이템 필터링
   let filteredItems;
   if (tabName === "전체") {
     filteredItems = items.filter(item => item.tab === "전체");
   } else {
-    // 카테고리명 매핑 (탭 버튼 텍스트 → 데이터의 tab 속성)
     const tabMapping = {
       "아우터": "아우터",
       "상의": "상의",
@@ -407,15 +443,13 @@ function renderSection4ByTab(tabName, items) {
       "바지": "바지",
       "스커트": "스커트"
     };
-    
     const dataTabName = tabMapping[tabName] || tabName;
     filteredItems = items.filter(item => item.tab === dataTabName);
   }
   
-  // 최대 10개만 렌더링
-  const itemsToRender = filteredItems.slice(0, 10);
+  // Top 5만 렌더링
+  const itemsToRender = filteredItems.slice(0, 5);
   
-  // 페이드 아웃 애니메이션
   container.style.opacity = "0";
   container.style.transition = "opacity 0.3s ease";
   
@@ -425,19 +459,18 @@ function renderSection4ByTab(tabName, items) {
       const brand = item.brand || "Unknown";
       const name = item.name || "Unknown";
       const img = item.img || "";
-      const reviews = item.reviews || [];
-      const firstReview = reviews.length > 0 ? reviews[0].txt || "" : "";
-      const truncatedReview = firstReview.length > 50 ? firstReview.substring(0, 50) + "..." : firstReview;
+      // 29CM 상품 URL 생성 (실제 URL 구조에 맞게 수정 필요)
+      const productUrl = `https://www.29cm.co.kr/products/${item.item_id || ''}`;
       
       return `
-        <div class="market-trend-card-horizontal">
+        <div class="market-trend-card-compact">
           <div class="market-trend-rank-badge">Rank ${rank}</div>
-          <div class="market-trend-image-wrapper-horizontal">
+          <div class="market-trend-image-wrapper-compact">
             <div class="image-skeleton"></div>
             <img 
               src="${img}" 
               alt="${name}" 
-              class="market-trend-image-horizontal"
+              class="market-trend-image-compact"
               loading="lazy"
               decoding="async"
               onload="this.parentElement.querySelector('.image-skeleton')?.remove()"
@@ -446,20 +479,15 @@ function renderSection4ByTab(tabName, items) {
                 this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'200\\'%3E%3Crect fill=\\'%23f0f0f0\\' width=\\'200\\' height=\\'200\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3ENo Image%3C/text%3E%3C/svg%3E';
               ">
           </div>
-          <div class="market-trend-info-horizontal">
-            <div class="market-trend-brand-horizontal">${brand}</div>
-            <div class="market-trend-name-horizontal">${name}</div>
-            ${truncatedReview ? `
-              <div class="market-trend-review-bubble">
-                <div class="review-bubble-text">${truncatedReview}</div>
-              </div>
-            ` : ""}
+          <div class="market-trend-info-compact">
+            <div class="market-trend-brand-compact">${brand}</div>
+            <div class="market-trend-name-compact">${name}</div>
+            <a href="${productUrl}" target="_blank" class="market-trend-link-btn">바로가기</a>
           </div>
         </div>
       `;
     }).join("");
     
-    // 페이드 인 애니메이션
     requestAnimationFrame(() => {
       container.style.opacity = "1";
     });
@@ -473,18 +501,29 @@ function renderSection5(data) {
   const facts = data.facts || {};
   const ga4 = facts.ga4_traffic || {};
   const ga4This = ga4.this || {};
-  const topSources = ga4This.top_sources || [];
+  
+  // top_sources가 없을 수 있으므로 다른 경로 확인
+  let topSources = ga4This.top_sources || [];
+  
+  // 대체 경로 시도
+  if (topSources.length === 0 && ga4This.sources) {
+    topSources = ga4This.sources;
+  }
   
   const container = document.getElementById("section5DonutChart");
   if (container) {
-    const total = topSources.reduce((sum, s) => sum + (s.users || 0), 0);
+    const total = topSources.reduce((sum, s) => sum + (s.users || s.value || 0), 0);
     
-    // ApexCharts 도넛 차트 생성
-    if (typeof ApexCharts !== "undefined" && topSources.length > 0) {
+    if (typeof ApexCharts !== "undefined" && topSources.length > 0 && total > 0) {
       const chartData = topSources.map(s => ({
-        name: s.source || "Unknown",
-        value: s.users || 0
+        name: s.source || s.name || "Unknown",
+        value: s.users || s.value || 0
       }));
+      
+      // 기존 차트 제거
+      if (container._apexChart) {
+        container._apexChart.destroy();
+      }
       
       const chart = new ApexCharts(container, {
         series: chartData.map(d => d.value),
@@ -506,6 +545,7 @@ function renderSection5(data) {
       });
       
       chart.render();
+      container._apexChart = chart;
     } else {
       container.innerHTML = `
         <div class="donut-chart-fallback">
@@ -515,7 +555,6 @@ function renderSection5(data) {
     }
   }
   
-  // AI 분석
   renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
 }
 
@@ -529,9 +568,9 @@ function renderSection6(data) {
   
   const container = document.getElementById("section6AdsContent");
   if (container) {
-    // 전환 목표 데이터
-    const conversionAds = goalsThis.conversion_ads || [];
-    const trafficAds = goalsThis.traffic_ads || [];
+    // 데이터 구조 확인 및 매핑
+    const conversionAds = goalsThis.conversion_ads || goalsThis.conversion || [];
+    const trafficAds = goalsThis.traffic_ads || goalsThis.traffic || [];
     
     container.innerHTML = `
       <div class="ads-tab-content active" data-content="conversion">
@@ -542,7 +581,6 @@ function renderSection6(data) {
       </div>
     `;
     
-    // 탭 전환 이벤트
     document.querySelectorAll(".ads-tab-btn").forEach(btn => {
       btn.addEventListener("click", function() {
         const tab = this.dataset.tab;
@@ -554,7 +592,6 @@ function renderSection6(data) {
     });
   }
   
-  // AI 분석
   renderAiAnalysis("section6AiAnalysis", data.signals?.section_6_analysis);
 }
 
@@ -565,18 +602,18 @@ function renderAdsRankingList(ads, type) {
   
   const sorted = [...ads].sort((a, b) => {
     if (type === "conversion") {
-      return (b.purchases || 0) - (a.purchases || 0);
+      return (b.purchases || b.conversions || 0) - (a.purchases || a.conversions || 0);
     } else {
       return (b.clicks || 0) - (a.clicks || 0);
     }
   });
   
   return sorted.slice(0, 10).map((ad, index) => {
-    const name = ad.ad_name || "소재명 없음";
+    const name = ad.ad_name || ad.name || "소재명 없음";
     const metric = type === "conversion" 
-      ? `전환: ${formatNumber(ad.purchases || 0)}건`
+      ? `전환: ${formatNumber(ad.purchases || ad.conversions || 0)}건`
       : `클릭: ${formatNumber(ad.clicks || 0)}회`;
-    const spend = formatMoney(ad.spend || 0);
+    const spend = formatMoney(ad.spend || ad.cost || 0);
     
     return `
       <div class="ads-ranking-item">
@@ -605,7 +642,6 @@ function renderSection7(data) {
   const ourContent = document.getElementById("section7OurContent");
   
   if (analysis) {
-    // 간단한 파싱 (실제로는 더 정교한 파싱 필요)
     const lines = analysis.split("\n").filter(l => l.trim());
     const marketKeywords = [];
     const ourKeywords = [];
@@ -636,7 +672,7 @@ function renderSection7(data) {
 }
 
 // ============================================
-// 섹션 8: 다음 달 목표 및 전망
+// 섹션 8: 다음 달 목표 및 전망 (차트 제거)
 // ============================================
 function renderSection8(data) {
   const facts = data.facts || {};
@@ -645,32 +681,23 @@ function renderSection8(data) {
   const container = document.getElementById("section8Forecast");
   if (container) {
     const predicted = forecast.predicted_sales || 0;
-    const target = forecast.target_sales || predicted * 1.1; // 목표가 없으면 예측의 110%
-    const progress = target > 0 ? (predicted / target) * 100 : 0;
+    const target = forecast.target_sales || predicted * 1.1;
     
+    // 차트 대신 텍스트로 표시
     container.innerHTML = `
-      <div class="forecast-item">
-        <div class="forecast-label-row">
-          <span class="forecast-label">예측 매출</span>
-          <span class="forecast-value">${formatMoney(predicted)}</span>
+      <div class="forecast-text-content">
+        <div class="forecast-item-text">
+          <div class="forecast-label">예측 매출</div>
+          <div class="forecast-value-large">${formatMoney(predicted)}</div>
         </div>
-        <div class="forecast-progress-bar-wrapper">
-          <div class="forecast-progress-bar" style="width: ${Math.min(progress, 100)}%;"></div>
-        </div>
-      </div>
-      <div class="forecast-item">
-        <div class="forecast-label-row">
-          <span class="forecast-label">목표 매출</span>
-          <span class="forecast-value">${formatMoney(target)}</span>
-        </div>
-        <div class="forecast-progress-bar-wrapper">
-          <div class="forecast-progress-bar target" style="width: 100%;"></div>
+        <div class="forecast-item-text">
+          <div class="forecast-label">목표 매출</div>
+          <div class="forecast-value-large">${formatMoney(target)}</div>
         </div>
       </div>
     `;
   }
   
-  // AI 분석
   renderAiAnalysis("section8AiAnalysis", data.signals?.section_8_analysis);
 }
 
@@ -684,7 +711,6 @@ function renderSection9(data) {
   const container = document.getElementById("section9StrategyCards");
   if (container) {
     if (analysis) {
-      // 전략을 문단별로 분리
       const strategies = analysis.split(/\n\n+/).filter(s => s.trim().length > 20);
       
       container.innerHTML = strategies.map((strategy, index) => {
@@ -692,7 +718,6 @@ function renderSection9(data) {
         const title = lines[0] || `전략 ${index + 1}`;
         const content = lines.slice(1).join(" ") || strategy;
         
-        // 아이콘 선택 (순환)
         const icons = ["💡", "🎯", "📊", "🚀", "⚡", "🔍"];
         const icon = icons[index % icons.length];
         

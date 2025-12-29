@@ -457,10 +457,12 @@ def extract_section_content(full_text: str, target_section: int) -> str:
         # 패턴이 없으면 전체 텍스트 반환
         return full_text
     
-    # 타겟 섹션 시작 위치 찾기
+    # 타겟 섹션 시작 위치 찾기 (줄 시작 부분에서만 매칭)
     target_start_pos = -1
     for pattern in target_patterns:
-        match = re.search(pattern, full_text, re.IGNORECASE)
+        # 줄 시작 부분에서 매칭하도록 ^ 앵커 추가 (MULTILINE 모드)
+        multiline_pattern = r'^\s*' + pattern
+        match = re.search(multiline_pattern, full_text, re.MULTILINE | re.IGNORECASE)
         if match:
             target_start_pos = match.start()
             break
@@ -478,14 +480,17 @@ def extract_section_content(full_text: str, target_section: int) -> str:
         if section_num <= target_section:
             continue  # 이미 지나간 섹션은 무시
         
-        # 다음 섹션 패턴 찾기
+        # 다음 섹션 패턴 찾기 (줄 시작 부분에서만 매칭)
         next_patterns = section_patterns.get(section_num, [])
         for pattern in next_patterns:
-            match = re.search(pattern, full_text[target_start_pos:], re.IGNORECASE)
+            # 타겟 섹션 시작 이후의 텍스트에서만 검색
+            remaining_text = full_text[target_start_pos + 1:]
+            multiline_pattern = r'^\s*' + pattern
+            match = re.search(multiline_pattern, remaining_text, re.MULTILINE | re.IGNORECASE)
             if match:
                 # 타겟 섹션 시작 위치 기준으로 상대 위치 계산
                 relative_pos = match.start()
-                next_section_start = target_start_pos + relative_pos
+                next_section_start = target_start_pos + 1 + relative_pos
                 break
         
         if next_section_start < len(full_text):
@@ -498,7 +503,8 @@ def extract_section_content(full_text: str, target_section: int) -> str:
     # 첫 번째 섹션 제목 이후의 모든 섹션 제목 패턴 찾기
     first_title_end = None
     for pattern in target_patterns:
-        match = re.search(pattern, extracted_text, re.IGNORECASE)
+        multiline_pattern = r'^\s*' + pattern
+        match = re.search(multiline_pattern, extracted_text, re.MULTILINE | re.IGNORECASE)
         if match:
             # 섹션 제목 다음 줄바꿈이나 공백까지 찾기
             title_end = match.end()
@@ -511,16 +517,36 @@ def extract_section_content(full_text: str, target_section: int) -> str:
             break
     
     if first_title_end:
-        # 첫 번째 섹션 제목 이후에 같은 섹션 제목이 또 나오는지 확인
+        # 첫 번째 섹션 제목 이후에 같은 섹션 제목이 또 나오는지 확인 (줄 시작 부분에서만)
         remaining_text = extracted_text[first_title_end:]
         for pattern in target_patterns:
-            match = re.search(pattern, remaining_text, re.IGNORECASE)
+            multiline_pattern = r'^\s*' + pattern
+            match = re.search(multiline_pattern, remaining_text, re.MULTILINE | re.IGNORECASE)
             if match:
                 # 중복 섹션 제목 발견 - 그 이전까지만 유지
                 duplicate_pos = first_title_end + match.start()
                 extracted_text = extracted_text[:duplicate_pos].strip()
                 print(f"⚠️ [WARN] 섹션 {target_section} 중복 제목 발견 및 제거", file=sys.stderr)
                 break
+    
+    # 섹션 제목 제거 (내용만 반환)
+    # 첫 번째 줄이 섹션 제목인 경우 제거
+    lines = extracted_text.split('\n')
+    if lines:
+        first_line = lines[0].strip()
+        is_title = False
+        for pattern in target_patterns:
+            multiline_pattern = r'^\s*' + pattern
+            if re.search(multiline_pattern, first_line, re.IGNORECASE):
+                is_title = True
+                break
+        
+        if is_title:
+            # 섹션 제목과 구분선(---) 제거
+            if len(lines) > 1 and lines[1].strip() == "---":
+                extracted_text = "\n".join(lines[2:]).strip()
+            else:
+                extracted_text = "\n".join(lines[1:]).strip()
     
     return extracted_text
 

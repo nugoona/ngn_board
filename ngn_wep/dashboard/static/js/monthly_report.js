@@ -1448,7 +1448,7 @@ function renderSection8(data) {
 }
 
 // ============================================
-// 섹션 9: AI 제안 전략 액션
+// 섹션 9: AI 제안 전략 액션 (마크다운 지원)
 // ============================================
 function renderSection9(data) {
   const signals = data.signals || {};
@@ -1456,25 +1456,41 @@ function renderSection9(data) {
   
   const container = document.getElementById("section9StrategyCards");
   if (container) {
-    if (analysis) {
-      const strategies = analysis.split(/\n\n+/).filter(s => s.trim().length > 20);
+    if (analysis && analysis.trim()) {
+      // 마크다운을 HTML로 변환
+      let htmlContent = "";
       
-      container.innerHTML = strategies.map((strategy, index) => {
-        const lines = strategy.split("\n").filter(l => l.trim());
-        const title = lines[0] || `전략 ${index + 1}`;
-        const content = lines.slice(1).join(" ") || strategy;
-        
-        const icons = ["💡", "🎯", "📊", "🚀", "⚡", "🔍"];
-        const icon = icons[index % icons.length];
-        
-        return `
-          <div class="strategy-card">
-            <div class="strategy-card-icon">${icon}</div>
-            <div class="strategy-card-title">${title}</div>
-            <div class="strategy-card-content">${content}</div>
-          </div>
-        `;
-      }).join("");
+      if (typeof marked !== 'undefined') {
+        try {
+          marked.setOptions({
+            breaks: true,
+            gfm: false
+          });
+          
+          const markdownHtml = marked.parse(analysis);
+          
+          if (typeof DOMPurify !== 'undefined') {
+            htmlContent = DOMPurify.sanitize(markdownHtml, {
+              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+              ALLOWED_ATTR: []
+            });
+          } else {
+            htmlContent = markdownHtml;
+          }
+        } catch (e) {
+          console.warn("[섹션 9] 마크다운 변환 실패:", e);
+          htmlContent = analysis.replace(/\n/g, '<br>');
+        }
+      } else {
+        htmlContent = analysis.replace(/\n/g, '<br>');
+      }
+      
+      // 전략 카드 형태로 표시 (마크다운 HTML 포함)
+      container.innerHTML = `
+        <div class="strategy-card markdown-content">
+          <div class="strategy-card-content">${htmlContent}</div>
+        </div>
+      `;
     } else {
       container.innerHTML = `
         <div class="strategy-empty">

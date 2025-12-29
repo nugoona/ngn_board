@@ -1489,8 +1489,60 @@
   font-size: 14px;
   line-height: 1.6;
   color: #495057;
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+/* 섹션 9 마크다운 콘텐츠 스타일링 */
+.strategy-card.markdown-content {
+  white-space: normal;
+}
+
+.strategy-card.markdown-content .strategy-card-content p {
+  margin: 0.8em 0;
+  line-height: 1.7;
+}
+
+.strategy-card.markdown-content .strategy-card-content ul,
+.strategy-card.markdown-content .strategy-card-content ol {
+  margin: 0.8em 0;
+  padding-left: 1.8em;
+}
+
+.strategy-card.markdown-content .strategy-card-content li {
+  margin: 0.4em 0;
+  line-height: 1.6;
+}
+
+.strategy-card.markdown-content .strategy-card-content strong {
+  font-weight: 600;
+}
+
+.strategy-card.markdown-content .strategy-card-content em {
+  font-style: italic;
+}
+
+.strategy-card.markdown-content .strategy-card-content h1,
+.strategy-card.markdown-content .strategy-card-content h2,
+.strategy-card.markdown-content .strategy-card-content h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.strategy-card.markdown-content .strategy-card-content h1 {
+  font-size: 1.3em;
+}
+
+.strategy-card.markdown-content .strategy-card-content h2 {
+  font-size: 1.2em;
+}
+
+.strategy-card.markdown-content .strategy-card-content h3 {
+  font-size: 1.1em;
 }
 
 .strategy-empty {

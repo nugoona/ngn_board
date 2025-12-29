@@ -246,9 +246,6 @@ async function loadMonthlyReport(companyName, year, month) {
       } else {
         console.error("[월간 리포트] contentEl을 찾을 수 없습니다!");
       }
-      
-      // AI 분석 박스 스크롤 고정 설정
-      setupAiAnalysisSticky();
     }, 300);
     
   } catch (error) {
@@ -984,40 +981,6 @@ function formatMoney(value) {
   if (typeof value !== "number" || isNaN(value)) return "-";
   const millions = value / 10000;
   return millions >= 1 ? `${millions.toFixed(1)}만원` : `${Math.round(value).toLocaleString()}원`;
-}
-
-// ============================================
-// AI 분석 박스 스크롤 고정 처리
-// ============================================
-// CSS position: sticky만 사용, JavaScript는 인라인 스타일 제거만 수행
-function setupAiAnalysisSticky() {
-  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작 - CSS sticky만 사용");
-  const contentEl = document.getElementById("monthlyReportContent");
-  if (!contentEl) {
-    console.error("[AI 분석 고정] contentEl을 찾을 수 없습니다!");
-    return;
-  }
-  
-  const aiAnalysisBoxes = contentEl.querySelectorAll(".section-ai-analysis");
-  console.log("[AI 분석 고정] 찾은 AI 분석 박스 개수:", aiAnalysisBoxes.length);
-  
-  if (aiAnalysisBoxes.length === 0) {
-    console.warn("[AI 분석 고정] AI 분석 박스를 찾을 수 없습니다!");
-    return;
-  }
-  
-  // CSS sticky가 작동하도록 인라인 스타일 제거
-  aiAnalysisBoxes.forEach((box, index) => {
-    // 이전에 설정된 인라인 스타일 제거하여 CSS가 작동하도록 함
-    box.style.position = "";
-    box.style.top = "";
-    box.style.bottom = "";
-    box.style.left = "";
-    box.style.right = "";
-    console.log(`[AI 분석 고정] 박스 ${index + 1}: 인라인 스타일 제거 완료 (CSS sticky 활성화)`);
-  });
-  
-  console.log("[AI 분석 고정] CSS sticky 활성화 완료 - JavaScript는 최소한의 작업만 수행");
 }
 
 function formatNumber(value) {

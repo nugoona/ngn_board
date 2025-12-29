@@ -287,6 +287,7 @@
 /* ✅ 섹션 컨텐츠 래퍼 (메인 + AI 분석) */
 .section-content-wrapper {
   display: flex;
+  flex-direction: row; /* 명시적으로 row 설정 */
   gap: 32px;
   align-items: flex-start;
   position: relative;

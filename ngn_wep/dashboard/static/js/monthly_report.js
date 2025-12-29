@@ -1156,17 +1156,18 @@ function renderSection8(data) {
     // 작년 매출 증감률
     const yoyGrowthPct = mallSalesForecast.yoy_growth_pct;
     
-    // 날짜 계산 (forecast.month 기준)
-    const forecastMonth = forecast.month || `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-    const [forecastYear, forecastMonthNum] = forecastMonth.split('-').map(Number);
+    // 날짜 계산 (현재 리포트 월 기준)
+    // 현재 리포트가 2025-12라면:
+    // - 작년 동월: 2024-12 (현재 리포트의 작년 동월)
+    // - 작년 익월: 2025-01 (다음 달의 작년 동월)
     
-    // 작년 동월 날짜
-    const lastYear = forecastYear - 1;
-    const lastYearDateStr = `${lastYear}-${String(forecastMonthNum).padStart(2, '0')}`;
+    // 작년 동월 날짜 (현재 리포트 월의 작년 동월)
+    const lastYear = currentYear - 1;
+    const lastYearDateStr = `${lastYear}-${String(currentMonth).padStart(2, '0')}`;
     
-    // 작년 익월 날짜 계산
-    const nextMonthNum = forecastMonthNum === 12 ? 1 : forecastMonthNum + 1;
-    const nextYear = forecastMonthNum === 12 ? lastYear + 1 : lastYear;
+    // 작년 익월 날짜 계산 (다음 달의 작년 동월)
+    const nextMonthNum = currentMonth === 12 ? 1 : currentMonth + 1;
+    const nextYear = currentMonth === 12 ? currentYear : currentYear - 1;
     const lastYearNextMonthStr = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}`;
     
     // 증감률 포맷팅

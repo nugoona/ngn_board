@@ -98,6 +98,15 @@
         <h3 class="section-title">4. 자사몰 베스트 상품 성과</h3>
         <div class="section-content-wrapper">
           <div class="section-main">
+            <!-- 탭 버튼 -->
+            <div class="products-tabs-wrapper">
+              <div class="products-tabs" id="section3Tabs">
+                <button class="products-tab-btn active" data-tab="sales">구매</button>
+                <button class="products-tab-btn" data-tab="views">조회</button>
+              </div>
+            </div>
+            
+            <!-- 차트 영역 -->
             <div class="bar-chart-wrapper" id="section3BarChart">
               <!-- 가로 막대 그래프 -->
             </div>
@@ -201,9 +210,15 @@
                     <!-- JSON 데이터로 동적 생성 -->
                   </tbody>
                 </table>
+                <!-- 29CM 베스트 AI 분석 텍스트 -->
+                <div class="comparison-ai-text" id="section7MarketAiText">
+                  <!-- AI 분석 텍스트 동적 생성 -->
+                </div>
               </div>
             </div>
-            <div class="comparison-box vs-divider">VS</div>
+            <div class="comparison-box vs-divider" id="section7VsDivider">
+              <!-- VS는 CSS로 표시 -->
+            </div>
             <div class="comparison-box our-box">
               <div class="comparison-box-header" id="section7CompanyHeader">업체명</div>
               <div class="comparison-box-content">
@@ -219,6 +234,10 @@
                     <!-- JSON 데이터로 동적 생성 -->
                   </tbody>
                 </table>
+                <!-- 자사몰 AI 분석 텍스트 -->
+                <div class="comparison-ai-text" id="section7OurAiText">
+                  <!-- AI 분석 텍스트 동적 생성 -->
+                </div>
               </div>
             </div>
           </div>

@@ -483,6 +483,11 @@ function renderSection1(data) {
   const monthly13m = mallSales.monthly_13m || [];
   const recent6Months = monthly13m.slice(-6); // 최근 6개월
   
+  // 시작 월과 끝 월 추출
+  const startMonth = recent6Months.length > 0 ? recent6Months[0].ym : "";
+  const endMonth = recent6Months.length > 0 ? recent6Months[recent6Months.length - 1].ym : "";
+  const monthRange = startMonth && endMonth ? `${startMonth} ~ ${endMonth}` : "최근 6개월 추이";
+  
   // 각 메트릭별 스파크라인 데이터 추출
   const sparklineData = {
     sales: recent6Months.map(m => m.net_sales || 0),
@@ -566,7 +571,7 @@ function renderSection1(data) {
           ${item.diff && item.status === "down" ? ` (${item.diff})` : item.diff && item.status === "up" ? ` (+${item.diff})` : ""}
         </div>
         <div class="scorecard-sparkline">
-          <div class="sparkline-label">최근 6개월 추이</div>
+          <div class="sparkline-label">${monthRange}</div>
           ${item.sparkline}
         </div>
       </div>
@@ -662,23 +667,62 @@ function renderSection2(data) {
 function renderSection3(data) {
   console.log("[섹션 3] 데이터 로드 시작", data);
   const facts = data.facts || {};
+  
+  // 구매 데이터 (매출 베스트)
   const products = facts.products || {};
-  console.log("[섹션 3] products:", products);
-  
   const productsThis = products.this || {};
-  console.log("[섹션 3] products.this:", productsThis);
-  
   const rolling = productsThis.rolling || {};
-  console.log("[섹션 3] rolling:", rolling);
-  
   const d30 = rolling.d30 || {};
-  console.log("[섹션 3] d30:", d30);
+  const topProductsBySales = d30.top_products_by_sales || [];
   
-  const topProducts = d30.top_products_by_sales || [];
-  console.log("[섹션 3] top_products_by_sales:", topProducts);
+  // 조회 데이터 (조회수 베스트)
+  const viewitem = facts.viewitem || {};
+  const viewitemThis = viewitem.this || {};
+  const topItemsByView = viewitemThis.top_items_by_view_item || [];
   
+  console.log("[섹션 3] top_products_by_sales:", topProductsBySales);
+  console.log("[섹션 3] top_items_by_view_item:", topItemsByView);
+  
+  // 탭 버튼 이벤트 설정
+  setupSection3Tabs(data);
+  
+  // 초기 렌더링 (구매 탭)
+  renderSection3ByTab("sales", data);
+  
+  // AI 분석
+  renderAiAnalysis("section3AiAnalysis", data.signals?.section_3_analysis);
+}
+
+function setupSection3Tabs(data) {
+  const tabButtons = document.querySelectorAll("#section3Tabs .products-tab-btn");
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tab = btn.getAttribute("data-tab");
+      
+      // 활성 탭 변경
+      tabButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // 해당 탭 렌더링
+      renderSection3ByTab(tab, data);
+    });
+  });
+}
+
+function renderSection3ByTab(tab, data) {
+  const facts = data.facts || {};
   const container = document.getElementById("section3BarChart");
-  if (container) {
+  
+  if (!container) return;
+  
+  if (tab === "sales") {
+    // 구매 탭: 매출 베스트 5
+    const products = facts.products || {};
+    const productsThis = products.this || {};
+    const rolling = productsThis.rolling || {};
+    const d30 = rolling.d30 || {};
+    const topProducts = d30.top_products_by_sales || [];
+    
     const top5 = topProducts.slice(0, 5);
     const maxSales = top5.length > 0 ? Math.max(...top5.map(p => p.sales || 0)) : 1;
     
@@ -686,7 +730,6 @@ function renderSection3(data) {
       const sales = product.sales || 0;
       const width = maxSales > 0 ? (sales / maxSales) * 100 : 0;
       const name = product.product_name || "상품명 없음";
-      // 상품명 전체 표시 (줄바꿈 허용)
       
       return `
         <div class="bar-chart-item">
@@ -701,10 +744,34 @@ function renderSection3(data) {
         </div>
       `;
     }).join("");
+  } else if (tab === "views") {
+    // 조회 탭: 조회수 베스트 5
+    const viewitem = facts.viewitem || {};
+    const viewitemThis = viewitem.this || {};
+    const topItems = viewitemThis.top_items_by_view_item || [];
+    
+    const top5 = topItems.slice(0, 5);
+    const maxViews = top5.length > 0 ? Math.max(...top5.map(p => p.total_view_item || 0)) : 1;
+    
+    container.innerHTML = top5.map((item, index) => {
+      const views = item.total_view_item || 0;
+      const width = maxViews > 0 ? (views / maxViews) * 100 : 0;
+      const name = item.item_name_normalized || "상품명 없음";
+      
+      return `
+        <div class="bar-chart-item">
+          <div class="bar-chart-label-row">
+            <span class="bar-chart-rank">${index + 1}</span>
+            <span class="bar-chart-name" title="${name}">${name}</span>
+            <span class="bar-chart-value">${formatNumber(views)}회</span>
+          </div>
+          <div class="bar-chart-bar-wrapper">
+            <div class="bar-chart-bar" style="width: ${width}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
-  
-  // AI 분석
-  renderAiAnalysis("section3AiAnalysis", data.signals?.section_3_analysis);
 }
 
 // ============================================
@@ -1254,6 +1321,54 @@ function renderSection7(data) {
     }
     
     ourTableBody.innerHTML = ourRows.join("");
+  }
+  
+  // ============================================
+  // 3. 텍스트에서 JSON 블록 제거 (클린업)
+  // ============================================
+  if (jsonMatch) {
+    analysis = analysis.replace(jsonBlockRegex, "").trim();
+  }
+  
+  // ============================================
+  // 4. AI 분석 텍스트를 각 카드에 렌더링
+  // ============================================
+  const marketAiText = document.getElementById("section7MarketAiText");
+  const ourAiText = document.getElementById("section7OurAiText");
+  
+  if (analysis) {
+    const lines = analysis.split("\n").filter(l => l.trim());
+    const marketLines = [];
+    const ourLines = [];
+    
+    lines.forEach(line => {
+      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드") || line.includes("29CM") || line.includes("베스트")) {
+        marketLines.push(line);
+      } else if (line.includes("우리") || line.includes("자사") || line.includes(companyName)) {
+        ourLines.push(line);
+      }
+    });
+    
+    // 29CM 베스트 AI 분석 텍스트
+    if (marketAiText) {
+      if (marketLines.length > 0) {
+        marketAiText.innerHTML = `<div class="comparison-ai-content">${marketLines.join("<br>")}</div>`;
+      } else {
+        marketAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
+      }
+    }
+    
+    // 자사몰 AI 분석 텍스트
+    if (ourAiText) {
+      if (ourLines.length > 0) {
+        ourAiText.innerHTML = `<div class="comparison-ai-content">${ourLines.join("<br>")}</div>`;
+      } else {
+        ourAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
+      }
+    }
+  } else {
+    if (marketAiText) marketAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
+    if (ourAiText) ourAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
   }
 }
 

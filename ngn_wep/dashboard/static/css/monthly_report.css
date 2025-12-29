@@ -451,6 +451,41 @@
 }
 
 /* ============================================
+   섹션 3: 베스트 상품 성과 탭
+   ============================================ */
+.products-tabs-wrapper {
+  margin-bottom: 20px;
+}
+
+.products-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.products-tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: #F8F9FA;
+  color: #212529;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.products-tab-btn:hover {
+  background: #E9ECEF;
+}
+
+.products-tab-btn.active {
+  background: #003366;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ============================================
    섹션 2: 고객 방문 및 구매 여정 (깔때기)
    ============================================ */
 .funnel-chart-wrapper {
@@ -1055,6 +1090,11 @@
   font-weight: 700;
   color: #868E96;
   padding: 0;
+  position: relative;
+}
+
+.comparison-box.vs-divider::before {
+  content: "VS";
 }
 
 .comparison-box-header {
@@ -1147,6 +1187,29 @@
 }
 
 .our-box .comparison-table-single .comparison-company {
+  color: #DC3545;
+}
+
+/* AI 분석 텍스트 영역 */
+.comparison-ai-text {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #E9ECEF;
+}
+
+.comparison-ai-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #495057;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.market-box .comparison-ai-content {
+  color: #0066CC;
+}
+
+.our-box .comparison-ai-content {
   color: #DC3545;
 }
 

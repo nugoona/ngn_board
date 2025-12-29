@@ -528,6 +528,24 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     return result
 
 
+def remove_reviews_for_log(data):
+    """리뷰 데이터를 제거한 요약 버전 생성 (로그 출력용)"""
+    import copy
+    summary = copy.deepcopy(data)
+    
+    # 29cm_best 섹션의 리뷰 제거
+    if "facts" in summary and "29cm_best" in summary["facts"]:
+        cm_best = summary["facts"]["29cm_best"]
+        if cm_best and "items" in cm_best:
+            for item in cm_best["items"]:
+                if "reviews" in item:
+                    # 리뷰 개수만 표시
+                    review_count = len(item["reviews"]) if item["reviews"] else 0
+                    item["reviews"] = f"[{review_count}개 리뷰 - 상세 내용은 JSON 파일 참조]"
+    
+    return summary
+
+
 def load_snapshot_from_gcs(company_name: str, year: int, month: int):
     """GCS 버킷에서 스냅샷 JSON 파일 읽기 (Gzip 압축 해제 지원)"""
     try:
@@ -599,6 +617,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
         if snapshot_from_gcs:
             print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
+            # 리뷰 데이터를 제거한 요약 버전 출력 (로그용)
+            summary = remove_reviews_for_log(snapshot_from_gcs)
+            print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
+            # 전체 JSON은 stdout으로 출력 (파이프/리다이렉션용)
             print(json.dumps(snapshot_from_gcs, ensure_ascii=False, indent=2))
             return
     
@@ -2653,6 +2675,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     print(f"✅ [SUCCESS] 스냅샷 생성 완료: {company_name} {year}-{month:02d}", file=sys.stderr)
     print("=" * 80, file=sys.stderr)
     
+    # 리뷰 데이터를 제거한 요약 버전 출력 (로그용, stderr)
+    summary = remove_reviews_for_log(out_safe)
+    print("📋 [SUMMARY] 스냅샷 요약 (리뷰 제외):", file=sys.stderr)
+    print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
+    
+    # 전체 JSON은 stdout으로 출력 (파이프/리다이렉션용, 리뷰 포함)
     print(json.dumps(out_safe, ensure_ascii=False, indent=2))
 
 

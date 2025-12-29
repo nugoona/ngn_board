@@ -936,6 +936,15 @@ function renderSection7(data) {
   // 업체명 가져오기
   const companyName = currentCompany || "업체명";
   
+  // 섹션 제목 명시적으로 설정
+  const section7 = document.querySelector(".section-7-comparison");
+  if (section7) {
+    const sectionTitle = section7.querySelector(".section-title");
+    if (sectionTitle) {
+      sectionTitle.textContent = "시장 트렌드와 자사몰 비교";
+    }
+  }
+  
   // 헤더 업데이트
   const trendHeader = document.getElementById("section7TrendHeader");
   const companyHeader = document.getElementById("section7CompanyHeader");

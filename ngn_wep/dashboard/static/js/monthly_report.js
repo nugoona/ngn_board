@@ -718,10 +718,13 @@ function renderSection5(data) {
   console.log("[섹션 5] 최종 topSources:", topSources);
   
   const container = document.getElementById("section5ChannelsTable");
+  console.log("[섹션 5] container 요소:", container);
+  
   if (container) {
     const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);
     console.log("[섹션 5] 계산된 total:", total);
     console.log("[섹션 5] topSources.length:", topSources.length);
+    console.log("[섹션 5] topSources 데이터:", topSources);
     
     if (topSources.length > 0 && total > 0) {
       // Top 5만 선택하고 정렬
@@ -733,6 +736,8 @@ function renderSection5(data) {
         }))
         .sort((a, b) => b.users - a.users)
         .slice(0, 5);
+      
+      console.log("[섹션 5] Top 5 데이터:", top5);
       
       // 표 생성
       const tableHTML = `
@@ -762,13 +767,17 @@ function renderSection5(data) {
       `;
       
       container.innerHTML = tableHTML;
+      console.log("[섹션 5] 표 HTML 생성 완료, container.innerHTML 길이:", container.innerHTML.length);
     } else {
+      console.warn("[섹션 5] 데이터가 없거나 total이 0입니다. topSources:", topSources, "total:", total);
       container.innerHTML = `
         <div class="channels-table-empty">
           <div class="empty-text">유입 채널 데이터가 없습니다.</div>
         </div>
       `;
     }
+  } else {
+    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
   }
   
   renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);

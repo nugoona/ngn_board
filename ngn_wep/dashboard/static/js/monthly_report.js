@@ -1187,7 +1187,7 @@ function renderSection8(data) {
       }
     }
     
-    // 3개 카드 렌더링 (3등분)
+    // 3개 카드 렌더링 (섹션 1과 동일한 구조)
     container.innerHTML = `
       <div class="forecast-cards-grid">
         <div class="forecast-card">

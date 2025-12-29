@@ -1040,42 +1040,32 @@
   align-items: center;
 }
 
-/* 3등분 카드 그리드 */
+/* 3등분 카드 그리드 (섹션 1과 동일한 스타일) */
 .forecast-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .forecast-card {
-  padding: 24px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
+  padding: 20px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  text-align: center;
-  min-height: 150px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .forecast-label {
   font-size: 14px;
-  font-weight: 600;
   color: #868E96;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .forecast-value-large {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #212529;
+  margin-bottom: 4px;
 }
 
 .forecast-growth-positive {

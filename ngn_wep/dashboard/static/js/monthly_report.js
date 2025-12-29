@@ -667,33 +667,29 @@ function renderSection4ByTab(tabName, items, page = 1) {
           const name = item.name || "Unknown";
           const img = item.img || "";
           
-          // 디버그: URL 관련 필드 확인
-          if (index === 0) {
-            console.log("[섹션 4] URL 필드 확인:", {
-              "item.url": item.url,
-              "item.item_url": item.item_url,
-              "item.itemUrl": item.itemUrl,
-              "item.item_id": item.item_id,
-              "item.itemId": item.itemId,
-              "전체 item 객체": item
-            });
-          }
+          // URL 변환: 버킷에 저장된 URL을 올바른 형식으로 변환
+          // 예: https://product.29cm.co.kr/catalog/2964732 → https://29cm.co.kr/products/2964732
+          let productUrl = '#';
           
-          // 버킷에 수집된 상세페이지 URL 우선 사용
-          // itemUrl이 객체인 경우 webLink 속성 확인
-          let productUrl = item.url || item.item_url;
-          if (!productUrl && item.itemUrl) {
-            productUrl = typeof item.itemUrl === 'string' ? item.itemUrl : item.itemUrl.webLink;
-          }
-          // URL이 없으면 itemId로 생성
-          if (!productUrl) {
+          // 1. item.url 또는 item.item_url에서 URL 가져오기
+          const rawUrl = item.url || item.item_url || (item.itemUrl && (typeof item.itemUrl === 'string' ? item.itemUrl : item.itemUrl.webLink));
+          
+          if (rawUrl) {
+            // URL에서 item_id 추출 (catalog/ 뒤의 숫자)
+            const catalogMatch = rawUrl.match(/catalog\/(\d+)/);
+            if (catalogMatch) {
+              const itemId = catalogMatch[1];
+              productUrl = `https://29cm.co.kr/products/${itemId}`;
+            } else {
+              // 이미 올바른 형식이거나 다른 형식인 경우 그대로 사용
+              productUrl = rawUrl;
+            }
+          } else {
+            // URL이 없으면 item_id로 직접 생성
             const itemId = item.item_id || item.itemId;
-            productUrl = itemId ? `https://29cm.co.kr/products/${itemId}` : '#';
-          }
-          
-          // 디버그: 최종 URL 확인
-          if (index === 0) {
-            console.log("[섹션 4] 최종 productUrl:", productUrl);
+            if (itemId) {
+              productUrl = `https://29cm.co.kr/products/${itemId}`;
+            }
           }
           
           const price = item.price || 0;

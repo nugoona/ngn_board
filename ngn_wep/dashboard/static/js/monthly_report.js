@@ -1084,7 +1084,7 @@ function renderAdsRankingList(ads, type) {
 // ============================================
 function renderSection7(data) {
   const signals = data.signals || {};
-  const analysis = signals.section_7_analysis || "";
+  let analysis = signals.section_7_analysis || "";
   
   // 업체명 가져오기
   const companyName = currentCompany || "업체명";
@@ -1101,9 +1101,91 @@ function renderSection7(data) {
   // 헤더 업데이트
   const trendHeader = document.getElementById("section7TrendHeader");
   const companyHeader = document.getElementById("section7CompanyHeader");
+  const tableTrendHeader = document.getElementById("section7TableTrendHeader");
+  const tableCompanyHeader = document.getElementById("section7TableCompanyHeader");
   if (trendHeader) trendHeader.textContent = "29CM 베스트";
   if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
+  if (tableTrendHeader) tableTrendHeader.textContent = "29CM 베스트";
+  if (tableCompanyHeader) tableCompanyHeader.textContent = companyName.toUpperCase();
   
+  // ============================================
+  // 1. JSON 블록 추출 및 파싱
+  // ============================================
+  let comparisonTableData = null;
+  const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
+  const jsonMatch = analysis.match(jsonBlockRegex);
+  
+  if (jsonMatch && jsonMatch[1]) {
+    try {
+      comparisonTableData = JSON.parse(jsonMatch[1].trim());
+      console.log("[섹션 7] 비교표 JSON 파싱 성공:", comparisonTableData);
+    } catch (e) {
+      console.error("[섹션 7] 비교표 JSON 파싱 실패:", e);
+      console.error("[섹션 7] 원본 JSON 블록:", jsonMatch[1]);
+    }
+  }
+  
+  // ============================================
+  // 2. 비교표 렌더링
+  // ============================================
+  const comparisonTableWrapper = document.getElementById("section7ComparisonTable");
+  const comparisonTableBody = document.getElementById("section7ComparisonTableBody");
+  
+  if (comparisonTableData && comparisonTableBody) {
+    // 비교표 데이터가 있으면 테이블 렌더링
+    const tableRows = [];
+    
+    // JSON 객체의 각 키를 행으로 변환
+    for (const [key, value] of Object.entries(comparisonTableData)) {
+      if (typeof value === 'object' && value !== null) {
+        const marketValue = value.market || value.trend || value["29cm"] || "-";
+        const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
+        
+        // 키를 한글 레이블로 변환 (예: "주력_아이템" -> "주력 아이템")
+        const label = key.replace(/_/g, " ");
+        
+        tableRows.push(`
+          <tr>
+            <td class="comparison-label">${label}</td>
+            <td class="comparison-market">${marketValue}</td>
+            <td class="comparison-company">${companyValue}</td>
+          </tr>
+        `);
+      }
+    }
+    
+    if (tableRows.length > 0) {
+      comparisonTableBody.innerHTML = tableRows.join("");
+      if (comparisonTableWrapper) {
+        comparisonTableWrapper.style.display = "block";
+      }
+    } else {
+      if (comparisonTableWrapper) {
+        comparisonTableWrapper.style.display = "none";
+      }
+    }
+  } else {
+    // 비교표 데이터가 없으면 숨김
+    if (comparisonTableWrapper) {
+      comparisonTableWrapper.style.display = "none";
+    }
+  }
+  
+  // ============================================
+  // 3. 텍스트에서 JSON 블록 제거 (클린업)
+  // ============================================
+  if (jsonMatch) {
+    analysis = analysis.replace(jsonBlockRegex, "").trim();
+  }
+  
+  // ============================================
+  // 4. AI 분석 텍스트 렌더링 (JSON 블록 제거된 텍스트)
+  // ============================================
+  renderAiAnalysis("section7AiAnalysis", analysis);
+  
+  // ============================================
+  // 5. 비교 박스 렌더링 (기존 로직 유지)
+  // ============================================
   const marketContent = document.getElementById("section7MarketContent");
   const ourContent = document.getElementById("section7OurContent");
   
@@ -1113,7 +1195,7 @@ function renderSection7(data) {
     const ourKeywords = [];
     
     lines.forEach(line => {
-      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드")) {
+      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드") || line.includes("29CM")) {
         marketKeywords.push(line);
       } else if (line.includes("우리") || line.includes("자사") || line.includes(companyName)) {
         ourKeywords.push(line);
@@ -1123,7 +1205,7 @@ function renderSection7(data) {
     if (marketContent) {
       marketContent.innerHTML = marketKeywords.length > 0
         ? marketKeywords.map(kw => `<div class="comparison-keyword">${kw}</div>`).join("")
-        : `<div class="comparison-text">${analysis.substring(0, 200)}...</div>`;
+        : `<div class="comparison-text">분석 데이터 준비 중...</div>`;
     }
     
     if (ourContent) {

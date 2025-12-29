@@ -8,9 +8,8 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 프로젝트 관련 파일 복사
-COPY ./tools/ai_report_test/ai_analyst.py /app/ai_analyst.py
-COPY ./tools/ai_report_test/system_prompt_v44.txt /app/system_prompt_v44.txt
+# 프로젝트 관련 파일 복사 (디렉토리 구조 유지)
+COPY ./tools/ /app/tools/
 COPY ./tools/ai_report_test/jobs/monthly_ai_analysis_job.py /app/monthly_ai_analysis_job.py
 
 # 환경변수 설정

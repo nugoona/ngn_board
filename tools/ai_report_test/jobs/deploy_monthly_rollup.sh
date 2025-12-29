@@ -73,13 +73,21 @@ gcloud pubsub subscriptions create "$SUBSCRIPTION_NAME" \
 echo ""
 echo "⏰ 5단계: Cloud Scheduler 작업 생성 중..."
 if gcloud scheduler jobs describe monthly-rollup-scheduler --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
-  echo "스케줄러가 이미 존재합니다."
+  echo "스케줄러가 이미 존재합니다. 업데이트 중..."
+  gcloud scheduler jobs update pubsub monthly-rollup-scheduler \
+    --location="$REGION_RUN" \
+    --schedule="0 4 1 * *" \
+    --topic="$TOPIC_NAME" \
+    --message-body='{"trigger":"monthly"}' \
+    --time-zone="Asia/Seoul" \
+    --project="$PROJECT"
 else
   gcloud scheduler jobs create pubsub monthly-rollup-scheduler \
     --location="$REGION_RUN" \
-    --schedule="0 3 1 * *" \
+    --schedule="0 4 1 * *" \
     --topic="$TOPIC_NAME" \
     --message-body='{"trigger":"monthly"}' \
+    --time-zone="Asia/Seoul" \
     --project="$PROJECT"
 fi
 
@@ -90,7 +98,7 @@ echo "📋 생성된 리소스:"
 echo "  - Cloud Run Job: ${JOB_NAME}"
 echo "  - Pub/Sub Topic: ${TOPIC_NAME}"
 echo "  - Pub/Sub Subscription: ${SUBSCRIPTION_NAME}"
-echo "  - Cloud Scheduler: monthly-rollup-scheduler (매월 1일 새벽 3시 실행)"
+echo "  - Cloud Scheduler: monthly-rollup-scheduler (매월 1일 새벽 4시 한국시간 실행)"
 echo ""
 echo "📝 수동 실행:"
 echo "  gcloud run jobs execute ${JOB_NAME} --region=${REGION} --project=${PROJECT_ID}"

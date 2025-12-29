@@ -8,8 +8,8 @@ import os
 import sys
 from datetime import datetime, timezone, timedelta
 
-# 프로젝트 루트를 Python 경로에 추가
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+# 프로젝트 루트를 Python 경로에 추가 (/app에 tools/ 디렉토리가 있음)
+sys.path.insert(0, '/app')
 
 from tools.ai_report_test.bq_monthly_snapshot import run
 

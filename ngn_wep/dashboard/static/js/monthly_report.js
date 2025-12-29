@@ -246,6 +246,9 @@ async function loadMonthlyReport(companyName, year, month) {
       } else {
         console.error("[월간 리포트] contentEl을 찾을 수 없습니다!");
       }
+      
+      // AI 분석 박스 스크롤 고정 설정
+      setupAiAnalysisSticky();
     }, 300);
     
   } catch (error) {
@@ -981,6 +984,68 @@ function formatMoney(value) {
   if (typeof value !== "number" || isNaN(value)) return "-";
   const millions = value / 10000;
   return millions >= 1 ? `${millions.toFixed(1)}만원` : `${Math.round(value).toLocaleString()}원`;
+}
+
+// ============================================
+// AI 분석 박스 스크롤 고정 처리
+// ============================================
+function setupAiAnalysisSticky() {
+  const contentEl = document.getElementById("monthlyReportContent");
+  if (!contentEl) return;
+  
+  const aiAnalysisBoxes = contentEl.querySelectorAll(".section-ai-analysis");
+  
+  // 스크롤 이벤트 리스너
+  let ticking = false;
+  contentEl.addEventListener("scroll", () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        updateAiAnalysisPositions(contentEl, aiAnalysisBoxes);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+  
+  // 초기 위치 설정
+  updateAiAnalysisPositions(contentEl, aiAnalysisBoxes);
+}
+
+function updateAiAnalysisPositions(contentEl, aiAnalysisBoxes) {
+  const scrollTop = contentEl.scrollTop;
+  const headerHeight = 80; // 헤더 높이
+  const viewportHeight = window.innerHeight;
+  
+  aiAnalysisBoxes.forEach(box => {
+    const section = box.closest(".monthly-report-section");
+    if (!section) return;
+    
+    const sectionTop = section.offsetTop;
+    const sectionHeight = section.offsetHeight;
+    const sectionBottom = sectionTop + sectionHeight;
+    const boxHeight = box.offsetHeight;
+    
+    // 섹션이 뷰포트에 들어왔는지 확인
+    const sectionVisibleTop = sectionTop - scrollTop;
+    const sectionVisibleBottom = sectionBottom - scrollTop;
+    
+    if (sectionVisibleTop <= headerHeight && sectionVisibleBottom >= boxHeight + headerHeight) {
+      // 섹션 내에서 고정 가능
+      box.style.position = "sticky";
+      box.style.top = `${headerHeight}px`;
+      box.style.bottom = "auto";
+    } else if (sectionVisibleTop > headerHeight) {
+      // 섹션이 아직 뷰포트에 들어오지 않음 - 일반 위치
+      box.style.position = "relative";
+      box.style.top = "0";
+      box.style.bottom = "auto";
+    } else {
+      // 섹션이 뷰포트를 벗어남 - 섹션 하단에 고정
+      box.style.position = "absolute";
+      box.style.top = `${sectionHeight - boxHeight}px`;
+      box.style.bottom = "auto";
+    }
+  });
 }
 
 function formatNumber(value) {

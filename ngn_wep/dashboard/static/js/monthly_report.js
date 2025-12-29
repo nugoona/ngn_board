@@ -690,7 +690,7 @@ function renderSection4ByTab(tabName, items, page = 1) {
 // ============================================
 // 섹션 5: 주요 유입 채널
 // ============================================
-function renderSection5(data) {
+async function renderSection5(data) {
   console.log("[섹션 5] 데이터 로드 시작", data);
   const facts = data.facts || {};
   const ga4 = facts.ga4_traffic || {};
@@ -726,7 +726,30 @@ function renderSection5(data) {
   
   let container = null;
   if (section5) {
-    container = section5.querySelector("#section5ChannelsTable");
+    // 먼저 section-main 내부를 확인
+    const sectionMain = section5.querySelector(".section-main");
+    console.log("[섹션 5] section-main 요소:", sectionMain);
+    
+    if (sectionMain) {
+      // 기존 donut-chart-wrapper가 있으면 제거하고 channels-table-wrapper 생성
+      const donutChart = sectionMain.querySelector("#section5DonutChart, .donut-chart-wrapper");
+      if (donutChart) {
+        console.log("[섹션 5] 기존 donut-chart-wrapper 발견, 제거하고 table-wrapper 생성");
+        donutChart.remove();
+      }
+      
+      // channels-table-wrapper가 없으면 생성
+      container = sectionMain.querySelector("#section5ChannelsTable");
+      if (!container) {
+        console.log("[섹션 5] channels-table-wrapper 생성");
+        container = document.createElement("div");
+        container.className = "channels-table-wrapper";
+        container.id = "section5ChannelsTable";
+        sectionMain.appendChild(container);
+      }
+    } else {
+      container = section5.querySelector("#section5ChannelsTable");
+    }
     console.log("[섹션 5] 섹션 내부에서 찾은 container:", container);
   }
   

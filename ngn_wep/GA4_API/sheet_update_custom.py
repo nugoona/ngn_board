@@ -82,10 +82,15 @@ def run_sheet_update_for_range(date_obj):
                 value_name="sales_amount"
             )
 
-            # ✅ null만 제외, 0은 포함
+            # ✅ null과 빈 문자열 제외, 0은 포함
             df_melted = df_melted[df_melted["sales_amount"].notnull()]
+            # 빈 문자열 제거
+            df_melted = df_melted[df_melted["sales_amount"] != ""]
+            # 숫자로 변환 가능한 값만 필터링 (빈 문자열, None 등 제외)
+            df_melted = df_melted[df_melted["sales_amount"].astype(str).str.strip() != ""]
             df_melted["DATE"] = pd.to_datetime(df_melted["DATE"]).dt.date
-            df_melted["sales_amount"] = df_melted["sales_amount"].astype(int)
+            # 숫자 변환 (빈 문자열은 이미 제외됨)
+            df_melted["sales_amount"] = pd.to_numeric(df_melted["sales_amount"], errors='coerce').fillna(0).astype(int)
             all_rows.append(df_melted)
 
         except gspread.exceptions.WorksheetNotFound:

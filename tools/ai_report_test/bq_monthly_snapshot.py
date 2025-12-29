@@ -2585,6 +2585,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz"
             blob = bucket.blob(blob_path)
             
+            print(f"📤 [INFO] GCS 저장 시작: {blob_path}", file=sys.stderr)
+            
             # JSON 문자열 생성
             snapshot_json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2, sort_keys=True)
             
@@ -2607,13 +2609,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             )
             
             gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
-            print(f"✅ [SUCCESS] 스냅샷이 GCS에 저장되었습니다: {gcs_url}", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            print(f"✅ [SUCCESS] 스냅샷이 GCS에 저장되었습니다", file=sys.stderr)
+            print(f"   📍 저장 위치: {gcs_url}", file=sys.stderr)
+            print(f"   📦 버킷: {GCS_BUCKET}", file=sys.stderr)
+            print(f"   📁 경로: {blob_path}", file=sys.stderr)
             if ENABLE_DEBUG_LOGS:
                 print(f"   압축 전: {original_size:,} bytes, 압축 후: {compressed_size:,} bytes ({compression_ratio:.1f}% 감소)", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
             return gcs_url
         except Exception as e:
             print("=" * 80, file=sys.stderr)
             print(f"❌ [ERROR] GCS 저장 실패", file=sys.stderr)
+            print(f"   📍 시도한 저장 위치: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz", file=sys.stderr)
             print(f"   오류 메시지: {e}", file=sys.stderr)
             print("=" * 80, file=sys.stderr)
             import traceback

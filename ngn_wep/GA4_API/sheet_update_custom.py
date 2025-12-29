@@ -42,10 +42,35 @@ def run_sheet_update_for_range(date_obj):
 
     for company in company_names:
         try:
+            # "event" 시트는 제외 (별도 작업에서 처리)
+            if company.lower() == "event":
+                continue
+            
             worksheet = sheet.worksheet(company)
             data = worksheet.get_all_records()
+            
+            if not data:
+                print(f"⚠️ {company} 시트에 데이터가 없습니다.")
+                continue
+            
             df = pd.DataFrame(data)
-
+            
+            # 컬럼명 확인 및 정규화 (대소문자 무시)
+            df.columns = df.columns.str.strip()  # 공백 제거
+            date_col = None
+            for col in df.columns:
+                if col.upper() == "DATE":
+                    date_col = col
+                    break
+            
+            if date_col is None:
+                print(f"⚠️ {company} 시트에 'DATE' 컬럼이 없습니다. (현재 컬럼: {list(df.columns)})")
+                continue
+            
+            # DATE 컬럼명을 'DATE'로 통일
+            if date_col != "DATE":
+                df = df.rename(columns={date_col: "DATE"})
+            
             df = df[df["DATE"] == target_date_str]
             if df.empty:
                 continue
@@ -65,6 +90,15 @@ def run_sheet_update_for_range(date_obj):
 
         except gspread.exceptions.WorksheetNotFound:
             print(f"❌ 시트 없음: {company}")
+            continue
+        except KeyError as e:
+            print(f"❌ {company} 시트 처리 중 오류 (컬럼 누락): {str(e)}")
+            print(f"   현재 컬럼: {list(df.columns) if 'df' in locals() else 'N/A'}")
+            continue
+        except Exception as e:
+            print(f"❌ {company} 시트 처리 중 오류: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             continue
 
     if all_rows:

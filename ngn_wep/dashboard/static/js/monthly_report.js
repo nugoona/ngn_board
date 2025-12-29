@@ -583,16 +583,20 @@ function renderSection2(data) {
         ? ((item.value / funnelData[index - 1].value) * 100).toFixed(1) 
         : "100.0";
       
+      // 바가 너무 작으면(30% 미만) 수치를 바 밖에 표시
+      const showValueInside = width >= 30;
+      
       return `
         <div class="funnel-item">
           <div class="funnel-label-row">
             <span class="funnel-label">${item.label}</span>
+            ${index > 0 ? `<span class="funnel-conversion">전환율: ${conversion}%</span>` : ""}
           </div>
           <div class="funnel-bar-wrapper">
             <div class="funnel-bar" style="width: ${width}%; background-color: ${item.color};">
-              <span class="funnel-value">${formatNumber(item.value)}</span>
+              ${showValueInside ? `<span class="funnel-value funnel-value-inside">${formatNumber(item.value)}</span>` : ""}
             </div>
-            ${index > 0 ? `<span class="funnel-conversion">전환율: ${conversion}%</span>` : ""}
+            ${!showValueInside ? `<span class="funnel-value funnel-value-outside">${formatNumber(item.value)}</span>` : ""}
           </div>
         </div>
       `;

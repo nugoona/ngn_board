@@ -154,9 +154,8 @@
   padding: 32px;
   overflow-y: auto; /* 스크롤 활성화 */
   flex: 1;
-  /* 주의: sticky는 overflow가 있는 부모 내에서는 작동하지 않음
-     하지만 모달 구조상 content가 스크롤 컨테이너이므로,
-     section-content-wrapper를 overflow 없이 유지하여 sticky가 작동하도록 함 */
+  /* sticky는 overflow가 있는 부모 내에서도 작동하지만,
+     스크롤 컨테이너가 content이므로 sticky는 content 기준으로 계산됨 */
 }
 
 /* 커스텀 스크롤바 디자인 */
@@ -280,6 +279,8 @@
   font-weight: 600;
   color: #212529;
   margin-bottom: 24px;
+  margin-top: 0;
+  text-align: left; /* 왼쪽 정렬 */
   font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -289,6 +290,7 @@
   gap: 32px;
   align-items: flex-start;
   position: relative;
+  margin-top: 0; /* 섹션 제목과의 간격은 제목의 margin-bottom으로 조정 */
   /* overflow 없음 - sticky가 작동하려면 필요 */
   min-height: 200px; /* 최소 높이 보장 */
 }
@@ -309,13 +311,13 @@
   border-left: 3px solid #003366;
   display: flex;
   flex-direction: column;
-  position: relative; /* JavaScript로 sticky 처리 */
+  position: sticky; /* CSS sticky 사용 */
+  top: 20px; /* 상단 여백 */
   align-self: flex-start;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
   z-index: 10; /* 다른 요소 위에 표시 */
-  /* sticky는 overflow가 있는 부모 내에서는 작동하지 않으므로
-     JavaScript로 스크롤 위치에 따라 고정 처리 */
+  /* sticky는 스크롤 컨테이너(.monthly-report-content) 기준으로 작동 */
 }
 
 .section-ai-analysis-full {

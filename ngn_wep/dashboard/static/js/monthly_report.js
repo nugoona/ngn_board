@@ -989,10 +989,10 @@ function formatMoney(value) {
 // ============================================
 // AI 분석 박스 스크롤 고정 처리
 // ============================================
+// CSS position: sticky를 사용하므로 JavaScript는 인라인 스타일만 제거
 function setupAiAnalysisSticky() {
-  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작");
+  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작 - CSS sticky 사용");
   const contentEl = document.getElementById("monthlyReportContent");
-  console.log("[AI 분석 고정] contentEl:", contentEl);
   if (!contentEl) {
     console.error("[AI 분석 고정] contentEl을 찾을 수 없습니다!");
     return;
@@ -1006,91 +1006,16 @@ function setupAiAnalysisSticky() {
     return;
   }
   
-  // 스크롤 이벤트 리스너
-  let ticking = false;
-  contentEl.addEventListener("scroll", () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        updateAiAnalysisPositions(contentEl, aiAnalysisBoxes);
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-  
-  console.log("[AI 분석 고정] 스크롤 이벤트 리스너 등록 완료");
-  
-  // 초기 위치 설정
-  updateAiAnalysisPositions(contentEl, aiAnalysisBoxes);
-  console.log("[AI 분석 고정] 초기 위치 설정 완료");
-}
-
-function updateAiAnalysisPositions(contentEl, aiAnalysisBoxes) {
-  const scrollTop = contentEl.scrollTop;
-  const headerHeight = 80; // 헤더 높이
-  const viewportHeight = window.innerHeight;
-  
-  console.log(`[AI 분석 고정] updateAiAnalysisPositions 호출 - scrollTop: ${scrollTop}, viewportHeight: ${viewportHeight}`);
-  
+  // CSS sticky가 작동하도록 각 박스의 인라인 스타일 제거
   aiAnalysisBoxes.forEach((box, index) => {
-    const section = box.closest(".monthly-report-section");
-    if (!section) {
-      console.warn(`[AI 분석 고정] 박스 ${index + 1}: 섹션을 찾을 수 없습니다`);
-      return;
-    }
-    
-    const sectionTop = section.offsetTop;
-    const sectionHeight = section.offsetHeight;
-    const sectionBottom = sectionTop + sectionHeight;
-    const boxHeight = box.offsetHeight;
-    
-    console.log(`[AI 분석 고정] 박스 ${index + 1}:`, {
-      sectionId: section.id || section.className,
-      sectionTop,
-      sectionHeight,
-      sectionBottom,
-      boxHeight,
-      scrollTop
-    });
-    
-    // 섹션이 뷰포트에 들어왔는지 확인
-    const sectionVisibleTop = sectionTop - scrollTop;
-    const sectionVisibleBottom = sectionBottom - scrollTop;
-    
-    console.log(`[AI 분석 고정] 박스 ${index + 1} 계산값:`, {
-      sectionVisibleTop,
-      sectionVisibleBottom,
-      headerHeight,
-      condition1: sectionVisibleTop <= headerHeight && sectionVisibleBottom >= boxHeight + headerHeight,
-      condition2: sectionVisibleTop > headerHeight
-    });
-    
-    if (sectionVisibleTop <= headerHeight && sectionVisibleBottom >= boxHeight + headerHeight) {
-      // 섹션 내에서 고정 가능
-      console.log(`[AI 분석 고정] 박스 ${index + 1}: sticky로 설정`);
-      box.style.position = "sticky";
-      box.style.top = `${headerHeight}px`;
-      box.style.bottom = "auto";
-    } else if (sectionVisibleTop > headerHeight) {
-      // 섹션이 아직 뷰포트에 들어오지 않음 - 일반 위치
-      console.log(`[AI 분석 고정] 박스 ${index + 1}: relative로 설정 (섹션 위)`);
-      box.style.position = "relative";
-      box.style.top = "0";
-      box.style.bottom = "auto";
-    } else {
-      // 섹션이 뷰포트를 벗어남 - 섹션 하단에 고정
-      console.log(`[AI 분석 고정] 박스 ${index + 1}: absolute로 설정 (섹션 아래)`);
-      box.style.position = "absolute";
-      box.style.top = `${sectionHeight - boxHeight}px`;
-      box.style.bottom = "auto";
-    }
-    
-    console.log(`[AI 분석 고정] 박스 ${index + 1} 최종 스타일:`, {
-      position: box.style.position,
-      top: box.style.top,
-      computedPosition: window.getComputedStyle(box).position
-    });
+    // 이전에 설정된 인라인 스타일 제거
+    box.style.position = "";
+    box.style.top = "";
+    box.style.bottom = "";
+    console.log(`[AI 분석 고정] 박스 ${index + 1}: 인라인 스타일 제거 완료 (CSS sticky 활성화)`);
   });
+  
+  console.log("[AI 분석 고정] CSS sticky 활성화 완료 - JavaScript 스크롤 이벤트 없음");
 }
 
 function formatNumber(value) {

@@ -990,10 +990,21 @@ function formatMoney(value) {
 // AI 분석 박스 스크롤 고정 처리
 // ============================================
 function setupAiAnalysisSticky() {
+  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작");
   const contentEl = document.getElementById("monthlyReportContent");
-  if (!contentEl) return;
+  console.log("[AI 분석 고정] contentEl:", contentEl);
+  if (!contentEl) {
+    console.error("[AI 분석 고정] contentEl을 찾을 수 없습니다!");
+    return;
+  }
   
   const aiAnalysisBoxes = contentEl.querySelectorAll(".section-ai-analysis");
+  console.log("[AI 분석 고정] 찾은 AI 분석 박스 개수:", aiAnalysisBoxes.length);
+  
+  if (aiAnalysisBoxes.length === 0) {
+    console.warn("[AI 분석 고정] AI 분석 박스를 찾을 수 없습니다!");
+    return;
+  }
   
   // 스크롤 이벤트 리스너
   let ticking = false;
@@ -1007,8 +1018,11 @@ function setupAiAnalysisSticky() {
     }
   });
   
+  console.log("[AI 분석 고정] 스크롤 이벤트 리스너 등록 완료");
+  
   // 초기 위치 설정
   updateAiAnalysisPositions(contentEl, aiAnalysisBoxes);
+  console.log("[AI 분석 고정] 초기 위치 설정 완료");
 }
 
 function updateAiAnalysisPositions(contentEl, aiAnalysisBoxes) {
@@ -1016,35 +1030,66 @@ function updateAiAnalysisPositions(contentEl, aiAnalysisBoxes) {
   const headerHeight = 80; // 헤더 높이
   const viewportHeight = window.innerHeight;
   
-  aiAnalysisBoxes.forEach(box => {
+  console.log(`[AI 분석 고정] updateAiAnalysisPositions 호출 - scrollTop: ${scrollTop}, viewportHeight: ${viewportHeight}`);
+  
+  aiAnalysisBoxes.forEach((box, index) => {
     const section = box.closest(".monthly-report-section");
-    if (!section) return;
+    if (!section) {
+      console.warn(`[AI 분석 고정] 박스 ${index + 1}: 섹션을 찾을 수 없습니다`);
+      return;
+    }
     
     const sectionTop = section.offsetTop;
     const sectionHeight = section.offsetHeight;
     const sectionBottom = sectionTop + sectionHeight;
     const boxHeight = box.offsetHeight;
     
+    console.log(`[AI 분석 고정] 박스 ${index + 1}:`, {
+      sectionId: section.id || section.className,
+      sectionTop,
+      sectionHeight,
+      sectionBottom,
+      boxHeight,
+      scrollTop
+    });
+    
     // 섹션이 뷰포트에 들어왔는지 확인
     const sectionVisibleTop = sectionTop - scrollTop;
     const sectionVisibleBottom = sectionBottom - scrollTop;
     
+    console.log(`[AI 분석 고정] 박스 ${index + 1} 계산값:`, {
+      sectionVisibleTop,
+      sectionVisibleBottom,
+      headerHeight,
+      condition1: sectionVisibleTop <= headerHeight && sectionVisibleBottom >= boxHeight + headerHeight,
+      condition2: sectionVisibleTop > headerHeight
+    });
+    
     if (sectionVisibleTop <= headerHeight && sectionVisibleBottom >= boxHeight + headerHeight) {
       // 섹션 내에서 고정 가능
+      console.log(`[AI 분석 고정] 박스 ${index + 1}: sticky로 설정`);
       box.style.position = "sticky";
       box.style.top = `${headerHeight}px`;
       box.style.bottom = "auto";
     } else if (sectionVisibleTop > headerHeight) {
       // 섹션이 아직 뷰포트에 들어오지 않음 - 일반 위치
+      console.log(`[AI 분석 고정] 박스 ${index + 1}: relative로 설정 (섹션 위)`);
       box.style.position = "relative";
       box.style.top = "0";
       box.style.bottom = "auto";
     } else {
       // 섹션이 뷰포트를 벗어남 - 섹션 하단에 고정
+      console.log(`[AI 분석 고정] 박스 ${index + 1}: absolute로 설정 (섹션 아래)`);
       box.style.position = "absolute";
       box.style.top = `${sectionHeight - boxHeight}px`;
       box.style.bottom = "auto";
     }
+    
+    console.log(`[AI 분석 고정] 박스 ${index + 1} 최종 스타일:`, {
+      position: box.style.position,
+      top: box.style.top,
+      computedPosition: window.getComputedStyle(box).position
+    });
   });
 }
 

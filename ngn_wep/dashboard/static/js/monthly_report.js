@@ -477,6 +477,51 @@ function renderSection1(data) {
   const ordersDiff = ordersThis - ordersPrev;
   const aovDiff = aovThis - aovPrev;
   
+  // ============================================
+  // 스파크라인 데이터 준비 (최근 6개월)
+  // ============================================
+  const monthly13m = mallSales.monthly_13m || [];
+  const recent6Months = monthly13m.slice(-6); // 최근 6개월
+  
+  // 각 메트릭별 스파크라인 데이터 추출
+  const sparklineData = {
+    sales: recent6Months.map(m => m.net_sales || 0),
+    orders: recent6Months.map(m => m.total_orders || 0),
+    aov: recent6Months.map(m => {
+      const orders = m.total_orders || 0;
+      const sales = m.net_sales || 0;
+      return orders > 0 ? sales / orders : 0;
+    })
+  };
+  
+  // 스파크라인 SVG 생성 함수
+  function generateSparklineSVG(values, width = 100, height = 30, color = "#0066CC") {
+    if (!values || values.length === 0) return "";
+    
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1; // 0으로 나누기 방지
+    
+    const points = values.map((val, idx) => {
+      const x = (idx / (values.length - 1)) * width;
+      const y = height - ((val - min) / range) * height;
+      return `${x},${y}`;
+    }).join(" ");
+    
+    return `
+      <svg class="sparkline-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <polyline
+          points="${points}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    `;
+  }
+  
   const scorecardData = [
     {
       label: "월 매출",
@@ -484,7 +529,8 @@ function renderSection1(data) {
       prev: formatMoney(netSalesPrev),
       change: comp.net_sales_mom ? formatChange(comp.net_sales_mom.pct) : "-",
       diff: formatMoney(Math.abs(salesDiff)),
-      status: comp.net_sales_mom?.pct >= 0 ? "up" : "down"
+      status: comp.net_sales_mom?.pct >= 0 ? "up" : "down",
+      sparkline: generateSparklineSVG(sparklineData.sales, 100, 30, comp.net_sales_mom?.pct >= 0 ? "#28a745" : "#dc3545")
     },
     {
       label: "주문 건수",
@@ -492,7 +538,8 @@ function renderSection1(data) {
       prev: formatNumber(ordersPrev) + "건",
       change: comp.orders_mom ? formatChange(comp.orders_mom.pct) : "-",
       diff: `${Math.abs(ordersDiff)}건`,
-      status: comp.orders_mom?.pct >= 0 ? "up" : "down"
+      status: comp.orders_mom?.pct >= 0 ? "up" : "down",
+      sparkline: generateSparklineSVG(sparklineData.orders, 100, 30, comp.orders_mom?.pct >= 0 ? "#28a745" : "#dc3545")
     },
     {
       label: "객단가 (AOV)",
@@ -500,7 +547,8 @@ function renderSection1(data) {
       prev: formatMoney(aovPrev),
       change: aovPrev > 0 ? formatChange(((aovThis - aovPrev) / aovPrev) * 100) : "-",
       diff: formatMoney(Math.abs(aovDiff)),
-      status: aovThis >= aovPrev ? "up" : "down"
+      status: aovThis >= aovPrev ? "up" : "down",
+      sparkline: generateSparklineSVG(sparklineData.aov, 100, 30, aovThis >= aovPrev ? "#28a745" : "#dc3545")
     }
   ];
   
@@ -517,6 +565,7 @@ function renderSection1(data) {
           ${item.change !== "-" ? (item.status === "up" ? "▲" : "▼") : ""} ${item.change}
           ${item.diff && item.status === "down" ? ` (${item.diff})` : item.diff && item.status === "up" ? ` (+${item.diff})` : ""}
         </div>
+        <div class="scorecard-sparkline">${item.sparkline}</div>
       </div>
     `).join("");
     container.innerHTML = htmlContent;
@@ -1131,27 +1180,46 @@ function renderSection7(data) {
   const comparisonTableWrapper = document.getElementById("section7ComparisonTable");
   const comparisonTableBody = document.getElementById("section7ComparisonTableBody");
   
-  if (comparisonTableData && comparisonTableBody) {
-    // 비교표 데이터가 있으면 테이블 렌더링
+  // 기본 비교 항목 (AI가 JSON을 제공하지 않아도 표시)
+  const defaultComparisonItems = [
+    { key: "주력_아이템", label: "주력 아이템" },
+    { key: "평균_가격", label: "평균 가격" },
+    { key: "핵심_소재", label: "핵심 소재" },
+    { key: "타겟_고객층", label: "타겟 고객층" },
+    { key: "가격대", label: "가격대" }
+  ];
+  
+  if (comparisonTableBody) {
     const tableRows = [];
     
-    // JSON 객체의 각 키를 행으로 변환
-    for (const [key, value] of Object.entries(comparisonTableData)) {
-      if (typeof value === 'object' && value !== null) {
-        const marketValue = value.market || value.trend || value["29cm"] || "-";
-        const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
-        
-        // 키를 한글 레이블로 변환 (예: "주력_아이템" -> "주력 아이템")
-        const label = key.replace(/_/g, " ");
-        
+    if (comparisonTableData) {
+      // AI가 제공한 JSON 데이터 사용
+      for (const [key, value] of Object.entries(comparisonTableData)) {
+        if (typeof value === 'object' && value !== null) {
+          const marketValue = value.market || value.trend || value["29cm"] || "-";
+          const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
+          const label = key.replace(/_/g, " ");
+          
+          tableRows.push(`
+            <tr>
+              <td class="comparison-label">${label}</td>
+              <td class="comparison-market">${marketValue}</td>
+              <td class="comparison-company">${companyValue}</td>
+            </tr>
+          `);
+        }
+      }
+    } else {
+      // AI가 JSON을 제공하지 않으면 기본 항목 표시 (빈 테이블)
+      defaultComparisonItems.forEach(item => {
         tableRows.push(`
           <tr>
-            <td class="comparison-label">${label}</td>
-            <td class="comparison-market">${marketValue}</td>
-            <td class="comparison-company">${companyValue}</td>
+            <td class="comparison-label">${item.label}</td>
+            <td class="comparison-market">-</td>
+            <td class="comparison-company">-</td>
           </tr>
         `);
-      }
+      });
     }
     
     if (tableRows.length > 0) {
@@ -1163,11 +1231,6 @@ function renderSection7(data) {
       if (comparisonTableWrapper) {
         comparisonTableWrapper.style.display = "none";
       }
-    }
-  } else {
-    // 비교표 데이터가 없으면 숨김
-    if (comparisonTableWrapper) {
-      comparisonTableWrapper.style.display = "none";
     }
   }
   

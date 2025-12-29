@@ -1141,25 +1141,63 @@ function renderSection7(data) {
 function renderSection8(data) {
   const facts = data.facts || {};
   const forecast = facts.forecast_next_month || {};
-  const mallSales = facts.mall_sales || {};
-  const yoy = mallSales.yoy || {};
+  const mallSalesForecast = forecast.mall_sales || {};
   
   const container = document.getElementById("section8Forecast");
   if (container) {
-    // 작년 동월 매출 (yoy 데이터 사용)
-    const lastYearSales = yoy.net_sales || forecast.predicted_sales || 0;
+    // 작년 동월 매출 (median 값 사용)
+    const sameMonthStats = mallSalesForecast.net_sales_same_month_stats || {};
+    const lastYearSameMonthSales = sameMonthStats.median || 0;
     
-    // 작년 동월 날짜 계산 (YYYY-MM 형식)
-    const lastYear = currentYear - 1;
-    const lastYearMonth = String(currentMonth).padStart(2, '0');
-    const lastYearDateStr = `${lastYear}-${lastYearMonth}`;
+    // 작년 익월 매출 (median 값 사용)
+    const nextMonthStats = mallSalesForecast.net_sales_next_month_stats || {};
+    const lastYearNextMonthSales = nextMonthStats.median || 0;
     
-    // 목표 매출 카드 제거, 작년 동월 매출만 표시 (formatMoney는 이미 원 단위로 변환)
+    // 작년 매출 증감률
+    const yoyGrowthPct = mallSalesForecast.yoy_growth_pct;
+    
+    // 날짜 계산 (forecast.month 기준)
+    const forecastMonth = forecast.month || `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    const [forecastYear, forecastMonthNum] = forecastMonth.split('-').map(Number);
+    
+    // 작년 동월 날짜
+    const lastYear = forecastYear - 1;
+    const lastYearDateStr = `${lastYear}-${String(forecastMonthNum).padStart(2, '0')}`;
+    
+    // 작년 익월 날짜 계산
+    const nextMonthNum = forecastMonthNum === 12 ? 1 : forecastMonthNum + 1;
+    const nextYear = forecastMonthNum === 12 ? lastYear + 1 : lastYear;
+    const lastYearNextMonthStr = `${nextYear}-${String(nextMonthNum).padStart(2, '0')}`;
+    
+    // 증감률 포맷팅
+    let growthDisplay = "데이터 없음";
+    let growthClass = "";
+    if (yoyGrowthPct !== null && yoyGrowthPct !== undefined) {
+      if (yoyGrowthPct > 0) {
+        growthDisplay = `+${yoyGrowthPct.toFixed(1)}%`;
+        growthClass = "forecast-growth-positive";
+      } else if (yoyGrowthPct < 0) {
+        growthDisplay = `${yoyGrowthPct.toFixed(1)}%`;
+        growthClass = "forecast-growth-negative";
+      } else {
+        growthDisplay = "0%";
+      }
+    }
+    
+    // 3개 카드 렌더링 (3등분)
     container.innerHTML = `
-      <div class="forecast-text-content">
-        <div class="forecast-item-text">
+      <div class="forecast-cards-grid">
+        <div class="forecast-card">
           <div class="forecast-label">작년 동월 매출 (${lastYearDateStr})</div>
-          <div class="forecast-value-large">${formatMoney(lastYearSales)}</div>
+          <div class="forecast-value-large">${formatMoney(lastYearSameMonthSales)}</div>
+        </div>
+        <div class="forecast-card">
+          <div class="forecast-label">작년 익월 매출 (${lastYearNextMonthStr})</div>
+          <div class="forecast-value-large">${formatMoney(lastYearNextMonthSales)}</div>
+        </div>
+        <div class="forecast-card">
+          <div class="forecast-label">작년 매출 증감</div>
+          <div class="forecast-value-large ${growthClass}">${growthDisplay}</div>
         </div>
       </div>
     `;

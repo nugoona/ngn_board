@@ -2323,6 +2323,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         next_report_month = shift_month(report_month, 1)
         next_month_num = int(next_report_month.split("-")[1])
         
+        # 작년 익월 계산 (다음 달의 작년 동월)
+        next_month_next = shift_month(next_report_month, 1)
+        next_month_next_num = int(next_month_next.split("-")[1])
+        
         forecast = {
             "month": next_report_month,
             "mall_sales": {},
@@ -2330,10 +2334,13 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "ga4_traffic": {},
         }
         
-        # 같은 월(month-of-year) 표본 수집
+        # 같은 월(month-of-year) 표본 수집 (작년 동월)
         mall_sales_same_month = []
         meta_ads_same_month = []
         ga4_traffic_same_month = []
+        
+        # 작년 익월 표본 수집
+        mall_sales_next_month = []
         
         for item in monthly_13m:
             ym = item.get("ym", "")
@@ -2345,6 +2352,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                         v = item.get("net_sales")
                         if v is not None:
                             mall_sales_same_month.append(v)
+                    elif item_month == next_month_next_num:
+                        # 작년 익월 매출
+                        v = item.get("net_sales")
+                        if v is not None:
+                            mall_sales_next_month.append(v)
                 except (ValueError, IndexError):
                     continue
         
@@ -2384,7 +2396,22 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 "median": statistics.median(values) if len(values) > 0 else None,
             }
         
+        # 작년 동월 매출 통계
         forecast["mall_sales"]["net_sales_same_month_stats"] = calc_stats(mall_sales_same_month)
+        
+        # 작년 익월 매출 통계
+        forecast["mall_sales"]["net_sales_next_month_stats"] = calc_stats(mall_sales_next_month)
+        
+        # 작년 매출 증감률 계산
+        same_month_median = forecast["mall_sales"]["net_sales_same_month_stats"].get("median")
+        next_month_median = forecast["mall_sales"]["net_sales_next_month_stats"].get("median")
+        
+        if same_month_median is not None and next_month_median is not None and same_month_median > 0:
+            growth_pct = ((next_month_median - same_month_median) / same_month_median) * 100
+            forecast["mall_sales"]["yoy_growth_pct"] = round(growth_pct, 2)
+        else:
+            forecast["mall_sales"]["yoy_growth_pct"] = None
+        
         forecast["meta_ads"]["spend_same_month_stats"] = calc_stats(meta_ads_same_month)
         forecast["ga4_traffic"]["total_users_same_month_stats"] = calc_stats(ga4_traffic_same_month)
         

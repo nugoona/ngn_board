@@ -1004,6 +1004,26 @@
   align-items: center;
 }
 
+/* 3등분 카드 그리드 */
+.forecast-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.forecast-card {
+  padding: 24px;
+  background: #F8F9FA;
+  border-radius: 8px;
+  text-align: center;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .forecast-label {
   font-size: 14px;
   font-weight: 600;
@@ -1015,6 +1035,14 @@
   font-size: 28px;
   font-weight: 700;
   color: #212529;
+}
+
+.forecast-growth-positive {
+  color: #28a745;
+}
+
+.forecast-growth-negative {
+  color: #dc3545;
 }
 
 /* ============================================
@@ -1138,6 +1166,11 @@
   
   .forecast-text-content {
     flex-direction: column;
+  }
+  
+  .forecast-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 

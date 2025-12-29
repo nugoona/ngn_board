@@ -2619,6 +2619,18 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             
             # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json.gz
             blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz"
+            
+            # 기존 파일들 삭제 (snapshot.json, snapshot.json.gz 모두)
+            old_paths = [
+                f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json",
+                f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz",
+            ]
+            for old_path in old_paths:
+                old_blob = bucket.blob(old_path)
+                if old_blob.exists():
+                    old_blob.delete()
+                    print(f"🗑️  [INFO] 기존 파일 삭제: {old_path}", file=sys.stderr)
+            
             blob = bucket.blob(blob_path)
             
             print(f"📤 [INFO] GCS 저장 시작: {blob_path}", file=sys.stderr)

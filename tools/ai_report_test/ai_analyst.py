@@ -149,37 +149,10 @@ def load_from_gcs(gcs_path: str) -> Dict:
         if not blob.exists():
             raise FileNotFoundError(f"GCS 파일을 찾을 수 없습니다: {gcs_path}")
         
-        # 파일 다운로드 (requests를 사용하여 urllib3 버전 호환성 문제 회피)
-        # signed URL 생성하여 직접 다운로드
-        import requests
-        from datetime import timedelta
-        
-        try:
-            # 1시간 유효한 signed URL 생성
-            url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(hours=1),
-                method="GET"
-            )
-        except Exception as e:
-            raise Exception(f"Signed URL 생성 실패: {e}. 서비스 계정 권한을 확인하세요.")
-        
-        # requests로 다운로드 (자동 압축 해제 완전 비활성화)
-        # Accept-Encoding: identity로 서버가 압축하지 않도록 요청
-        headers = {
-            'Accept-Encoding': 'identity'  # 압축 없이 원본 데이터 요청
-        }
-        
-        try:
-            response = requests.get(url, stream=True, headers=headers, timeout=300)
-            response.raise_for_status()
-            
-            # response.content를 직접 사용 (이미 다운로드된 전체 내용, urllib3 디코딩 우회)
-            # stream=True이지만 content 속성은 전체를 메모리에 로드하되 디코딩은 하지 않음
-            file_bytes = response.content
-            
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"GCS 파일 다운로드 실패: {e}")
+        # Signed URL은 private key(서명)가 필요해서 Cloud Run/ADC 토큰 환경에서 실패할 수 있음.
+        # GCS SDK로 원본 바이트를 직접 다운로드하면 서명 없이 동작하며,
+        # raw_download=True로 자동 디코딩/압축 해제를 막고 우리가 직접 gzip 처리 가능.
+        file_bytes = blob.download_as_bytes(raw_download=True)
         
         # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리
         json_str = None

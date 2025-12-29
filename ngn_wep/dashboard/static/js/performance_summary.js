@@ -163,6 +163,23 @@ async function fetchPerformanceSummaryData() {
     }
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderPerformanceSummaryWidget(data, latestUpdate) {
+    // ✅ UI 렌더링
+    updatePerformanceSummaryCards(data || []);
+    
+    // ✅ 업데이트 시간 처리
+    if (latestUpdate && latestUpdate !== "None" && latestUpdate !== "null") {
+        updateUpdatedAtText(latestUpdate);
+    } else {
+        updateUpdatedAtText(null);
+    }
+    
+    // ✅ 로딩 스피너 제거
+    hideLoading("#loadingOverlayPerformanceSummary");
+    document.querySelector(".performance-summary-wrapper")?.classList.remove("loading");
+}
+
 // ✅ 개선된 로딩 함수들 - CSS와 충돌 방지
 function showLoading(target) {
     const element = document.querySelector(target);

@@ -768,3 +768,335 @@ def proxy_image():
     except Exception as e:
         print(f"[ERROR] 이미지 프록시 오류: {str(e)}")
         return jsonify({"status": "error", "message": f"프록시 오류: {str(e)}"}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 Batch Dashboard Data API (Single Request)
+#     POST  /dashboard/get_batch_dashboard_data
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/get_batch_dashboard_data", methods=["POST"])
+def get_batch_dashboard_data_route():
+    """
+    대시보드 초기 로딩을 위한 통합 API
+    모든 위젯 데이터를 한 번의 요청으로 병렬 처리하여 반환
+    """
+    t0 = time.time()
+    try:
+        data = request.get_json()
+        user_id = session.get("user_id")
+        raw_company_name = data.get("company_name", "all")
+
+        # ✅ company_name 처리 (기존 로직과 동일)
+        if raw_company_name == "all":
+            company_name = ["demo"] if user_id == "demo" else [
+                name for name in session.get("company_names", []) if name.lower() != "demo"
+            ]
+        elif isinstance(raw_company_name, list):
+            company_name = ["demo"] if user_id == "demo" else [
+                name.lower() for name in raw_company_name if name.lower() != "demo"
+            ]
+        else:
+            name = str(raw_company_name).strip().lower()
+            if name == "demo" and user_id != "demo":
+                return jsonify({
+                    "status": "success",
+                    "message": "demo 업체 접근 불가",
+                    "performance_summary": [],
+                    "cafe24_sales": [],
+                    "cafe24_product_sales": [],
+                    "ga4_source_summary": [],
+                    "viewitem_summary": [],
+                    "monthly_net_sales_visitors": [],
+                    "platform_sales_summary": [],
+                    "platform_sales_ratio": [],
+                    "product_sales_ratio": []
+                }), 200
+            company_name = name
+
+        # ✅ 공통 파라미터 처리
+        period = str(data.get("period", "today")).strip()
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        
+        # ✅ 추가 파라미터 (기본값 적용)
+        date_type = str(data.get("date_type", "summary")).strip()
+        date_sort = str(data.get("date_sort", "desc")).strip()
+        sort_by = str(data.get("sort_by", "sales")).strip()
+        platform_date_type = str(data.get("platform_date_type", "summary")).strip()
+        platform_date_sort = str(data.get("platform_date_sort", "desc")).strip()
+
+        # ✅ 기간 필터 처리
+        if period and period not in ["monthly_net_sales_visitors", "platform_sales_monthly"]:
+            if not period:
+                period = "manual"
+            try:
+                start_date, end_date = get_start_end_dates(period, start_date, end_date)
+            except ValueError as ve:
+                return jsonify({"status": "error", "message": str(ve)}), 400
+
+        print(f"[BATCH_API] 요청 - company_name={company_name}, period={period}, "
+              f"start_date={start_date}, end_date={end_date}")
+
+        # ✅ 응답 데이터 초기화
+        response_data = {
+            "status": "success",
+            "performance_summary": [],
+            "performance_summary_total_count": 0,
+            "latest_update": None,
+            "cafe24_sales": [],
+            "cafe24_sales_total_count": 0,
+            "cafe24_product_sales": [],
+            "cafe24_product_sales_total_count": 0,
+            "ga4_source_summary": [],
+            "ga4_source_summary_total_count": 0,
+            "viewitem_summary": [],
+            "viewitem_summary_total_count": 0,
+            "monthly_net_sales_visitors": [],
+            "monthly_net_sales_visitors_total_count": 0,
+            "platform_sales_summary": [],
+            "platform_sales_summary_total_count": 0,
+            "platform_sales_ratio": [],
+            "product_sales_ratio": []
+        }
+        
+        timing_log = {}
+        fetch_tasks = []
+
+        # ✅ ThreadPoolExecutor로 병렬 처리
+        with ThreadPoolExecutor() as executor:
+            # 1. Performance Summary
+            def fetch_performance():
+                try:
+                    t1 = time.time()
+                    performance_data = get_performance_summary_new(
+                        company_name=company_name,
+                        start_date=start_date,
+                        end_date=end_date,
+                        user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["performance_summary"] = round(t2-t1, 3)
+                    
+                    latest_update = None
+                    if performance_data:
+                        for row in performance_data:
+                            if row.get("updated_at"):
+                                if hasattr(row["updated_at"], 'isoformat'):
+                                    latest_update = row["updated_at"].isoformat()
+                                else:
+                                    latest_update = str(row["updated_at"])
+                                break
+                    
+                    return ("performance_summary", performance_data[:100], len(performance_data), latest_update)
+                except Exception as e:
+                    print(f"[ERROR] Performance Summary 오류: {type(e).__name__}: {str(e)}")
+                    return ("performance_summary", [], 0, None)
+            
+            fetch_tasks.append(executor.submit(fetch_performance))
+            
+            # 2. Cafe24 Sales
+            def fetch_cafe24_sales():
+                try:
+                    t1 = time.time()
+                    result = get_cafe24_sales_data(
+                        company_name, period, start_date, end_date,
+                        date_type, date_sort, limit=30, page=1, user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["cafe24_sales"] = round(t2-t1, 3)
+                    return ("cafe24_sales", result.get("rows", []), result.get("total_count", 0))
+                except Exception as e:
+                    print(f"[ERROR] Cafe24 Sales 오류: {type(e).__name__}: {str(e)}")
+                    return ("cafe24_sales", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_cafe24_sales))
+            
+            # 3. Cafe24 Product Sales
+            def fetch_cafe24_product_sales():
+                try:
+                    t1 = time.time()
+                    result = get_cafe24_product_sales(
+                        company_name, period, start_date, end_date,
+                        sort_by=sort_by, limit=13, page=1, user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["cafe24_product_sales"] = round(t2-t1, 3)
+                    return ("cafe24_product_sales", result.get("rows", []), result.get("total_count", 0))
+                except Exception as e:
+                    print(f"[ERROR] Cafe24 Product Sales 오류: {type(e).__name__}: {str(e)}")
+                    return ("cafe24_product_sales", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_cafe24_product_sales))
+            
+            # 4. GA4 Source Summary
+            def fetch_ga4_source_summary():
+                try:
+                    t1 = time.time()
+                    if not start_date or not end_date:
+                        print(f"[ERROR] GA4 Source Summary - start_date 또는 end_date가 없습니다!")
+                        return ("ga4_source_summary", [], 0)
+                    
+                    cache_buster = data.get('_cache_buster')
+                    data_rows = get_ga4_source_summary(company_name, start_date, end_date, limit=100, _cache_buster=cache_buster)
+                    t2 = time.time()
+                    timing_log["ga4_source_summary"] = round(t2-t1, 3)
+                    return ("ga4_source_summary", data_rows[:100], len(data_rows))
+                except Exception as e:
+                    print(f"[ERROR] GA4 Source Summary 오류: {type(e).__name__}: {str(e)}")
+                    return ("ga4_source_summary", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_ga4_source_summary))
+            
+            # 5. ViewItem Summary
+            def fetch_viewitem_summary():
+                try:
+                    t1 = time.time()
+                    if not start_date or not end_date:
+                        print(f"[ERROR] ViewItem Summary - start_date 또는 end_date가 없습니다!")
+                        return ("viewitem_summary", [], 0)
+                    
+                    data_rows = get_viewitem_summary(company_name, start_date, end_date, limit=500)
+                    t2 = time.time()
+                    timing_log["viewitem_summary"] = round(t2-t1, 3)
+                    return ("viewitem_summary", data_rows, len(data_rows))
+                except Exception as e:
+                    print(f"[ERROR] ViewItem Summary 오류: {type(e).__name__}: {str(e)}")
+                    return ("viewitem_summary", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_viewitem_summary))
+            
+            # 6. Monthly Net Sales & Visitors
+            def fetch_monthly_net_sales_visitors():
+                try:
+                    t1 = time.time()
+                    data_rows = get_monthly_net_sales_visitors(company_name)
+                    t2 = time.time()
+                    timing_log["monthly_net_sales_visitors"] = round(t2-t1, 3)
+                    return ("monthly_net_sales_visitors", data_rows, len(data_rows))
+                except Exception as e:
+                    print(f"[ERROR] Monthly Net Sales Visitors 오류: {type(e).__name__}: {str(e)}")
+                    return ("monthly_net_sales_visitors", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_monthly_net_sales_visitors))
+            
+            # 7. Platform Sales Summary
+            def fetch_platform_sales_summary():
+                try:
+                    t1 = time.time()
+                    from ..services.platform_sales_summary import get_platform_sales_by_day
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+                    
+                    if not start_date or not end_date:
+                        print(f"[ERROR] Platform Sales Summary - start_date 또는 end_date가 없습니다!")
+                        return ("platform_sales_summary", [], 0)
+                    
+                    data_rows = get_platform_sales_by_day(
+                        company_names=_company_names,
+                        start_date=start_date,
+                        end_date=end_date,
+                        date_type=platform_date_type,
+                        date_sort=platform_date_sort
+                    )
+                    t2 = time.time()
+                    timing_log["platform_sales_summary"] = round(t2-t1, 3)
+                    return ("platform_sales_summary", data_rows, len(data_rows))
+                except Exception as e:
+                    print(f"[ERROR] Platform Sales Summary 오류: {type(e).__name__}: {str(e)}")
+                    return ("platform_sales_summary", [], 0)
+            
+            fetch_tasks.append(executor.submit(fetch_platform_sales_summary))
+            
+            # 8. Platform Sales Ratio
+            def fetch_platform_sales_ratio():
+                try:
+                    t1 = time.time()
+                    from ..services.platform_sales_summary import get_platform_sales_ratio
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+                    
+                    if not start_date or not end_date:
+                        print(f"[ERROR] Platform Sales Ratio - start_date 또는 end_date가 없습니다!")
+                        return ("platform_sales_ratio", [])
+                    
+                    data_rows = get_platform_sales_ratio(
+                        company_names=_company_names,
+                        start_date=start_date,
+                        end_date=end_date
+                    )
+                    t2 = time.time()
+                    timing_log["platform_sales_ratio"] = round(t2-t1, 3)
+                    return ("platform_sales_ratio", data_rows)
+                except Exception as e:
+                    print(f"[ERROR] Platform Sales Ratio 오류: {type(e).__name__}: {str(e)}")
+                    return ("platform_sales_ratio", [])
+            
+            fetch_tasks.append(executor.submit(fetch_platform_sales_ratio))
+            
+            # 9. Product Sales Ratio
+            def fetch_product_sales_ratio():
+                try:
+                    t1 = time.time()
+                    from ..services.product_sales_ratio import get_product_sales_ratio
+                    _company_names = company_name if isinstance(company_name, list) else [company_name]
+                    
+                    if not start_date or not end_date:
+                        print(f"[ERROR] Product Sales Ratio - start_date 또는 end_date가 없습니다!")
+                        return ("product_sales_ratio", [])
+                    
+                    data_rows = get_product_sales_ratio(
+                        _company_names, start_date, end_date, limit=50, user_id=user_id
+                    )
+                    t2 = time.time()
+                    timing_log["product_sales_ratio"] = round(t2-t1, 3)
+                    return ("product_sales_ratio", data_rows)
+                except Exception as e:
+                    print(f"[ERROR] Product Sales Ratio 오류: {type(e).__name__}: {str(e)}")
+                    return ("product_sales_ratio", [])
+            
+            fetch_tasks.append(executor.submit(fetch_product_sales_ratio))
+
+        # ✅ 결과 수집
+        for future in fetch_tasks:
+            try:
+                result = future.result()
+                if result[0] == "performance_summary":
+                    response_data["performance_summary"] = result[1]
+                    response_data["performance_summary_total_count"] = result[2]
+                    response_data["latest_update"] = result[3]
+                elif result[0] == "cafe24_sales":
+                    response_data["cafe24_sales"] = result[1]
+                    response_data["cafe24_sales_total_count"] = result[2]
+                elif result[0] == "cafe24_product_sales":
+                    response_data["cafe24_product_sales"] = result[1]
+                    response_data["cafe24_product_sales_total_count"] = result[2]
+                elif result[0] == "ga4_source_summary":
+                    response_data["ga4_source_summary"] = result[1]
+                    response_data["ga4_source_summary_total_count"] = result[2]
+                elif result[0] == "viewitem_summary":
+                    response_data["viewitem_summary"] = result[1]
+                    response_data["viewitem_summary_total_count"] = result[2]
+                elif result[0] == "monthly_net_sales_visitors":
+                    response_data["monthly_net_sales_visitors"] = result[1]
+                    response_data["monthly_net_sales_visitors_total_count"] = result[2]
+                elif result[0] == "platform_sales_summary":
+                    response_data["platform_sales_summary"] = result[1]
+                    response_data["platform_sales_summary_total_count"] = result[2]
+                elif result[0] == "platform_sales_ratio":
+                    response_data["platform_sales_ratio"] = result[1]
+                elif result[0] == "product_sales_ratio":
+                    response_data["product_sales_ratio"] = result[1]
+            except Exception as e:
+                print(f"[ERROR] Future 결과 처리 오류: {type(e).__name__}: {str(e)}")
+                # 개별 실패는 무시하고 계속 진행
+
+        t_end = time.time()
+        print("[BATCH_API] /dashboard/get_batch_dashboard_data timing:", timing_log, "total:", round(t_end-t0, 3), "s")
+        return jsonify(response_data), 200
+
+    except TypeError as te:
+        print(f"[ERROR] Batch API 요청 데이터 타입 오류: {te}")
+        return jsonify({"status": "error", "message": f"잘못된 요청 형식: {str(te)}"}), 400
+
+    except Exception as e:
+        print(f"[ERROR] Batch API 데이터 조회 중 오류 발생: {e}")
+        return jsonify({"status": "error", "message": f"데이터 조회 중 오류 발생: {str(e)}"}), 500

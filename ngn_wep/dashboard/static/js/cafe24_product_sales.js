@@ -94,6 +94,21 @@ function renderCafe24ProductSalesPagination() {
   $container.append($next);
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderCafe24ProductsWidget(data, totalCount) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  cafe24ProductSalesCurrentPage = 1;
+  cafe24ProductSalesRawData = data || [];
+  cafe24ProductSalesTotalCount = totalCount || 0;
+
+  // ✅ UI 렌더링
+  renderCafe24ProductSalesTable();
+  renderCafe24ProductSalesPagination();
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayCafe24Products");
+}
+
 // ✅ 데이터 요청
 function fetchCafe24ProductSalesData(requestData) {
   const { period, end_date } = requestData;

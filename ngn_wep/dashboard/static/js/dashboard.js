@@ -102,7 +102,7 @@ function getRequestData(page = 1, extra = {}) {
 
 // updateAllData 함수를 전역으로 노출
 window.updateAllData = async function() {
-  console.log("🎯 dashboard.js의 updateAllData() 함수 시작");
+  console.log("🎯 dashboard.js의 updateAllData() 함수 시작 (Batch API)");
   
   if (isLoading) {
     console.log("⚠️ 이미 로딩 중이므로 중단");
@@ -121,155 +121,245 @@ window.updateAllData = async function() {
   debugLog("✅ updateAllData() 실행 조건 만족 - 로딩 시작");
   isLoading = true;
 
-  // 🔥 즉시 의존성 로딩 스피너 시작 - 필터 변경 시에도 작동
-  debugLog("🔄 의존성 로딩 스피너 시작 - 필터 변경 감지");
-  
-  // 🔥 모든 위젯의 로딩 스피너 표시 (사용자 경험 개선)
+  // ✅ 모든 위젯의 로딩 스피너 표시
   const loadingOverlays = [
-    "#loadingOverlayPerformanceSummary",  // 성과 요약
-    "#loadingOverlayCafe24Sales",        // 카페24 매출
-    "#loadingOverlayCafe24Products",     // 카페24 상품판매
-    "#loadingOverlayGa4Source",          // GA4 소스별 유입
-    "#loadingOverlayViewitemSummary",    // 상품 조회 요약
-    "#loadingOverlayProductSalesRatio"   // 상품 판매 비율
+    "#loadingOverlayPerformanceSummary",
+    "#loadingOverlayCafe24Sales",
+    "#loadingOverlayCafe24Products",
+    "#loadingOverlayGa4Source",
+    "#loadingOverlayViewitemSummary",
+    "#loadingOverlayProductSalesRatio",
+    "#loadingOverlayPlatformSalesSummary",
+    "#loadingOverlayPlatformSalesRatio",
+    "#loadingOverlayMonthlyChart"
   ];
   
   loadingOverlays.forEach(overlayId => {
     const overlay = $(overlayId);
     if (overlay.length > 0) {
-      console.log(`✅ ${overlayId} 로딩 스피너 표시`);
       showLoading(overlayId);
-    } else {
-      console.log(`⚠️ ${overlayId} 로딩 오버레이를 찾을 수 없음`);
     }
   });
 
-  // 필수 데이터 요청 객체
-  const salesRequest = getRequestData(1, {
-    data_type: "cafe24_sales",
-    date_type: $("input[name='dateType']:checked").val(),
-    date_sort: $("#dateSort").val() || "desc",
-    limit: 30,
-  });
+  // ✅ 파라미터 수집 (명확한 Selector)
+  const companyName = sessionStorage.getItem("selectedCompany") || $("#accountFilter").val() || "all";
+  const date_type = $("input[name='dateType']:checked").val() || "summary";
+  const date_sort = $("#dateSort").val() || "desc";
+  const sort_by = $("input[name='cafe24_product_sort']:checked").val() || "sales";
+  const platform_date_type = $("input[name='platformDateType']:checked").val() || "summary";
+  const platform_date_sort = $("#platformDateSort").val() || "desc";
 
-  const productRequest = getRequestData(1, {
-    data_type: "cafe24_product_sales",
-    sort_by: $("input[name='cafe24_product_sort']:checked").val() || "sales",
-    limit: 13,
-  });
+  let startDate = "", endDateParam = "";
+  if (period === "manual") {
+    startDate = $("#startDate").val()?.trim() || "";
+    endDateParam = $("#endDate").val()?.trim() || "";
+  }
+
+  // ✅ Batch API 요청 데이터 구성
+  const batchRequestData = {
+    company_name: companyName,
+    period: period,
+    date_type: date_type,
+    date_sort: date_sort,
+    sort_by: sort_by,
+    platform_date_type: platform_date_type,
+    platform_date_sort: platform_date_sort
+  };
+
+  if (period === "manual") {
+    batchRequestData.start_date = startDate;
+    batchRequestData.end_date = endDateParam;
+  }
 
   try {
-    debugLog("🔄 Cafe24 데이터 요청 시작 - 필터 변경");
+    debugLog("🔄 Batch API 요청 시작:", batchRequestData);
     
-    // 필수 데이터는 병렬로 실행하되 실패해도 계속 진행
-    const promises = [];
-    
-    // fetchCafe24SalesData 함수가 정의되어 있는지 확인
-    if (typeof fetchCafe24SalesData === 'function') {
-      promises.push(fetchCafe24SalesData(salesRequest).catch(e => {
-        debugError("[ERROR] fetchCafe24SalesData 실패:", e);
-      }));
-    } else {
-      debugLog("[WARNING] fetchCafe24SalesData 함수가 정의되지 않음");
-    }
-    
-    // fetchCafe24ProductSalesData 함수가 정의되어 있는지 확인
-    if (typeof fetchCafe24ProductSalesData === 'function') {
-      promises.push(fetchCafe24ProductSalesData(productRequest).catch(e => {
-        debugError("[ERROR] fetchCafe24ProductSalesData 실패:", e);
-      }));
-    } else {
-      debugLog("[WARNING] fetchCafe24ProductSalesData 함수가 정의되지 않음");
-    }
-    
-    // Promise가 있을 때만 실행
-    if (promises.length > 0) {
-      await Promise.all(promises);
+    // ✅ Batch API 호출
+    const response = await fetch('/dashboard/get_batch_dashboard_data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(batchRequestData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    debugLog("✅ Cafe24 데이터 요청 완료 - 필터 변경");
-    
-    // 🔥 사이트 성과 요약 로딩 스피너는 모든 데이터 요청 완료 후에 숨김
-    // (카페24 매출 완료 후 바로 숨기지 않음)
+    const data = await response.json();
+    debugLog("✅ Batch API 응답 받음:", data);
 
-    // 메인 성과 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
-    const fetchMainData = [];
-    
-    try {
-      fetchPerformanceSummaryData();
-    } catch (e) {
-      debugError("[ERROR] fetchPerformanceSummaryData 실패:", e);
-    }
-    
-    try {
-      fetchMonthlyNetSalesVisitors();
-    } catch (e) {
-      debugError("[ERROR] fetchMonthlyNetSalesVisitors 실패:", e);
+    if (!data || data.status !== "success") {
+      throw new Error("Batch API 응답 오류: " + (data.message || "알 수 없음"));
     }
 
-    // 플랫폼 데이터 요청 (Promise 반환하지 않는 함수들은 try-catch로 처리)
-    const fetchPlatformData = [];
-    
+    // ✅ 응답 데이터를 각 렌더링 함수에 분배
     try {
-      fetchPlatformSalesSummary();
+      if (typeof renderPerformanceSummaryWidget === 'function' && data.performance_summary !== undefined) {
+        renderPerformanceSummaryWidget(data.performance_summary, data.latest_update);
+      } else {
+        debugLog("[WARNING] renderPerformanceSummaryWidget 함수가 없거나 데이터 없음");
+      }
     } catch (e) {
-      debugError("[ERROR] fetchPlatformSalesSummary 실패:", e);
-    }
-    
-    try {
-      fetchPlatformSalesRatio();
-    } catch (e) {
-      debugError("[ERROR] fetchPlatformSalesRatio 실패:", e);
+      debugError("[ERROR] renderPerformanceSummaryWidget 실패:", e);
     }
 
-    // 유입 데이터 요청은 각각의 JS 파일에서 자체적으로 처리됨
-    // fetchViewItemSummaryData와 fetchGa4SourceSummaryData는 별도 파일에서 정의됨
-    
     try {
+      if (typeof renderCafe24SalesWidget === 'function' && data.cafe24_sales !== undefined) {
+        renderCafe24SalesWidget(data.cafe24_sales, data.cafe24_sales_total_count || 0);
+      } else {
+        debugLog("[WARNING] renderCafe24SalesWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderCafe24SalesWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderCafe24ProductsWidget === 'function' && data.cafe24_product_sales !== undefined) {
+        renderCafe24ProductsWidget(data.cafe24_product_sales, data.cafe24_product_sales_total_count || 0);
+      } else {
+        debugLog("[WARNING] renderCafe24ProductsWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderCafe24ProductsWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderGa4SourceWidget === 'function' && data.ga4_source_summary !== undefined) {
+        renderGa4SourceWidget(data.ga4_source_summary, data.ga4_source_summary_total_count || 0);
+      } else {
+        debugLog("[WARNING] renderGa4SourceWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderGa4SourceWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderViewItemSummaryWidget === 'function' && data.viewitem_summary !== undefined) {
+        renderViewItemSummaryWidget(data.viewitem_summary, data.viewitem_summary_total_count || 0);
+      } else {
+        debugLog("[WARNING] renderViewItemSummaryWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderViewItemSummaryWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderMonthlyNetSalesVisitorsWidget === 'function' && data.monthly_net_sales_visitors !== undefined) {
+        renderMonthlyNetSalesVisitorsWidget(data.monthly_net_sales_visitors);
+      } else {
+        debugLog("[WARNING] renderMonthlyNetSalesVisitorsWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderMonthlyNetSalesVisitorsWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderPlatformSalesSummaryWidget === 'function' && data.platform_sales_summary !== undefined) {
+        renderPlatformSalesSummaryWidget(data.platform_sales_summary);
+      } else {
+        debugLog("[WARNING] renderPlatformSalesSummaryWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderPlatformSalesSummaryWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderPlatformSalesRatioWidget === 'function' && data.platform_sales_ratio !== undefined) {
+        renderPlatformSalesRatioWidget(data.platform_sales_ratio);
+      } else {
+        debugLog("[WARNING] renderPlatformSalesRatioWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderPlatformSalesRatioWidget 실패:", e);
+    }
+
+    try {
+      if (typeof renderProductSalesRatioWidget === 'function' && data.product_sales_ratio !== undefined) {
+        renderProductSalesRatioWidget(data.product_sales_ratio);
+      } else {
+        debugLog("[WARNING] renderProductSalesRatioWidget 함수가 없거나 데이터 없음");
+      }
+    } catch (e) {
+      debugError("[ERROR] renderProductSalesRatioWidget 실패:", e);
+    }
+
+    debugLog("✅ Batch API 데이터 분배 완료");
+
+  } catch (e) {
+    debugError("[ERROR] Batch API 실패, 기존 방식으로 폴백:", e);
+    
+    // ✅ 폴백: 기존 개별 API 호출 방식으로 전환
+    try {
+      const salesRequest = getRequestData(1, {
+        data_type: "cafe24_sales",
+        date_type: date_type,
+        date_sort: date_sort,
+        limit: 30,
+      });
+
+      const productRequest = getRequestData(1, {
+        data_type: "cafe24_product_sales",
+        sort_by: sort_by,
+        limit: 13,
+      });
+
+      const promises = [];
+      
+      if (typeof fetchCafe24SalesData === 'function') {
+        promises.push(fetchCafe24SalesData(salesRequest).catch(e => {
+          debugError("[ERROR] fetchCafe24SalesData 실패:", e);
+        }));
+      }
+      
+      if (typeof fetchCafe24ProductSalesData === 'function') {
+        promises.push(fetchCafe24ProductSalesData(productRequest).catch(e => {
+          debugError("[ERROR] fetchCafe24ProductSalesData 실패:", e);
+        }));
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+
+      // 기존 개별 함수 호출
+      if (typeof fetchPerformanceSummaryData === 'function') {
+        fetchPerformanceSummaryData();
+      }
+      if (typeof fetchMonthlyNetSalesVisitors === 'function') {
+        fetchMonthlyNetSalesVisitors();
+      }
+      if (typeof fetchPlatformSalesSummary === 'function') {
+        fetchPlatformSalesSummary();
+      }
+      if (typeof fetchPlatformSalesRatio === 'function') {
+        fetchPlatformSalesRatio();
+      }
       if (typeof fetchGa4ViewItemSummaryData === 'function') {
         const requestData = getRequestData(1, {});
         fetchGa4ViewItemSummaryData(requestData);
-      } else {
-        debugLog("[WARNING] fetchGa4ViewItemSummaryData 함수가 정의되지 않음");
       }
-    } catch (e) {
-      debugError("[ERROR] fetchGa4ViewItemSummaryData 실패:", e);
-    }
-    
-    try {
       if (typeof fetchGa4SourceSummaryData === 'function') {
         fetchGa4SourceSummaryData(1);
-      } else {
-        debugLog("[WARNING] fetchGa4SourceSummaryData 함수가 정의되지 않음");
       }
-    } catch (e) {
-      debugError("[ERROR] fetchGa4SourceSummaryData 실패:", e);
-    }
-    
-    try {
       if (typeof fetchProductSalesRatio === 'function') {
         fetchProductSalesRatio();
-      } else {
-        debugLog("[WARNING] fetchProductSalesRatio 함수가 정의되지 않음");
       }
-    } catch (e) {
-      debugError("[ERROR] fetchProductSalesRatio 실패:", e);
+
+      debugLog("✅ 폴백 방식으로 데이터 로드 완료");
+    } catch (fallbackError) {
+      debugError("[ERROR] 폴백 방식도 실패:", fallbackError);
     }
-
-    // 🔥 모든 데이터 요청 완료 후 사이트 성과 요약 로딩 스피너 숨김 - 제거
-    // 🔥 performance_summary.js에서 독립적으로 관리하므로 dashboard.js에서 숨기지 않음
-    // debugLog("✅ 모든 데이터 요청 완료 - 사이트 성과 요약 로딩 스피너 종료");
-    // hideLoading("#loadingOverlayPerformanceSummary");
-
-  } catch (e) {
-    debugError("[ERROR] updateAllData() 전체 오류:", e);
-    // 🔥 에러 발생 시에도 로딩 스피너 숨김 - 제거
-    // 🔥 performance_summary.js에서 독립적으로 관리
-    // hideLoading("#loadingOverlayPerformanceSummary");
   } finally {
     isLoading = false;
-    // 각 위젯이 자체적으로 로딩 상태를 관리하므로 전역 제거하지 않음
-    debugLog("✅ updateAllData completed - 필터 변경");
+    
+    // ✅ 안전장치: 모든 로딩 스피너 제거
+    loadingOverlays.forEach(overlayId => {
+      hideLoading(overlayId);
+    });
+    
+    debugLog("✅ updateAllData completed - Batch API");
   }
 }
 

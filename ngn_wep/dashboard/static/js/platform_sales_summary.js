@@ -176,4 +176,18 @@ function renderPlatformSalesPagination(totalCount) {
   container.append(prevBtn, pageInfo, nextBtn);
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderPlatformSalesSummaryWidget(data) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  currentPage_platform = 1;
+  allPlatformSalesData = data || [];
+
+  // ✅ UI 렌더링
+  renderPlatformSalesTable(currentPage_platform);
+  renderPlatformSalesPagination(allPlatformSalesData.length);
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayPlatformSalesSummary");
+}
+
 window.fetchPlatformSalesSummary = fetchPlatformSalesSummary;

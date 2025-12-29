@@ -48,6 +48,21 @@ function fetchPlatformSalesRatio() {
   });
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderPlatformSalesRatioWidget(data) {
+  // ✅ 전역 변수 업데이트
+  platformSalesRatioData = data || [];
+
+  // ✅ 차트 렌더링
+  renderPlatformSalesRatioChart();
+
+  // ✅ 로딩 스피너 제거
+  const loadingOverlay = $("#loadingOverlayPlatformSalesRatio");
+  if (loadingOverlay.length > 0) {
+    hideLoading("#loadingOverlayPlatformSalesRatio");
+  }
+}
+
 function renderPlatformSalesRatioChart() {
   const chartDom = document.getElementById('platformSalesRatioChart');
   if (!chartDom) return;

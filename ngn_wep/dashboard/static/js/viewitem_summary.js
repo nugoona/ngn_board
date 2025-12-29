@@ -227,5 +227,22 @@ $("#sourceFilter, #countryFilter, #productNameSearch").on("input change", () => 
   renderViewItemSummaryPagination(getGroupedFilteredData().length);
 });
 
+// ✅ Batch API용 렌더링 함수
+function renderViewItemSummaryWidget(data, totalCount) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  currentPage = 1;
+  rawViewItemRows = data || [];
+
+  // ✅ 필터 드롭다운 재생성 (필수!)
+  renderViewItemSummaryFilters(rawViewItemRows);
+
+  // ✅ UI 렌더링
+  renderViewItemSummaryTable();
+  renderViewItemSummaryPagination(getGroupedFilteredData().length);
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayViewitemSummary");
+}
+
 // ✅ 전역 함수로 노출 - dashboard.js에서 호출 가능하도록
 window.fetchGa4ViewItemSummaryData = fetchGa4ViewItemSummaryData;

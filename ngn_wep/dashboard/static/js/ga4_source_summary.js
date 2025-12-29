@@ -202,4 +202,23 @@ $("#ga4SourceFilter, #countryFilter").on("change", () => {
   renderGa4SourceSummaryPagination(getFilteredGa4SourceData().length);
 });
 
+// ✅ Batch API용 렌더링 함수
+function renderGa4SourceWidget(data, totalCount) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  currentGa4SourcePage = 1;
+  rawGa4SourceRows = data || [];
+
+  // ✅ 필터 드롭다운 재생성 (필수!)
+  renderGa4SourceSummaryFilters(rawGa4SourceRows);
+  renderGa4CountrySummaryFilters(rawGa4SourceRows);
+
+  // ✅ UI 렌더링
+  renderGa4SourceSummaryTable();
+  renderGa4SourceSummaryPagination(getFilteredGa4SourceData().length);
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayGa4Source");
+  document.querySelector('[data-widget-id="ga4-source"]')?.classList.remove("loading");
+}
+
 

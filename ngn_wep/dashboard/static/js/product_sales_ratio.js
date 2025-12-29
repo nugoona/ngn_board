@@ -356,5 +356,23 @@ $(document).ready(function() {
 
 
 
+// ✅ Batch API용 렌더링 함수
+function renderProductSalesRatioWidget(data) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  currentPage_product = 1;
+  allProductSalesRatioData = data || [];
+
+  // ✅ UI 렌더링 (테이블, 페이지네이션, 차트)
+  renderProductSalesRatioTable(1);
+  setupPagination_ratio();
+  renderProductSalesRatioChart();
+
+  // ✅ 로딩 스피너 제거
+  const loadingOverlay = $("#loadingOverlayProductSalesRatio");
+  if (loadingOverlay.length > 0) {
+    hideLoading("#loadingOverlayProductSalesRatio");
+  }
+}
+
 // 전역 함수로 노출
 window.fetchProductSalesRatio = fetchProductSalesRatio;

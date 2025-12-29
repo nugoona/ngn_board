@@ -254,5 +254,15 @@ function renderMonthlySummaryTable(rawData) {
   });
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderMonthlyNetSalesVisitorsWidget(data) {
+  // ✅ UI 렌더링 (전역 변수 없음, 바로 렌더링)
+  renderMonthlyNetSalesVisitorsChart(data || []);
+  renderMonthlySummaryTable(data || []);
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayMonthlyChart");
+}
+
 // 전역 함수로 노출
 window.fetchMonthlyNetSalesVisitors = fetchMonthlyNetSalesVisitors;

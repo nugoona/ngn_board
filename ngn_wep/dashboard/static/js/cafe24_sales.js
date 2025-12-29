@@ -114,6 +114,29 @@ function renderCafe24SalesPagination(requestBase) {
   $container.append($next);
 }
 
+// ✅ Batch API용 렌더링 함수
+function renderCafe24SalesWidget(data, totalCount) {
+  // ✅ 전역 변수 업데이트 및 페이지 초기화
+  currentPage_sales = 1;
+  cafe24SalesRawData = data || [];
+  cafe24SalesTotalCount = totalCount || 0;
+
+  // ✅ UI 렌더링
+  updateCafe24SalesTable();
+  renderCafe24SalesPagination({
+    data_type: "cafe24_sales",
+    date_type: $("input[name='dateType']:checked").val() || "summary",
+    date_sort: $("#dateSort").val() || "desc",
+    period: $("#periodFilter").val() || "today",
+    start_date: $("#startDate").val() || "",
+    end_date: $("#endDate").val() || ""
+  });
+
+  // ✅ 로딩 스피너 제거
+  hideLoading("#loadingOverlayCafe24Sales");
+  document.querySelector('[data-widget-id="cafe24-sales"]')?.classList.remove("loading");
+}
+
 function fetchCafe24SalesData(requestData) {
   const { period, end_date } = requestData;
   if (period === "manual" && (!end_date || end_date === "")) return Promise.resolve();

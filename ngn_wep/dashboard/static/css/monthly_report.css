@@ -289,12 +289,12 @@
 }
 
 /* ✅ 섹션 컨텐츠 래퍼 (메인 + AI 분석) */
-/* ✅ 해결책 B: Grid 레이아웃 사용 (Flexbox보다 sticky에 더 안정적) */
+/* ✅ 새로운 전략: Grid 레이아웃 + align-items: stretch로 높이 맞추기 */
 .section-content-wrapper {
   display: grid;
   grid-template-columns: 1fr 40%; /* 왼쪽 자동, 오른쪽 40% 고정 */
   gap: 32px;
-  align-items: start; /* 매우 중요: 아이템들이 상단에 붙도록 설정 */
+  align-items: stretch; /* AI 박스가 메인 콘텐츠와 같은 높이를 가지도록 */
   /* ✅ 해결책 A: overflow 강제 해제 */
   overflow: visible !important;
   contain: none !important;
@@ -308,21 +308,20 @@
   width: 100%;
 }
 
-/* ✅ AI 분석 박스 - 간단하고 확실한 sticky 구현 */
+/* ✅ AI 분석 박스 - 메인 콘텐츠와 같은 높이, 내부 스크롤 사용 */
 .section-ai-analysis {
   /* Grid 레이아웃에서는 flex 속성 제거 */
   background: #F8F9FA;
   border-radius: 8px;
   padding: 20px;
   border-left: 3px solid #003366;
-  position: sticky;
-  top: 20px;
-  max-height: calc(100vh - 140px); /* 헤더 높이 고려 */
-  overflow-y: auto;
+  /* position: sticky 제거 - 새로운 전략 */
+  height: 100%; /* 메인 콘텐츠와 같은 높이 */
+  max-height: calc(90vh - 100px); /* 최대 높이 제한 (뷰포트 기준) */
+  overflow-y: auto; /* 텍스트가 길면 내부 스크롤바 생성 */
   display: flex;
   flex-direction: column;
-  z-index: 10;
-  /* align-self 제거 (Grid wrapper에서 align-items: start로 제어됨) */
+  /* z-index 제거 (sticky가 아니므로 불필요) */
 }
 
 .section-ai-analysis-full {
@@ -1057,8 +1056,8 @@
   
   .section-ai-analysis {
     width: 100%;
-    position: relative; /* 작은 화면에서는 sticky 비활성화 */
-    max-height: none;
+    height: auto; /* 작은 화면에서는 자동 높이 */
+    max-height: 500px; /* 모바일에서는 더 작은 최대 높이 */
   }
   
   .scorecard-grid {

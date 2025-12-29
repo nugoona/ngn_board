@@ -579,6 +579,12 @@ function renderSection4(data) {
   const cm29Data = facts["29cm_best"] || {};
   const items = cm29Data.items || [];
   
+  // 디버그: 첫 번째 아이템의 구조 확인
+  if (items.length > 0) {
+    console.log("[섹션 4] 첫 번째 아이템 데이터 구조:", items[0]);
+    console.log("[섹션 4] 첫 번째 아이템의 모든 키:", Object.keys(items[0]));
+  }
+  
   section4Data = items;
   
   setupSection4Tabs(items);
@@ -647,9 +653,36 @@ function renderSection4ByTab(tabName, items, page = 1) {
           const brand = item.brand || "Unknown";
           const name = item.name || "Unknown";
           const img = item.img || "";
+          
+          // 디버그: URL 관련 필드 확인
+          if (index === 0) {
+            console.log("[섹션 4] URL 필드 확인:", {
+              "item.url": item.url,
+              "item.item_url": item.item_url,
+              "item.itemUrl": item.itemUrl,
+              "item.item_id": item.item_id,
+              "item.itemId": item.itemId,
+              "전체 item 객체": item
+            });
+          }
+          
           // 버킷에 수집된 상세페이지 URL 우선 사용
-          const productUrl = item.url || item.item_url || item.itemUrl || 
-            (item.item_id || item.itemId ? `https://29cm.co.kr/products/${item.item_id || item.itemId}` : '#');
+          // itemUrl이 객체인 경우 webLink 속성 확인
+          let productUrl = item.url || item.item_url;
+          if (!productUrl && item.itemUrl) {
+            productUrl = typeof item.itemUrl === 'string' ? item.itemUrl : item.itemUrl.webLink;
+          }
+          // URL이 없으면 itemId로 생성
+          if (!productUrl) {
+            const itemId = item.item_id || item.itemId;
+            productUrl = itemId ? `https://29cm.co.kr/products/${itemId}` : '#';
+          }
+          
+          // 디버그: 최종 URL 확인
+          if (index === 0) {
+            console.log("[섹션 4] 최종 productUrl:", productUrl);
+          }
+          
           const price = item.price || 0;
           const formattedPrice = price > 0 ? `${Math.round(price).toLocaleString()}원` : '가격 정보 없음';
           

@@ -149,10 +149,27 @@ def load_from_gcs(gcs_path: str) -> Dict:
         if not blob.exists():
             raise FileNotFoundError(f"GCS 파일을 찾을 수 없습니다: {gcs_path}")
         
-        # 파일 다운로드 (blob.open()을 사용하여 urllib3 버전 호환성 문제 회피)
-        # blob.open()은 자동 압축 해제를 비활성화하고 raw bytes를 반환
-        with blob.open('rb') as f:
-            file_bytes = f.read()
+        # 파일 다운로드 (requests를 사용하여 urllib3 버전 호환성 문제 회피)
+        # signed URL 생성하여 직접 다운로드
+        import requests
+        from datetime import timedelta
+        
+        # 1시간 유효한 signed URL 생성
+        url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(hours=1),
+            method="GET"
+        )
+        
+        # requests로 다운로드 (자동 압축 해제 비활성화)
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        
+        # raw bytes 수집
+        file_bytes = b""
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                file_bytes += chunk
         
         # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리
         json_str = None

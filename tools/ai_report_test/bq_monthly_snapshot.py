@@ -617,11 +617,12 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
         if snapshot_from_gcs:
             print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
-            # 리뷰 데이터를 제거한 요약 버전 출력 (로그용)
+            # 리뷰 데이터를 제거한 요약 버전만 출력 (콘솔 로그용)
             summary = remove_reviews_for_log(snapshot_from_gcs)
+            print("📋 [SUMMARY] 스냅샷 요약 (리뷰 제외):", file=sys.stderr)
             print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
-            # 전체 JSON은 stdout으로 출력 (파이프/리다이렉션용)
-            print(json.dumps(snapshot_from_gcs, ensure_ascii=False, indent=2))
+            # 전체 JSON은 stdout으로 출력하지 않음 (콘솔 로그에 리뷰 텍스트가 보이지 않도록)
+            # 전체 JSON이 필요하면 GCS에서 직접 다운로드하거나 파일로 리다이렉션: python3 ... > output.json
             return
     
     # -----------------------
@@ -2683,13 +2684,13 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     print(f"✅ [SUCCESS] 스냅샷 생성 완료: {company_name} {year}-{month:02d}", file=sys.stderr)
     print("=" * 80, file=sys.stderr)
     
-    # 리뷰 데이터를 제거한 요약 버전 출력 (로그용, stderr)
+    # 리뷰 데이터를 제거한 요약 버전만 출력 (콘솔 로그용, stderr)
     summary = remove_reviews_for_log(out_safe)
     print("📋 [SUMMARY] 스냅샷 요약 (리뷰 제외):", file=sys.stderr)
     print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
     
-    # 전체 JSON은 stdout으로 출력 (파이프/리다이렉션용, 리뷰 포함)
-    print(json.dumps(out_safe, ensure_ascii=False, indent=2))
+    # 전체 JSON은 stdout으로 출력하지 않음 (콘솔 로그에 리뷰 텍스트가 보이지 않도록)
+    # 전체 JSON이 필요하면 GCS에서 직접 다운로드하거나 파일로 리다이렉션: python3 ... > snapshot.json
 
 
 if __name__ == "__main__":

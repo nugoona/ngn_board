@@ -201,8 +201,12 @@ async function loadMonthlyReport(companyName, year, month) {
     // 헤더 업데이트
     updateReportHeader(companyName, year, month);
     
-    // 섹션 7 헤더에 업체명 설정
+    // 섹션 7 헤더 설정
+    const trendHeader = document.getElementById("section7TrendHeader");
     const companyHeader = document.getElementById("section7CompanyHeader");
+    if (trendHeader) {
+      trendHeader.textContent = "29CM 베스트";
+    }
     if (companyHeader) {
       companyHeader.textContent = companyName.toUpperCase();
     }
@@ -948,7 +952,7 @@ function renderSection7(data) {
   // 헤더 업데이트
   const trendHeader = document.getElementById("section7TrendHeader");
   const companyHeader = document.getElementById("section7CompanyHeader");
-  if (trendHeader) trendHeader.textContent = "트렌드";
+  if (trendHeader) trendHeader.textContent = "29CM 베스트";
   if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
   
   const marketContent = document.getElementById("section7MarketContent");

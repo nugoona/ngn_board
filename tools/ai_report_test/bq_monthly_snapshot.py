@@ -286,6 +286,10 @@ def crawl_29cm_best():
                 time.sleep(random.uniform(CRAWL_29CM_SLEEP_MIN, CRAWL_29CM_SLEEP_MAX))
                 reviews = fetch_item_reviews(item_id)
                 
+                # URL 추출 (itemUrl 객체에서 webLink 가져오기)
+                item_url_obj = it.get("itemUrl", {})
+                item_url = item_url_obj.get("webLink") if isinstance(item_url_obj, dict) else None
+                
                 # 데이터 경량화 저장
                 final_data.append({
                     "tab": t["name"],
@@ -294,6 +298,8 @@ def crawl_29cm_best():
                     "brand": info.get("brandName"),
                     "price": info.get("displayPrice"),
                     "img": pick_thumbnail(it, info),  # 썸네일 URL (분석용)
+                    "item_id": str(item_id),  # item_id 추가
+                    "url": item_url,  # URL 추가
                     "reviews": reviews  # 리뷰 리스트 (최대 10개)
                 })
         

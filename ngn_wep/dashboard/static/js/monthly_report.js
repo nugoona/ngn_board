@@ -680,8 +680,11 @@ function renderSection4ByTab(tabName, items, page = 1) {
             if (catalogMatch) {
               const itemId = catalogMatch[1];
               productUrl = `https://29cm.co.kr/products/${itemId}`;
+            } else if (rawUrl.includes('29cm.co.kr/products/')) {
+              // 이미 올바른 형식인 경우 그대로 사용
+              productUrl = rawUrl;
             } else {
-              // 이미 올바른 형식이거나 다른 형식인 경우 그대로 사용
+              // 다른 형식의 URL인 경우 그대로 사용
               productUrl = rawUrl;
             }
           } else {
@@ -689,7 +692,21 @@ function renderSection4ByTab(tabName, items, page = 1) {
             const itemId = item.item_id || item.itemId;
             if (itemId) {
               productUrl = `https://29cm.co.kr/products/${itemId}`;
+            } else {
+              // 디버그: URL과 item_id가 모두 없는 경우
+              if (index === 0) {
+                console.warn("[섹션 4] URL과 item_id가 모두 없습니다. item 객체:", item);
+              }
             }
+          }
+          
+          // 디버그: 최종 URL 확인
+          if (index === 0) {
+            console.log("[섹션 4] URL 변환 결과:", {
+              "rawUrl": rawUrl,
+              "item_id": item.item_id || item.itemId,
+              "최종 productUrl": productUrl
+            });
           }
           
           const price = item.price || 0;

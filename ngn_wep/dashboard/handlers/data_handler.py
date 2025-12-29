@@ -653,13 +653,11 @@ def get_monthly_report():
             # 여러 경로 시도
             blob = None
             found_path = None
-            is_gzip = False
             for blob_path in blob_paths:
                 test_blob = bucket.blob(blob_path)
                 if test_blob.exists():
                     blob = test_blob
                     found_path = blob_path
-                    is_gzip = blob_path.endswith('.gz')
                     break
             
             if not blob:
@@ -668,18 +666,19 @@ def get_monthly_report():
                     "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다. (시도한 경로: {', '.join(blob_paths[:2])})"
                 }), 404
             
-            # 파일 읽기 (Gzip 압축 여부에 따라 처리)
-            if is_gzip:
-                # Gzip 압축된 파일 읽기
-                snapshot_gzip_bytes = blob.download_as_bytes()
-                snapshot_json_str = gzip.decompress(snapshot_gzip_bytes).decode('utf-8')
-            else:
-                # 압축 없는 파일 읽기 (하위 호환)
-                snapshot_json_str = blob.download_as_text(encoding='utf-8')
+            # 하이브리드 읽기 로직: Gzip 압축 여부와 관계없이 바이트로 다운로드 후 자동 판별
+            snapshot_bytes = blob.download_as_bytes()
+            
+            # Gzip 압축 해제 시도 (성공하면 압축된 파일, 실패하면 압축되지 않은 파일)
+            try:
+                snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+                print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path} (Gzip 압축 해제됨)", file=sys.stderr)
+            except (gzip.BadGzipFile, OSError, Exception) as e:
+                # Gzip 압축 해제 실패 → 압축되지 않은 JSON 파일로 처리 (하위 호환)
+                snapshot_json_str = snapshot_bytes.decode('utf-8')
+                print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path} (압축 없음, 하위 호환)", file=sys.stderr)
             
             snapshot_data = json.loads(snapshot_json_str)
-            
-            print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path} ({'Gzip 압축' if is_gzip else '압축 없음'})", file=sys.stderr)
             
             return jsonify({
                 "status": "success",

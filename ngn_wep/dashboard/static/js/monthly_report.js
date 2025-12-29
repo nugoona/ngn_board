@@ -1187,23 +1187,22 @@ function renderSection8(data) {
       }
     }
     
-    // 3개 카드 렌더링 (섹션 1과 동일한 구조)
-    container.innerHTML = `
-      <div class="forecast-cards-grid">
-        <div class="forecast-card">
-          <div class="forecast-label">작년 동월 매출 (${lastYearDateStr})</div>
-          <div class="forecast-value-large">${formatMoney(lastYearSameMonthSales)}</div>
-        </div>
-        <div class="forecast-card">
-          <div class="forecast-label">작년 익월 매출 (${lastYearNextMonthStr})</div>
-          <div class="forecast-value-large">${formatMoney(lastYearNextMonthSales)}</div>
-        </div>
-        <div class="forecast-card">
-          <div class="forecast-label">작년 매출 증감</div>
-          <div class="forecast-value-large ${growthClass}">${growthDisplay}</div>
-        </div>
+    // 3개 카드 렌더링 (섹션 1과 동일한 구조 - grid div는 HTML에 이미 있으므로 카드만 직접 넣음)
+    const htmlContent = `
+      <div class="forecast-card">
+        <div class="forecast-label">작년 동월 매출 (${lastYearDateStr})</div>
+        <div class="forecast-value-large">${formatMoney(lastYearSameMonthSales)}</div>
+      </div>
+      <div class="forecast-card">
+        <div class="forecast-label">작년 익월 매출 (${lastYearNextMonthStr})</div>
+        <div class="forecast-value-large">${formatMoney(lastYearNextMonthSales)}</div>
+      </div>
+      <div class="forecast-card">
+        <div class="forecast-label">작년 매출 증감</div>
+        <div class="forecast-value-large ${growthClass}">${growthDisplay}</div>
       </div>
     `;
+    container.innerHTML = htmlContent;
   }
   
   renderAiAnalysis("section8AiAnalysis", data.signals?.section_8_analysis);

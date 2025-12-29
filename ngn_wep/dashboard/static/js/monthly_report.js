@@ -1483,14 +1483,48 @@ function renderSection9(data) {
 }
 
 // ============================================
-// AI 분석 렌더링 (공통)
+// AI 분석 렌더링 (공통) - 마크다운 지원
 // ============================================
 function renderAiAnalysis(elementId, analysisText) {
   const element = document.getElementById(elementId);
   if (!element) return;
   
   if (analysisText && analysisText.trim()) {
-    element.innerHTML = `<div class="ai-analysis-text">${analysisText}</div>`;
+    // 마크다운을 HTML로 변환 (marked 라이브러리 사용)
+    let htmlContent = "";
+    
+    if (typeof marked !== 'undefined') {
+      // marked 라이브러리가 로드된 경우
+      try {
+        // 마크다운 설정: 표(Table)는 제외 (시스템 프롬프트 요구사항)
+        marked.setOptions({
+          breaks: true,  // 줄바꿈 지원
+          gfm: false     // GitHub Flavored Markdown 비활성화 (표 제외)
+        });
+        
+        // 마크다운을 HTML로 변환
+        const markdownHtml = marked.parse(analysisText);
+        
+        // XSS 방지를 위해 DOMPurify로 정제
+        if (typeof DOMPurify !== 'undefined') {
+          htmlContent = DOMPurify.sanitize(markdownHtml, {
+            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+            ALLOWED_ATTR: []
+          });
+        } else {
+          htmlContent = markdownHtml;
+        }
+      } catch (e) {
+        console.warn("[AI 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
+        // 마크다운 변환 실패 시 일반 텍스트로 표시 (줄바꿈만 처리)
+        htmlContent = analysisText.replace(/\n/g, '<br>');
+      }
+    } else {
+      // marked 라이브러리가 없는 경우 줄바꿈만 처리
+      htmlContent = analysisText.replace(/\n/g, '<br>');
+    }
+    
+    element.innerHTML = `<div class="ai-analysis-text markdown-content">${htmlContent}</div>`;
   } else {
     element.innerHTML = `
       <div class="ai-analysis-skeleton">

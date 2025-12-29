@@ -309,17 +309,17 @@ function updateReportHeader(companyName, year, month) {
 async function renderAllSections(data) {
   console.log("[월간 리포트] 렌더링 시작, 데이터 구조:", data);
   
-  // 즉시 렌더링: Section 1, 2
+  // 즉시 렌더링: Section 1 (지난달 매출 분석), Section 2 (주요 유입 채널)
   try {
-    renderSection1(data); // 지난달 매출 요약
+    renderSection1(data); // 1. 지난달 매출 분석
   } catch (e) {
     console.error("[월간 리포트] 섹션 1 렌더링 실패:", e);
   }
   
   try {
-    renderSection2(data); // 고객 방문 및 구매 여정
+    await renderSection5(data); // 2. 주요 유입 채널
   } catch (e) {
-    console.error("[월간 리포트] 섹션 2 렌더링 실패:", e);
+    console.error("[월간 리포트] 섹션 2 (주요 유입 채널) 렌더링 실패:", e);
   }
   
   // 지연 렌더링: Section 3-9 (Intersection Observer 사용)
@@ -334,56 +334,53 @@ async function renderAllSections(data) {
 function setupLazySectionRendering(data) {
   // 섹션별 렌더링 함수 매핑
   const sectionRenderers = {
+    'section-2-funnel': () => {
+      try {
+        renderSection2(data); // 3. 고객 방문 및 구매 여정
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 3 (고객 방문 및 구매 여정) 렌더링 실패:", e);
+      }
+    },
     'section-3-products': () => {
       try {
-        renderSection3(data); // 베스트 상품 성과
+        renderSection3(data); // 4. 자사몰 베스트 상품 성과
       } catch (e) {
-        console.error("[월간 리포트] 섹션 3 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 4 (자사몰 베스트 상품 성과) 렌더링 실패:", e);
       }
     },
     'section-4-market-trend': () => {
       try {
-        renderSection4(data); // 외부 시장 트렌드 (29CM)
+        renderSection4(data); // 5. 시장 트렌드 확인 (29CM)
       } catch (e) {
-        console.error("[월간 리포트] 섹션 4 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 5 (시장 트렌드 확인) 렌더링 실패:", e);
       }
-    },
-    'section-5-channels': () => {
-      // 섹션 5는 섹션이 표시된 후에 렌더링 (요소를 찾기 위해)
-      setTimeout(async () => {
-        try {
-          await renderSection5(data);
-        } catch (e) {
-          console.error("[월간 리포트] 섹션 5 렌더링 실패:", e);
-        }
-      }, 200);
     },
     'section-6-ads': () => {
       try {
-        renderSection6(data); // 광고 매체 효율
+        renderSection6(data); // 6. 매체 성과 및 효율 진단
       } catch (e) {
-        console.error("[월간 리포트] 섹션 6 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 6 (매체 성과 및 효율 진단) 렌더링 실패:", e);
       }
     },
     'section-7-comparison': () => {
       try {
-        renderSection7(data); // 시장 트렌드와 자사몰 비교
+        renderSection7(data); // 7. 시장 트렌드와 자사몰 비교
       } catch (e) {
-        console.error("[월간 리포트] 섹션 7 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 7 (시장 트렌드와 자사몰 비교) 렌더링 실패:", e);
       }
     },
     'section-8-forecast': () => {
       try {
-        renderSection8(data); // 다음 달 목표 및 전망
+        renderSection8(data); // 8. 익월 목표 설정 및 시장 전망
       } catch (e) {
-        console.error("[월간 리포트] 섹션 8 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 8 (익월 목표 설정 및 시장 전망) 렌더링 실패:", e);
       }
     },
     'section-9-strategy': () => {
       try {
-        renderSection9(data); // AI 제안 전략 액션
+        renderSection9(data); // 9. 데이터 기반 전략 액션 플랜
       } catch (e) {
-        console.error("[월간 리포트] 섹션 9 렌더링 실패:", e);
+        console.error("[월간 리포트] 섹션 9 (데이터 기반 전략 액션 플랜) 렌더링 실패:", e);
       }
     }
   };
@@ -427,9 +424,9 @@ function setupLazySectionRendering(data) {
   
   // Section 3-9 관찰 시작
   const lazySections = [
+    '.section-2-funnel',
     '.section-3-products',
     '.section-4-market-trend',
-    '.section-5-channels',
     '.section-6-ads',
     '.section-7-comparison',
     '.section-8-forecast',

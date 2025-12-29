@@ -13,7 +13,14 @@ DOCKERFILE="docker/Dockerfile-Sheet-update"
 IMAGE="${REGION_AR}-docker.pkg.dev/${PROJECT}/${REPO}/${JOB}:manual-$(date +%Y%m%d-%H%M%S)"
 
 echo "🚀 Building image for ${JOB}..."
-gcloud builds submit --tag "$IMAGE" --dockerfile="$DOCKERFILE" .
+# Dockerfile 임시 복사
+cp "$DOCKERFILE" ./Dockerfile
+
+# 빌드 + 푸시 (Cloud Build)
+gcloud builds submit --tag "$IMAGE" .
+
+# 임시 Dockerfile 제거
+rm ./Dockerfile
 
 echo "📦 Updating Cloud Run Job ${JOB}..."
 if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &>/dev/null; then

@@ -6,6 +6,8 @@ import re
 import statistics
 import time
 import random
+import concurrent.futures
+import gzip
 from datetime import date, timedelta, datetime, timezone
 from decimal import Decimal
 from collections import defaultdict
@@ -46,8 +48,12 @@ SKIP_29CM_CRAWL = os.environ.get("SKIP_29CM_CRAWL", "0") == "1"
 CRAWL_29CM_TARGET_TABS = ["전체", "아우터", "니트웨어", "바지", "스커트", "상의"]
 CRAWL_29CM_TOP_N = 10
 CRAWL_29CM_REVIEWS_PER_ITEM = 10
-CRAWL_29CM_SLEEP_MIN = 0.5
-CRAWL_29CM_SLEEP_MAX = 1.0
+CRAWL_29CM_SLEEP_MIN = 0.05  # 0.5초 -> 0.05초 (10배 단축)
+CRAWL_29CM_SLEEP_MAX = 0.1   # 1.0초 -> 0.1초 (10배 단축)
+
+# GCS/BigQuery 클라이언트 전역 생성 (재사용)
+storage_client = storage.Client(project=PROJECT_ID)
+bq_client = bigquery.Client(project=PROJECT_ID)
 
 
 # -----------------------
@@ -515,8 +521,7 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
 def load_snapshot_from_gcs(company_name: str, year: int, month: int):
     """GCS 버킷에서 스냅샷 JSON 파일 읽기"""
     try:
-        client = storage.Client(project=PROJECT_ID)
-        bucket = client.bucket(GCS_BUCKET)
+        bucket = storage_client.bucket(GCS_BUCKET)
         
         # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json
         blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json"
@@ -564,7 +569,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # -----------------------
     # BigQuery에서 데이터 조회 (GCS에 없을 때만)
     # -----------------------
-    client = bigquery.Client(project=PROJECT_ID)
+    # 전역 bq_client 사용 (재사용)
+    client = bq_client
     
     report_month = month_to_ym(year, month)
     this_start, this_end = month_range(year, month)
@@ -754,10 +760,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         "prev": (prev_start, prev_end),
         "yoy": (yoy_start, yoy_end),
     }
-    daily_multi = get_sales_daily_multi(daily_ranges)
-    daily_this = daily_multi.get("this", [])
-    daily_prev = daily_multi.get("prev", [])
-    daily_yoy = daily_multi.get("yoy", [])
+    
+    # ✅ 최적화: BigQuery 병렬 실행 (핵심 최적화)
+    # daily_multi는 여기서 실행하지 않고 병렬 블록에서 실행
     
     # -----------------------
     # Meta ads
@@ -1333,6 +1338,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # -----------------------
     # meta_ads_yoy_available은 comparisons에서도 사용되므로 먼저 초기화
     meta_ads_yoy_available = False
+    # ranges를 상위 스코프에서 초기화 (병렬 실행 블록에서 접근하기 위해)
+    ranges = None
     
     if SKIP_META_ADS_GOALS:
         meta_ads_goals_this = None
@@ -1380,10 +1387,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         if ranges["yoy"] is None:
             del ranges["yoy"]
         
-        goals_multi = get_meta_ads_goals_multi(ranges)
-        meta_ads_goals_this = goals_multi.get("this")
-        meta_ads_goals_prev = goals_multi.get("prev")
-        meta_ads_goals_yoy = goals_multi.get("yoy") if meta_ads_yoy_available else None
+        # goals_multi는 병렬 실행 블록에서 실행 (ga4_top_sources_ranges 정의 후)
         
         # -----------------------
         # Meta Ads Benchmarks (최근 6개월 기준치)
@@ -1761,7 +1765,34 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     if ga4_top_sources_ranges["yoy"] is None:
         del ga4_top_sources_ranges["yoy"]
     
-    ga4_top_sources_multi = get_ga4_top_sources_multi(ga4_top_sources_ranges, GA4_TRAFFIC_TOP_LIMIT)
+    # ✅ 최적화: BigQuery 병렬 실행 (핵심 최적화)
+    # 세 쿼리를 동시에 실행하여 전체 실행 시간 단축
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        # 각 쿼리 함수를 동시에 실행 예약
+        future_daily = executor.submit(get_sales_daily_multi, daily_ranges)
+        future_ga4 = executor.submit(get_ga4_top_sources_multi, ga4_top_sources_ranges, GA4_TRAFFIC_TOP_LIMIT)
+        
+        # goals_multi는 SKIP_META_ADS_GOALS가 False이고 ranges가 정의되어 있을 때만 실행
+        if not SKIP_META_ADS_GOALS and ranges is not None:
+            future_goals = executor.submit(get_meta_ads_goals_multi, ranges)
+        else:
+            future_goals = None
+        
+        # 결과 한꺼번에 받기 (가장 느린 쿼리 시간만큼만 소요됨)
+        daily_multi = future_daily.result()
+        ga4_top_sources_multi = future_ga4.result()
+        goals_multi = future_goals.result() if future_goals else None
+    
+    # 결과 분해
+    daily_this = daily_multi.get("this", [])
+    daily_prev = daily_multi.get("prev", [])
+    daily_yoy = daily_multi.get("yoy", [])
+    
+    # goals_multi 결과는 if 블록 안에서 처리
+    if not SKIP_META_ADS_GOALS:
+        meta_ads_goals_this = goals_multi.get("this")
+        meta_ads_goals_prev = goals_multi.get("prev")
+        meta_ads_goals_yoy = goals_multi.get("yoy") if meta_ads_yoy_available else None
     
     if ga4_yoy_available and ga4_yoy_data:
         ga4_yoy_totals = {
@@ -2488,23 +2519,38 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # Save to GCS (optional)
     # -----------------------
     def save_snapshot_to_gcs(company_name, year, month, snapshot_data):
-        """스냅샷을 GCS 버킷에 저장"""
+        """스냅샷을 GCS 버킷에 저장 (Gzip 압축 적용)"""
         try:
-            client = storage.Client(project=PROJECT_ID)
-            bucket = client.bucket(GCS_BUCKET)
+            bucket = storage_client.bucket(GCS_BUCKET)
             
-            # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json
-            blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json"
+            # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json.gz
+            blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz"
             blob = bucket.blob(blob_path)
             
+            # JSON 문자열 생성
             snapshot_json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2, sort_keys=True)
+            
+            # Gzip 압축
+            snapshot_gzip_bytes = gzip.compress(
+                snapshot_json_str.encode('utf-8'),
+                compresslevel=6  # 압축 레벨 (1-9, 6이 속도/압축률 균형)
+            )
+            
+            # 압축 전후 크기 비교 (디버그용)
+            original_size = len(snapshot_json_str.encode('utf-8'))
+            compressed_size = len(snapshot_gzip_bytes)
+            compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+            
+            # Gzip 압축된 데이터 업로드
             blob.upload_from_string(
-                snapshot_json_str,
-                content_type='application/json; charset=utf-8'
+                snapshot_gzip_bytes,
+                content_type='application/json',
+                content_encoding='gzip'
             )
             
             gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
             print(f"✅ 스냅샷이 GCS에 저장되었습니다: {gcs_url}", file=sys.stderr)
+            print(f"   압축 전: {original_size:,} bytes, 압축 후: {compressed_size:,} bytes ({compression_ratio:.1f}% 감소)", file=sys.stderr)
             return gcs_url
         except Exception as e:
             print(f"❌ GCS 저장 실패: {e}", file=sys.stderr)
@@ -2566,7 +2612,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert] [--save-to-gcs]")
+        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert] [--save-to-gcs] [--force]")
+        print("  --force: GCS에 기존 스냅샷이 있어도 재생성 (기본값: GCS에서 먼저 읽기)")
         sys.exit(1)
     
     company_name = sys.argv[1]
@@ -2574,5 +2621,9 @@ if __name__ == "__main__":
     month = int(sys.argv[3])
     upsert_flag = "--upsert" in sys.argv
     save_to_gcs_flag = "--save-to-gcs" in sys.argv
+    force_flag = "--force" in sys.argv  # 재생성 플래그
     
-    run(company_name, year, month, upsert_flag, save_to_gcs_flag)
+    # --force 플래그가 있으면 GCS에서 읽지 않고 재생성
+    load_from_gcs_flag = not force_flag
+    
+    run(company_name, year, month, upsert_flag, save_to_gcs_flag, load_from_gcs_flag)

@@ -3,6 +3,7 @@ import os
 import sys
 import datetime
 import json
+import gzip
 from flask import Blueprint, request, jsonify, session, Response
 from google.cloud import bigquery
 from google.cloud import storage
@@ -632,13 +633,15 @@ def get_monthly_report():
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
-        # 경로 형식: ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json (실제 저장 경로)
+        # 경로 형식: ai-reports/monthly/{company}/{YYYY-MM}/snapshot.json[.gz] (실제 저장 경로)
         month_str = f"{year}-{month:02d}"
         
-        # 여러 경로 시도 (원본 company_name 우선, 그 다음 소문자)
+        # 여러 경로 시도 (압축 파일 우선, 그 다음 압축 없는 파일)
         blob_paths = [
-            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json",  # 원본 company_name
-            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",  # 소문자 변환
+            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json.gz",  # 압축 파일 (원본)
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json.gz",  # 압축 파일 (소문자)
+            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json",  # 압축 없는 파일 (원본, 하위 호환)
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",  # 압축 없는 파일 (소문자)
             f"ai-reports/{company_name}/{month_str}.json",  # 대체 경로 (원본)
             f"ai-reports/{company_name.lower()}/{month_str}.json"  # 대체 경로 (소문자)
         ]
@@ -650,11 +653,13 @@ def get_monthly_report():
             # 여러 경로 시도
             blob = None
             found_path = None
+            is_gzip = False
             for blob_path in blob_paths:
                 test_blob = bucket.blob(blob_path)
                 if test_blob.exists():
                     blob = test_blob
                     found_path = blob_path
+                    is_gzip = blob_path.endswith('.gz')
                     break
             
             if not blob:
@@ -663,11 +668,18 @@ def get_monthly_report():
                     "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다. (시도한 경로: {', '.join(blob_paths[:2])})"
                 }), 404
             
-            # UTF-8 인코딩으로 명시적으로 읽기
-            snapshot_json_str = blob.download_as_text(encoding='utf-8')
+            # 파일 읽기 (Gzip 압축 여부에 따라 처리)
+            if is_gzip:
+                # Gzip 압축된 파일 읽기
+                snapshot_gzip_bytes = blob.download_as_bytes()
+                snapshot_json_str = gzip.decompress(snapshot_gzip_bytes).decode('utf-8')
+            else:
+                # 압축 없는 파일 읽기 (하위 호환)
+                snapshot_json_str = blob.download_as_text(encoding='utf-8')
+            
             snapshot_data = json.loads(snapshot_json_str)
             
-            print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path}", file=sys.stderr)
+            print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path} ({'Gzip 압축' if is_gzip else '압축 없음'})", file=sys.stderr)
             
             return jsonify({
                 "status": "success",

@@ -237,13 +237,9 @@ async function loadMonthlyReport(companyName, year, month) {
           console.log(`[월간 리포트] 섹션 ${index + 1} 표시:`, section.className);
           console.log(`[월간 리포트] 섹션 ${index + 1} innerHTML 길이:`, section.innerHTML.length);
         });
-        console.log("[월간 리포트] 모든 섹션 표시 완료");
+        console.log("[월간 리포트] 모든 섹션 표시 완료 (Section 3-9는 Lazy Loading)");
         
-        // 섹션이 표시된 후 섹션 5 표 렌더링 (요소를 찾기 위해)
-        setTimeout(async () => {
-          console.log("[섹션 5] 섹션 표시 후 표 렌더링 시작");
-          await renderSection5(data);
-        }, 200);
+        // 섹션 5는 Lazy Loading에서 처리되므로 여기서는 제거
         
         // 섹션 1의 실제 DOM 상태 확인
         const section1 = document.querySelector(".section-1-key-metrics");
@@ -306,11 +302,14 @@ function updateReportHeader(companyName, year, month) {
 }
 
 /**
- * 모든 섹션 렌더링
+ * 모든 섹션 렌더링 (Lazy Loading 적용)
+ * Section 1-2: 즉시 렌더링
+ * Section 3-9: Intersection Observer로 지연 렌더링
  */
 async function renderAllSections(data) {
   console.log("[월간 리포트] 렌더링 시작, 데이터 구조:", data);
   
+  // 즉시 렌더링: Section 1, 2
   try {
     renderSection1(data); // 지난달 매출 요약
   } catch (e) {
@@ -323,46 +322,131 @@ async function renderAllSections(data) {
     console.error("[월간 리포트] 섹션 2 렌더링 실패:", e);
   }
   
-  try {
-    renderSection3(data); // 베스트 상품 성과
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 3 렌더링 실패:", e);
-  }
+  // 지연 렌더링: Section 3-9 (Intersection Observer 사용)
+  setupLazySectionRendering(data);
   
-  try {
-    renderSection4(data); // 외부 시장 트렌드 (29CM)
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 4 렌더링 실패:", e);
-  }
+  console.log("[월간 리포트] 초기 섹션 렌더링 완료 (Section 1-2), 나머지는 Lazy Loading");
+}
+
+/**
+ * Lazy Section Rendering 설정 (Intersection Observer)
+ */
+function setupLazySectionRendering(data) {
+  // 섹션별 렌더링 함수 매핑
+  const sectionRenderers = {
+    'section-3-products': () => {
+      try {
+        renderSection3(data); // 베스트 상품 성과
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 3 렌더링 실패:", e);
+      }
+    },
+    'section-4-market-trend': () => {
+      try {
+        renderSection4(data); // 외부 시장 트렌드 (29CM)
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 4 렌더링 실패:", e);
+      }
+    },
+    'section-5-channels': () => {
+      // 섹션 5는 섹션이 표시된 후에 렌더링 (요소를 찾기 위해)
+      setTimeout(async () => {
+        try {
+          await renderSection5(data);
+        } catch (e) {
+          console.error("[월간 리포트] 섹션 5 렌더링 실패:", e);
+        }
+      }, 200);
+    },
+    'section-6-ads': () => {
+      try {
+        renderSection6(data); // 광고 매체 효율
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 6 렌더링 실패:", e);
+      }
+    },
+    'section-7-comparison': () => {
+      try {
+        renderSection7(data); // 시장 트렌드와 자사몰 비교
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 7 렌더링 실패:", e);
+      }
+    },
+    'section-8-forecast': () => {
+      try {
+        renderSection8(data); // 다음 달 목표 및 전망
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 8 렌더링 실패:", e);
+      }
+    },
+    'section-9-strategy': () => {
+      try {
+        renderSection9(data); // AI 제안 전략 액션
+      } catch (e) {
+        console.error("[월간 리포트] 섹션 9 렌더링 실패:", e);
+      }
+    }
+  };
   
-  // 섹션 5는 섹션이 표시된 후에 렌더링 (요소를 찾기 위해)
-  // renderSection5는 섹션 표시 후 setTimeout에서 호출됨
+  // Intersection Observer 옵션
+  const observerOptions = {
+    root: null, // 뷰포트 기준
+    rootMargin: '0px',
+    threshold: 0.1 // 섹션이 10% 이상 보일 때 트리거
+  };
   
-  try {
-    renderSection6(data); // 광고 매체 효율
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 6 렌더링 실패:", e);
-  }
+  // 렌더링 완료 추적 (중복 렌더링 방지)
+  const renderedSections = new Set();
   
-  try {
-    renderSection7(data); // 시장 트렌드와 자사몰 비교
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 7 렌더링 실패:", e);
-  }
+  // Intersection Observer 콜백
+  const observerCallback = (entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.1) {
+        const section = entry.target;
+        const sectionClass = Array.from(section.classList).find(cls => cls.startsWith('section-'));
+        
+        if (sectionClass && !renderedSections.has(sectionClass)) {
+          renderedSections.add(sectionClass);
+          console.log(`[Lazy Loading] ${sectionClass} 렌더링 시작`);
+          
+          const renderer = sectionRenderers[sectionClass];
+          if (renderer) {
+            renderer();
+            console.log(`[Lazy Loading] ${sectionClass} 렌더링 완료`);
+          }
+          
+          // 렌더링 후 관찰 중지 (한 번만 렌더링)
+          observer.unobserve(section);
+        }
+      }
+    });
+  };
   
-  try {
-    renderSection8(data); // 다음 달 목표 및 전망
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 8 렌더링 실패:", e);
-  }
+  // Intersection Observer 생성
+  const observer = new IntersectionObserver(observerCallback, observerOptions);
   
-  try {
-    renderSection9(data); // AI 제안 전략 액션
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 9 렌더링 실패:", e);
-  }
+  // Section 3-9 관찰 시작
+  const lazySections = [
+    '.section-3-products',
+    '.section-4-market-trend',
+    '.section-5-channels',
+    '.section-6-ads',
+    '.section-7-comparison',
+    '.section-8-forecast',
+    '.section-9-strategy'
+  ];
   
-  console.log("[월간 리포트] 모든 섹션 렌더링 완료");
+  lazySections.forEach(selector => {
+    const section = document.querySelector(selector);
+    if (section) {
+      // Placeholder 표시 (이미 HTML에 있지만, 명시적으로 표시)
+      section.style.minHeight = '200px'; // 최소 높이로 레이아웃 시프트 방지
+      observer.observe(section);
+      console.log(`[Lazy Loading] ${selector} 관찰 시작`);
+    } else {
+      console.warn(`[Lazy Loading] ${selector} 요소를 찾을 수 없습니다`);
+    }
+  });
 }
 
 // ============================================

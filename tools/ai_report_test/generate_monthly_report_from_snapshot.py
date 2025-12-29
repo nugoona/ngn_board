@@ -87,7 +87,55 @@ def main():
     has_yoy_sales = (ms.get("yoy", {}).get("net_sales", 0) or 0) > 0
     has_yoy_ads = (ads.get("yoy", {}).get("spend", 0) or 0) > 0
 
+    # ============================================
+    # 비용 0원 계산 로직 (In-Memory Calculation)
+    # ============================================
+    sales_this = ms.get("this", {}).get("net_sales", 0) or 0
+    sales_prev = ms.get("prev", {}).get("net_sales", 0) or 0
+    orders_this = ms.get("this", {}).get("total_orders", 0) or 0
+    orders_prev = ms.get("prev", {}).get("total_orders", 0) or 0
+    
+    # 매출 증감률
+    sales_growth = ((sales_this - sales_prev) / sales_prev * 100) if sales_prev > 0 else 0.0
+    sales_growth_str = f"{sales_growth:.1f}%"
+    
+    # 주문 증감률
+    order_growth = ((orders_this - orders_prev) / orders_prev * 100) if orders_prev > 0 else 0.0
+    order_growth_str = f"{order_growth:.1f}%"
+    
+    # 객단가 (AOV)
+    aov = (sales_this / orders_this) if orders_this > 0 else 0.0
+    aov_str = fmt_money(aov)
+    
+    # 광고 의존도 (Paid 매체 유입수 / 전체 유입수)
+    ga4_this = facts.get("ga4_traffic", {}).get("this", {})
+    ga4_totals = ga4_this.get("totals", {})
+    total_users = ga4_totals.get("total_users", 0) or 0
+    
+    # Paid 매체 유입수 계산 (meta_ad, ig, tiktok 등)
+    top_sources = ga4_this.get("top_sources", [])
+    paid_users = 0
+    paid_source_names = ["meta_ad", "ig", "tiktok", "facebook", "instagram", "meta"]
+    for source in top_sources:
+        source_name = source.get("source", "").lower()
+        if any(paid_name in source_name for paid_name in paid_source_names):
+            paid_users += source.get("total_users", 0) or 0
+    
+    ad_dependency = (paid_users / total_users * 100) if total_users > 0 else 0.0
+    ad_dependency_str = f"{ad_dependency:.1f}%"
+
     report_lines = []
+
+    # ============================================
+    # AI 프롬프트에 '계산된 정답' 주입하기
+    # ============================================
+    report_lines.append("## [Context: Calculated Facts]")
+    report_lines.append("> **Warning: 아래 수치는 정확한 팩트이므로, 분석 시 이 숫자를 그대로 인용할 것.**")
+    report_lines.append(f"> * 매출 증감: **{sales_growth_str}**")
+    report_lines.append(f"> * 주문 증감: **{order_growth_str}**")
+    report_lines.append(f"> * 객단가 (AOV): **{aov_str}**")
+    report_lines.append(f"> * 현재 광고 의존도: **{ad_dependency_str}**")
+    report_lines.append("")
 
     report_lines.append(f"# 📊 {this_label} 월간 성과 리포트 ({company})")
     report_lines.append(f"- 비교 기준(시스템 고정): **{this_label} vs {prev_label}**")

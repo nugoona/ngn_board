@@ -1,0 +1,397 @@
+"""
+AI 분석 모듈
+- Google Gemini API를 사용하여 월간 리포트 스냅샷 데이터를 분석
+- 섹션별 분석 텍스트를 생성하여 signals 필드에 추가
+"""
+
+"""
+AI 분석 모듈
+- Google Gemini API를 사용하여 월간 리포트 스냅샷 데이터를 분석
+- 섹션별 분석 텍스트를 생성하여 signals 필드에 추가
+
+사용 예시:
+    from tools.ai_report_test.ai_analyst import generate_ai_analysis
+    
+    # 스냅샷 데이터에 AI 분석 추가
+    snapshot_with_analysis = generate_ai_analysis(
+        snapshot_data,
+        system_prompt_file="tools/ai_report_test/system_prompt_v44.txt"
+    )
+"""
+
+import os
+import sys
+import json
+import traceback
+from typing import Dict, Optional, List
+
+try:
+    import google.generativeai as genai
+except ImportError:
+    print("⚠️ [WARN] google-generativeai 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install google-generativeai", file=sys.stderr)
+    genai = None
+
+# 환경 변수
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-exp")  # 기본 모델
+
+# System Prompt는 별도 파일에서 로드하거나 함수 파라미터로 받음
+# 사용자가 나중에 붙여넣을 예정이므로, 기본 템플릿만 제공
+DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
+당신은 전자상거래 데이터 분석 전문가입니다.
+제공된 월간 리포트 데이터를 분석하여 각 섹션별로 인사이트를 제공해주세요.
+
+[분석 요구사항]
+1. 데이터 기반의 객관적 분석
+2. 구체적인 수치 인용
+3. 실용적인 인사이트 제공
+4. 한국어로 작성
+
+[출력 형식]
+각 섹션별로 분석 텍스트를 제공하되, 섹션 7의 경우 마지막에 JSON 비교표를 포함해주세요.
+"""
+
+
+def load_system_prompt(prompt_file: Optional[str] = None) -> str:
+    """
+    System Prompt를 파일에서 로드하거나 기본 템플릿 반환
+    
+    Args:
+        prompt_file: System Prompt 파일 경로 (선택사항)
+    
+    Returns:
+        System Prompt 문자열
+    """
+    if prompt_file and os.path.exists(prompt_file):
+        try:
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            print(f"⚠️ [WARN] System Prompt 파일 로드 실패: {e}", file=sys.stderr)
+            print(f"   기본 템플릿 사용", file=sys.stderr)
+            return DEFAULT_SYSTEM_PROMPT_TEMPLATE
+    else:
+        return DEFAULT_SYSTEM_PROMPT_TEMPLATE
+
+
+def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
+    """
+    섹션별 프롬프트 생성
+    
+    Args:
+        section_num: 섹션 번호 (1-9)
+        snapshot_data: 스냅샷 JSON 데이터
+    
+    Returns:
+        섹션별 프롬프트 문자열
+    """
+    facts = snapshot_data.get("facts", {})
+    report_meta = snapshot_data.get("report_meta", {})
+    company_name = report_meta.get("company_name", "업체")
+    report_month = report_meta.get("report_month", "")
+    
+    section_prompts = {
+        1: f"""
+[섹션 1: 지난달 매출 분석]
+{company_name}의 {report_month} 매출 데이터를 분석해주세요.
+
+데이터:
+- 이번 달 매출: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- 전월 매출: {json.dumps(facts.get('mall_sales', {}).get('prev', {}), ensure_ascii=False, indent=2)}
+- 비교 데이터: {json.dumps(facts.get('comparisons', {}).get('mall_sales', {}), ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 매출 증감 요인 분석
+- 주요 성과 지표 해석
+- 전월 대비 변화 인사이트
+""",
+        2: f"""
+[섹션 2: 주요 유입 채널]
+{company_name}의 {report_month} 유입 채널 데이터를 분석해주세요.
+
+데이터:
+- GA4 트래픽: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- 상위 유입 소스: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('top_sources', [])[:5], ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 주요 유입 채널 성과 분석
+- 채널별 이탈률 및 전환율 해석
+- 채널 최적화 제안
+""",
+        3: f"""
+[섹션 3: 고객 방문 및 구매 여정]
+{company_name}의 {report_month} 고객 여정 데이터를 분석해주세요.
+
+데이터:
+- GA4 퍼널: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('totals', {}), ensure_ascii=False, indent=2)}
+- 매출 데이터: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 유입 → 장바구니 → 구매 전환율 분석
+- 여정별 이탈 지점 파악
+- 전환율 개선 제안
+""",
+        4: f"""
+[섹션 4: 자사몰 베스트 상품 성과]
+{company_name}의 {report_month} 베스트 상품 데이터를 분석해주세요.
+
+데이터:
+- 베스트 상품 (매출 기준): {json.dumps(facts.get('products', {}).get('this', {}).get('rolling', {}).get('d30', {}).get('top_products_by_sales', [])[:5], ensure_ascii=False, indent=2)}
+- 베스트 상품 (조회 기준): {json.dumps(facts.get('viewitem', {}).get('this', {}).get('top_items_by_view_item', [])[:5], ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 베스트 상품 성과 분석
+- 매출 vs 조회수 비교 인사이트
+- 상품 포트폴리오 개선 제안
+""",
+        5: f"""
+[섹션 5: 시장 트렌드 확인 (29CM)]
+{company_name}의 {report_month} 시장 트렌드 데이터를 분석해주세요.
+
+데이터:
+- 29CM 베스트 상품: {json.dumps(facts.get('29cm_best', {}).get('items', [])[:10], ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 시장 트렌드 분석
+- 인기 상품 카테고리/가격대 파악
+- 시장 기회 포착
+""",
+        6: f"""
+[섹션 6: 매체 성과 및 효율 진단]
+{company_name}의 {report_month} 광고 매체 데이터를 분석해주세요.
+
+데이터:
+- Meta Ads 성과: {json.dumps(facts.get('meta_ads_goals', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- 상위 광고: {json.dumps(facts.get('meta_ads_goals', {}).get('this', {}).get('top_ads', {}), ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 광고 매체 효율 분석
+- ROAS/CTR/CVR 해석
+- 광고 최적화 제안
+""",
+        7: f"""
+[섹션 7: 시장 트렌드와 자사몰 비교]
+{company_name}의 {report_month} 시장 비교 데이터를 분석해주세요.
+
+데이터:
+- 29CM 베스트: {json.dumps(facts.get('29cm_best', {}).get('items', [])[:10], ensure_ascii=False, indent=2)}
+- 자사몰 상품: {json.dumps(facts.get('products', {}).get('this', {}).get('rolling', {}).get('d30', {}).get('top_products_by_sales', [])[:10], ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 시장 vs 자사몰 비교 분석
+- 차별화 포인트 파악
+- 경쟁력 강화 방안
+
+[중요] 분석 텍스트 마지막에 다음 형식의 JSON 비교표를 포함해주세요:
+```json
+{{
+  "주력_아이템": {{
+    "market": "29CM 시장의 주력 아이템",
+    "company": "자사몰의 주력 아이템"
+  }},
+  "평균_가격": {{
+    "market": "29CM 평균 가격",
+    "company": "자사몰 평균 가격"
+  }},
+  "핵심_소재": {{
+    "market": "29CM 인기 소재",
+    "company": "자사몰 주요 소재"
+  }},
+  "타겟_고객층": {{
+    "market": "29CM 타겟 고객",
+    "company": "자사몰 타겟 고객"
+  }},
+  "가격대": {{
+    "market": "29CM 가격대",
+    "company": "자사몰 가격대"
+  }}
+}}
+```
+""",
+        8: f"""
+[섹션 8: 익월 목표 설정 및 시장 전망]
+{company_name}의 {report_month} 전망 데이터를 분석해주세요.
+
+데이터:
+- 전망 데이터: {json.dumps(facts.get('forecast_next_month', {}), ensure_ascii=False, indent=2)}
+- 작년 동월/익월 매출: {json.dumps(facts.get('forecast_next_month', {}).get('mall_sales', {}), ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 다음 달 목표 설정 제안
+- 작년 대비 전망 분석
+- 시장 전망 및 리스크 요인
+""",
+        9: f"""
+[섹션 9: 데이터 기반 전략 액션 플랜]
+{company_name}의 {report_month} 전체 데이터를 종합하여 전략을 제안해주세요.
+
+데이터 요약:
+- 매출: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- 광고: {json.dumps(facts.get('meta_ads', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- 유입: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('totals', {}), ensure_ascii=False, indent=2)}
+- 신호: {json.dumps(snapshot_data.get('signals', {}), ensure_ascii=False, indent=2)}
+
+분석 요청:
+- 종합 전략 액션 플랜
+- 우선순위별 실행 방안
+- KPI 및 목표 설정
+"""
+    }
+    
+    return section_prompts.get(section_num, "")
+
+
+def generate_ai_analysis(
+    snapshot_data: Dict,
+    system_prompt: Optional[str] = None,
+    system_prompt_file: Optional[str] = None,
+    sections: Optional[List[int]] = None,
+    api_key: Optional[str] = None
+) -> Dict:
+    """
+    스냅샷 데이터를 AI에게 분석시키고 결과를 signals 필드에 추가
+    
+    Args:
+        snapshot_data: 스냅샷 JSON 데이터 (report_meta, facts, signals 포함)
+        system_prompt: System Prompt 문자열 (직접 제공)
+        system_prompt_file: System Prompt 파일 경로
+        sections: 분석할 섹션 번호 리스트 (None이면 1-9 모두)
+        api_key: Gemini API 키 (None이면 환경변수에서 로드)
+    
+    Returns:
+        signals 필드에 AI 분석 텍스트가 추가된 snapshot_data
+    """
+    # google-generativeai 패키지 확인
+    if genai is None:
+        raise ImportError("google-generativeai 패키지가 설치되지 않았습니다. 'pip install google-generativeai'로 설치해주세요.")
+    
+    # API 키 확인
+    api_key = api_key or GEMINI_API_KEY
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
+    
+    # Gemini API 초기화
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(GEMINI_MODEL)
+    
+    # System Prompt 로드
+    if system_prompt:
+        system_prompt_text = system_prompt
+    else:
+        system_prompt_text = load_system_prompt(system_prompt_file)
+    
+    # signals 초기화 (없으면 생성)
+    if "signals" not in snapshot_data:
+        snapshot_data["signals"] = {}
+    
+    signals = snapshot_data["signals"]
+    
+    # 분석할 섹션 리스트 (기본값: 1-9)
+    if sections is None:
+        sections = list(range(1, 10))
+    
+    # 각 섹션별 분석 수행
+    for section_num in sections:
+        section_key = f"section_{section_num}_analysis"
+        
+        try:
+            print(f"🤖 [INFO] 섹션 {section_num} AI 분석 시작...", file=sys.stderr)
+            
+            # 섹션별 프롬프트 생성
+            section_prompt = build_section_prompt(section_num, snapshot_data)
+            
+            # 전체 프롬프트 구성
+            full_prompt = f"{system_prompt_text}\n\n{section_prompt}"
+            
+            # Gemini API 호출
+            response = model.generate_content(
+                full_prompt,
+                generation_config={
+                    "temperature": 0.7,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 2048,
+                }
+            )
+            
+            # 응답 텍스트 추출
+            analysis_text = response.text.strip()
+            
+            # signals에 저장
+            signals[section_key] = analysis_text
+            
+            print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(analysis_text)}자)", file=sys.stderr)
+            
+        except Exception as e:
+            error_msg = f"섹션 {section_num} AI 분석 실패: {str(e)}"
+            print(f"❌ [ERROR] {error_msg}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            
+            # 에러 발생 시 빈 문자열 또는 에러 메시지 저장
+            signals[section_key] = f"[AI 분석 오류: {error_msg}]"
+    
+    # signals 업데이트
+    snapshot_data["signals"] = signals
+    
+    return snapshot_data
+
+
+def generate_ai_analysis_from_file(
+    snapshot_file: str,
+    output_file: Optional[str] = None,
+    system_prompt_file: Optional[str] = None,
+    sections: Optional[List[int]] = None
+) -> Dict:
+    """
+    스냅샷 JSON 파일에서 읽어서 AI 분석 후 저장
+    
+    Args:
+        snapshot_file: 입력 스냅샷 JSON 파일 경로
+        output_file: 출력 파일 경로 (None이면 입력 파일에 덮어쓰기)
+        system_prompt_file: System Prompt 파일 경로
+        sections: 분석할 섹션 번호 리스트
+    
+    Returns:
+        AI 분석이 추가된 snapshot_data
+    """
+    # 스냅샷 파일 읽기
+    with open(snapshot_file, 'r', encoding='utf-8') as f:
+        snapshot_data = json.load(f)
+    
+    # AI 분석 수행
+    snapshot_data = generate_ai_analysis(
+        snapshot_data,
+        system_prompt_file=system_prompt_file,
+        sections=sections
+    )
+    
+    # 결과 저장
+    output_path = output_file or snapshot_file
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(snapshot_data, f, ensure_ascii=False, indent=2, sort_keys=True)
+    
+    print(f"✅ [SUCCESS] AI 분석 결과 저장: {output_path}", file=sys.stderr)
+    
+    return snapshot_data
+
+
+if __name__ == "__main__":
+    # CLI 사용 예시
+    if len(sys.argv) < 2:
+        print("Usage: python3 ai_analyst.py <snapshot_file> [output_file] [system_prompt_file]")
+        print("  snapshot_file: 입력 스냅샷 JSON 파일")
+        print("  output_file: 출력 파일 (선택사항, 기본값: 입력 파일에 덮어쓰기)")
+        print("  system_prompt_file: System Prompt 파일 (선택사항)")
+        sys.exit(1)
+    
+    snapshot_file = sys.argv[1]
+    output_file = sys.argv[2] if len(sys.argv) > 2 else None
+    system_prompt_file = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    generate_ai_analysis_from_file(
+        snapshot_file,
+        output_file=output_file,
+        system_prompt_file=system_prompt_file
+    )
+

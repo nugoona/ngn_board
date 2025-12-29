@@ -1,0 +1,9 @@
+# System Prompt v44.0
+# 이 파일에 System Prompt 내용을 붙여넣으세요.
+# 
+# 사용 방법:
+# 1. 이 파일에 System Prompt 내용을 붙여넣기
+# 2. ai_analyst.py의 generate_ai_analysis 함수에서 system_prompt_file 파라미터로 이 파일 경로 전달
+
+[여기에 System Prompt v44.0 내용을 붙여넣으세요]
+

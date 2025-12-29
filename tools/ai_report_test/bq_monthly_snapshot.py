@@ -2487,6 +2487,20 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     signals = calculate_signals()
     
     # -----------------------
+    # AI 분석 필드 초기화 (기본값 None)
+    # -----------------------
+    # 프론트엔드에서 기대하는 섹션별 분석 필드 추가
+    signals["section_1_analysis"] = None  # 지난달 매출 분석
+    signals["section_2_analysis"] = None  # 주요 유입 채널
+    signals["section_3_analysis"] = None  # 고객 방문 및 구매 여정
+    signals["section_4_analysis"] = None  # 자사몰 베스트 상품 성과
+    signals["section_5_analysis"] = None  # 시장 트렌드 확인 (29CM)
+    signals["section_6_analysis"] = None  # 매체 성과 및 효율 진단
+    signals["section_7_analysis"] = None  # 시장 트렌드와 자사몰 비교
+    signals["section_8_analysis"] = None  # 익월 목표 설정 및 시장 전망
+    signals["section_9_analysis"] = None  # 데이터 기반 전략 액션 플랜
+    
+    # -----------------------
     # 29CM 크롤링 실행
     # -----------------------
     crawl_29cm_result = crawl_29cm_best()

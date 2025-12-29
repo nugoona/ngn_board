@@ -201,6 +201,12 @@ async function loadMonthlyReport(companyName, year, month) {
     // 헤더 업데이트
     updateReportHeader(companyName, year, month);
     
+    // 섹션 7 헤더에 업체명 설정
+    const companyHeader = document.getElementById("section7CompanyHeader");
+    if (companyHeader) {
+      companyHeader.textContent = companyName.toUpperCase();
+    }
+    
     updateLoadingProgress(85);
     
     // 모든 섹션 렌더링
@@ -332,7 +338,7 @@ function renderAllSections(data) {
   }
   
   try {
-    renderSection7(data); // 우리와 시장의 차이점
+    renderSection7(data); // 시장 트렌드와 자사몰 비교
   } catch (e) {
     console.error("[월간 리포트] 섹션 7 렌더링 실패:", e);
   }
@@ -711,49 +717,55 @@ function renderSection5(data) {
   
   console.log("[섹션 5] 최종 topSources:", topSources);
   
-  const container = document.getElementById("section5DonutChart");
+  const container = document.getElementById("section5ChannelsTable");
   if (container) {
     const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);
     console.log("[섹션 5] 계산된 total:", total);
-    console.log("[섹션 5] ApexCharts 존재 여부:", typeof ApexCharts !== "undefined");
     console.log("[섹션 5] topSources.length:", topSources.length);
     
-    if (typeof ApexCharts !== "undefined" && topSources.length > 0 && total > 0) {
-      const chartData = topSources.map(s => ({
-        name: s.source || s.name || "Unknown",
-        value: s.total_users || s.users || s.value || 0
-      }));
+    if (topSources.length > 0 && total > 0) {
+      // Top 5만 선택하고 정렬
+      const top5 = topSources
+        .map(s => ({
+          source: s.source || s.name || "Unknown",
+          users: s.total_users || s.users || s.value || 0,
+          bounce_rate: s.bounce_rate || 0
+        }))
+        .sort((a, b) => b.users - a.users)
+        .slice(0, 5);
       
-      // 기존 차트 제거
-      if (container._apexChart) {
-        container._apexChart.destroy();
-      }
+      // 표 생성
+      const tableHTML = `
+        <table class="channels-table">
+          <thead>
+            <tr>
+              <th>채널</th>
+              <th class="text-right">유입수</th>
+              <th class="text-right">유입비중</th>
+              <th class="text-right">이탈률</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${top5.map(item => {
+              const share = total > 0 ? ((item.users / total) * 100).toFixed(1) : "0.0";
+              return `
+                <tr>
+                  <td>${item.source}</td>
+                  <td class="text-right">${formatNumber(item.users)}</td>
+                  <td class="text-right">${share}%</td>
+                  <td class="text-right">${item.bounce_rate.toFixed(1)}%</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
       
-      const chart = new ApexCharts(container, {
-        series: chartData.map(d => d.value),
-        chart: {
-          type: "donut",
-          height: 300
-        },
-        labels: chartData.map(d => d.name),
-        colors: ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"],
-        legend: {
-          position: "bottom"
-        },
-        dataLabels: {
-          enabled: true,
-          formatter: function(val) {
-            return val.toFixed(1) + "%";
-          }
-        }
-      });
-      
-      chart.render();
-      container._apexChart = chart;
+      container.innerHTML = tableHTML;
     } else {
       container.innerHTML = `
-        <div class="donut-chart-fallback">
-          <div class="fallback-text">유입 채널 데이터가 없습니다.</div>
+        <div class="channels-table-empty">
+          <div class="empty-text">유입 채널 데이터가 없습니다.</div>
         </div>
       `;
     }
@@ -826,13 +838,23 @@ function renderAdsRankingList(ads, type) {
       : `클릭: ${formatNumber(ad.clicks || 0)}회`;
     const spend = formatMoney(ad.spend || ad.cost || 0);
     
+    // 전환 광고는 ROAS, 유입 광고는 클릭률 추가
+    let additionalMetric = "";
+    if (type === "conversion") {
+      const roas = ad.roas || 0;
+      additionalMetric = ` • ROAS: ${roas.toFixed(1)}%`;
+    } else {
+      const ctr = ad.ctr || 0;
+      additionalMetric = ` • 클릭률: ${ctr.toFixed(2)}%`;
+    }
+    
     return `
       <div class="ads-ranking-item">
         <div class="ads-ranking-rank">${index + 1}</div>
         <div class="ads-ranking-info">
           <div class="ads-ranking-name">${name}</div>
           <div class="ads-ranking-metrics">
-            <span>${metric}</span>
+            <span>${metric}${additionalMetric}</span>
             <span>•</span>
             <span>${spend}</span>
           </div>
@@ -843,11 +865,20 @@ function renderAdsRankingList(ads, type) {
 }
 
 // ============================================
-// 섹션 7: 우리와 시장의 차이점
+// 섹션 7: 시장 트렌드와 자사몰 비교
 // ============================================
 function renderSection7(data) {
   const signals = data.signals || {};
   const analysis = signals.section_7_analysis || "";
+  
+  // 업체명 가져오기
+  const companyName = currentCompany || "업체명";
+  
+  // 헤더 업데이트
+  const trendHeader = document.getElementById("section7TrendHeader");
+  const companyHeader = document.getElementById("section7CompanyHeader");
+  if (trendHeader) trendHeader.textContent = "트렌드";
+  if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
   
   const marketContent = document.getElementById("section7MarketContent");
   const ourContent = document.getElementById("section7OurContent");
@@ -858,9 +889,9 @@ function renderSection7(data) {
     const ourKeywords = [];
     
     lines.forEach(line => {
-      if (line.includes("시장") || line.includes("경쟁사")) {
+      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드")) {
         marketKeywords.push(line);
-      } else if (line.includes("우리") || line.includes("자사")) {
+      } else if (line.includes("우리") || line.includes("자사") || line.includes(companyName)) {
         ourKeywords.push(line);
       }
     });
@@ -895,18 +926,18 @@ function renderSection8(data) {
   if (container) {
     // 작년 동월 매출 (yoy 데이터 사용)
     const lastYearSales = yoy.net_sales || forecast.predicted_sales || 0;
-    const target = forecast.target_sales || lastYearSales * 1.1;
     
-    // 차트 대신 텍스트로 표시
+    // 작년 동월 날짜 계산 (YYYY-MM 형식)
+    const lastYear = currentYear - 1;
+    const lastYearMonth = String(currentMonth).padStart(2, '0');
+    const lastYearDateStr = `${lastYear}-${lastYearMonth}`;
+    
+    // 목표 매출 카드 제거, 작년 동월 매출만 표시 (formatMoney는 이미 원 단위로 변환)
     container.innerHTML = `
       <div class="forecast-text-content">
         <div class="forecast-item-text">
-          <div class="forecast-label">작년 동월 매출</div>
+          <div class="forecast-label">작년 동월 매출 (${lastYearDateStr})</div>
           <div class="forecast-value-large">${formatMoney(lastYearSales)}</div>
-        </div>
-        <div class="forecast-item-text">
-          <div class="forecast-label">목표 매출</div>
-          <div class="forecast-value-large">${formatMoney(target)}</div>
         </div>
       </div>
     `;
@@ -979,8 +1010,8 @@ function renderAiAnalysis(elementId, analysisText) {
 // ============================================
 function formatMoney(value) {
   if (typeof value !== "number" || isNaN(value)) return "-";
-  const millions = value / 10000;
-  return millions >= 1 ? `${millions.toFixed(1)}만원` : `${Math.round(value).toLocaleString()}원`;
+  // 원 단위 + 천단위 쉼표로 변경 (만원 단위 제거)
+  return `${Math.round(value).toLocaleString()}원`;
 }
 
 function formatNumber(value) {

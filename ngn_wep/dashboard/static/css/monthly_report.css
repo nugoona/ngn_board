@@ -253,7 +253,7 @@
 .monthly-report-section {
   display: none; /* 기본적으로 숨김, JavaScript에서 block으로 변경 */
   margin-bottom: 48px;
-  padding-bottom: 32px;
+  padding-bottom: 48px; /* AI 분석 박스와 겹치지 않도록 증가 */
   border-bottom: 1px solid #E9ECEF;
   position: relative;
   /* ✅ 해결책 A: overflow 강제 해제 - sticky가 작동하려면 필수 */
@@ -267,15 +267,15 @@
   padding-bottom: 0;
 }
 
-/* 섹션 구분선 강조 */
+/* 섹션 구분선 - 단순한 선으로 변경 */
 .monthly-report-section::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 60px;
-  height: 2px;
-  background: linear-gradient(90deg, #003366, transparent);
+  width: 100%;
+  height: 1px;
+  background: #E9ECEF; /* 그라데이션 제거, 단순한 선 */
 }
 
 .section-title {
@@ -859,7 +859,7 @@
 }
 
 /* ============================================
-   섹션 7: 우리와 시장의 차이점
+   섹션 7: 시장 트렌드와 자사몰 비교
    ============================================ */
 .comparison-boxes {
   display: grid;
@@ -930,10 +930,19 @@
 /* ============================================
    섹션 8: 다음 달 목표 및 전망 (차트 제거)
    ============================================ */
+.section-8-forecast {
+  min-height: 600px; /* 섹션 높이 2배 (기본 300px → 600px) */
+}
+
+.section-8-forecast .section-ai-analysis {
+  min-height: 500px; /* AI 분석 높이 2배 (기본 250px → 500px) */
+}
+
 .forecast-text-wrapper {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-height: 500px; /* 섹션 높이 2배 */
 }
 
 .forecast-text-content {
@@ -943,10 +952,15 @@
 
 .forecast-item-text {
   flex: 1;
-  padding: 24px;
+  padding: 48px; /* 패딩 증가 (24px → 48px) */
   background: #F8F9FA;
   border-radius: 8px;
   text-align: center;
+  min-height: 400px; /* 카드 높이 증가 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .forecast-label {

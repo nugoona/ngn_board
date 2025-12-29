@@ -256,7 +256,9 @@
   padding-bottom: 32px;
   border-bottom: 1px solid #E9ECEF;
   position: relative;
-  /* overflow 없음 - sticky가 작동하려면 필요 */
+  /* ✅ 해결책 A: overflow 강제 해제 - sticky가 작동하려면 필수 */
+  overflow: visible !important;
+  contain: none !important;
 }
 
 .monthly-report-section:last-child {
@@ -287,11 +289,15 @@
 }
 
 /* ✅ 섹션 컨텐츠 래퍼 (메인 + AI 분석) */
+/* ✅ 해결책 B: Grid 레이아웃 사용 (Flexbox보다 sticky에 더 안정적) */
 .section-content-wrapper {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr 40%; /* 왼쪽 자동, 오른쪽 40% 고정 */
   gap: 32px;
-  align-items: flex-start;
+  align-items: start; /* 매우 중요: 아이템들이 상단에 붙도록 설정 */
+  /* ✅ 해결책 A: overflow 강제 해제 */
+  overflow: visible !important;
+  contain: none !important;
 }
 
 .section-main {
@@ -304,18 +310,19 @@
 
 /* ✅ AI 분석 박스 - 간단하고 확실한 sticky 구현 */
 .section-ai-analysis {
-  flex: 0 0 40%;
+  /* Grid 레이아웃에서는 flex 속성 제거 */
   background: #F8F9FA;
   border-radius: 8px;
   padding: 20px;
   border-left: 3px solid #003366;
   position: sticky;
   top: 20px;
-  align-self: flex-start;
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 140px); /* 헤더 높이 고려 */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  z-index: 10;
+  /* align-self 제거 (Grid wrapper에서 align-items: start로 제어됨) */
 }
 
 .section-ai-analysis-full {
@@ -1040,16 +1047,18 @@
 /* ✅ 반응형 디자인 */
 @media (max-width: 1024px) {
   .section-content-wrapper {
-    flex-direction: column;
+    /* Grid 레이아웃: 작은 화면에서는 세로로 쌓기 */
+    grid-template-columns: 1fr; /* 한 열로 변경 */
   }
   
   .section-main {
-    flex: 1 1 100%;
+    width: 100%;
   }
   
   .section-ai-analysis {
-    flex: 1 1 100%;
     width: 100%;
+    position: relative; /* 작은 화면에서는 sticky 비활성화 */
+    max-height: none;
   }
   
   .scorecard-grid {

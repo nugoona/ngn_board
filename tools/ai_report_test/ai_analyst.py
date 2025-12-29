@@ -425,6 +425,81 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     return section_prompts.get(section_num, "")
 
 
+def extract_section_content(full_text: str, target_section: int) -> str:
+    """
+    AI 응답에서 특정 섹션의 내용만 추출 (다른 섹션 언급 제거)
+    
+    Args:
+        full_text: AI가 반환한 전체 텍스트
+        target_section: 추출할 섹션 번호 (1-9)
+    
+    Returns:
+        해당 섹션의 내용만 포함한 텍스트
+    """
+    import re
+    
+    # 섹션 제목 패턴 정의 (한글/영문 모두 매칭)
+    section_patterns = {
+        1: [r'\[섹션\s*1\]', r'섹션\s*1', r'지난달\s*매출\s*분석', r'Revenue\s*Analysis'],
+        2: [r'\[섹션\s*2\]', r'섹션\s*2', r'주요\s*유입\s*채널', r'Channel\s*Efficiency'],
+        3: [r'\[섹션\s*3\]', r'섹션\s*3', r'고객\s*방문\s*및\s*구매\s*여정', r'Acquisition\s*&\s*Conversion'],
+        4: [r'\[섹션\s*4\]', r'섹션\s*4', r'자사몰\s*베스트\s*상품\s*성과', r'Best\s*Sellers'],
+        5: [r'\[섹션\s*5\]', r'섹션\s*5', r'시장\s*트렌드\s*확인', r'Market\s*Deep\s*Dive'],
+        6: [r'\[섹션\s*6\]', r'섹션\s*6', r'매체\s*성과\s*및\s*효율\s*진단', r'Creative\s*Performance'],
+        7: [r'\[섹션\s*7\]', r'섹션\s*7', r'시장\s*트렌드와\s*자사몰\s*비교', r'Gap\s*Analysis'],
+        8: [r'\[섹션\s*8\]', r'섹션\s*8', r'익월\s*목표\s*설정\s*및\s*시장\s*전망', r'Target\s*&\s*Outlook'],
+        9: [r'\[섹션\s*9\]', r'섹션\s*9', r'데이터\s*기반\s*전략\s*액션\s*플랜', r'Action\s*Plan', r'종합\s*전략']
+    }
+    
+    # 타겟 섹션 패턴
+    target_patterns = section_patterns.get(target_section, [])
+    if not target_patterns:
+        # 패턴이 없으면 전체 텍스트 반환
+        return full_text
+    
+    # 타겟 섹션 시작 위치 찾기
+    target_start_pos = -1
+    for pattern in target_patterns:
+        match = re.search(pattern, full_text, re.IGNORECASE)
+        if match:
+            target_start_pos = match.start()
+            break
+    
+    # 타겟 섹션을 찾지 못하면 전체 텍스트 반환
+    if target_start_pos == -1:
+        print(f"⚠️ [WARN] 섹션 {target_section} 시작 패턴을 찾을 수 없습니다. 전체 텍스트를 반환합니다.", file=sys.stderr)
+        return full_text
+    
+    # 다음 섹션 시작 위치 찾기 (타겟 섹션 이후)
+    next_section_start = len(full_text)
+    for section_num in range(1, 10):
+        if section_num == target_section:
+            continue
+        if section_num <= target_section:
+            continue  # 이미 지나간 섹션은 무시
+        
+        # 다음 섹션 패턴 찾기
+        next_patterns = section_patterns.get(section_num, [])
+        for pattern in next_patterns:
+            match = re.search(pattern, full_text[target_start_pos:], re.IGNORECASE)
+            if match:
+                # 타겟 섹션 시작 위치 기준으로 상대 위치 계산
+                relative_pos = match.start()
+                next_section_start = target_start_pos + relative_pos
+                break
+        
+        if next_section_start < len(full_text):
+            break  # 가장 가까운 다음 섹션을 찾았으면 종료
+    
+    # 타겟 섹션 내용 추출
+    extracted_text = full_text[target_start_pos:next_section_start].strip()
+    
+    # 섹션 제목 제거 (이미 포함되어 있을 수 있음)
+    # 하지만 제목이 있으면 유지하는 것이 좋을 수도 있으므로 일단 유지
+    
+    return extracted_text
+
+
 def generate_ai_analysis(
     snapshot_data: Dict,
     system_prompt: Optional[str] = None,
@@ -502,7 +577,15 @@ def generate_ai_analysis(
             )
             
             # 응답 텍스트 추출
-            analysis_text = response.text.strip()
+            raw_analysis_text = response.text.strip()
+            
+            # 해당 섹션의 내용만 추출 (다른 섹션 언급 제거)
+            analysis_text = extract_section_content(raw_analysis_text, section_num)
+            
+            # 원본과 추출된 텍스트 길이 비교 로그
+            if len(analysis_text) < len(raw_analysis_text):
+                reduction_pct = (1 - len(analysis_text) / len(raw_analysis_text)) * 100
+                print(f"📝 [INFO] 섹션 {section_num} 내용 추출: {len(raw_analysis_text)}자 → {len(analysis_text)}자 ({reduction_pct:.1f}% 감소)", file=sys.stderr)
             
             # signals에 저장
             signals[section_key] = analysis_text

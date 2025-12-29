@@ -1862,6 +1862,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "top_sources": ga4_top_sources_multi.get("yoy", []),
         }
     else:
+        ga4_yoy_totals = None
         ga4_yoy = {
             "totals": None,
             "top_sources": [],

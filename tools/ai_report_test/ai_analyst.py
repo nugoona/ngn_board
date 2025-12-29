@@ -57,24 +57,17 @@ except ImportError:
     print("⚠️ [WARN] python-dotenv 패키지가 설치되지 않았습니다.", file=sys.stderr)
     print("   설치: pip install python-dotenv", file=sys.stderr)
 
+# Google Gen AI SDK (v1.0+) 최신 버전 사용
 try:
-    import google.genai as genai
-    try:
-        from google.genai import Client, GenerativeModel as GenAIGenerativeModel
-        GENAI_AVAILABLE = True
-    except ImportError:
-        GENAI_AVAILABLE = False
+    from google import genai
+    from google.genai import types
+    GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
-    # Fallback to deprecated package for backward compatibility
-    try:
-        import google.generativeai as genai
-        print("⚠️ [WARN] google-generativeai 패키지는 deprecated되었습니다. google-genai로 업그레이드하세요.", file=sys.stderr)
-        print("   설치: pip install google-genai", file=sys.stderr)
-    except ImportError:
-        print("⚠️ [WARN] google-genai 패키지가 설치되지 않았습니다.", file=sys.stderr)
-        print("   설치: pip install google-genai", file=sys.stderr)
-        genai = None
+    genai = None
+    types = None
+    print("⚠️ [WARN] google-genai 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install google-genai", file=sys.stderr)
 
 try:
     from google.cloud import storage
@@ -453,7 +446,7 @@ def generate_ai_analysis(
         signals 필드에 AI 분석 텍스트가 추가된 snapshot_data
     """
     # google-genai 패키지 확인
-    if genai is None:
+    if not GENAI_AVAILABLE or genai is None or types is None:
         raise ImportError("google-genai 패키지가 설치되지 않았습니다. 'pip install google-genai'로 설치해주세요.")
     
     # API 키 확인
@@ -461,29 +454,11 @@ def generate_ai_analysis(
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
     
-    # Gemini API 초기화 (google.genai 또는 google.generativeai 지원)
-    use_new_api = False
-    client = None
-    model = None
-    
+    # Google Gen AI SDK (v1.0+) Client 초기화
     try:
-        # google.genai (새 패키지) 사용 시도
-        if GENAI_AVAILABLE and 'Client' in globals() and 'GenAIGenerativeModel' in globals():
-            client = Client(api_key=api_key)
-            model = GenAIGenerativeModel(model_name=GEMINI_MODEL, client=client)
-            use_new_api = True
-        else:
-            raise AttributeError("google.genai.Client or GenerativeModel not found")
-    except (AttributeError, TypeError, NameError) as e:
-        # google.generativeai (구 패키지) 사용 - backward compatibility
-        try:
-            if genai is None:
-                raise ImportError("google-genai 또는 google-generativeai 패키지가 설치되지 않았습니다.")
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel(GEMINI_MODEL)
-            use_new_api = False
-        except AttributeError as e2:
-            raise ImportError(f"google-genai 또는 google-generativeai 패키지가 올바르게 설치되지 않았습니다. 오류: {e}, {e2}")
+        client = genai.Client(api_key=api_key)
+    except Exception as e:
+        raise ImportError(f"Google Gen AI Client 초기화 실패: {e}")
     
     # System Prompt 로드
     if system_prompt:
@@ -514,33 +489,38 @@ def generate_ai_analysis(
             # 전체 프롬프트 구성
             full_prompt = f"{system_prompt_text}\n\n{section_prompt}"
             
-            # Gemini API 호출 (google.genai 또는 google.generativeai 지원)
-            if use_new_api:
-                # google.genai (새 패키지) API
-                response = model.generate_content(
-                    full_prompt,
-                    generation_config={
-                        "temperature": 0.7,
-                        "top_p": 0.95,
-                        "top_k": 40,
-                        "max_output_tokens": 2048,
-                    }
-                )
-                # 응답 텍스트 추출
+            # Google Gen AI SDK (v1.0+) API 호출
+            # GenerateContentConfig 객체 생성
+            config = types.GenerateContentConfig(
+                temperature=0.7,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=2048
+            )
+            
+            # client.models.generate_content() 메서드 사용
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=full_prompt,
+                config=config
+            )
+            
+            # 응답 텍스트 추출
+            # 최신 SDK에서는 response.text 또는 response.candidates[0].content.parts[0].text 형태
+            if hasattr(response, 'text'):
                 analysis_text = response.text.strip()
+            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    parts = candidate.content.parts
+                    if len(parts) > 0 and hasattr(parts[0], 'text'):
+                        analysis_text = parts[0].text.strip()
+                    else:
+                        analysis_text = str(parts[0]) if parts else ""
+                else:
+                    analysis_text = str(candidate)
             else:
-                # google.generativeai (구 패키지) API
-                response = model.generate_content(
-                    full_prompt,
-                    generation_config={
-                        "temperature": 0.7,
-                        "top_p": 0.95,
-                        "top_k": 40,
-                        "max_output_tokens": 2048,
-                    }
-                )
-                # 응답 텍스트 추출
-                analysis_text = response.text.strip()
+                analysis_text = str(response)
             
             # signals에 저장
             signals[section_key] = analysis_text

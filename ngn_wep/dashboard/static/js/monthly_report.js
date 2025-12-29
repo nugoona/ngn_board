@@ -565,7 +565,10 @@ function renderSection1(data) {
           ${item.change !== "-" ? (item.status === "up" ? "▲" : "▼") : ""} ${item.change}
           ${item.diff && item.status === "down" ? ` (${item.diff})` : item.diff && item.status === "up" ? ` (+${item.diff})` : ""}
         </div>
-        <div class="scorecard-sparkline">${item.sparkline}</div>
+        <div class="scorecard-sparkline">
+          <div class="sparkline-label">최근 6개월 추이</div>
+          ${item.sparkline}
+        </div>
       </div>
     `).join("");
     container.innerHTML = htmlContent;
@@ -1143,19 +1146,15 @@ function renderSection7(data) {
   if (section7) {
     const sectionTitle = section7.querySelector(".section-title");
     if (sectionTitle) {
-      sectionTitle.textContent = "시장 트렌드와 자사몰 비교";
+      sectionTitle.textContent = "7. 시장 트렌드와 자사몰 비교";
     }
   }
   
   // 헤더 업데이트
   const trendHeader = document.getElementById("section7TrendHeader");
   const companyHeader = document.getElementById("section7CompanyHeader");
-  const tableTrendHeader = document.getElementById("section7TableTrendHeader");
-  const tableCompanyHeader = document.getElementById("section7TableCompanyHeader");
   if (trendHeader) trendHeader.textContent = "29CM 베스트";
   if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
-  if (tableTrendHeader) tableTrendHeader.textContent = "29CM 베스트";
-  if (tableCompanyHeader) tableCompanyHeader.textContent = companyName.toUpperCase();
   
   // ============================================
   // 1. JSON 블록 추출 및 파싱
@@ -1175,10 +1174,10 @@ function renderSection7(data) {
   }
   
   // ============================================
-  // 2. 비교표 렌더링
+  // 2. 각 카드에 테이블 렌더링
   // ============================================
-  const comparisonTableWrapper = document.getElementById("section7ComparisonTable");
-  const comparisonTableBody = document.getElementById("section7ComparisonTableBody");
+  const marketTableBody = document.getElementById("section7MarketTableBody");
+  const ourTableBody = document.getElementById("section7OurTableBody");
   
   // 기본 비교 항목 (AI가 JSON을 제공하지 않아도 표시)
   const defaultComparisonItems = [
@@ -1189,96 +1188,72 @@ function renderSection7(data) {
     { key: "가격대", label: "가격대" }
   ];
   
-  if (comparisonTableBody) {
-    const tableRows = [];
+  // 29CM 베스트 테이블 렌더링
+  if (marketTableBody) {
+    const marketRows = [];
     
     if (comparisonTableData) {
       // AI가 제공한 JSON 데이터 사용
       for (const [key, value] of Object.entries(comparisonTableData)) {
         if (typeof value === 'object' && value !== null) {
           const marketValue = value.market || value.trend || value["29cm"] || "-";
-          const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
           const label = key.replace(/_/g, " ");
           
-          tableRows.push(`
+          marketRows.push(`
             <tr>
               <td class="comparison-label">${label}</td>
               <td class="comparison-market">${marketValue}</td>
+            </tr>
+          `);
+        }
+      }
+    } else {
+      // AI가 JSON을 제공하지 않으면 기본 항목 표시
+      defaultComparisonItems.forEach(item => {
+        marketRows.push(`
+          <tr>
+            <td class="comparison-label">${item.label}</td>
+            <td class="comparison-market">-</td>
+          </tr>
+        `);
+      });
+    }
+    
+    marketTableBody.innerHTML = marketRows.join("");
+  }
+  
+  // 자사몰 테이블 렌더링
+  if (ourTableBody) {
+    const ourRows = [];
+    
+    if (comparisonTableData) {
+      // AI가 제공한 JSON 데이터 사용
+      for (const [key, value] of Object.entries(comparisonTableData)) {
+        if (typeof value === 'object' && value !== null) {
+          const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
+          const label = key.replace(/_/g, " ");
+          
+          ourRows.push(`
+            <tr>
+              <td class="comparison-label">${label}</td>
               <td class="comparison-company">${companyValue}</td>
             </tr>
           `);
         }
       }
     } else {
-      // AI가 JSON을 제공하지 않으면 기본 항목 표시 (빈 테이블)
+      // AI가 JSON을 제공하지 않으면 기본 항목 표시
       defaultComparisonItems.forEach(item => {
-        tableRows.push(`
+        ourRows.push(`
           <tr>
             <td class="comparison-label">${item.label}</td>
-            <td class="comparison-market">-</td>
             <td class="comparison-company">-</td>
           </tr>
         `);
       });
     }
     
-    if (tableRows.length > 0) {
-      comparisonTableBody.innerHTML = tableRows.join("");
-      if (comparisonTableWrapper) {
-        comparisonTableWrapper.style.display = "block";
-      }
-    } else {
-      if (comparisonTableWrapper) {
-        comparisonTableWrapper.style.display = "none";
-      }
-    }
-  }
-  
-  // ============================================
-  // 3. 텍스트에서 JSON 블록 제거 (클린업)
-  // ============================================
-  if (jsonMatch) {
-    analysis = analysis.replace(jsonBlockRegex, "").trim();
-  }
-  
-  // ============================================
-  // 4. AI 분석 텍스트 렌더링 (JSON 블록 제거된 텍스트)
-  // ============================================
-  renderAiAnalysis("section7AiAnalysis", analysis);
-  
-  // ============================================
-  // 5. 비교 박스 렌더링 (기존 로직 유지)
-  // ============================================
-  const marketContent = document.getElementById("section7MarketContent");
-  const ourContent = document.getElementById("section7OurContent");
-  
-  if (analysis) {
-    const lines = analysis.split("\n").filter(l => l.trim());
-    const marketKeywords = [];
-    const ourKeywords = [];
-    
-    lines.forEach(line => {
-      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드") || line.includes("29CM")) {
-        marketKeywords.push(line);
-      } else if (line.includes("우리") || line.includes("자사") || line.includes(companyName)) {
-        ourKeywords.push(line);
-      }
-    });
-    
-    if (marketContent) {
-      marketContent.innerHTML = marketKeywords.length > 0
-        ? marketKeywords.map(kw => `<div class="comparison-keyword">${kw}</div>`).join("")
-        : `<div class="comparison-text">분석 데이터 준비 중...</div>`;
-    }
-    
-    if (ourContent) {
-      ourContent.innerHTML = ourKeywords.length > 0
-        ? ourKeywords.map(kw => `<div class="comparison-keyword">${kw}</div>`).join("")
-        : `<div class="comparison-text">분석 데이터 준비 중...</div>`;
-    }
-  } else {
-    if (marketContent) marketContent.innerHTML = `<div class="comparison-text">분석 데이터 준비 중...</div>`;
-    if (ourContent) ourContent.innerHTML = `<div class="comparison-text">분석 데이터 준비 중...</div>`;
+    ourTableBody.innerHTML = ourRows.join("");
   }
 }
 

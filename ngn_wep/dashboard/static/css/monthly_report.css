@@ -419,15 +419,21 @@
   padding-top: 12px;
   border-top: 1px solid #E9ECEF;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 30px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sparkline-label {
+  font-size: 11px;
+  color: #868E96;
+  text-align: center;
+  font-weight: 500;
 }
 
 .sparkline-svg {
   width: 100%;
   height: 30px;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 }
 
@@ -1074,6 +1080,74 @@
   font-size: 14px;
   line-height: 1.6;
   color: #495057;
+  width: 100%;
+}
+
+/* 각 카드 안의 단일 테이블 스타일 */
+.comparison-table-single {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.comparison-table-single thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.comparison-table-single th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #212529;
+  border-right: 1px solid #e9ecef;
+}
+
+.comparison-table-single th:first-child {
+  width: 40%;
+}
+
+.comparison-table-single th:last-child {
+  border-right: none;
+}
+
+.comparison-table-single tbody tr {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.comparison-table-single tbody tr:last-child {
+  border-bottom: none;
+}
+
+.comparison-table-single td {
+  padding: 10px 12px;
+  color: #495057;
+  border-right: 1px solid #e9ecef;
+}
+
+.comparison-table-single td:last-child {
+  border-right: none;
+}
+
+.market-box .comparison-table-single .comparison-label {
+  font-weight: 500;
+  color: #212529;
+  background-color: #f8f9fa;
+}
+
+.market-box .comparison-table-single .comparison-market {
+  color: #0066CC;
+}
+
+.our-box .comparison-table-single .comparison-label {
+  font-weight: 500;
+  color: #212529;
+  background-color: #f8f9fa;
+}
+
+.our-box .comparison-table-single .comparison-company {
+  color: #DC3545;
 }
 
 .comparison-keyword {

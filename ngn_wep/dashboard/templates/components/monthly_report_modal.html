@@ -184,48 +184,41 @@
       <!-- 섹션 7: 시장 트렌드와 자사몰 비교 -->
       <section class="monthly-report-section section-7-comparison">
         <h3 class="section-title">7. 시장 트렌드와 자사몰 비교</h3>
-        <div class="section-content-wrapper">
-          <div class="section-main">
-            <!-- 비교표 (JSON 파싱 후 렌더링) -->
-            <div class="comparison-table-wrapper" id="section7ComparisonTable" style="display: none;">
-              <table class="comparison-table">
-                <thead>
-                  <tr>
-                    <th>구분</th>
-                    <th id="section7TableTrendHeader">29CM 베스트</th>
-                    <th id="section7TableCompanyHeader">자사몰</th>
-                  </tr>
-                </thead>
-                <tbody id="section7ComparisonTableBody">
-                  <!-- JSON 데이터로 동적 생성 -->
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- 비교 박스 -->
-            <div class="comparison-boxes" id="section7Comparison">
-              <div class="comparison-box market-box">
-                <div class="comparison-box-header" id="section7TrendHeader">29CM 베스트</div>
-                <div class="comparison-box-content" id="section7MarketContent">
-                  <!-- 29CM 베스트 키워드/분석 -->
-                </div>
-              </div>
-              <div class="comparison-box vs-divider">VS</div>
-              <div class="comparison-box our-box">
-                <div class="comparison-box-header" id="section7CompanyHeader">업체명</div>
-                <div class="comparison-box-content" id="section7OurContent">
-                  <!-- 자사몰 키워드/분석 -->
-                </div>
+        <div class="section-main-full">
+          <div class="comparison-boxes" id="section7Comparison">
+            <div class="comparison-box market-box">
+              <div class="comparison-box-header" id="section7TrendHeader">29CM 베스트</div>
+              <div class="comparison-box-content">
+                <!-- 29CM 베스트 테이블 -->
+                <table class="comparison-table-single">
+                  <thead>
+                    <tr>
+                      <th>구분</th>
+                      <th>내용</th>
+                    </tr>
+                  </thead>
+                  <tbody id="section7MarketTableBody">
+                    <!-- JSON 데이터로 동적 생성 -->
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-          <div class="section-ai-analysis">
-            <div class="ai-analysis-label">AI 분석</div>
-            <div class="ai-analysis-content" id="section7AiAnalysis">
-              <div class="ai-analysis-skeleton">
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line short"></div>
+            <div class="comparison-box vs-divider">VS</div>
+            <div class="comparison-box our-box">
+              <div class="comparison-box-header" id="section7CompanyHeader">업체명</div>
+              <div class="comparison-box-content">
+                <!-- 자사몰 테이블 -->
+                <table class="comparison-table-single">
+                  <thead>
+                    <tr>
+                      <th>구분</th>
+                      <th>내용</th>
+                    </tr>
+                  </thead>
+                  <tbody id="section7OurTableBody">
+                    <!-- JSON 데이터로 동적 생성 -->
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

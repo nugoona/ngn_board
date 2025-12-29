@@ -392,7 +392,7 @@
   border: 1px solid #E9ECEF;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .scorecard-label {
@@ -645,7 +645,7 @@
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
@@ -654,7 +654,7 @@
 
 .market-trend-card-compact:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .market-trend-rank-badge {
@@ -763,7 +763,7 @@
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .channels-table thead {
@@ -857,7 +857,7 @@
   border: 1px solid #E9ECEF;
   border-radius: 8px;
   margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .ads-ranking-rank {
@@ -914,7 +914,7 @@
   border: 1px solid #E9ECEF;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .comparison-box.vs-divider {
@@ -1014,8 +1014,10 @@
 
 .forecast-card {
   padding: 24px;
-  background: #F8F9FA;
+  background: #ffffff;
+  border: 1px solid #E9ECEF;
   border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   text-align: center;
   min-height: 200px;
   display: flex;
@@ -1059,13 +1061,13 @@
   border: 1px solid #E9ECEF;
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .strategy-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .strategy-card-icon {

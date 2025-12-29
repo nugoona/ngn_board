@@ -350,8 +350,11 @@
 }
 
 .ai-analysis-text {
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 /* ✅ 마크다운 콘텐츠 스타일링 */
@@ -1297,8 +1300,61 @@
   font-size: 13px;
   line-height: 1.6;
   color: #495057;
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+/* 섹션 7 마크다운 콘텐츠 스타일링 */
+.comparison-ai-content.markdown-content {
+  white-space: normal;
+  line-height: 1.7;
+}
+
+.comparison-ai-content.markdown-content p {
+  margin: 0.8em 0;
+  line-height: 1.7;
+}
+
+.comparison-ai-content.markdown-content ul,
+.comparison-ai-content.markdown-content ol {
+  margin: 0.8em 0;
+  padding-left: 1.8em;
+}
+
+.comparison-ai-content.markdown-content li {
+  margin: 0.4em 0;
+  line-height: 1.6;
+}
+
+.comparison-ai-content.markdown-content strong {
+  font-weight: 600;
+}
+
+.comparison-ai-content.markdown-content em {
+  font-style: italic;
+}
+
+.comparison-ai-content.markdown-content h1,
+.comparison-ai-content.markdown-content h2,
+.comparison-ai-content.markdown-content h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.comparison-ai-content.markdown-content h1 {
+  font-size: 1.3em;
+}
+
+.comparison-ai-content.markdown-content h2 {
+  font-size: 1.2em;
+}
+
+.comparison-ai-content.markdown-content h3 {
+  font-size: 1.1em;
 }
 
 .market-box .comparison-ai-content {

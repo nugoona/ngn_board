@@ -1331,7 +1331,7 @@ function renderSection7(data) {
   }
   
   // ============================================
-  // 4. AI 분석 텍스트를 각 카드에 렌더링
+  // 4. AI 분석 텍스트를 각 카드에 렌더링 (마크다운 지원)
   // ============================================
   const marketAiText = document.getElementById("section7MarketAiText");
   const ourAiText = document.getElementById("section7OurAiText");
@@ -1349,19 +1349,23 @@ function renderSection7(data) {
       }
     });
     
-    // 29CM 베스트 AI 분석 텍스트
+    // 29CM 베스트 AI 분석 텍스트 (마크다운 렌더링)
     if (marketAiText) {
       if (marketLines.length > 0) {
-        marketAiText.innerHTML = `<div class="comparison-ai-content">${marketLines.join("<br>")}</div>`;
+        const marketText = marketLines.join("\n");
+        // renderAiAnalysis와 동일한 방식으로 마크다운 렌더링
+        renderAiAnalysisForSection7(marketAiText, marketText);
       } else {
         marketAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
       }
     }
     
-    // 자사몰 AI 분석 텍스트
+    // 자사몰 AI 분석 텍스트 (마크다운 렌더링)
     if (ourAiText) {
       if (ourLines.length > 0) {
-        ourAiText.innerHTML = `<div class="comparison-ai-content">${ourLines.join("<br>")}</div>`;
+        const ourText = ourLines.join("\n");
+        // renderAiAnalysis와 동일한 방식으로 마크다운 렌더링
+        renderAiAnalysisForSection7(ourAiText, ourText);
       } else {
         ourAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
       }
@@ -1485,6 +1489,52 @@ function renderSection9(data) {
 // ============================================
 // AI 분석 렌더링 (공통) - 마크다운 지원
 // ============================================
+// 섹션 7 전용 AI 분석 렌더링 함수 (comparison-ai-content 클래스 사용)
+function renderAiAnalysisForSection7(element, analysisText) {
+  if (!element || !analysisText || !analysisText.trim()) {
+    if (element) {
+      element.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
+    }
+    return;
+  }
+  
+  // 마크다운을 HTML로 변환 (marked 라이브러리 사용)
+  let htmlContent = "";
+  
+  if (typeof marked !== 'undefined') {
+    // marked 라이브러리가 로드된 경우
+    try {
+      // 마크다운 설정: 표(Table)는 제외 (시스템 프롬프트 요구사항)
+      marked.setOptions({
+        breaks: true,  // 줄바꿈 지원
+        gfm: false     // GitHub Flavored Markdown 비활성화 (표 제외)
+      });
+      
+      // 마크다운을 HTML로 변환
+      const markdownHtml = marked.parse(analysisText);
+      
+      // XSS 방지를 위해 DOMPurify로 정제
+      if (typeof DOMPurify !== 'undefined') {
+        htmlContent = DOMPurify.sanitize(markdownHtml, {
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+          ALLOWED_ATTR: []
+        });
+      } else {
+        htmlContent = markdownHtml;
+      }
+    } catch (e) {
+      console.warn("[섹션 7 AI 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
+      // 마크다운 변환 실패 시 일반 텍스트로 표시 (줄바꿈만 처리)
+      htmlContent = analysisText.replace(/\n/g, '<br>');
+    }
+  } else {
+    // marked 라이브러리가 없는 경우 줄바꿈만 처리
+    htmlContent = analysisText.replace(/\n/g, '<br>');
+  }
+  
+  element.innerHTML = `<div class="comparison-ai-content markdown-content">${htmlContent}</div>`;
+}
+
 function renderAiAnalysis(elementId, analysisText) {
   const element = document.getElementById(elementId);
   if (!element) return;

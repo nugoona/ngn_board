@@ -151,7 +151,7 @@ def load_from_gcs(gcs_path: str) -> Dict:
         
         # 파일 다운로드 (blob.open()을 사용하여 urllib3 버전 호환성 문제 회피)
         # blob.open()은 자동 압축 해제를 비활성화하고 raw bytes를 반환
-        with blob.open('rb', ignore_range=True) as f:
+        with blob.open('rb') as f:
             file_bytes = f.read()
         
         # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리

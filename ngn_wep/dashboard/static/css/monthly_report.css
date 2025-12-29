@@ -760,20 +760,20 @@
 }
 
 .channels-table thead {
-  background: #F8F9FA;
+  background: #003366; /* 헤더 배경색 변경 */
 }
 
 .channels-table th {
   padding: 12px 16px;
-  text-align: left;
+  text-align: center; /* 중앙 정렬 */
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: #ffffff; /* 하얀색 텍스트 */
   border-bottom: 2px solid #E9ECEF;
 }
 
 .channels-table th.text-right {
-  text-align: right;
+  text-align: center; /* 중앙 정렬로 통일 */
 }
 
 .channels-table td {
@@ -965,18 +965,18 @@
    섹션 8: 다음 달 목표 및 전망 (차트 제거)
    ============================================ */
 .section-8-forecast {
-  min-height: 600px; /* 섹션 높이 2배 (기본 300px → 600px) */
+  min-height: 300px; /* 섹션 높이 원래대로 */
 }
 
 .section-8-forecast .section-ai-analysis {
-  min-height: 500px; /* AI 분석 높이 2배 (기본 250px → 500px) */
+  min-height: 250px; /* AI 분석 높이 원래대로 */
 }
 
 .forecast-text-wrapper {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  min-height: 500px; /* 섹션 높이 2배 */
+  min-height: 250px; /* 섹션 높이 원래대로 */
 }
 
 .forecast-text-content {
@@ -986,11 +986,11 @@
 
 .forecast-item-text {
   flex: 1;
-  padding: 48px; /* 패딩 증가 (24px → 48px) */
+  padding: 24px; /* 패딩 원래대로 */
   background: #F8F9FA;
   border-radius: 8px;
   text-align: center;
-  min-height: 400px; /* 카드 높이 증가 */
+  min-height: 200px; /* 카드 높이 원래대로 */
   display: flex;
   flex-direction: column;
   justify-content: center;

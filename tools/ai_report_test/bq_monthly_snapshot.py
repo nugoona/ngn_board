@@ -2495,8 +2495,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # Event 데이터 조회 (지난달 이벤트)
     # -----------------------
     def get_prev_month_events():
-        """지난달 이벤트 정보 조회"""
+        """지난달 이벤트 정보 조회 (현재 리포트 월 기준)"""
         try:
+            # 현재 리포트 월의 이벤트 조회 (prev_month가 아니라 report_month)
             query = f"""
             SELECT 
                 mall,
@@ -2507,9 +2508,14 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 memo
             FROM `{PROJECT_ID}.{DATASET}.sheets_event_data`
             WHERE mall = @company_name
-              AND FORMAT_DATE('%Y-%m', date) = @prev_month
+              AND FORMAT_DATE('%Y-%m', date) = @report_month
             ORDER BY event_first ASC, event ASC
             """
+            
+            if ENABLE_DEBUG_LOGS:
+                print(f"🔍 [DEBUG] Event 데이터 조회 쿼리:", file=sys.stderr)
+                print(f"   company_name: {company_name}", file=sys.stderr)
+                print(f"   report_month: {report_month}", file=sys.stderr)
             
             rows = list(
                 client.query(
@@ -2517,11 +2523,14 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                     job_config=bigquery.QueryJobConfig(
                         query_parameters=[
                             bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                            bigquery.ScalarQueryParameter("prev_month", "STRING", prev_month),
+                            bigquery.ScalarQueryParameter("report_month", "STRING", report_month),
                         ]
                     ),
                 ).result()
             )
+            
+            if ENABLE_DEBUG_LOGS:
+                print(f"🔍 [DEBUG] Event 데이터 조회 결과: {len(rows)}개 행", file=sys.stderr)
             
             events = []
             for row in rows:
@@ -2532,12 +2541,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                     "memo": row.memo if row.memo else None,
                 })
             
+            if ENABLE_DEBUG_LOGS and events:
+                print(f"🔍 [DEBUG] Event 데이터 샘플:", file=sys.stderr)
+                for i, evt in enumerate(events[:3]):  # 처음 3개만 출력
+                    print(f"   [{i+1}] {evt}", file=sys.stderr)
+            
             return {
-                "month": prev_month,
+                "month": report_month,
                 "events": events,
             } if events else None
         except Exception as e:
             print(f"⚠️ [WARN] Event 데이터 조회 실패: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return None
     
     prev_month_events = get_prev_month_events()

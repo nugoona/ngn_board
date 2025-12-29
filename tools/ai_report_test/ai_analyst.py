@@ -78,7 +78,7 @@ except ImportError:
 
 # 환경 변수
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")  # 기본 모델 (가성비 및 안정성 최적화)
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # 기본 모델 (가성비 및 안정성 최적화)
 
 # System Prompt는 별도 파일에서 로드하거나 함수 파라미터로 받음
 # 사용자가 나중에 붙여넣을 예정이므로, 기본 템플릿만 제공

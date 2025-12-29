@@ -989,9 +989,9 @@ function formatMoney(value) {
 // ============================================
 // AI 분석 박스 스크롤 고정 처리
 // ============================================
-// CSS position: sticky를 사용하므로 JavaScript는 인라인 스타일만 제거
+// Intersection Observer를 사용하여 섹션 경계를 감지하고 sticky 제어
 function setupAiAnalysisSticky() {
-  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작 - CSS sticky 사용");
+  console.log("[AI 분석 고정] setupAiAnalysisSticky 시작 - Intersection Observer 사용");
   const contentEl = document.getElementById("monthlyReportContent");
   if (!contentEl) {
     console.error("[AI 분석 고정] contentEl을 찾을 수 없습니다!");
@@ -1006,16 +1006,87 @@ function setupAiAnalysisSticky() {
     return;
   }
   
-  // CSS sticky가 작동하도록 각 박스의 인라인 스타일 제거
+  const headerHeight = 80;
+  const stickyTop = 20;
+  
   aiAnalysisBoxes.forEach((box, index) => {
-    // 이전에 설정된 인라인 스타일 제거
-    box.style.position = "";
-    box.style.top = "";
-    box.style.bottom = "";
-    console.log(`[AI 분석 고정] 박스 ${index + 1}: 인라인 스타일 제거 완료 (CSS sticky 활성화)`);
+    const section = box.closest(".monthly-report-section");
+    if (!section) {
+      console.warn(`[AI 분석 고정] 박스 ${index + 1}: 섹션을 찾을 수 없습니다`);
+      return;
+    }
+    
+    // 초기 상태: sticky로 설정
+    box.style.position = "sticky";
+    box.style.top = `${stickyTop}px`;
+    box.style.bottom = "auto";
+    
+    // 섹션의 상단과 하단을 감지하기 위한 sentinel 요소
+    const topSentinel = document.createElement("div");
+    topSentinel.className = "sticky-sentinel-top";
+    topSentinel.style.cssText = "position: absolute; top: 0; left: 0; width: 1px; height: 1px; pointer-events: none; visibility: hidden;";
+    
+    const bottomSentinel = document.createElement("div");
+    bottomSentinel.className = "sticky-sentinel-bottom";
+    bottomSentinel.style.cssText = "position: absolute; bottom: 0; left: 0; width: 1px; height: 1px; pointer-events: none; visibility: hidden;";
+    
+    section.insertBefore(topSentinel, section.firstChild);
+    section.appendChild(bottomSentinel);
+    
+    let isSticky = true;
+    
+    // 상단 sentinel observer - 섹션이 뷰포트 상단에 도달했는지 감지
+    const topObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !isSticky) {
+          // 섹션이 뷰포트 상단에 도달 - sticky 활성화
+          box.style.position = "sticky";
+          box.style.top = `${stickyTop}px`;
+          box.style.bottom = "auto";
+          isSticky = true;
+          console.log(`[AI 분석 고정] 박스 ${index + 1}: sticky 활성화`);
+        }
+      });
+    }, {
+      root: contentEl,
+      rootMargin: `-${headerHeight + stickyTop}px 0px 0px 0px`,
+      threshold: 0
+    });
+    
+    // 하단 sentinel observer - 섹션이 뷰포트를 벗어났는지 감지
+    const bottomObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting && isSticky) {
+          // 섹션이 뷰포트를 벗어남 - absolute로 변경하여 섹션 하단에 고정
+          const sectionHeight = section.offsetHeight;
+          const boxHeight = box.offsetHeight;
+          box.style.position = "absolute";
+          box.style.top = `${sectionHeight - boxHeight}px`;
+          box.style.bottom = "auto";
+          isSticky = false;
+          console.log(`[AI 분석 고정] 박스 ${index + 1}: absolute로 변경 (섹션 하단)`);
+        } else if (entry.isIntersecting && !isSticky) {
+          // 섹션이 다시 뷰포트에 들어옴 - sticky로 복귀
+          box.style.position = "sticky";
+          box.style.top = `${stickyTop}px`;
+          box.style.bottom = "auto";
+          isSticky = true;
+          console.log(`[AI 분석 고정] 박스 ${index + 1}: sticky로 복귀`);
+        }
+      });
+    }, {
+      root: contentEl,
+      rootMargin: `0px 0px -${window.innerHeight - headerHeight - stickyTop - 100}px 0px`,
+      threshold: 0
+    });
+    
+    topObserver.observe(topSentinel);
+    bottomObserver.observe(bottomSentinel);
+    
+    console.log(`[AI 분석 고정] 박스 ${index + 1}: Intersection Observer 설정 완료`);
   });
   
-  console.log("[AI 분석 고정] CSS sticky 활성화 완료 - JavaScript 스크롤 이벤트 없음");
+  console.log("[AI 분석 고정] 모든 박스에 Intersection Observer 설정 완료");
 }
 
 function formatNumber(value) {

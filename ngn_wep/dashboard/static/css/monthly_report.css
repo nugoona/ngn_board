@@ -389,10 +389,10 @@
 
 .scorecard-item {
   background: #ffffff;
-  border: 1px solid #E9ECEF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .scorecard-label {
@@ -643,9 +643,10 @@
 
 .market-trend-card-compact {
   background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
@@ -653,8 +654,8 @@
 }
 
 .market-trend-card-compact:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .market-trend-rank-badge {
@@ -763,7 +764,8 @@
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border: 1px solid #E9ECEF;
 }
 
 .channels-table thead {
@@ -857,7 +859,7 @@
   border: 1px solid #E9ECEF;
   border-radius: 8px;
   margin-bottom: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
 .ads-ranking-rank {
@@ -911,10 +913,10 @@
 
 .comparison-box {
   background: #ffffff;
-  border: 1px solid #E9ECEF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .comparison-box.vs-divider {
@@ -1015,9 +1017,10 @@
 .forecast-card {
   padding: 24px;
   background: #ffffff;
-  border: 1px solid #E9ECEF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
   text-align: center;
   min-height: 200px;
   display: flex;
@@ -1058,16 +1061,16 @@
 
 .strategy-card {
   background: #ffffff;
-  border: 1px solid #E9ECEF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .strategy-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .strategy-card-icon {

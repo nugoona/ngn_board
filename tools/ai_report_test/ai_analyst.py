@@ -128,13 +128,20 @@ def load_from_gcs(gcs_path: str) -> Dict:
         # 파일 다운로드 (바이너리 모드)
         file_bytes = blob.download_as_bytes()
         
-        # gzip 압축 여부 확인
+        # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리
+        json_str = None
         is_gzipped = blob_path.endswith(".gz") or blob.content_encoding == "gzip"
         
         if is_gzipped:
-            # gzip 압축 해제
-            decompressed_bytes = gzip.decompress(file_bytes)
-            json_str = decompressed_bytes.decode('utf-8')
+            try:
+                # gzip 압축 해제 시도
+                decompressed_bytes = gzip.decompress(file_bytes)
+                json_str = decompressed_bytes.decode('utf-8')
+                print(f"📦 [INFO] Gzip 압축 해제 성공", file=sys.stderr)
+            except (gzip.BadGzipFile, OSError) as e:
+                # gzip이 아니면 일반 텍스트로 처리
+                print(f"⚠️ [WARN] Gzip 압축 해제 실패, 일반 텍스트로 처리: {e}", file=sys.stderr)
+                json_str = file_bytes.decode('utf-8')
         else:
             # 일반 텍스트로 디코딩
             json_str = file_bytes.decode('utf-8')

@@ -88,7 +88,8 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 헤더는 고정, 본문만 스크롤 */
+  /* overflow: hidden 제거 - sticky가 작동하려면 필요 */
+  /* 대신 헤더는 flex-shrink: 0으로 고정, 본문은 overflow-y: auto로 스크롤 */
   z-index: 2001;
   transform: scale(0.95);
   transition: transform 0.3s ease;
@@ -293,8 +294,8 @@
   position: relative;
   margin-top: 0; /* 섹션 제목과의 간격은 제목의 margin-bottom으로 조정 */
   /* overflow 없음 - sticky가 작동하려면 필요 */
-  min-height: 200px; /* 최소 높이 보장 */
   /* sticky가 작동하려면 부모가 충분한 높이를 가져야 함 */
+  /* min-height 제거 - 자식 요소의 높이에 맞춰 자동으로 조정되도록 */
 }
 
 .section-main {
@@ -316,12 +317,11 @@
   position: sticky; /* CSS sticky 사용 */
   top: 20px; /* 상단 여백 */
   align-self: flex-start;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 140px); /* 헤더 높이 고려 */
   overflow-y: auto;
   z-index: 10; /* 다른 요소 위에 표시 */
   /* sticky는 스크롤 컨테이너(.monthly-report-content) 기준으로 작동 */
-  /* 부모 요소(.section-content-wrapper)가 충분한 높이를 가져야 sticky가 섹션 내에서 고정됨 */
-  height: fit-content; /* 내용에 맞는 높이 */
+  /* .monthly-report-container의 overflow: hidden을 제거했으므로 이제 작동해야 함 */
 }
 
 .section-ai-analysis-full {

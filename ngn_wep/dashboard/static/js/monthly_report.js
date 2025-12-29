@@ -581,8 +581,21 @@ function renderSection4(data) {
   
   // 디버그: 첫 번째 아이템의 구조 확인
   if (items.length > 0) {
-    console.log("[섹션 4] 첫 번째 아이템 데이터 구조:", items[0]);
+    console.log("[섹션 4] 첫 번째 아이템 데이터 구조:", JSON.stringify(items[0], null, 2));
     console.log("[섹션 4] 첫 번째 아이템의 모든 키:", Object.keys(items[0]));
+    console.log("[섹션 4] 첫 번째 아이템의 각 필드 값:", {
+      "tab": items[0].tab,
+      "rank": items[0].rank,
+      "name": items[0].name,
+      "brand": items[0].brand,
+      "price": items[0].price,
+      "img": items[0].img,
+      "url": items[0].url,
+      "item_url": items[0].item_url,
+      "itemUrl": items[0].itemUrl,
+      "item_id": items[0].item_id,
+      "itemId": items[0].itemId
+    });
   }
   
   section4Data = items;

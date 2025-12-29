@@ -22,6 +22,7 @@ AI 분석 모듈
 import os
 import sys
 import json
+import gzip
 import traceback
 from typing import Dict, Optional, List
 
@@ -44,6 +45,13 @@ except ImportError:
     print("   설치: pip install google-generativeai", file=sys.stderr)
     genai = None
 
+try:
+    from google.cloud import storage
+except ImportError:
+    print("⚠️ [WARN] google-cloud-storage 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install google-cloud-storage", file=sys.stderr)
+    storage = None
+
 # 환경 변수
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")  # 기본 모델 (가성비 및 안정성 최적화)
@@ -63,6 +71,138 @@ DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
 [출력 형식]
 각 섹션별로 분석 텍스트를 제공하되, 섹션 7의 경우 마지막에 JSON 비교표를 포함해주세요.
 """
+
+
+def parse_gcs_path(gcs_path: str) -> tuple:
+    """
+    GCS 경로를 파싱하여 버킷명과 blob 경로를 반환
+    
+    Args:
+        gcs_path: gs://bucket-name/path/to/file.json.gz 형태의 경로
+    
+    Returns:
+        (bucket_name, blob_path) 튜플
+    """
+    if not gcs_path.startswith("gs://"):
+        raise ValueError(f"GCS 경로는 'gs://'로 시작해야 합니다: {gcs_path}")
+    
+    # gs:// 제거 후 파싱
+    path_without_scheme = gcs_path[5:]  # "gs://" 제거
+    parts = path_without_scheme.split("/", 1)
+    
+    if len(parts) < 2:
+        raise ValueError(f"GCS 경로 형식이 올바르지 않습니다: {gcs_path}")
+    
+    bucket_name = parts[0]
+    blob_path = parts[1]
+    
+    return bucket_name, blob_path
+
+
+def load_from_gcs(gcs_path: str) -> Dict:
+    """
+    GCS에서 JSON 파일을 다운로드하여 로드 (gzip 압축 자동 처리)
+    
+    Args:
+        gcs_path: gs://bucket-name/path/to/file.json.gz 형태의 GCS 경로
+    
+    Returns:
+        JSON 데이터 (Dict)
+    """
+    if storage is None:
+        raise ImportError("google-cloud-storage 패키지가 설치되지 않았습니다. 'pip install google-cloud-storage'로 설치해주세요.")
+    
+    try:
+        # GCS 경로 파싱
+        bucket_name, blob_path = parse_gcs_path(gcs_path)
+        
+        # GCS 클라이언트 생성
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        # 파일이 존재하는지 확인
+        if not blob.exists():
+            raise FileNotFoundError(f"GCS 파일을 찾을 수 없습니다: {gcs_path}")
+        
+        # 파일 다운로드 (바이너리 모드)
+        file_bytes = blob.download_as_bytes()
+        
+        # gzip 압축 여부 확인
+        is_gzipped = blob_path.endswith(".gz") or blob.content_encoding == "gzip"
+        
+        if is_gzipped:
+            # gzip 압축 해제
+            decompressed_bytes = gzip.decompress(file_bytes)
+            json_str = decompressed_bytes.decode('utf-8')
+        else:
+            # 일반 텍스트로 디코딩
+            json_str = file_bytes.decode('utf-8')
+        
+        # JSON 파싱
+        data = json.loads(json_str)
+        
+        print(f"✅ [SUCCESS] GCS에서 파일 로드 완료: {gcs_path}", file=sys.stderr)
+        return data
+        
+    except Exception as e:
+        error_msg = f"GCS 파일 로드 실패: {str(e)}"
+        print(f"❌ [ERROR] {error_msg}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        raise
+
+
+def upload_to_gcs(data: Dict, gcs_path: str) -> None:
+    """
+    JSON 데이터를 GCS에 업로드 (gzip 압축 자동 처리)
+    
+    Args:
+        data: 업로드할 JSON 데이터 (Dict)
+        gcs_path: gs://bucket-name/path/to/file.json.gz 형태의 GCS 경로
+    """
+    if storage is None:
+        raise ImportError("google-cloud-storage 패키지가 설치되지 않았습니다. 'pip install google-cloud-storage'로 설치해주세요.")
+    
+    try:
+        # GCS 경로 파싱
+        bucket_name, blob_path = parse_gcs_path(gcs_path)
+        
+        # JSON 문자열로 변환
+        json_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+        json_bytes = json_str.encode('utf-8')
+        
+        # gzip 압축 여부 확인
+        is_gzipped = blob_path.endswith(".gz")
+        
+        if is_gzipped:
+            # gzip 압축
+            compressed_bytes = gzip.compress(json_bytes)
+            upload_bytes = compressed_bytes
+            content_encoding = "gzip"
+        else:
+            upload_bytes = json_bytes
+            content_encoding = None
+        
+        # GCS 클라이언트 생성
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        # 메타데이터 설정
+        blob.content_type = "application/json"
+        if content_encoding:
+            blob.content_encoding = content_encoding
+        
+        # 업로드
+        blob.upload_from_string(upload_bytes, content_type="application/json")
+        
+        print(f"✅ [SUCCESS] GCS에 파일 업로드 완료: {gcs_path}", file=sys.stderr)
+        
+    except Exception as e:
+        error_msg = f"GCS 파일 업로드 실패: {str(e)}"
+        print(f"❌ [ERROR] {error_msg}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        raise
 
 
 def load_system_prompt(prompt_file: Optional[str] = None) -> str:
@@ -356,20 +496,25 @@ def generate_ai_analysis_from_file(
     sections: Optional[List[int]] = None
 ) -> Dict:
     """
-    스냅샷 JSON 파일에서 읽어서 AI 분석 후 저장
+    스냅샷 JSON 파일에서 읽어서 AI 분석 후 저장 (GCS 지원)
     
     Args:
-        snapshot_file: 입력 스냅샷 JSON 파일 경로
-        output_file: 출력 파일 경로 (None이면 입력 파일에 덮어쓰기)
+        snapshot_file: 입력 스냅샷 JSON 파일 경로 (로컬 파일 또는 gs:// 경로)
+        output_file: 출력 파일 경로 (None이면 입력 파일에 덮어쓰기, 로컬 파일 또는 gs:// 경로)
         system_prompt_file: System Prompt 파일 경로
         sections: 분석할 섹션 번호 리스트
     
     Returns:
         AI 분석이 추가된 snapshot_data
     """
-    # 스냅샷 파일 읽기
-    with open(snapshot_file, 'r', encoding='utf-8') as f:
-        snapshot_data = json.load(f)
+    # 입력 파일 읽기 (GCS 또는 로컬)
+    if snapshot_file.startswith("gs://"):
+        print(f"📥 [INFO] GCS에서 파일 로드 중: {snapshot_file}", file=sys.stderr)
+        snapshot_data = load_from_gcs(snapshot_file)
+    else:
+        print(f"📥 [INFO] 로컬 파일 로드 중: {snapshot_file}", file=sys.stderr)
+        with open(snapshot_file, 'r', encoding='utf-8') as f:
+            snapshot_data = json.load(f)
     
     # AI 분석 수행
     snapshot_data = generate_ai_analysis(
@@ -378,12 +523,18 @@ def generate_ai_analysis_from_file(
         sections=sections
     )
     
-    # 결과 저장
+    # 결과 저장 (출력 경로 미지정 시 입력 파일 경로에 덮어쓰기)
     output_path = output_file or snapshot_file
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(snapshot_data, f, ensure_ascii=False, indent=2, sort_keys=True)
     
-    print(f"✅ [SUCCESS] AI 분석 결과 저장: {output_path}", file=sys.stderr)
+    if output_path.startswith("gs://"):
+        print(f"📤 [INFO] GCS에 파일 업로드 중: {output_path}", file=sys.stderr)
+        upload_to_gcs(snapshot_data, output_path)
+    else:
+        print(f"📤 [INFO] 로컬 파일 저장 중: {output_path}", file=sys.stderr)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(snapshot_data, f, ensure_ascii=False, indent=2, sort_keys=True)
+    
+    print(f"✅ [SUCCESS] AI 분석 결과 저장 완료: {output_path}", file=sys.stderr)
     
     return snapshot_data
 
@@ -392,9 +543,14 @@ if __name__ == "__main__":
     # CLI 사용 예시
     if len(sys.argv) < 2:
         print("Usage: python3 ai_analyst.py <snapshot_file> [output_file] [system_prompt_file]")
-        print("  snapshot_file: 입력 스냅샷 JSON 파일")
-        print("  output_file: 출력 파일 (선택사항, 기본값: 입력 파일에 덮어쓰기)")
+        print("  snapshot_file: 입력 스냅샷 JSON 파일 (로컬 파일 또는 gs:// 경로)")
+        print("  output_file: 출력 파일 (선택사항, 기본값: 입력 파일에 덮어쓰기, 로컬 파일 또는 gs:// 경로)")
         print("  system_prompt_file: System Prompt 파일 (선택사항, 미지정 시 자동으로 system_prompt_v44.txt 검색)")
+        print("")
+        print("예시:")
+        print("  python3 ai_analyst.py snapshot.json")
+        print("  python3 ai_analyst.py gs://bucket/path/snapshot.json.gz")
+        print("  python3 ai_analyst.py gs://bucket/path/snapshot.json.gz gs://bucket/path/output.json.gz")
         sys.exit(1)
     
     snapshot_file = sys.argv[1]

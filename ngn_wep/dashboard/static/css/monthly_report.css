@@ -1011,10 +1011,17 @@
   min-height: 300px; /* 섹션 높이 원래대로 */
 }
 
+/* 섹션 8만 더 넓은 비율로 조정 (카드 3개가 넓게 보이도록) */
+.section-8-forecast .section-content-wrapper {
+  grid-template-columns: 70% 30%; /* 메인 영역을 70%로 확대 */
+  gap: 24px; /* gap도 약간 줄여서 더 많은 공간 확보 */
+}
+
 .section-8-forecast .section-main {
   width: 100%;
   max-width: 100%;
   overflow: visible;
+  min-width: 0; /* 그리드 오버플로우 방지 */
 }
 
 .section-8-forecast .section-ai-analysis {
@@ -1050,7 +1057,7 @@
 .forecast-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 16px; /* gap을 줄여서 카드가 더 넓어지도록 */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;

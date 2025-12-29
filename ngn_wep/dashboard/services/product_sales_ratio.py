@@ -85,12 +85,12 @@ def get_product_sales_ratio(
     WITH base AS (
         SELECT
             company_name,
+            -- [SET]/[set]로 시작하는 경우는 그대로 유지, 나머지 [브랜드] 등은 제거
             REGEXP_REPLACE(
-                REGEXP_REPLACE(
-                    product_name,
-                    r'\[(?i)(?!set\])[^\]]+\]',         -- [SET]/[set] 제외하고 [브랜드] 등 제거
-                    ''
-                ),
+                CASE
+                    WHEN REGEXP_CONTAINS(product_name, r'(?i)^\[set\]') THEN product_name
+                    ELSE REGEXP_REPLACE(product_name, r'\[[^\]]+\]', '')
+                END,
                 r'_.*$',                              -- _컬러 제거
                 ''
             ) AS cleaned_product_name,

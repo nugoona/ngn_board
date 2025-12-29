@@ -59,7 +59,13 @@ except ImportError:
 
 try:
     import google.genai as genai
+    try:
+        from google.genai import Client, GenerativeModel as GenAIGenerativeModel
+        GENAI_AVAILABLE = True
+    except ImportError:
+        GENAI_AVAILABLE = False
 except ImportError:
+    GENAI_AVAILABLE = False
     # Fallback to deprecated package for backward compatibility
     try:
         import google.generativeai as genai
@@ -462,20 +468,22 @@ def generate_ai_analysis(
     
     try:
         # google.genai (새 패키지) 사용 시도
-        if hasattr(genai, 'Client'):
-            client = genai.Client(api_key=api_key)
-            model = client.GenerativeModel(model_name=GEMINI_MODEL)
+        if GENAI_AVAILABLE and 'Client' in globals() and 'GenAIGenerativeModel' in globals():
+            client = Client(api_key=api_key)
+            model = GenAIGenerativeModel(model_name=GEMINI_MODEL, client=client)
             use_new_api = True
         else:
-            raise AttributeError("google.genai.Client not found")
-    except (AttributeError, TypeError) as e:
+            raise AttributeError("google.genai.Client or GenerativeModel not found")
+    except (AttributeError, TypeError, NameError) as e:
         # google.generativeai (구 패키지) 사용 - backward compatibility
         try:
+            if genai is None:
+                raise ImportError("google-genai 또는 google-generativeai 패키지가 설치되지 않았습니다.")
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel(GEMINI_MODEL)
             use_new_api = False
-        except AttributeError:
-            raise ImportError(f"google-genai 또는 google-generativeai 패키지가 올바르게 설치되지 않았습니다. 오류: {e}")
+        except AttributeError as e2:
+            raise ImportError(f"google-genai 또는 google-generativeai 패키지가 올바르게 설치되지 않았습니다. 오류: {e}, {e2}")
     
     # System Prompt 로드
     if system_prompt:

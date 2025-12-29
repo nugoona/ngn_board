@@ -568,9 +568,9 @@ function renderSection2(data) {
   });
   
   const funnelData = [
-    { label: "방문", value: visitors, color: "#6366f1" },
-    { label: "장바구니", value: cartUsers, color: "#8b5cf6" },
-    { label: "결제", value: purchases, color: "#ec4899" }
+    { label: "유입수 (GA)", value: visitors, color: "#6366f1" },
+    { label: "장바구니 건수 (GA)", value: cartUsers, color: "#8b5cf6" },
+    { label: "주문 건수", value: purchases, color: "#ec4899" }
   ];
   
   const container = document.getElementById("section2Funnel");
@@ -587,11 +587,12 @@ function renderSection2(data) {
         <div class="funnel-item">
           <div class="funnel-label-row">
             <span class="funnel-label">${item.label}</span>
-            <span class="funnel-value">${formatNumber(item.value)}</span>
-            ${index > 0 ? `<span class="funnel-conversion">전환율: ${conversion}%</span>` : ""}
           </div>
           <div class="funnel-bar-wrapper">
-            <div class="funnel-bar" style="width: ${width}%; background-color: ${item.color};"></div>
+            <div class="funnel-bar" style="width: ${width}%; background-color: ${item.color};">
+              <span class="funnel-value">${formatNumber(item.value)}</span>
+            </div>
+            ${index > 0 ? `<span class="funnel-conversion">전환율: ${conversion}%</span>` : ""}
           </div>
         </div>
       `;

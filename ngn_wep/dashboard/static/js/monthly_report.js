@@ -647,8 +647,9 @@ function renderSection4ByTab(tabName, items, page = 1) {
           const brand = item.brand || "Unknown";
           const name = item.name || "Unknown";
           const img = item.img || "";
-          const itemId = item.item_id || item.itemId || '';
-          const productUrl = itemId ? `https://29cm.co.kr/products/${itemId}` : '#';
+          // 버킷에 수집된 상세페이지 URL 우선 사용
+          const productUrl = item.url || item.item_url || item.itemUrl || 
+            (item.item_id || item.itemId ? `https://29cm.co.kr/products/${item.item_id || item.itemId}` : '#');
           const price = item.price || 0;
           const formattedPrice = price > 0 ? `${Math.round(price).toLocaleString()}원` : '가격 정보 없음';
           

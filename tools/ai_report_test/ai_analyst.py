@@ -154,22 +154,32 @@ def load_from_gcs(gcs_path: str) -> Dict:
         import requests
         from datetime import timedelta
         
-        # 1시간 유효한 signed URL 생성
-        url = blob.generate_signed_url(
-            version="v4",
-            expiration=timedelta(hours=1),
-            method="GET"
-        )
+        try:
+            # 1시간 유효한 signed URL 생성
+            url = blob.generate_signed_url(
+                version="v4",
+                expiration=timedelta(hours=1),
+                method="GET"
+            )
+        except Exception as e:
+            raise Exception(f"Signed URL 생성 실패: {e}. 서비스 계정 권한을 확인하세요.")
         
-        # requests로 다운로드 (자동 압축 해제 비활성화)
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
+        # requests로 다운로드 (자동 압축 해제 완전 비활성화)
+        # Accept-Encoding: identity로 서버가 압축하지 않도록 요청
+        headers = {
+            'Accept-Encoding': 'identity'  # 압축 없이 원본 데이터 요청
+        }
         
-        # raw bytes 수집
-        file_bytes = b""
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                file_bytes += chunk
+        try:
+            response = requests.get(url, stream=True, headers=headers, timeout=300)
+            response.raise_for_status()
+            
+            # response.content를 직접 사용 (이미 다운로드된 전체 내용, urllib3 디코딩 우회)
+            # stream=True이지만 content 속성은 전체를 메모리에 로드하되 디코딩은 하지 않음
+            file_bytes = response.content
+            
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"GCS 파일 다운로드 실패: {e}")
         
         # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리
         json_str = None

@@ -494,8 +494,33 @@ def extract_section_content(full_text: str, target_section: int) -> str:
     # 타겟 섹션 내용 추출
     extracted_text = full_text[target_start_pos:next_section_start].strip()
     
-    # 섹션 제목 제거 (이미 포함되어 있을 수 있음)
-    # 하지만 제목이 있으면 유지하는 것이 좋을 수도 있으므로 일단 유지
+    # 중복 섹션 제목 제거: 같은 섹션 제목이 내용 중간에 다시 나오면 그 이후 내용 제거
+    # 첫 번째 섹션 제목 이후의 모든 섹션 제목 패턴 찾기
+    first_title_end = None
+    for pattern in target_patterns:
+        match = re.search(pattern, extracted_text, re.IGNORECASE)
+        if match:
+            # 섹션 제목 다음 줄바꿈이나 공백까지 찾기
+            title_end = match.end()
+            # 다음 줄바꿈까지 찾기
+            next_newline = extracted_text.find('\n', title_end)
+            if next_newline != -1:
+                first_title_end = next_newline
+            else:
+                first_title_end = title_end
+            break
+    
+    if first_title_end:
+        # 첫 번째 섹션 제목 이후에 같은 섹션 제목이 또 나오는지 확인
+        remaining_text = extracted_text[first_title_end:]
+        for pattern in target_patterns:
+            match = re.search(pattern, remaining_text, re.IGNORECASE)
+            if match:
+                # 중복 섹션 제목 발견 - 그 이전까지만 유지
+                duplicate_pos = first_title_end + match.start()
+                extracted_text = extracted_text[:duplicate_pos].strip()
+                print(f"⚠️ [WARN] 섹션 {target_section} 중복 제목 발견 및 제거", file=sys.stderr)
+                break
     
     return extracted_text
 

@@ -26,3 +26,4 @@ GROUP BY date, company_name
 ORDER BY date DESC, company_name;
 
 
+

@@ -75,3 +75,4 @@ echo "✅ query-sales-yesterday-job deployed!"
 echo "🎉 All jobs deployed successfully!"
 
 
+

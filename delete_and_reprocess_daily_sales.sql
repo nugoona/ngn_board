@@ -52,3 +52,4 @@ FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
 WHERE total_refund_amount > 500000;
 
 
+

@@ -160,21 +160,21 @@ echo "주간 스케줄러 생성 중: 매주 월요일 새벽 3시"
 if gcloud scheduler jobs describe "$SCHEDULER_WEEKLY" --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
   echo "주간 스케줄러 업데이트 중..."
   gcloud scheduler jobs update pubsub "$SCHEDULER_WEEKLY" \
-    --location="$REGION_RUN" \
-    --schedule="0 3 * * 1" \
-    --topic="$TOPIC_WEEKLY" \
-    --message-body='{"trigger":"weekly"}' \
-    --time-zone="Asia/Seoul" \
+  --location="$REGION_RUN" \
+  --schedule="0 3 * * 1" \
+  --topic="$TOPIC_WEEKLY" \
+  --message-body='{"trigger":"weekly"}' \
+  --time-zone="Asia/Seoul" \
     --project="$PROJECT"
 else
   echo "주간 스케줄러 생성 중..."
   gcloud scheduler jobs create pubsub "$SCHEDULER_WEEKLY" \
-    --location="$REGION_RUN" \
-    --schedule="0 3 * * 1" \
-    --topic="$TOPIC_WEEKLY" \
-    --message-body='{"trigger":"weekly"}' \
-    --time-zone="Asia/Seoul" \
-    --project="$PROJECT"
+  --location="$REGION_RUN" \
+  --schedule="0 3 * * 1" \
+  --topic="$TOPIC_WEEKLY" \
+  --message-body='{"trigger":"weekly"}' \
+  --time-zone="Asia/Seoul" \
+  --project="$PROJECT"
 fi
 
 # 월간 스케줄러 생성 (매월 1일 새벽 3시)
@@ -183,21 +183,21 @@ echo "월간 스케줄러 생성 중: 매월 1일 새벽 3시"
 if gcloud scheduler jobs describe "$SCHEDULER_MONTHLY" --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
   echo "월간 스케줄러 업데이트 중..."
   gcloud scheduler jobs update pubsub "$SCHEDULER_MONTHLY" \
-    --location="$REGION_RUN" \
-    --schedule="0 3 1 * *" \
-    --topic="$TOPIC_MONTHLY" \
-    --message-body='{"trigger":"monthly"}' \
-    --time-zone="Asia/Seoul" \
+  --location="$REGION_RUN" \
+  --schedule="0 3 1 * *" \
+  --topic="$TOPIC_MONTHLY" \
+  --message-body='{"trigger":"monthly"}' \
+  --time-zone="Asia/Seoul" \
     --project="$PROJECT"
 else
   echo "월간 스케줄러 생성 중..."
   gcloud scheduler jobs create pubsub "$SCHEDULER_MONTHLY" \
-    --location="$REGION_RUN" \
-    --schedule="0 3 1 * *" \
-    --topic="$TOPIC_MONTHLY" \
-    --message-body='{"trigger":"monthly"}' \
-    --time-zone="Asia/Seoul" \
-    --project="$PROJECT"
+  --location="$REGION_RUN" \
+  --schedule="0 3 1 * *" \
+  --topic="$TOPIC_MONTHLY" \
+  --message-body='{"trigger":"monthly"}' \
+  --time-zone="Asia/Seoul" \
+  --project="$PROJECT"
 fi
 
 echo ""

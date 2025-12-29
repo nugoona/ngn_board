@@ -16,3 +16,4 @@ WHERE table_name = 'performance_summary_ngn'
 ORDER BY ordinal_position;
 
 
+

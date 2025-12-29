@@ -44,6 +44,9 @@ SKIP_VIEWITEM = os.environ.get("SKIP_VIEWITEM", "0") == "1"
 SKIP_META_ADS_GOALS = os.environ.get("SKIP_META_ADS_GOALS", "0") == "1"
 SKIP_29CM_CRAWL = os.environ.get("SKIP_29CM_CRAWL", "0") == "1"
 
+# 로그 레벨 제어 (DEBUG 로그는 환경 변수로 활성화)
+ENABLE_DEBUG_LOGS = os.environ.get("ENABLE_DEBUG_LOGS", "0") == "1"
+
 # 29CM 크롤링 설정
 CRAWL_29CM_TARGET_TABS = ["전체", "아우터", "니트웨어", "바지", "스커트", "상의"]
 CRAWL_29CM_TOP_N = 10
@@ -252,13 +255,15 @@ def crawl_29cm_best():
     
     # 메인 실행
     try:
-        print(f"🚀 29CM 베스트 수집 시작 (Target: {CRAWL_29CM_TARGET_TABS})", file=sys.stderr)
+        if ENABLE_DEBUG_LOGS:
+            print(f"🚀 [INFO] 29CM 베스트 수집 시작 (Target: {CRAWL_29CM_TARGET_TABS})", file=sys.stderr)
         
         tabs = get_target_tabs()
         final_data = []
         
         for t in tabs:
-            print(f"📂 [{t['name']}] 수집 중... (Top {CRAWL_29CM_TOP_N})", file=sys.stderr)
+            if ENABLE_DEBUG_LOGS:
+                print(f"📂 [INFO] [{t['name']}] 수집 중... (Top {CRAWL_29CM_TOP_N})", file=sys.stderr)
             
             # 랭킹 요청 payload
             payload = {
@@ -286,8 +291,6 @@ def crawl_29cm_best():
                 if not item_id:
                     continue
                 
-                print(f"  - {rank}위: {name[:20]}...", file=sys.stderr)
-                
                 # 리뷰 수집 (잠시 대기 후 호출)
                 time.sleep(random.uniform(CRAWL_29CM_SLEEP_MIN, CRAWL_29CM_SLEEP_MAX))
                 reviews = fetch_item_reviews(item_id)
@@ -309,13 +312,18 @@ def crawl_29cm_best():
                     "reviews": reviews  # 리뷰 리스트 (최대 10개)
                 })
         
-        print(f"✅ 29CM 수집 완료! 총 {len(final_data)}개 상품", file=sys.stderr)
+        print(f"✅ [SUCCESS] 29CM 수집 완료! 총 {len(final_data)}개 상품", file=sys.stderr)
         return {
             "collected_at": datetime.now(KST).isoformat(),
             "items": final_data
         }
     except Exception as e:
-        print(f"❌ 29CM 크롤링 실패: {e}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        print(f"❌ [ERROR] 29CM 크롤링 실패", file=sys.stderr)
+        print(f"   오류 메시지: {e}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return None
 
 
@@ -419,8 +427,9 @@ def query_monthly_13m_generic(client, table_fq, date_col, company_name, end_repo
     start_date, _ = month_range_exclusive(start_ym)
     _, end_exclusive_date = month_range_exclusive(shift_month(end_report_month_ym, 1))
     
-    # 디버그: 쿼리 기간 확인
-    print(f"[DEBUG] query_monthly_13m_generic: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
+    # 디버그: 쿼리 기간 확인 (환경 변수로 제어)
+    if ENABLE_DEBUG_LOGS:
+        print(f"[DEBUG] query_monthly_13m_generic: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
     
     query = f"""
     SELECT 
@@ -474,8 +483,9 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
     start_date, _ = month_range_exclusive(start_ym)
     _, end_exclusive_date = month_range_exclusive(shift_month(end_report_month_ym, 1))
     
-    # 디버그: 쿼리 기간 확인
-    print(f"[DEBUG] query_monthly_13m_from_monthly_table: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
+    # 디버그: 쿼리 기간 확인 (환경 변수로 제어)
+    if ENABLE_DEBUG_LOGS:
+        print(f"[DEBUG] query_monthly_13m_from_monthly_table: {table_fq} - start_date={start_date}, end_exclusive_date={end_exclusive_date}", file=sys.stderr)
     
     query = f"""
     SELECT 
@@ -519,30 +529,56 @@ def query_monthly_13m_from_monthly_table(client, table_fq, company_name, end_rep
 
 
 def load_snapshot_from_gcs(company_name: str, year: int, month: int):
-    """GCS 버킷에서 스냅샷 JSON 파일 읽기"""
+    """GCS 버킷에서 스냅샷 JSON 파일 읽기 (Gzip 압축 해제 지원)"""
     try:
         bucket = storage_client.bucket(GCS_BUCKET)
         
-        # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json
-        blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json"
-        blob = bucket.blob(blob_path)
+        # 경로 시도: 먼저 .gz 파일, 없으면 .json 파일
+        blob_paths = [
+            f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz",  # 압축 파일 우선
+            f"ai-reports/monthly/{company_name.lower()}/{year}-{month:02d}/snapshot.json.gz",  # 소문자 변환
+            f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json",  # 압축 없는 파일 (하위 호환)
+            f"ai-reports/monthly/{company_name.lower()}/{year}-{month:02d}/snapshot.json",  # 소문자 변환
+        ]
         
-        # 파일 존재 확인
-        if not blob.exists():
-            print(f"⚠️ GCS에 스냅샷 파일이 없습니다: {blob_path}", file=sys.stderr)
+        blob = None
+        found_path = None
+        is_gzip = False
+        
+        for blob_path in blob_paths:
+            test_blob = bucket.blob(blob_path)
+            if test_blob.exists():
+                blob = test_blob
+                found_path = blob_path
+                is_gzip = blob_path.endswith('.gz')
+                break
+        
+        if not blob:
+            if ENABLE_DEBUG_LOGS:
+                print(f"⚠️ [WARN] GCS에 스냅샷 파일이 없습니다. 시도한 경로: {', '.join(blob_paths)}", file=sys.stderr)
             return None
         
-        # JSON 파일 읽기
-        snapshot_json_str = blob.download_as_text(encoding='utf-8')
+        # 파일 읽기 (Gzip 압축 여부에 따라 처리)
+        if is_gzip:
+            # Gzip 압축된 파일 읽기
+            snapshot_gzip_bytes = blob.download_as_bytes()
+            snapshot_json_str = gzip.decompress(snapshot_gzip_bytes).decode('utf-8')
+        else:
+            # 압축 없는 파일 읽기 (하위 호환)
+            snapshot_json_str = blob.download_as_text(encoding='utf-8')
+        
         snapshot_data = json.loads(snapshot_json_str)
         
-        gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
-        print(f"✅ GCS에서 스냅샷을 불러왔습니다: {gcs_url}", file=sys.stderr)
+        gcs_url = f"gs://{GCS_BUCKET}/{found_path}"
+        print(f"✅ [SUCCESS] GCS에서 스냅샷을 불러왔습니다: {gcs_url} ({'Gzip 압축' if is_gzip else '압축 없음'})", file=sys.stderr)
         return snapshot_data
     except Exception as e:
-        print(f"❌ GCS에서 스냅샷 읽기 실패: {e}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
+        print(f"❌ [ERROR] GCS에서 스냅샷 읽기 실패", file=sys.stderr)
+        print(f"   오류 메시지: {e}", file=sys.stderr)
+        print("=" * 80, file=sys.stderr)
         import traceback
-        traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
         return None
 
 
@@ -562,7 +598,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     if load_from_gcs_flag:
         snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
         if snapshot_from_gcs:
-            print(f"✅ GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
+            print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
             print(json.dumps(snapshot_from_gcs, ensure_ascii=False, indent=2))
             return
     
@@ -2455,7 +2491,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 "events": events,
             } if events else None
         except Exception as e:
-            print(f"⚠️ Event 데이터 조회 실패: {e}", file=sys.stderr)
+            print(f"⚠️ [WARN] Event 데이터 조회 실패: {e}", file=sys.stderr)
             return None
     
     prev_month_events = get_prev_month_events()
@@ -2549,11 +2585,17 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             )
             
             gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
-            print(f"✅ 스냅샷이 GCS에 저장되었습니다: {gcs_url}", file=sys.stderr)
-            print(f"   압축 전: {original_size:,} bytes, 압축 후: {compressed_size:,} bytes ({compression_ratio:.1f}% 감소)", file=sys.stderr)
+            print(f"✅ [SUCCESS] 스냅샷이 GCS에 저장되었습니다: {gcs_url}", file=sys.stderr)
+            if ENABLE_DEBUG_LOGS:
+                print(f"   압축 전: {original_size:,} bytes, 압축 후: {compressed_size:,} bytes ({compression_ratio:.1f}% 감소)", file=sys.stderr)
             return gcs_url
         except Exception as e:
-            print(f"❌ GCS 저장 실패: {e}", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            print(f"❌ [ERROR] GCS 저장 실패", file=sys.stderr)
+            print(f"   오류 메시지: {e}", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return None
     
     # -----------------------
@@ -2606,6 +2648,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     if save_to_gcs_flag:
         save_snapshot_to_gcs(company_name, year, month, out_safe)
+    
+    print("=" * 80, file=sys.stderr)
+    print(f"✅ [SUCCESS] 스냅샷 생성 완료: {company_name} {year}-{month:02d}", file=sys.stderr)
+    print("=" * 80, file=sys.stderr)
     
     print(json.dumps(out_safe, ensure_ascii=False, indent=2))
 

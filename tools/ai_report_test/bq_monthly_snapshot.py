@@ -2611,11 +2611,10 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
             
             # Gzip 압축된 데이터 업로드
-            blob.upload_from_string(
-                snapshot_gzip_bytes,
-                content_type='application/json',
-                content_encoding='gzip'
-            )
+            # content_encoding은 blob 속성으로 먼저 설정해야 함
+            blob.content_type = 'application/json'
+            blob.content_encoding = 'gzip'
+            blob.upload_from_string(snapshot_gzip_bytes)
             
             gcs_url = f"gs://{GCS_BUCKET}/{blob_path}"
             print("=" * 80, file=sys.stderr)

@@ -25,6 +25,18 @@ import json
 import traceback
 from typing import Dict, Optional, List
 
+# .env 파일에서 환경 변수 로드
+try:
+    from dotenv import load_dotenv
+    # 프로젝트 루트에서 .env 파일 찾기 (스크립트 위치 기준으로 상위 디렉토리 탐색)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))  # tools/ai_report_test/ -> 프로젝트 루트
+    env_path = os.path.join(project_root, ".env")
+    load_dotenv(env_path)  # .env 파일이 없어도 에러 없이 진행
+except ImportError:
+    print("⚠️ [WARN] python-dotenv 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install python-dotenv", file=sys.stderr)
+
 try:
     import google.generativeai as genai
 except ImportError:
@@ -34,7 +46,7 @@ except ImportError:
 
 # 환경 변수
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-exp")  # 기본 모델
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")  # 기본 모델 (가성비 및 안정성 최적화)
 
 # System Prompt는 별도 파일에서 로드하거나 함수 파라미터로 받음
 # 사용자가 나중에 붙여넣을 예정이므로, 기본 템플릿만 제공
@@ -382,12 +394,25 @@ if __name__ == "__main__":
         print("Usage: python3 ai_analyst.py <snapshot_file> [output_file] [system_prompt_file]")
         print("  snapshot_file: 입력 스냅샷 JSON 파일")
         print("  output_file: 출력 파일 (선택사항, 기본값: 입력 파일에 덮어쓰기)")
-        print("  system_prompt_file: System Prompt 파일 (선택사항)")
+        print("  system_prompt_file: System Prompt 파일 (선택사항, 미지정 시 자동으로 system_prompt_v44.txt 검색)")
         sys.exit(1)
     
     snapshot_file = sys.argv[1]
     output_file = sys.argv[2] if len(sys.argv) > 2 else None
     system_prompt_file = sys.argv[3] if len(sys.argv) > 3 else None
+    
+    # System Prompt 파일이 지정되지 않았을 때 자동으로 찾기
+    if system_prompt_file is None:
+        # 스크립트와 같은 폴더에 있는 system_prompt_v44.txt 확인
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        default_prompt_file = os.path.join(script_dir, "system_prompt_v44.txt")
+        
+        if os.path.exists(default_prompt_file):
+            system_prompt_file = default_prompt_file
+            print(f"📄 [INFO] System Prompt 자동 로드: {system_prompt_file}", file=sys.stderr)
+        else:
+            print(f"⚠️ [WARN] System Prompt 파일을 찾을 수 없습니다: {default_prompt_file}", file=sys.stderr)
+            print(f"   기본 템플릿을 사용합니다.", file=sys.stderr)
     
     generate_ai_analysis_from_file(
         snapshot_file,

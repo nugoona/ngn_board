@@ -648,7 +648,9 @@ function renderSection4ByTab(tabName, items, page = 1) {
           const name = item.name || "Unknown";
           const img = item.img || "";
           const itemId = item.item_id || item.itemId || '';
-          const productUrl = itemId ? `https://www.29cm.co.kr/products/${itemId}` : '#';
+          const productUrl = itemId ? `https://29cm.co.kr/products/${itemId}` : '#';
+          const price = item.price || 0;
+          const formattedPrice = price > 0 ? `${Math.round(price).toLocaleString()}원` : '가격 정보 없음';
           
           return `
             <div class="market-trend-card-compact">
@@ -670,6 +672,7 @@ function renderSection4ByTab(tabName, items, page = 1) {
               <div class="market-trend-info-compact">
                 <div class="market-trend-brand-compact">${brand}</div>
                 <div class="market-trend-name-compact">${name}</div>
+                <div class="market-trend-price-compact">${formattedPrice}</div>
                 <a href="${productUrl}" target="_blank" class="market-trend-link-btn">바로가기</a>
               </div>
             </div>

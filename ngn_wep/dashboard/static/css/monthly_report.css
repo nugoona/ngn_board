@@ -716,11 +716,18 @@
   font-weight: 500;
   color: #212529;
   line-height: 1.4;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.market-trend-price-compact {
+  font-size: 14px;
+  font-weight: 600;
+  color: #003366;
+  margin-bottom: 8px;
 }
 
 .market-trend-link-btn {

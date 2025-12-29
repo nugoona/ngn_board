@@ -211,7 +211,7 @@ async function loadMonthlyReport(companyName, year, month) {
     
     // 모든 섹션 렌더링
     console.log("[월간 리포트] 섹션 렌더링 시작");
-    renderAllSections(data);
+    await renderAllSections(data);
     console.log("[월간 리포트] 섹션 렌더링 완료");
     
     updateLoadingProgress(100);
@@ -234,6 +234,12 @@ async function loadMonthlyReport(companyName, year, month) {
           console.log(`[월간 리포트] 섹션 ${index + 1} innerHTML 길이:`, section.innerHTML.length);
         });
         console.log("[월간 리포트] 모든 섹션 표시 완료");
+        
+        // 섹션이 표시된 후 섹션 5 표 렌더링 (요소를 찾기 위해)
+        setTimeout(async () => {
+          console.log("[섹션 5] 섹션 표시 후 표 렌더링 시작");
+          await renderSection5(data);
+        }, 200);
         
         // 섹션 1의 실제 DOM 상태 확인
         const section1 = document.querySelector(".section-1-key-metrics");
@@ -298,7 +304,7 @@ function updateReportHeader(companyName, year, month) {
 /**
  * 모든 섹션 렌더링
  */
-function renderAllSections(data) {
+async function renderAllSections(data) {
   console.log("[월간 리포트] 렌더링 시작, 데이터 구조:", data);
   
   try {
@@ -325,11 +331,8 @@ function renderAllSections(data) {
     console.error("[월간 리포트] 섹션 4 렌더링 실패:", e);
   }
   
-  try {
-    renderSection5(data); // 주요 유입 채널
-  } catch (e) {
-    console.error("[월간 리포트] 섹션 5 렌더링 실패:", e);
-  }
+  // 섹션 5는 섹션이 표시된 후에 렌더링 (요소를 찾기 위해)
+  // renderSection5는 섹션 표시 후 setTimeout에서 호출됨
   
   try {
     renderSection6(data); // 광고 매체 효율
@@ -717,8 +720,35 @@ function renderSection5(data) {
   
   console.log("[섹션 5] 최종 topSources:", topSources);
   
-  const container = document.getElementById("section5ChannelsTable");
-  console.log("[섹션 5] container 요소:", container);
+  // 섹션 5 요소를 먼저 찾고, 그 안에서 container 찾기
+  const section5 = document.querySelector(".section-5-channels");
+  console.log("[섹션 5] section-5-channels 요소:", section5);
+  
+  let container = null;
+  if (section5) {
+    container = section5.querySelector("#section5ChannelsTable");
+    console.log("[섹션 5] 섹션 내부에서 찾은 container:", container);
+  }
+  
+  // 섹션 내부에서 못 찾으면 전체 문서에서 찾기
+  if (!container) {
+    container = document.getElementById("section5ChannelsTable");
+    console.log("[섹션 5] 전체 문서에서 찾은 container:", container);
+  }
+  
+  if (!container) {
+    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
+    console.error("[섹션 5] section-5-channels 존재 여부:", !!section5);
+    if (section5) {
+      console.error("[섹션 5] section-5-channels의 innerHTML 일부:", section5.innerHTML.substring(0, 300));
+    }
+    // 나중에 다시 시도하도록 설정
+    setTimeout(() => {
+      console.log("[섹션 5] 재시도: container 요소 찾기");
+      renderSection5(data);
+    }, 200);
+    return;
+  }
   
   if (container) {
     const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);

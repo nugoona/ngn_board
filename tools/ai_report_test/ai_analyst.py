@@ -149,8 +149,13 @@ def load_from_gcs(gcs_path: str) -> Dict:
         if not blob.exists():
             raise FileNotFoundError(f"GCS 파일을 찾을 수 없습니다: {gcs_path}")
         
-        # 파일 다운로드 (바이너리 모드)
-        file_bytes = blob.download_as_bytes()
+        # 파일 다운로드 (임시 파일 사용하여 urllib3 버전 호환성 문제 회피)
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+            blob.download_to_filename(tmp_file.name)
+            # 파일을 바이너리 모드로 읽기
+            with open(tmp_file.name, 'rb') as f:
+                file_bytes = f.read()
         
         # Hybrid Reader: gzip 압축 해제 시도, 실패 시 일반 텍스트로 처리
         json_str = None

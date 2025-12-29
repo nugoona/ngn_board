@@ -446,7 +446,7 @@ def generate_ai_analysis(
         signals 필드에 AI 분석 텍스트가 추가된 snapshot_data
     """
     # google-genai 패키지 확인
-    if not GENAI_AVAILABLE or genai is None or types is None:
+    if genai is None or types is None:
         raise ImportError("google-genai 패키지가 설치되지 않았습니다. 'pip install google-genai'로 설치해주세요.")
     
     # API 키 확인
@@ -458,7 +458,7 @@ def generate_ai_analysis(
     try:
         client = genai.Client(api_key=api_key)
     except Exception as e:
-        raise ImportError(f"Google Gen AI Client 초기화 실패: {e}")
+        raise ImportError(f"google-genai 초기화 실패: {e}")
     
     # System Prompt 로드
     if system_prompt:
@@ -490,37 +490,19 @@ def generate_ai_analysis(
             full_prompt = f"{system_prompt_text}\n\n{section_prompt}"
             
             # Google Gen AI SDK (v1.0+) API 호출
-            # GenerateContentConfig 객체 생성
-            config = types.GenerateContentConfig(
-                temperature=0.7,
-                top_p=0.95,
-                top_k=40,
-                max_output_tokens=2048
-            )
-            
-            # client.models.generate_content() 메서드 사용
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
                 contents=full_prompt,
-                config=config
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=2048
+                )
             )
             
             # 응답 텍스트 추출
-            # 최신 SDK에서는 response.text 또는 response.candidates[0].content.parts[0].text 형태
-            if hasattr(response, 'text'):
-                analysis_text = response.text.strip()
-            elif hasattr(response, 'candidates') and len(response.candidates) > 0:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
-                    parts = candidate.content.parts
-                    if len(parts) > 0 and hasattr(parts[0], 'text'):
-                        analysis_text = parts[0].text.strip()
-                    else:
-                        analysis_text = str(parts[0]) if parts else ""
-                else:
-                    analysis_text = str(candidate)
-            else:
-                analysis_text = str(response)
+            analysis_text = response.text.strip()
             
             # signals에 저장
             signals[section_key] = analysis_text

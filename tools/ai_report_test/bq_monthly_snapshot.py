@@ -617,12 +617,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
         if snapshot_from_gcs:
             print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
-            # 리뷰 데이터를 제거한 요약 버전만 출력 (콘솔 로그용)
-            summary = remove_reviews_for_log(snapshot_from_gcs)
-            print("📋 [SUMMARY] 스냅샷 요약 (리뷰 제외):", file=sys.stderr)
-            print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
-            # 전체 JSON은 stdout으로 출력하지 않음 (콘솔 로그에 리뷰 텍스트가 보이지 않도록)
-            # 전체 JSON이 필요하면 GCS에서 직접 다운로드하거나 파일로 리다이렉션: python3 ... > output.json
+            # 수집 데이터는 콘솔에 출력하지 않음 (JSON 파일에만 저장)
+            # 전체 JSON이 필요하면 GCS에서 직접 다운로드: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz
             return
     
     # -----------------------
@@ -2580,7 +2576,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     def save_snapshot_to_gcs(company_name, year, month, snapshot_data):
         """스냅샷을 GCS 버킷에 저장 (Gzip 압축 적용)"""
         try:
-            bucket = storage_client.bucket(GCS_BUCKET)
+            print(f"🔍 [DEBUG] GCS 클라이언트 초기화 확인", file=sys.stderr)
+            print(f"   프로젝트 ID: {PROJECT_ID}", file=sys.stderr)
+            print(f"   버킷 이름: {GCS_BUCKET}", file=sys.stderr)
+            
+            # 버킷 존재 여부 확인
+            try:
+                bucket = storage_client.bucket(GCS_BUCKET)
+                # 버킷 존재 여부 확인 (reload로 실제 접근 시도)
+                bucket.reload()
+                print(f"✅ [DEBUG] 버킷 존재 확인: {GCS_BUCKET}", file=sys.stderr)
+            except Exception as bucket_error:
+                print(f"❌ [DEBUG] 버킷 접근 실패: {type(bucket_error).__name__}: {bucket_error}", file=sys.stderr)
+                raise
             
             # 경로: ai-reports/monthly/{company}/{year}-{month:02d}/snapshot.json.gz
             blob_path = f"ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz"
@@ -2623,10 +2631,15 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             print("=" * 80, file=sys.stderr)
             print(f"❌ [ERROR] GCS 저장 실패", file=sys.stderr)
             print(f"   📍 시도한 저장 위치: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz", file=sys.stderr)
-            print(f"   오류 메시지: {e}", file=sys.stderr)
+            print(f"   📦 버킷 이름: {GCS_BUCKET}", file=sys.stderr)
+            print(f"   🔍 프로젝트 ID: {PROJECT_ID}", file=sys.stderr)
+            print(f"   오류 타입: {type(e).__name__}", file=sys.stderr)
+            print(f"   오류 메시지: {str(e)}", file=sys.stderr)
             print("=" * 80, file=sys.stderr)
             import traceback
+            print("상세 스택 트레이스:", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
             return None
     
     # -----------------------
@@ -2684,13 +2697,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     print(f"✅ [SUCCESS] 스냅샷 생성 완료: {company_name} {year}-{month:02d}", file=sys.stderr)
     print("=" * 80, file=sys.stderr)
     
-    # 리뷰 데이터를 제거한 요약 버전만 출력 (콘솔 로그용, stderr)
-    summary = remove_reviews_for_log(out_safe)
-    print("📋 [SUMMARY] 스냅샷 요약 (리뷰 제외):", file=sys.stderr)
-    print(json.dumps(summary, ensure_ascii=False, indent=2), file=sys.stderr)
-    
-    # 전체 JSON은 stdout으로 출력하지 않음 (콘솔 로그에 리뷰 텍스트가 보이지 않도록)
-    # 전체 JSON이 필요하면 GCS에서 직접 다운로드하거나 파일로 리다이렉션: python3 ... > snapshot.json
+    # 수집 데이터는 콘솔에 출력하지 않음 (JSON 파일에만 저장)
+    # 전체 JSON이 필요하면 GCS에서 직접 다운로드: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz
 
 
 if __name__ == "__main__":

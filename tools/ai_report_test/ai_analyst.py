@@ -456,19 +456,26 @@ def generate_ai_analysis(
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
     
     # Gemini API 초기화 (google.genai 또는 google.generativeai 지원)
+    use_new_api = False
+    client = None
+    model = None
+    
     try:
         # google.genai (새 패키지) 사용 시도
         if hasattr(genai, 'Client'):
             client = genai.Client(api_key=api_key)
-            model = client.get_model(GEMINI_MODEL)
+            model = client.GenerativeModel(model_name=GEMINI_MODEL)
             use_new_api = True
         else:
             raise AttributeError("google.genai.Client not found")
-    except (AttributeError, TypeError):
+    except (AttributeError, TypeError) as e:
         # google.generativeai (구 패키지) 사용 - backward compatibility
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        use_new_api = False
+        try:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            use_new_api = False
+        except AttributeError:
+            raise ImportError(f"google-genai 또는 google-generativeai 패키지가 올바르게 설치되지 않았습니다. 오류: {e}")
     
     # System Prompt 로드
     if system_prompt:

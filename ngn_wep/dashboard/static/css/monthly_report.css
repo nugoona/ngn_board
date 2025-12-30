@@ -1339,6 +1339,16 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.comparison-table-unified th:first-child {
+  width: 15%;
+  min-width: 100px;
+}
+
+.comparison-table-unified th:nth-child(2),
+.comparison-table-unified th:nth-child(3) {
+  width: 42.5%;
+}
+
 .comparison-table-unified tbody tr {
   border-bottom: 1px solid #e9ecef;
 }
@@ -1357,15 +1367,18 @@
 .comparison-table-unified td:first-child {
   font-weight: 500;
   background-color: #f8f9fa;
-  width: 30%;
+  width: 15%;
+  min-width: 100px;
 }
 
 .comparison-table-unified td:nth-child(2) {
   color: #0066CC;
+  width: 42.5%;
 }
 
 .comparison-table-unified td:nth-child(3) {
   color: #DC3545;
+  width: 42.5%;
 }
 
 .comparison-table {

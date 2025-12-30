@@ -1659,10 +1659,42 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         max_date = max(all_dates)
         
         # 전체 기간을 한 번에 조회 (날짜별로 집계 후 Python에서 기간별 분류)
+        # 소스명 통합 로직 적용 (ga4_source_summary.py와 동일)
         q_ga4_top_sources_multi = f"""
         SELECT
             event_date,
-            first_user_source AS source,
+            CASE
+                -- Instagram 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%instagram%' 
+                     OR LOWER(first_user_source) LIKE '%insta%'
+                     OR LOWER(first_user_source) IN ('ig', 'linktr.ee', 'lookbook', 'igshopping') THEN 'instagram'
+                -- Naver 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%naver%' THEN 'naver.com'
+                -- Meta/Facebook 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%meta_ad%'
+                     OR LOWER(first_user_source) LIKE '%facebook%'
+                     OR LOWER(first_user_source) = 'fb' THEN 'meta_ad'
+                -- YouTube 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%youtube%' THEN 'youtube.com'
+                -- TikTok
+                WHEN LOWER(first_user_source) LIKE '%tiktok%' 
+                     OR LOWER(first_user_source) LIKE '%tt.%' THEN 'tiktok'
+                -- Direct 관련 통합
+                WHEN LOWER(first_user_source) IN ('(direct)', 'direct')
+                     OR LOWER(first_user_source) LIKE '%piscess%'
+                     OR LOWER(first_user_source) = '파이시스' THEN '(direct)'
+                -- Google 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%google%' THEN 'google'
+                -- Daum
+                WHEN LOWER(first_user_source) = 'daum' THEN 'daum'
+                -- Cafe24 관련 통합
+                WHEN LOWER(first_user_source) LIKE '%cafe24%' THEN 'cafe24.com'
+                -- 특수 케이스
+                WHEN LOWER(first_user_source) = '인트로 mdgt' THEN 'from madgoat'
+                WHEN LOWER(first_user_source) IN ('(data not available)', 'data not available') THEN '(data not available)'
+                -- 나머지는 원본 유지
+                ELSE LOWER(first_user_source)
+            END AS source,
             SUM(total_users) AS total_users,
             SUM(screen_page_views) AS screen_page_views,
             -- 이탈율 가중평균 계산 (날짜별)
@@ -1675,7 +1707,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
           AND event_date >= @min_date
           AND event_date <= @max_date
           AND first_user_source IS NOT NULL
+          AND first_user_source != ''
           AND first_user_source != '(not set)'
+          AND first_user_source != 'not set'
         GROUP BY event_date, source
         """
         

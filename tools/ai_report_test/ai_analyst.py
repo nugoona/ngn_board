@@ -616,6 +616,35 @@ def extract_section_content(full_text: str, target_section: int) -> str:
     return extracted_text
 
 
+def extract_json_from_section(text: str) -> Optional[Dict]:
+    """텍스트에서 ```json ... ``` 블록을 찾아 파싱하여 반환 (섹션 7용)"""
+    try:
+        match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+    except Exception:
+        pass
+    return None
+
+
+def parse_section_9_cards(text: str) -> List[Dict]:
+    """섹션 9 텍스트를 ### 기준으로 분리하여 카드 리스트로 변환"""
+    cards = []
+    # ### 로 시작하는 구간들 분리
+    parts = re.split(r'(^|\n)###\s+', text)
+    for part in parts:
+        part = part.strip()
+        if not part or len(part) < 10: continue # 너무 짧거나 빈 구간 제외
+        
+        # 첫 줄을 제목, 나머지를 내용으로 분리
+        lines = part.split('\n', 1)
+        title = lines[0].strip()
+        content = lines[1].strip() if len(lines) > 1 else ""
+        
+        cards.append({"title": title, "content": content})
+    return cards
+
+
 def generate_ai_analysis(
     snapshot_data: Dict,
     system_prompt: Optional[str] = None,

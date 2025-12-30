@@ -371,6 +371,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
             "top_products_sales": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:10],
         },
         8: {
+            "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
             "forecast": safe_get_dict(facts, "forecast_next_month", default={}),
             "mall_sales_forecast": safe_get_dict(facts, "forecast_next_month", "mall_sales", default={}),
         },
@@ -452,9 +453,12 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 베스트 상품 (조회 기준): {json.dumps(section_data.get('top_items_view', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 베스트 상품 성과 분석
-- 매출 vs 조회수 비교 인사이트
-- 상품 포트폴리오 개선 제안
+1. **[필수 제약]**: '제품번호(ID)'는 내부 관리용이므로 **절대 출력하지 마십시오.** 상품명만 언급하세요.
+2. **[필수 제약]**: 통화 단위는 'KRW' 대신 **한글 '원'**으로 표기하세요. (예: 1,308,000원)
+3. 단순 나열보다 '저조회 고효율(알짜상품)'과 '고조회 저효율(아쉬운 상품)'을 대비하여 인사이트를 제공하세요.
+4. 베스트 상품 성과 분석
+5. 매출 vs 조회수 비교 인사이트
+6. 상품 포트폴리오 개선 제안
 
 🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
 """,
@@ -485,11 +489,20 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 상위 광고: {json.dumps(section_data.get('top_ads', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 광고 매체 효율 분석
-- ROAS/CTR/CVR 해석
-- 광고 최적화 제안
+1. **No Data Repetition (숫자 나열 금지)**:
+   - 좌측 데이터 패널에 있는 지출액, 노출수, 클릭수, 구체적인 ROAS(소수점 단위)를 본문에 단순 나열하지 마십시오.
+   - **Ad ID (예: 12023...)는 절대로 표기하지 마십시오.** (가독성 저하 주원인)
+   
+2. **Format Comparison (소재 형식 비교)**:
+   - 개별 광고보다는 **'형식(Format)'** 위주로 분석하십시오. (예: "카탈로그 슬라이드가 영상 소재보다 구매 전환율이 월등히 높습니다.")
+   - 영상 소재와 이미지 소재의 성과 차이를 비교하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+3. **Strategic Insight (전략적 제안)**:
+   - "숫자 읽어주기"가 아니라 "왜 이 소재가 잘 되었는지"를 추론하십시오.
+   - 유입 캠페인(Traffic)과 전환 캠페인(Conversion)의 역할 분담이 잘 되고 있는지 진단하십시오.
+   - 예산 재배치(Budget Reallocation)에 대한 구체적인 조언을 제공하십시오.
+
+🛑 **절대적 제한: Ad ID 출력 금지. 수치는 '약 400% 대', '10% 가량' 등으로 둥글게 표현하여 흐름을 끊지 말 것. 반드시 1000자 이내로 작성하고 마무리하세요.**
 """,
         7: f"""
 [섹션 7: 시장 트렌드와 자사몰 비교]
@@ -541,13 +554,14 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 ⚠️ **중요: 이 섹션 8만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
 
 데이터:
-- 전망 데이터: {json.dumps(section_data.get('forecast', {}), ensure_ascii=False, indent=2)}
-- 작년 동월/익월 매출: {json.dumps(section_data.get('mall_sales_forecast', {}), ensure_ascii=False, indent=2)}
+- 이번 달 실적: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
+- 기계적 예측치: {json.dumps(section_data.get('forecast', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 다음 달 목표 설정 제안
-- 작년 대비 전망 분석
-- 시장 전망 및 리스크 요인
+1. **[중요] 기계적 예측의 한계 돌파**: 제공된 '기계적 예측치'는 작년 하락폭을 그대로 반영한 보수적 수치입니다. 이를 그대로 목표로 삼지 마십시오.
+2. **[도전적 목표 설정]**: 최근 베스트 상품의 호조와 광고 성과를 근거로, 기계적 예측치보다 **상향 조정된 '희망적이고 도전적인 목표 매출'**을 제안하세요.
+   - 예: "단순 예측은 250만원이나, 최근 세트 상품의 호조를 감안하여 500만원을 목표로 도전해볼 만합니다."
+3. 시장의 비수기 요인(연휴 등)을 언급하되, 이를 극복할 방어 논리를 함께 제시하세요.
 
 🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
 """,

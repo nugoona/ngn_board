@@ -338,6 +338,20 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     company_name = safe_get(report_meta, "company_name", default="업체")
     report_month = safe_get(report_meta, "report_month", default="")
     
+    # 다음 달 계산 (예: "2025-12" -> "2026-01")
+    try:
+        from datetime import datetime
+        if report_month and len(report_month) >= 7:  # "2025-12" 형식
+            year, month = map(int, report_month.split("-"))
+            if month == 12:
+                next_month = f"{year + 1}-01"
+            else:
+                next_month = f"{year}-{month + 1:02d}"
+        else:
+            next_month = "다음 달"
+    except:
+        next_month = "다음 달"
+    
     # 섹션별 데이터 준비
     section_data_map = {
         1: {
@@ -352,28 +366,28 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
             "top_sources": safe_get_list(facts, "ga4_traffic", "this", "top_sources", default=[]),
         },
         3: {
-            "ga4_totals": safe_get_dict(facts, "ga4_traffic", "this", "totals", default={}),
-            "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
+            "funnel_data": {
+                "ga4_totals": safe_get_dict(facts, "ga4_traffic", "this", "totals", default={}),
+                "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
+            },
         },
         4: {
-            "top_products_sales": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:5],
-            "top_items_view": safe_get_list(facts, "viewitem", "this", "top_items_by_view_item", default=[])[:5],
+            "top_products": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:5],
         },
         5: {
-            "29cm_items": safe_get_list(facts, "29cm_best", "items", default=[])[:10],
+            "market_reviews": safe_get_list(facts, "29cm_best", "items", default=[])[:10],
         },
         6: {
             "meta_ads_goals_this": safe_get_dict(facts, "meta_ads_goals", "this", default={}),
             "top_ads": safe_get_dict(facts, "meta_ads_goals", "this", "top_ads", default={}),
         },
         7: {
-            "29cm_items": safe_get_list(facts, "29cm_best", "items", default=[])[:10],
-            "top_products_sales": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:10],
+            "section_5_analysis": safe_get(snapshot_data, "signals", "section_5_analysis", default=""),
+            "top_products": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:10],
         },
         8: {
             "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
-            "forecast": safe_get_dict(facts, "forecast_next_month", default={}),
-            "mall_sales_forecast": safe_get_dict(facts, "forecast_next_month", "mall_sales", default={}),
+            "forecast_next_month": safe_get_dict(facts, "forecast_next_month", default={}),
         },
         9: {
             "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
@@ -391,225 +405,229 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 1: 지난달 매출 분석]
 {company_name}의 {report_month} 매출 데이터를 분석해주세요.
 
-⚠️ **중요: 이 섹션 1만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 1만 분석하고 답변하세요.**
 
 데이터:
 - 이번 달 매출: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
 - 전월 매출: {json.dumps(section_data.get('mall_sales_prev', {}), ensure_ascii=False, indent=2)}
 - 비교 데이터: {json.dumps(section_data.get('comparisons', {}), ensure_ascii=False, indent=2)}
-- 일별 매출 (이번 달): {json.dumps(section_data.get('daily_this', [])[:10], ensure_ascii=False, indent=2)}
-- 이벤트: {json.dumps(section_data.get('events', [])[:5], ensure_ascii=False, indent=2)}
+- 일별 매출: {json.dumps(section_data.get('daily_this', [])[:10], ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 매출 증감 요인 분석
-- 주요 성과 지표 해석
-- 전월 대비 변화 인사이트
-- 이벤트와 매출의 인과관계
+데이터를 단순 나열하지 말고, **아래 4가지 항목으로 구분하여 인사이트를 포함한 문장**으로 작성하십시오. 이모지(아이콘)는 사용하지 마십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+* **매출 실적 (Growth):** [전월/전년 대비 증감 수치와 성장세 진단]
+* **효율성 진단 (Efficiency):** [주문 건수와 객단가(AOV) 관계 분석]
+* **고객 유입 (Acquisition):** [신규/재구매/취소 건수 기반 진단]
+* **일별 추이 (Daily):** [특이 매출 발생일 언급]
+
+- 주요 수치는 **굵게** 표시 (예: **14,983,561원**)
+- 각 항목은 불렛 포인트(`*`)와 굵은 제목으로 시작할 것.
 """,
         2: f"""
 [섹션 2: 주요 유입 채널]
 {company_name}의 {report_month} 유입 채널 데이터를 분석해주세요.
 
-⚠️ **중요: 이 섹션 2만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
-⚠️ **절대 금지: 섹션 5 (시장 트렌드)나 다른 섹션의 내용을 포함하지 마세요.**
+⚠️ **중요: 이 섹션 2만 분석하고 답변하세요.**
 
 데이터:
 - GA4 트래픽: {json.dumps(section_data.get('ga4_traffic_this', {}), ensure_ascii=False, indent=2)}
 - 상위 유입 소스: {json.dumps(section_data.get('top_sources', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 주요 유입 채널 성과 분석 (meta_ad, ig, 파이시스 등)
-- 채널별 이탈률 및 전환율 해석
-- 채널 최적화 제안
+데이터를 단순 나열하지 말고, **아래 4가지 항목으로 구분하여 인사이트를 포함한 문장**으로 작성하십시오. 이모지(아이콘)는 사용하지 마십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+* **유입 성과 (Volume):** [최다 유입 채널 및 브랜드 직접 유입 비중 평가]
+* **효율성 진단 (Efficiency):** [이탈률이 낮은 우수 채널 평가]
+* **개선 필요 영역 (Weakness):** [유입은 많으나 이탈률이 높은 채널 진단]
+* **전략 제안 (Action Plan):** [핵심 채널 개선을 위한 액션 플랜]
+
+- 주요 수치는 **굵게** 표시 (예: **49.04%**)
+- 각 항목은 불렛 포인트(`*`)와 굵은 제목으로 시작할 것.
 """,
         3: f"""
-[섹션 3: 고객 방문 및 구매 여정]
-{company_name}의 {report_month} 고객 여정 데이터를 분석해주세요.
+[섹션 3: 고객 여정 (Funnel)]
+{company_name}의 {report_month} 고객 행동 데이터를 분석해주세요.
 
-⚠️ **중요: 이 섹션 3만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 3만 분석하고 답변하세요.**
 
 데이터:
-- GA4 퍼널: {json.dumps(section_data.get('ga4_totals', {}), ensure_ascii=False, indent=2)}
-- 매출 데이터: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
+- 퍼널 데이터: {json.dumps(section_data.get('funnel_data', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 유입 → 장바구니 → 구매 전환율 분석
-- 여정별 이탈 지점 파악
-- 전환율 개선 제안
+**퍼널 단계별 전환율**을 중심으로 병목 구간을 찾고 개선책을 제안하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### 1. 퍼널 단계별 진단
+* **유입 → 장바구니:** [전환율 수치와 분석]
+* **장바구니 → 구매:** [전환율 수치와 분석]
+* **전체 구매 전환율:** [수치와 평가]
+
+### 2. 핵심 문제점 (Pain Point)
+* [병목 구간 지적 및 원인 추론]
+
+### 3. 개선 제안
+* [구체적인 액션 아이템]
+
+- 주요 수치는 **굵게** 표시 (예: **0.94%**)
+- 소제목은 `###` 헤더 사용.
 """,
         4: f"""
-[섹션 4: 자사몰 베스트 상품 성과]
-{company_name}의 {report_month} 베스트 상품 데이터를 분석해주세요.
+[섹션 4: 자사몰 베스트 상품]
+{company_name}의 {report_month} 상품 판매 데이터를 분석해주세요.
 
-⚠️ **중요: 이 섹션 4만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
-⚠️ **절대 금지: 섹션 5 (시장 트렌드)나 다른 섹션의 내용을 포함하지 마세요.**
+⚠️ **중요: 이 섹션 4만 분석하고 답변하세요.**
 
 데이터:
-- 베스트 상품 (매출 기준): {json.dumps(section_data.get('top_products_sales', []), ensure_ascii=False, indent=2)}
-- 베스트 상품 (조회 기준): {json.dumps(section_data.get('top_items_view', []), ensure_ascii=False, indent=2)}
+- 베스트 상품: {json.dumps(section_data.get('top_products', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-1. **[필수 제약]**: '제품번호(ID)'는 내부 관리용이므로 **절대 출력하지 마십시오.** 상품명만 언급하세요.
-2. **[필수 제약]**: 통화 단위는 'KRW' 대신 **한글 '원'**으로 표기하세요. (예: 1,308,000원)
-3. 단순 나열보다 '저조회 고효율(알짜상품)'과 '고조회 저효율(아쉬운 상품)'을 대비하여 인사이트를 제공하세요.
-4. 베스트 상품 성과 분석
-5. 매출 vs 조회수 비교 인사이트
-6. 상품 포트폴리오 개선 제안
+**매출 1위 상품**과 **조회수 대비 판매 효율**을 분석하여 포트폴리오 전략을 제안하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### 매출 리딩 상품
+* [상품명]: [매출액] (전체 매출 견인 및 기여도 분석)
+
+### 고효율 상품 (저조회 고매출)
+* [상품명]: [효율 수치] (적은 노출에도 구매 전환이 높은 알짜 상품 분석)
+
+### 저효율 상품 (고조회 저매출)
+* [상품명]: [효율 수치] (관심은 높으나 구매로 이어지지 않는 원인 추론)
+
+### 포트폴리오 전략
+* [고효율 상품 노출 확대 등 운영 제안]
+
+- 상품명은 `[ ]`로 감싸서 표기.
+- 주요 수치는 **굵게** 표시.
+- 제품번호(ID)는 절대 출력하지 마십시오.
+- 통화 단위는 한글 '원'으로 표기하세요.
 """,
         5: f"""
-[섹션 5: 시장 트렌드 확인 (29CM)]
-{company_name}의 {report_month} 시장 트렌드 데이터를 분석해주세요.
+[섹션 5: 시장 트렌드 (29CM)]
+29CM 베스트 상품 리뷰 데이터를 바탕으로 시장 트렌드를 분석해주세요.
 
-⚠️ **중요: 이 섹션 5만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
-⚠️ **절대 금지: 섹션 2 (주요 유입 채널), 섹션 4 (자사몰 베스트 상품)나 다른 섹션의 내용을 포함하지 마세요.**
+⚠️ **중요: 이 섹션 5만 분석하고 답변하세요.**
 
 데이터:
-- 29CM 베스트 상품: {json.dumps(section_data.get('29cm_items', []), ensure_ascii=False, indent=2)}
+- 29CM 리뷰 데이터: {json.dumps(section_data.get('market_reviews', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- 29CM 시장 트렌드 분석 (겨울 아우터, 이너웨어 등)
-- 인기 상품 카테고리/가격대 파악
-- 시장 기회 포착
+경쟁사 상품의 **장점(소비자 선호)**과 **단점(불만 사항)**을 명확히 구분하여 분석하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### 시장 인기 트렌드
+* **주요 아이템:** [카테고리 및 스타일 트렌드]
+* **선호 키워드:** [소비자가 반응하는 핵심 키워드]
+
+### 소비자 주요 불만 (Pain Point)
+* [브랜드명/상품명]: [구체적 불만 내용]
+* [브랜드명/상품명]: [구체적 불만 내용]
+
+### 기회 요인 (Opportunity)
+* [경쟁사 약점을 공략할 틈새시장 제안]
+
+- 브랜드/상품명은 명확히 표기.
 """,
         6: f"""
 [섹션 6: 매체 성과 및 효율 진단]
 {company_name}의 {report_month} 광고 매체 데이터를 분석해주세요.
 
-⚠️ **중요: 이 섹션 6만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 6만 분석하고 답변하세요.**
 
 데이터:
 - Meta Ads 성과: {json.dumps(section_data.get('meta_ads_goals_this', {}), ensure_ascii=False, indent=2)}
 - 상위 광고: {json.dumps(section_data.get('top_ads', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-1. **[캠페인 성과 진단]** (200자 내외로 간결하게):
-   - **전환(Conversion) 캠페인**: ROAS, 구매 건수, CVR을 기준으로 '매출 기여도'를 평가하십시오.
-   - **유입(Traffic) 캠페인**: **절대 ROAS나 구매 전환율로 평가하지 마십시오.** 이 캠페인의 목적은 '저렴한 비용(Low CPC)'과 '높은 관심(High CTR)'입니다. CTR이 높고 CPC가 낮다면 "성공적인 모수 확보"로 칭찬하십시오.
+광고주가 10초 안에 핵심을 파악할 수 있도록, **반드시 아래 3가지 항목의 불렛 포인트**로만 간결하게 요약하십시오. (전체 400자 이내)
 
-2. **[소재 효율 분석]** (200자 내외로 간결하게):
-   - 개별 광고 ID나 이름을 나열하지 말고, **'카탈로그', '영상', '단일 이미지'** 등 형식 간의 성과 차이를 비교하십시오.
-   - 예: "구매를 유도하는 데는 카탈로그가 강력했고, 초기 시선을 끄는 데는 영상 소재가 탁월했습니다."
+⚠️ **출력 형식 (Markdown 필수)**:
+* **성과 진단:** [전환 캠페인 ROAS 평가] / [유입 캠페인은 '저렴한 비용(CPC)으로 모수 확보 성공' 관점에서 평가]
+* **소재 효율:** [구매 유도 승자 형식(예: 카탈로그)] vs [유입 유도 승자 형식(예: 영상)] (Ad ID 사용 금지)
+* **운영 전략:** [검증된 소재 예산 집중] 및 [유입 모수 타겟 리타겟팅 제안]
 
-3. **[운영 전략 제안]** (400자 내외, 1, 2, 3으로 구분):
-   - "숫자 읽어주기"를 멈추고 **"왜?"**를 분석하십시오.
-   - 유입 캠페인으로 확보된 트래픽을 어떻게 활용할지(리타겟팅 등) 제안하십시오.
-   - 예산의 효율적 재배치(Budget Reallocation) 방향을 제시하십시오.
-   - **반드시 다음 형식으로 작성하세요:**
-     ```
-     1. (첫 번째 전략 제안)
-     2. (두 번째 전략 제안)
-     3. (세 번째 전략 제안)
-     ```
-
-🛑 **제약 사항 (Strict Rules):**
-- **Ad ID (예: 12023...) 절대 표기 금지.** (가독성 해치는 주범)
-- 지출액, 노출수 등 단순 수치는 나열하지 말고 '약 400%', '10% 대' 등으로 둥글게 표현.
-- 독자가 읽기 편하게 **'1. 캠페인 성과 진단', '2. 소재 효율 분석', '3. 운영 전략 제안'**의 소제목을 사용하여 구조화된 줄글로 작성.
-- 분량: 전체 800자 내외 (1번 200자, 2번 200자, 3번 400자).
+- 주요 수치는 **굵게** 표시.
+- 줄글 금지, 딱 3개 불렛 포인트로 끝낼 것.
+- Ad ID (예: 12023...) 절대 표기 금지.
 """,
         7: f"""
-[섹션 7: 시장 트렌드와 자사몰 비교]
-{company_name}의 {report_month} 시장 비교 데이터를 분석해주세요.
+[섹션 7: 자사 vs 시장 비교]
+자사몰 데이터와 29CM 시장 데이터를 비교 분석해주세요.
 
-⚠️ **중요: 이 섹션 7만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 7만 분석하고 답변하세요.**
 
 데이터:
-- 29CM 베스트: {json.dumps(section_data.get('29cm_items', []), ensure_ascii=False, indent=2)}
-- 자사몰 상품: {json.dumps(section_data.get('top_products_sales', []), ensure_ascii=False, indent=2)}
+- 시장 분석(섹션5 결과): {json.dumps(section_data.get('section_5_analysis', ''), ensure_ascii=False, indent=2)}
+- 자사몰 상품(섹션4 결과): {json.dumps(section_data.get('top_products', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-- **경향성 중심 분석**: 모든 상품을 개별적으로 나열하지 말고, 전체적인 시장 경향성과 트렌드만 요약하세요.
-- **핵심 차별점 강조**: 자사몰과 시장 간의 핵심 차별점(가격대, 카테고리, 타겟 고객층)만 명확히 비교하세요.
-- 구체적인 브랜드명이나 상품명은 필요시 2-3개만 대표적으로 언급하고, 나머지는 경향성으로 요약하세요.
+**가격대, 주력 아이템, 타겟 고객** 측면에서 우리의 위치(Positioning)를 진단하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### 포지셔닝 비교
+* **시장(Market):** [가격대, 주력 상품 특징]
+* **자사(Company):** [가격대, 주력 상품 특징]
 
-[중요] 분석 텍스트는 반드시 두 부분으로 구분하여 작성하세요:
-1. **29CM 시장 분석**: "29CM 시장은..." 또는 "29CM 시장의..."로 시작하여 시장 트렌드와 특징을 설명하세요.
-2. **자사몰 분석**: "반면, 자사몰은..." 또는 "자사몰은..."으로 시작하여 자사몰의 특징과 시장과의 차별점을 설명하세요.
+### 경쟁력 진단
+* **가격 경쟁력:** [가격대 비교 및 우위 요소]
+* **상품 차별점:** [자사 상품만의 강점]
 
-[중요] 분석 텍스트 마지막에 다음 형식의 JSON 비교표를 포함해주세요:
-```json
-{{
-  "주력_아이템": {{
-    "market": "29CM 시장의 주력 아이템",
-    "company": "자사몰의 주력 아이템"
-  }},
-  "평균_가격": {{
-    "market": "29CM 평균 가격",
-    "company": "자사몰 평균 가격"
-  }},
-  "핵심_소재": {{
-    "market": "29CM 인기 소재",
-    "company": "자사몰 주요 소재"
-  }},
-  "타겟_고객층": {{
-    "market": "29CM 타겟 고객",
-    "company": "자사몰 타겟 고객"
-  }},
-  "가격대": {{
-    "market": "29CM 가격대",
-    "company": "자사몰 가격대"
-  }}
-}}
-```
+### 타겟팅 전략
+* [우리가 공략해야 할 핵심 고객층 제안]
+
+- 주요 키워드는 **굵게** 표시.
 """,
         8: f"""
-[섹션 8: 익월 목표 설정 및 시장 전망]
-{company_name}의 {report_month} 전망 데이터를 분석해주세요.
+[섹션 8: 다음 달 목표 제안]
+과거 데이터를 바탕으로 다음 달({next_month}) 매출 목표를 제안해주세요.
 
-⚠️ **중요: 이 섹션 8만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 8만 분석하고 답변하세요.**
 
 데이터:
-- 이번 달 실적: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
-- 기계적 예측치: {json.dumps(section_data.get('forecast', {}), ensure_ascii=False, indent=2)}
+- 예측 데이터: {json.dumps(section_data.get('forecast_next_month', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-1. **[중요] 기계적 예측의 한계 돌파**: 제공된 '기계적 예측치'는 작년 하락폭을 그대로 반영한 보수적 수치입니다. 이를 그대로 목표로 삼지 마십시오.
-2. **[도전적 목표 설정]**: 최근 베스트 상품의 호조와 광고 성과를 근거로, 기계적 예측치보다 **상향 조정된 '희망적이고 도전적인 목표 매출'**을 제안하세요.
-   - 예: "단순 예측은 250만원이나, 최근 세트 상품의 호조를 감안하여 500만원을 목표로 도전해볼 만합니다."
-3. 시장의 비수기 요인(연휴 등)을 언급하되, 이를 극복할 방어 논리를 함께 제시하세요.
+기계적 예측치와 도전적 목표치를 제시하고, 그 근거를 설명하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### {next_month} 매출 목표 제안
+* **보수적 목표 (기계적 예측):** **[금액]원** (전년 대비 [증감률]%)
+* **도전적 목표 (Action Plan):** **[금액]원** (기계적 예측 대비 [배수]배)
+
+### 목표 설정 근거
+* [긍정적 요인]: [목표 상향의 근거]
+* [부정적 요인]: [리스크 요인]
+* [대응 전략]: [목표 달성을 위한 핵심 전략]
+
+- 금액은 3자리 콤마(,) 포함하여 표기.
 """,
         9: f"""
-[섹션 9: 데이터 기반 전략 액션 플랜]
-{company_name}의 {report_month} 전체 데이터를 종합하여 전략을 제안해주세요.
+[섹션 9: 종합 제안 (Action Cards)]
+앞선 모든 분석을 종합하여, 다음 달 실행할 구체적인 전략 3가지를 제안해주세요.
 
-⚠️ **중요: 이 섹션 9만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+⚠️ **중요: 이 섹션 9만 분석하고 답변하세요.**
 
-데이터 요약:
-- 매출: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
-- 광고: {json.dumps(section_data.get('meta_ads_this', {}), ensure_ascii=False, indent=2)}
-- 유입: {json.dumps(section_data.get('ga4_totals', {}), ensure_ascii=False, indent=2)}
-- 신호: {json.dumps(section_data.get('signals', {}), ensure_ascii=False, indent=2)}
+데이터:
+- 섹션 1~8의 주요 분석 내용 참고.
 
 분석 요청:
-- 종합 전략 액션 플랜
-- 우선순위별 실행 방안
-- KPI 및 목표 설정
+마케팅, 상품 기획, 프로모션 관점에서 실행 가능한 구체적 전략을 카드 형태로 제안하십시오.
 
-🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+⚠️ **출력 형식 (Markdown 필수)**:
+### [전략 1] [매력적인 제목]
+[구체적인 실행 방안 및 기대 효과]
 
-[중요] 각 전략은 반드시 **`###` (헤더3)**로 구분하여 작성하십시오:
-  ### 💡 [전략 1] (제목)
-  (내용...)
-  
-  ### 🎯 [전략 2] (제목)
-  (내용...)
-  
-  ### 📦 [전략 3] (제목)
-  (내용...)
+### [전략 2] [매력적인 제목]
+[구체적인 실행 방안 및 기대 효과]
+
+### [전략 3] [매력적인 제목]
+[구체적인 실행 방안 및 기대 효과]
+
+- 제목은 **굵게** 표시.
+- 내용은 2~3문장으로 간결하게.
+- 이모지(아이콘)는 사용하지 마십시오.
 """
     }
     

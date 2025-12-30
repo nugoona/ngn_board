@@ -603,7 +603,7 @@ def load_snapshot_from_gcs(company_name: str, year: int, month: int):
         return None
 
 
-def run(company_name: str, year: int, month: int, upsert_flag: bool = False, save_to_gcs_flag: bool = False, load_from_gcs_flag: bool = True):
+def run(company_name: str, year: int, month: int, upsert_flag: bool = False, save_to_gcs_flag: bool = False, load_from_gcs_flag: bool = True, use_current_month_events: bool = False):
     """
     Args:
         company_name: 회사명
@@ -612,6 +612,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         upsert_flag: BigQuery에 upsert할지 여부
         save_to_gcs_flag: GCS에 저장할지 여부
         load_from_gcs_flag: GCS에서 먼저 읽을지 여부 (기본값: True)
+        use_current_month_events: True면 동월 이벤트 조회 (테스트용), False면 전월 이벤트 조회 (기본값, 배포 후 자동 실행용)
     """
     # -----------------------
     # GCS에서 스냅샷 읽기 (우선)
@@ -2513,9 +2514,14 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # Event 데이터 조회 (지난달 이벤트)
     # -----------------------
     def get_prev_month_events():
-        """지난달 이벤트 정보 조회 (현재 리포트 월 기준)"""
+        """이벤트 정보 조회 (전월 또는 동월)"""
         try:
-            # 현재 리포트 월의 이벤트 조회 (prev_month가 아니라 report_month)
+            # use_current_month_events 플래그에 따라 이벤트 조회 월 결정
+            # False (기본값): 전월 이벤트 조회 (배포 후 자동 실행 시, 예: 1월 리포트 → 12월 이벤트)
+            # True: 동월 이벤트 조회 (테스트 시, 예: 1월 리포트 → 1월 이벤트)
+            event_month = report_month if use_current_month_events else prev_month
+            event_month_label = "동월" if use_current_month_events else "전월"
+            
             query = f"""
             SELECT 
                 mall,
@@ -2526,14 +2532,16 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                 memo
             FROM `{PROJECT_ID}.{DATASET}.sheets_event_data`
             WHERE mall = @company_name
-              AND FORMAT_DATE('%Y-%m', date) = @report_month
+              AND FORMAT_DATE('%Y-%m', date) = @event_month
             ORDER BY event_first ASC, event ASC
             """
             
             if ENABLE_DEBUG_LOGS:
                 print(f"🔍 [DEBUG] Event 데이터 조회 쿼리:", file=sys.stderr)
                 print(f"   company_name: {company_name}", file=sys.stderr)
-                print(f"   report_month: {report_month}", file=sys.stderr)
+                print(f"   report_month: {report_month} (리포트 월)", file=sys.stderr)
+                print(f"   event_month: {event_month} ({event_month_label} 이벤트)", file=sys.stderr)
+                print(f"   use_current_month_events: {use_current_month_events}", file=sys.stderr)
             
             rows = list(
                 client.query(
@@ -2541,7 +2549,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                     job_config=bigquery.QueryJobConfig(
                         query_parameters=[
                             bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-                            bigquery.ScalarQueryParameter("report_month", "STRING", report_month),
+                            bigquery.ScalarQueryParameter("event_month", "STRING", event_month),
                         ]
                     ),
                 ).result()
@@ -2565,7 +2573,7 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                     print(f"   [{i+1}] {evt}", file=sys.stderr)
             
             return {
-                "month": report_month,
+                "month": event_month,
                 "events": events,
             } if events else None
         except Exception as e:
@@ -2777,8 +2785,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
 
 if __name__ == "__main__":
     if len(sys.argv) < 4:
-        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert] [--save-to-gcs] [--force]")
+        print("Usage: python3 bq_monthly_snapshot.py <company_name> <year> <month> [--upsert] [--save-to-gcs] [--force] [--use-current-month-events]")
         print("  --force: GCS에 기존 스냅샷이 있어도 재생성 (기본값: GCS에서 먼저 읽기)")
+        print("  --use-current-month-events: 동월 이벤트 조회 (테스트용, 기본값: 전월 이벤트 조회)")
         sys.exit(1)
     
     company_name = sys.argv[1]
@@ -2787,8 +2796,9 @@ if __name__ == "__main__":
     upsert_flag = "--upsert" in sys.argv
     save_to_gcs_flag = "--save-to-gcs" in sys.argv
     force_flag = "--force" in sys.argv  # 재생성 플래그
+    use_current_month_events = "--use-current-month-events" in sys.argv  # 동월 이벤트 조회 플래그 (테스트용)
     
     # --force 플래그가 있으면 GCS에서 읽지 않고 재생성
     load_from_gcs_flag = not force_flag
     
-    run(company_name, year, month, upsert_flag, save_to_gcs_flag, load_from_gcs_flag)
+    run(company_name, year, month, upsert_flag, save_to_gcs_flag, load_from_gcs_flag, use_current_month_events)

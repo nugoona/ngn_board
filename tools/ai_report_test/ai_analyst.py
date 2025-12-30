@@ -363,6 +363,35 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     else:
         marketing_calendar = []
     
+    # 섹션 4: viewitem 데이터와 top_products 병합
+    top_products_raw = safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])
+    viewitem_data = safe_get_list(facts, "viewitem", "this", "top_items_by_view_item", default=[])
+    
+    # viewitem 데이터를 product_no 기준으로 매핑
+    viewitem_map = {}
+    for item in viewitem_data:
+        product_no = item.get("matched_product_no")
+        if product_no:
+            viewitem_map[product_no] = {
+                "product_views": item.get("total_view_item", 0),
+                "qty_per_view": item.get("qty_per_view"),
+                "sales_per_view": item.get("sales_per_view"),
+            }
+    
+    # top_products에 조회수 데이터 병합
+    top_products_with_views = []
+    for product in top_products_raw[:5]:
+        product_no = product.get("product_no")
+        if product_no and product_no in viewitem_map:
+            product["product_views"] = viewitem_map[product_no]["product_views"]
+            product["qty_per_view"] = viewitem_map[product_no]["qty_per_view"]
+            product["sales_per_view"] = viewitem_map[product_no]["sales_per_view"]
+        else:
+            product["product_views"] = 0
+            product["qty_per_view"] = None
+            product["sales_per_view"] = None
+        top_products_with_views.append(product)
+    
     section_data_map = {
         1: {
             "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
@@ -382,7 +411,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
             },
         },
         4: {
-            "top_products": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:5],
+            "top_products": top_products_with_views,
         },
         # 섹션 4 디버깅: 조회수 데이터 확인
         # _debug_section4: 섹션 4 데이터 로딩 시 조회수(product_views) 데이터 존재 여부 확인
@@ -424,7 +453,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 이번 달 매출: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
 - 전월 매출: {json.dumps(section_data.get('mall_sales_prev', {}), ensure_ascii=False, indent=2)}
 - 비교 데이터: {json.dumps(section_data.get('comparisons', {}), ensure_ascii=False, indent=2)}
-- 일별 매출: {json.dumps(section_data.get('daily_this', [])[:10], ensure_ascii=False, indent=2)}
+- 일별 매출: {json.dumps(section_data.get('daily_this', []), ensure_ascii=False, indent=2)}
 - 📅 마케팅_프로모션_일정: {json.dumps(section_data.get('marketing_calendar', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
@@ -435,11 +464,13 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 * **효율성 진단 (Efficiency):** [주문 건수와 객단가(AOV) 관계 분석]
 * **고객 유입 (Acquisition):** [신규/재구매/취소 건수 기반 진단]
 * **📊 이벤트 효과 (Event Impact):**
-  - 위 '마케팅_프로모션_일정'을 참고하여 아래 기준으로 분석하십시오.
+  - 위 '마케팅_프로모션_일정'과 '일별 매출' 데이터를 대조하여 아래 기준으로 분석하십시오.
   1. **🚀 부스터(Booster) 평가:** `memo`가 **[자사몰]**인 행사 기간, 비행사 기간 대비 매출이 **유의미하게 상승**했는지 분석. (성공적인 기폭제였는지 평가)
   2. **🛡️ 방어(Defense) 평가:** `memo`가 **[29cm] 등 타 플랫폼**인 기간, 자사몰 매출이 **급감하지 않고 유지**되었는지 분석. (매출이 빠졌다면 '방어 실패/이탈', 유지했다면 '방어 성공'으로 평가)
 
-- **금액(KRW)이나 건수**는 **굵게** 표시.
+- **이벤트 이름**은 **굵게** 표시 (예: **Winter Holiday Sale**).
+- 금액은 숫자만 표시하고 **원** 단위로 표기 (예: 14,983,561원). 금액 숫자는 굵게 표시하지 마십시오.
+- 건수는 숫자만 표시 (예: 136건). 건수 숫자는 굵게 표시하지 마십시오.
 - 🎨 **퍼센트 표기법:** 숫자는 강조하되 **% 기호는 볼드 바깥**에 두십시오. (예: **92.5**% (O))
 - 각 항목은 불렛 포인트(`*`)와 굵은 제목으로 시작.
 """,
@@ -501,11 +532,13 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 ⚠️ **중요: 이 섹션 4만 분석하고 답변하세요.**
 
 데이터:
-- 베스트 상품: {json.dumps(section_data.get('top_products', []), ensure_ascii=False, indent=2)}
+- 베스트 상품 (판매량/매출액/조회수 포함): {json.dumps(section_data.get('top_products', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 데이터를 바탕으로 매출 리딩 상품과 판매량 리딩 상품을 구분하고, 객단가 상승을 위한 구체적인 번들링 전략을 제안하십시오.
-(만약 `product_views` 데이터가 0이거나 없다면, '조회수' 언급을 생략하고 **'판매량'과 '매출액'** 기준으로만 분석하십시오.)
+- `product_views` 필드가 0이거나 없는 상품은 조회수 분석에서 제외하십시오.
+- `product_views`가 있는 상품에 대해서만 고효율/저효율 분석을 수행하십시오.
+- 모든 상품명은 반드시 위 데이터에 실제로 존재하는 상품명만 사용하십시오. 존재하지 않는 상품명을 지어내지 마십시오.
 
 ⚠️ **출력 형식 (Markdown 필수 - 줄글 금지)**:
 
@@ -514,7 +547,16 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 
 ### 📦 판매량 및 효율 진단 (Volume vs Efficiency)
 * **[상품명]:** **[판매량]개**로 최다 판매를 기록했으나, 상대적으로 낮은 단가(**[객단가]원**)로 인해 매출 기여도는 제한적입니다.
-* (조회수 데이터가 있다면 고효율/저효율 상품 추가 언급)
+
+### 💎 고효율 상품 (저조회 고매출)
+* `product_views` 데이터가 있고 `sales_per_view`가 높은 상품만 언급하십시오.
+* 예시: **[상품명]:** 조회수 **8402회** 대비 높은 매출(**695,000원**)을 기록하여 효율이 우수합니다.
+
+### ⚠️ 저효율 상품 (고조회 저매출)
+* `product_views` 데이터가 있고 `sales_per_view`가 낮은 상품만 언급하십시오.
+* 예시: **[상품명]:** 조회수 **2838회** 대비 낮은 매출(**130,800원**)로 전환율 개선이 필요합니다.
+
+**주의:** `product_views`가 0이거나 없는 상품은 위 두 섹션에서 제외하고, "조회수 데이터가 제공되지 않아 조회수 대비 판매 효율 분석은 불가합니다."라고만 표기하십시오.
 
 ### 💡 포트폴리오 전략 (Action Plan)
 * **번들링 제안:** 매출 1위인 **[상품 A]**와 판매량 1위인 **[상품 B]**를 연계하여 객단가(AOV) 상승을 유도하십시오.
@@ -660,14 +702,21 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 분석 요청:
 마케팅, 상품 기획, 프로모션 관점에서 **구체적인 상품명과 데이터**에 기반한 전략을 제안하십시오.
 
+🛑 **중요: 상품명 사용 규칙**
+- 반드시 섹션 1~8의 분석 결과에서 언급된 **실제 존재하는 상품명**만 사용하십시오.
+- 존재하지 않는 상품명(예: "스웨이드 미니 스커트", "데일리 꽈배기 가디건" 등)을 지어내지 마십시오.
+- 상품명이 확실하지 않다면, 구체적인 상품명 대신 카테고리나 일반적인 설명으로 대체하십시오.
+
 ⚠️ **출력 형식 (반드시 JSON)**:
 - 결과는 반드시 **3개의 객체를 가진 JSON 배열(Array)**이어야 합니다.
 
 **1. 제목(`title`) 규칙:**
-- 🛑 **특수문자(?, ?, - 등) 절대 금지.**
+- 🛑 **특수문자(?, ?, -, 등) 절대 금지.**
 - 오직 **"이모지 1개 + 공백 + 한글 제목"** 형태로만 작성하십시오.
+- 이모지가 깨져서 보이거나 특수문자가 포함된 경우, 이모지를 제거하고 한글 제목만 사용하십시오.
   - (O) 💡 겨울 아우터 번들링 전략
   - (X) 💡 ? **겨울 아우터** ?
+  - (X)  봄맞이 스타일링 세트
 
 **2. 본문(`content`) 규칙:**
 - **가독성:** 한 덩어리의 줄글 대신, **줄바꿈(`\\n`)과 불렛 포인트(`•`)**를 사용하여 핵심을 나누십시오.
@@ -681,16 +730,16 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 ```json
 [
   {{
-    "title": "💡 윈터 스타일링 세트 제안",
-    "content": "섹션 4 데이터를 분석한 결과, 매출 1위인 **스커트 팬츠**와 조회수가 높은 **캐시미어 니트**의 시너지가 기대됩니다.\\n\\n• **전략:** 두 상품을 묶은 'Winter Style Setup' 세트 구성\\n• **기대 효과:** 객단가(**AOV**) 상승 및 코트 상품의 구매 전환 유도"
+    "title": "💡 스타일링 세트 제안",
+    "content": "섹션 4 데이터를 분석한 결과, 매출 1위 상품과 판매량 1위 상품의 시너지가 기대됩니다.\\n\\n• **전략:** 두 상품을 묶은 세트 구성\\n• **기대 효과:** 객단가 상승 및 구매 전환 유도"
   }},
   {{
     "title": "🎯 품질 불만 해소 캠페인",
-    "content": "경쟁사 리뷰에서 **털 빠짐**과 **무거운 착용감**에 대한 불만이 다수 확인되었습니다.\\n\\n• **전략:** 자사 제품의 '가벼움'과 '털 날림 없음'을 강조하는 콘텐츠 배포\\n• **타겟:** 품질에 민감한 2030 스마트 컨슈머 집중 공략"
+    "content": "경쟁사 리뷰에서 **털 빠짐**과 **무거운 착용감**에 대한 불만이 다수 확인되었습니다.\\n\\n• **전략:** 자사 제품의 가벼움과 털 날림 없음을 강조하는 콘텐츠 배포\\n• **타겟:** 품질에 민감한 2030 스마트 컨슈머 집중 공략"
   }},
   {{
     "title": "📦 시즌 오프 재고 소진",
-    "content": "매출 감소 추세(**Declining**)를 보이는 겨울 니트류의 재고 소진이 시급합니다.\\n\\n• **전략:** 설 연휴 배송 마감 이슈를 활용한 'Last Chance' 타임 세일\\n• **체크:** 실행 전 대상 상품의 **재고 수량**과 **목표 이익률** 시뮬레이션 필수"
+    "content": "매출 감소 추세를 보이는 겨울 상품의 재고 소진이 시급합니다.\\n\\n• **전략:** 설 연휴 배송 마감 이슈를 활용한 타임 세일\\n• **체크:** 실행 전 대상 상품의 재고 수량과 목표 이익률 시뮬레이션 필수"
   }}
 ]
 ```
@@ -1093,8 +1142,10 @@ def generate_ai_analysis(
             if section_num == 7:
                 json_data = extract_json_from_section(analysis_text)
                 if json_data and isinstance(json_data, dict):
-                    signals["section_7_data"] = json_data
-                    print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료", file=sys.stderr)
+                    # 프론트엔드는 section_7_data를 직접 순회하므로 table_data만 저장
+                    table_data = json_data.get("table_data", {})
+                    signals["section_7_data"] = table_data
+                    print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료: {len(table_data)}개 항목", file=sys.stderr)
                     
                     # JSON에서 card_summary의 market_analysis와 company_analysis 추출
                     card_summary = json_data.get("card_summary", {})

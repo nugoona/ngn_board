@@ -681,51 +681,34 @@ def generate_ai_analysis(
             full_prompt = f"{system_prompt_text}\n\n{section_prompt}"
             
             # Google Gen AI SDK (v1.0+) API 호출
-            # 한글 기준 1000자 = 약 500-700 토큰, 안전하게 600 토큰으로 제한
-            max_retries = 3
-            analysis_text = None
-            
-            for retry in range(max_retries):
-                response = client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=full_prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.7,
-                        top_p=0.95,
-                        top_k=40,
-                        max_output_tokens=600  # 1000자 제한을 위한 토큰 제한 (한글 1자 ≈ 0.5-0.7 토큰)
-                    )
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=8192  # 답변이 중간에 잘리지 않도록 토큰 한도 증량
                 )
-                
-                # 응답 텍스트 추출
-                raw_analysis_text = response.text.strip()
-                
-                # 해당 섹션의 내용만 추출 (다른 섹션 언급 제거)
-                extracted_text = extract_section_content(raw_analysis_text, section_num)
-                
-                # 구분선 제거 (---, === 등)
-                extracted_text = re.sub(r'^---+$', '', extracted_text, flags=re.MULTILINE)
-                extracted_text = re.sub(r'^===+$', '', extracted_text, flags=re.MULTILINE)
-                extracted_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', extracted_text)  # 연속된 빈 줄 정리
-                extracted_text = extracted_text.strip()
-                
-                # 1000자 제한 검증
-                if len(extracted_text) <= 1000:
-                    analysis_text = extracted_text
-                    if retry > 0:
-                        print(f"✅ [INFO] 섹션 {section_num} 재시도 {retry}회차 성공 (최종 {len(analysis_text)}자)", file=sys.stderr)
-                    break
-                else:
-                    print(f"⚠️ [WARN] 섹션 {section_num} 응답이 1000자 초과 ({len(extracted_text)}자). 재시도 {retry + 1}/{max_retries}...", file=sys.stderr)
-                    if retry < max_retries - 1:
-                        # 재요청을 위해 프롬프트에 더 강력한 제한 추가
-                        full_prompt = f"{system_prompt_text}\n\n{section_prompt}\n\n🛑 **최종 경고: 응답이 1000자를 초과했습니다. 반드시 1000자 이내로 요약하고 마무리하세요. 초과 시 응답이 거부됩니다.**"
+            )
             
-            # 재시도 후에도 초과하면 마지막 응답 사용 (하지만 경고)
-            if analysis_text is None or len(analysis_text) > 1000:
-                if analysis_text is None:
-                    analysis_text = extracted_text
-                print(f"⚠️ [WARN] 섹션 {section_num} 최종 응답이 여전히 1000자 초과 ({len(analysis_text)}자). 사용하지만 경고합니다.", file=sys.stderr)
+            # 응답 텍스트 추출
+            raw_analysis_text = response.text.strip()
+            
+            # 해당 섹션의 내용만 추출 (다른 섹션 언급 제거)
+            extracted_text = extract_section_content(raw_analysis_text, section_num)
+            
+            # 구분선 제거 (---, === 등)
+            extracted_text = re.sub(r'^---+$', '', extracted_text, flags=re.MULTILINE)
+            extracted_text = re.sub(r'^===+$', '', extracted_text, flags=re.MULTILINE)
+            extracted_text = re.sub(r'\n\s*\n\s*\n+', '\n\n', extracted_text)  # 연속된 빈 줄 정리
+            extracted_text = extracted_text.strip()
+            
+            # 1000자 초과 시 WARN 로그만 남기고 그대로 사용
+            if len(extracted_text) > 1000:
+                print(f"⚠️ [WARN] 섹션 {section_num} 응답이 1000자 초과 ({len(extracted_text)}자). 그대로 사용합니다.", file=sys.stderr)
+            
+            analysis_text = extracted_text
             
             # 원본과 추출된 텍스트 길이 비교 로그
             if len(analysis_text) < len(raw_analysis_text):

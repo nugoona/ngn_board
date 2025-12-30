@@ -448,172 +448,68 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 
 def extract_section_content(full_text: str, target_section: int) -> str:
     """
-    AI 응답에서 특정 섹션의 내용만 추출 (다른 섹션 언급 제거)
-    
-    Args:
-        full_text: AI가 반환한 전체 텍스트
-        target_section: 추출할 섹션 번호 (1-9)
-    
-    Returns:
-        해당 섹션의 내용만 포함한 텍스트
+    AI 응답에서 특정 섹션의 내용만 추출 (제목 제거 및 본문 확보)
     """
-    
-    # 섹션 제목 패턴 정의 (다양한 형식 지원: ##, ###, [], ** 등)
+    # 섹션 제목 패턴 정의 (더 유연하게 확장)
     section_patterns = {
-        1: [
-            r'#+\s*\[?섹션\s*1\]?\s*[:：]', r'#+\s*섹션\s*1\s*[:：]',  # ## 섹션 1:, ### [섹션 1]:
-            r'\[섹션\s*1\]', r'섹션\s*1\s*[:：]',  # [섹션 1], 섹션 1:
-            r'지난달\s*매출\s*분석', r'Revenue\s*Analysis',
-            r'\*\*섹션\s*1[:\s]', r'\*\*지난달\s*매출'  # **섹션 1:, **지난달 매출
-        ],
-        2: [
-            r'#+\s*\[?섹션\s*2\]?\s*[:：]', r'#+\s*섹션\s*2\s*[:：]',
-            r'\[섹션\s*2\]', r'섹션\s*2\s*[:：]',
-            r'주요\s*유입\s*채널', r'Channel\s*Efficiency',
-            r'\*\*섹션\s*2[:\s]', r'\*\*주요\s*유입'
-        ],
-        3: [
-            r'#+\s*\[?섹션\s*3\]?\s*[:：]', r'#+\s*섹션\s*3\s*[:：]',
-            r'\[섹션\s*3\]', r'섹션\s*3\s*[:：]',
-            r'고객\s*방문\s*및\s*구매\s*여정', r'Acquisition\s*&\s*Conversion',
-            r'\*\*섹션\s*3[:\s]', r'\*\*고객\s*방문'
-        ],
-        4: [
-            r'#+\s*\[?섹션\s*4\]?\s*[:：]', r'#+\s*섹션\s*4\s*[:：]',
-            r'\[섹션\s*4\]', r'섹션\s*4\s*[:：]',
-            r'자사몰\s*베스트\s*상품\s*성과', r'Best\s*Sellers',
-            r'\*\*섹션\s*4[:\s]', r'\*\*자사몰\s*베스트'
-        ],
-        5: [
-            r'#+\s*\[?섹션\s*5\]?\s*[:：]', r'#+\s*섹션\s*5\s*[:：]',
-            r'\[섹션\s*5\]', r'섹션\s*5\s*[:：]',
-            r'시장\s*트렌드\s*확인', r'Market\s*Deep\s*Dive',
-            r'\*\*섹션\s*5[:\s]', r'\*\*시장\s*트렌드'
-        ],
-        6: [
-            r'#+\s*\[?섹션\s*6\]?\s*[:：]', r'#+\s*섹션\s*6\s*[:：]',
-            r'\[섹션\s*6\]', r'섹션\s*6\s*[:：]',
-            r'매체\s*성과\s*및\s*효율\s*진단', r'Creative\s*Performance',
-            r'\*\*섹션\s*6[:\s]', r'\*\*매체\s*성과'
-        ],
-        7: [
-            r'#+\s*\[?섹션\s*7\]?\s*[:：]', r'#+\s*섹션\s*7\s*[:：]',
-            r'\[섹션\s*7\]', r'섹션\s*7\s*[:：]',
-            r'시장\s*트렌드와\s*자사몰\s*비교', r'Gap\s*Analysis',
-            r'\*\*섹션\s*7[:\s]', r'\*\*시장\s*트렌드와'
-        ],
-        8: [
-            r'#+\s*\[?섹션\s*8\]?\s*[:：]', r'#+\s*섹션\s*8\s*[:：]',
-            r'\[섹션\s*8\]', r'섹션\s*8\s*[:：]',
-            r'익월\s*목표\s*설정\s*및\s*시장\s*전망', r'Target\s*&\s*Outlook',
-            r'\*\*섹션\s*8[:\s]', r'\*\*익월\s*목표'
-        ],
-        9: [
-            r'#+\s*\[?섹션\s*9\]?\s*[:：]', r'#+\s*섹션\s*9\s*[:：]',
-            r'\[섹션\s*9\]', r'섹션\s*9\s*[:：]',
-            r'데이터\s*기반\s*전략\s*액션\s*플랜', r'Action\s*Plan', r'종합\s*전략',
-            r'\*\*섹션\s*9[:\s]', r'\*\*데이터\s*기반', r'\*\*종합\s*전략'
-        ]
+        1: [r'섹션\s*1', r'매출\s*분석', r'Revenue'],
+        2: [r'섹션\s*2', r'유입\s*채널', r'Channel'],
+        3: [r'섹션\s*3', r'고객\s*여정', r'Acquisition'],
+        4: [r'섹션\s*4', r'베스트\s*상품', r'Best\s*Sellers'],
+        5: [r'섹션\s*5', r'시장\s*트렌드', r'Market'],
+        6: [r'섹션\s*6', r'매체\s*성과', r'Creative'],
+        7: [r'섹션\s*7', r'시장\s*비교', r'Gap\s*Analysis'],
+        8: [r'섹션\s*8', r'목표\s*설정', r'Outlook'],
+        9: [r'섹션\s*9', r'액션\s*플랜', r'Action\s*Plan']
     }
+
+    # 1. 텍스트가 비어있는지 확인
+    if not full_text:
+        return ""
+
+    # 2. 타겟 섹션 패턴 가져오기
+    patterns = section_patterns.get(target_section, [])
     
-    # 타겟 섹션 패턴
-    target_patterns = section_patterns.get(target_section, [])
-    if not target_patterns:
-        # 패턴이 없으면 전체 텍스트 반환
-        return full_text
+    # 3. 제목이 있는지 검사하고 제거 (첫 줄 위주로 확인)
+    lines = full_text.split('\n')
+    if not lines: return full_text.strip()
+
+    first_line = lines[0].strip()
     
-    # 타겟 섹션 시작 위치 찾기 (줄 시작 부분에서만 매칭)
-    target_start_pos = -1
-    for pattern in target_patterns:
-        # 줄 시작 부분에서 매칭하도록 ^ 앵커 추가 (MULTILINE 모드)
-        multiline_pattern = r'^\s*' + pattern
-        match = re.search(multiline_pattern, full_text, re.MULTILINE | re.IGNORECASE)
-        if match:
-            target_start_pos = match.start()
+    # 일반적인 마크다운 헤더 제거 (#, ##, ###)
+    clean_first_line = re.sub(r'^#+\s*', '', first_line)
+    
+    is_header = False
+    
+    # "섹션 N" 또는 "숫자." 패턴 확인
+    # 예: "[섹션 1]", "1. 매출 분석", "**섹션 1**"
+    common_header_regex = [
+        rf'\[?섹션\s*{target_section}\]?',  # [섹션 1], 섹션 1
+        rf'^{target_section}\.\s+',        # 1. (내용)
+        rf'^{target_section}\)\s+',        # 1) (내용)
+    ]
+    
+    # 커스텀 패턴 확인
+    for pat in patterns:
+        common_header_regex.append(pat)
+
+    # 첫 줄이 헤더인지 정규식으로 확인
+    for regex in common_header_regex:
+        if re.search(regex, clean_first_line, re.IGNORECASE):
+            is_header = True
             break
-    
-    # 타겟 섹션을 찾지 못하면 전체 텍스트 반환
-    if target_start_pos == -1:
-        print(f"⚠️ [WARN] 섹션 {target_section} 시작 패턴을 찾을 수 없습니다. 전체 텍스트를 반환합니다.", file=sys.stderr)
-        return full_text
-    
-    # 다음 섹션 시작 위치 찾기 (타겟 섹션 이후)
-    next_section_start = len(full_text)
-    for section_num in range(1, 10):
-        if section_num == target_section:
-            continue
-        if section_num <= target_section:
-            continue  # 이미 지나간 섹션은 무시
-        
-        # 다음 섹션 패턴 찾기 (줄 시작 부분에서만 매칭)
-        next_patterns = section_patterns.get(section_num, [])
-        for pattern in next_patterns:
-            # 타겟 섹션 시작 이후의 텍스트에서만 검색
-            remaining_text = full_text[target_start_pos + 1:]
-            multiline_pattern = r'^\s*' + pattern
-            match = re.search(multiline_pattern, remaining_text, re.MULTILINE | re.IGNORECASE)
-            if match:
-                # 타겟 섹션 시작 위치 기준으로 상대 위치 계산
-                relative_pos = match.start()
-                next_section_start = target_start_pos + 1 + relative_pos
-                break
-        
-        if next_section_start < len(full_text):
-            break  # 가장 가까운 다음 섹션을 찾았으면 종료
-    
-    # 타겟 섹션 내용 추출
-    extracted_text = full_text[target_start_pos:next_section_start].strip()
-    
-    # 중복 섹션 제목 제거: 같은 섹션 제목이 내용 중간에 다시 나오면 그 이후 내용 제거
-    # 첫 번째 섹션 제목 이후의 모든 섹션 제목 패턴 찾기
-    first_title_end = None
-    for pattern in target_patterns:
-        multiline_pattern = r'^\s*' + pattern
-        match = re.search(multiline_pattern, extracted_text, re.MULTILINE | re.IGNORECASE)
-        if match:
-            # 섹션 제목 다음 줄바꿈이나 공백까지 찾기
-            title_end = match.end()
-            # 다음 줄바꿈까지 찾기
-            next_newline = extracted_text.find('\n', title_end)
-            if next_newline != -1:
-                first_title_end = next_newline
-            else:
-                first_title_end = title_end
-            break
-    
-    if first_title_end:
-        # 첫 번째 섹션 제목 이후에 같은 섹션 제목이 또 나오는지 확인 (줄 시작 부분에서만)
-        remaining_text = extracted_text[first_title_end:]
-        for pattern in target_patterns:
-            multiline_pattern = r'^\s*' + pattern
-            match = re.search(multiline_pattern, remaining_text, re.MULTILINE | re.IGNORECASE)
-            if match:
-                # 중복 섹션 제목 발견 - 그 이전까지만 유지
-                duplicate_pos = first_title_end + match.start()
-                extracted_text = extracted_text[:duplicate_pos].strip()
-                print(f"⚠️ [WARN] 섹션 {target_section} 중복 제목 발견 및 제거", file=sys.stderr)
-                break
-    
-    # 섹션 제목 제거 (내용만 반환)
-    # 첫 번째 줄이 섹션 제목인 경우 제거
-    lines = extracted_text.split('\n')
-    if lines:
-        first_line = lines[0].strip()
-        is_title = False
-        for pattern in target_patterns:
-            multiline_pattern = r'^\s*' + pattern
-            if re.search(multiline_pattern, first_line, re.IGNORECASE):
-                is_title = True
-                break
-        
-        if is_title:
-            # 섹션 제목과 구분선(---) 제거
-            if len(lines) > 1 and lines[1].strip() == "---":
-                extracted_text = "\n".join(lines[2:]).strip()
-            else:
-                extracted_text = "\n".join(lines[1:]).strip()
-    
-    return extracted_text
+            
+    # 헤더가 발견되면 첫 줄 제거, 아니면 전체 반환
+    if is_header:
+        # 두 번째 줄이 구분선(---)이면 그것도 제거
+        if len(lines) > 1 and re.match(r'^[\s\-=_]+$', lines[1]):
+            return "\n".join(lines[2:]).strip()
+        return "\n".join(lines[1:]).strip()
+    else:
+        # 제목 패턴을 못 찾았으면, AI가 바로 본문을 쓴 것으로 간주하고 전체 반환
+        # (이건 에러가 아님)
+        print(f"ℹ️ [INFO] 섹션 {target_section} 제목 패턴을 찾지 못했습니다. 제목 없이 본문 바로 사용합니다.", file=sys.stderr)
+        return full_text.strip()
 
 
 def extract_json_from_section(text: str) -> Optional[Dict]:

@@ -1203,6 +1203,7 @@ function renderAdsRankingList(ads, type) {
 // ============================================
 function renderSection7(data) {
   const signals = data.signals || {};
+  const section7Data = signals.section_7_data || null;  // 백엔드에서 구조화된 JSON 데이터
   let analysis = signals.section_7_analysis || "";
   
   // 업체명 가져오기
@@ -1224,29 +1225,17 @@ function renderSection7(data) {
   if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
   
   // ============================================
-  // 1. JSON 블록 추출 및 파싱
+  // 1. section_7_data JSON 사용 (백엔드에서 구조화된 데이터)
   // ============================================
-  let comparisonTableData = null;
-  const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
-  const jsonMatch = analysis.match(jsonBlockRegex);
-  
-  if (jsonMatch && jsonMatch[1]) {
-    try {
-      comparisonTableData = JSON.parse(jsonMatch[1].trim());
-      console.log("[섹션 7] 비교표 JSON 파싱 성공:", comparisonTableData);
-    } catch (e) {
-      console.error("[섹션 7] 비교표 JSON 파싱 실패:", e);
-      console.error("[섹션 7] 원본 JSON 블록:", jsonMatch[1]);
-    }
-  }
+  const comparisonTableData = section7Data;
   
   // ============================================
-  // 2. 각 카드에 테이블 렌더링
+  // 2. 비교표 렌더링 (상단)
   // ============================================
   const marketTableBody = document.getElementById("section7MarketTableBody");
   const ourTableBody = document.getElementById("section7OurTableBody");
   
-  // 기본 비교 항목 (AI가 JSON을 제공하지 않아도 표시)
+  // 기본 비교 항목
   const defaultComparisonItems = [
     { key: "주력_아이템", label: "주력 아이템" },
     { key: "평균_가격", label: "평균 가격" },
@@ -1260,7 +1249,7 @@ function renderSection7(data) {
     const marketRows = [];
     
     if (comparisonTableData) {
-      // AI가 제공한 JSON 데이터 사용
+      // 백엔드에서 구조화된 JSON 데이터 사용
       for (const [key, value] of Object.entries(comparisonTableData)) {
         if (typeof value === 'object' && value !== null) {
           const marketValue = value.market || value.trend || value["29cm"] || "-";
@@ -1275,7 +1264,7 @@ function renderSection7(data) {
         }
       }
     } else {
-      // AI가 JSON을 제공하지 않으면 기본 항목 표시
+      // 데이터가 없으면 기본 항목 표시
       defaultComparisonItems.forEach(item => {
         marketRows.push(`
           <tr>
@@ -1294,7 +1283,7 @@ function renderSection7(data) {
     const ourRows = [];
     
     if (comparisonTableData) {
-      // AI가 제공한 JSON 데이터 사용
+      // 백엔드에서 구조화된 JSON 데이터 사용
       for (const [key, value] of Object.entries(comparisonTableData)) {
         if (typeof value === 'object' && value !== null) {
           const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
@@ -1309,7 +1298,7 @@ function renderSection7(data) {
         }
       }
     } else {
-      // AI가 JSON을 제공하지 않으면 기본 항목 표시
+      // 데이터가 없으면 기본 항목 표시
       defaultComparisonItems.forEach(item => {
         ourRows.push(`
           <tr>
@@ -1324,55 +1313,34 @@ function renderSection7(data) {
   }
   
   // ============================================
-  // 3. 텍스트에서 JSON 블록 제거 (클린업)
+  // 3. AI 분석 텍스트에서 JSON 코드 블록 제거
   // ============================================
-  if (jsonMatch) {
+  if (analysis) {
+    // ```json ... ``` 블록 제거
+    const jsonBlockRegex = /```json\s*[\s\S]*?\s*```/g;
     analysis = analysis.replace(jsonBlockRegex, "").trim();
+    
+    // ``` ... ``` (일반 코드 블록)도 제거
+    const codeBlockRegex = /```[\s\S]*?```/g;
+    analysis = analysis.replace(codeBlockRegex, "").trim();
   }
   
   // ============================================
-  // 4. AI 분석 텍스트를 각 카드에 렌더링 (마크다운 지원)
+  // 4. AI 분석 텍스트를 표 아래 전체 너비로 렌더링
   // ============================================
-  const marketAiText = document.getElementById("section7MarketAiText");
-  const ourAiText = document.getElementById("section7OurAiText");
-  
-  if (analysis) {
-    const lines = analysis.split("\n").filter(l => l.trim());
-    const marketLines = [];
-    const ourLines = [];
-    
-    lines.forEach(line => {
-      if (line.includes("시장") || line.includes("경쟁사") || line.includes("트렌드") || line.includes("29CM") || line.includes("베스트")) {
-        marketLines.push(line);
-      } else if (line.includes("우리") || line.includes("자사") || line.includes(companyName)) {
-        ourLines.push(line);
-      }
-    });
-    
-    // 29CM 베스트 AI 분석 텍스트 (마크다운 렌더링)
-    if (marketAiText) {
-      if (marketLines.length > 0) {
-        const marketText = marketLines.join("\n");
-        // renderAiAnalysis와 동일한 방식으로 마크다운 렌더링
-        renderAiAnalysisForSection7(marketAiText, marketText);
-      } else {
-        marketAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
-      }
+  const section7AnalysisContainer = document.getElementById("section7AnalysisFull");
+  if (section7AnalysisContainer) {
+    if (analysis && analysis.trim()) {
+      renderAiAnalysis("section7AnalysisFull", analysis);
+    } else {
+      section7AnalysisContainer.innerHTML = `
+        <div class="ai-analysis-skeleton">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      `;
     }
-    
-    // 자사몰 AI 분석 텍스트 (마크다운 렌더링)
-    if (ourAiText) {
-      if (ourLines.length > 0) {
-        const ourText = ourLines.join("\n");
-        // renderAiAnalysis와 동일한 방식으로 마크다운 렌더링
-        renderAiAnalysisForSection7(ourAiText, ourText);
-      } else {
-        ourAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
-      }
-    }
-  } else {
-    if (marketAiText) marketAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
-    if (ourAiText) ourAiText.innerHTML = `<div class="comparison-ai-content">분석 데이터 준비 중...</div>`;
   }
 }
 
@@ -1448,50 +1416,68 @@ function renderSection8(data) {
 }
 
 // ============================================
-// 섹션 9: AI 제안 전략 액션 (마크다운 지원)
+// 섹션 9: AI 제안 전략 액션 (카드 그리드 레이아웃)
 // ============================================
 function renderSection9(data) {
   const signals = data.signals || {};
-  const analysis = signals.section_9_analysis || "";
+  const cards = signals.section_9_cards || [];  // 백엔드에서 구조화된 카드 배열
   
   const container = document.getElementById("section9StrategyCards");
   if (container) {
-    if (analysis && analysis.trim()) {
-      // 마크다운을 HTML로 변환
-      let htmlContent = "";
-      
-      if (typeof marked !== 'undefined') {
-        try {
-          marked.setOptions({
-            breaks: true,
-            gfm: true  // GitHub Flavored Markdown 활성화 (표 지원)
-          });
-          
-          const markdownHtml = marked.parse(analysis);
-          
-          if (typeof DOMPurify !== 'undefined') {
-            htmlContent = DOMPurify.sanitize(markdownHtml, {
-              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-              ALLOWED_ATTR: []
-            });
+    if (cards && cards.length > 0) {
+      // 카드들을 3열 그리드로 렌더링
+      const cardsHtml = cards.map((card, index) => {
+        const title = card.title || `전략 ${index + 1}`;
+        const content = card.content || "";
+        
+        // 마크다운을 HTML로 변환
+        let htmlContent = "";
+        
+        if (content && content.trim()) {
+          if (typeof marked !== 'undefined') {
+            try {
+              marked.setOptions({
+                breaks: true,
+                gfm: true  // GitHub Flavored Markdown 활성화 (표 지원)
+              });
+              
+              const markdownHtml = marked.parse(content);
+              
+              if (typeof DOMPurify !== 'undefined') {
+                htmlContent = DOMPurify.sanitize(markdownHtml, {
+                  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+                  ALLOWED_ATTR: []
+                });
+              } else {
+                htmlContent = markdownHtml;
+              }
+            } catch (e) {
+              console.warn("[섹션 9] 마크다운 변환 실패:", e);
+              htmlContent = content.replace(/\n/g, '<br>');
+            }
           } else {
-            htmlContent = markdownHtml;
+            htmlContent = content.replace(/\n/g, '<br>');
           }
-        } catch (e) {
-          console.warn("[섹션 9] 마크다운 변환 실패:", e);
-          htmlContent = analysis.replace(/\n/g, '<br>');
         }
-      } else {
-        htmlContent = analysis.replace(/\n/g, '<br>');
-      }
+        
+        // 아이콘 선택 (순서에 따라)
+        const icons = ['💡', '🎯', '📦', '🚀', '⭐', '🔥'];
+        const icon = icons[index % icons.length];
+        
+        return `
+          <div class="strategy-card">
+            <div class="strategy-card-header">
+              <span class="strategy-card-icon">${icon}</span>
+              <h4 class="strategy-card-title">${title}</h4>
+            </div>
+            <div class="strategy-card-content markdown-content">${htmlContent || "내용 없음"}</div>
+          </div>
+        `;
+      }).join("");
       
-      // 전략 카드 형태로 표시 (마크다운 HTML 포함)
-      container.innerHTML = `
-        <div class="strategy-card markdown-content">
-          <div class="strategy-card-content">${htmlContent}</div>
-        </div>
-      `;
+      container.innerHTML = cardsHtml;
     } else {
+      // 카드 데이터가 없을 때
       container.innerHTML = `
         <div class="strategy-empty">
           <div class="empty-icon">🤖</div>

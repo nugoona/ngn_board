@@ -1603,7 +1603,7 @@
    ============================================ */
 .strategy-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);  /* 3열 그리드 */
   gap: 20px;
 }
 
@@ -1614,6 +1614,9 @@
   padding: 24px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;  /* 동일한 높이 */
 }
 
 .strategy-card:hover {
@@ -1621,16 +1624,26 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
+.strategy-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
 .strategy-card-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
+  font-size: 28px;
+  line-height: 1;
 }
 
 .strategy-card-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #212529;
-  margin-bottom: 12px;
+  margin: 0;
+  flex: 1;
 }
 
 .strategy-card-content {
@@ -1766,7 +1779,7 @@
   }
   
   .strategy-cards-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);  /* 태블릿: 2열 */
   }
   
   .forecast-text-content {
@@ -1799,6 +1812,10 @@
   
   .scorecard-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .strategy-cards-grid {
+    grid-template-columns: 1fr;  /* 모바일: 1열 */
   }
   
   .market-trend-grid-compact {

@@ -1421,6 +1421,7 @@ function renderSection8(data) {
 function renderSection9(data) {
   const signals = data.signals || {};
   const cards = signals.section_9_cards || [];  // 백엔드에서 구조화된 카드 배열
+  const analysis = signals.section_9_analysis || "";  // Fallback: 카드가 없을 때 원본 텍스트 사용
   
   const container = document.getElementById("section9StrategyCards");
   if (container) {
@@ -1476,8 +1477,43 @@ function renderSection9(data) {
       }).join("");
       
       container.innerHTML = cardsHtml;
+    } else if (analysis && analysis.trim()) {
+      // 카드가 없지만 원본 분석 텍스트가 있는 경우 (Fallback)
+      // 원본 텍스트를 마크다운으로 렌더링
+      let htmlContent = "";
+      
+      if (typeof marked !== 'undefined') {
+        try {
+          marked.setOptions({
+            breaks: true,
+            gfm: true
+          });
+          
+          const markdownHtml = marked.parse(analysis);
+          
+          if (typeof DOMPurify !== 'undefined') {
+            htmlContent = DOMPurify.sanitize(markdownHtml, {
+              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+              ALLOWED_ATTR: []
+            });
+          } else {
+            htmlContent = markdownHtml;
+          }
+        } catch (e) {
+          console.warn("[섹션 9] 마크다운 변환 실패:", e);
+          htmlContent = analysis.replace(/\n/g, '<br>');
+        }
+      } else {
+        htmlContent = analysis.replace(/\n/g, '<br>');
+      }
+      
+      container.innerHTML = `
+        <div class="strategy-card">
+          <div class="strategy-card-content markdown-content">${htmlContent}</div>
+        </div>
+      `;
     } else {
-      // 카드 데이터가 없을 때
+      // 카드 데이터와 원본 텍스트 모두 없을 때
       container.innerHTML = `
         <div class="strategy-empty">
           <div class="empty-icon">🤖</div>
@@ -1539,9 +1575,23 @@ function renderAiAnalysisForSection7(element, analysisText) {
 
 function renderAiAnalysis(elementId, analysisText) {
   const element = document.getElementById(elementId);
-  if (!element) return;
+  if (!element) {
+    console.warn(`[AI 분석] 요소를 찾을 수 없습니다: ${elementId}`);
+    return;
+  }
   
   if (analysisText && analysisText.trim()) {
+    // 에러 메시지 감지
+    if (analysisText.includes("[AI 분석 오류:") || analysisText.includes("AI 분석 오류")) {
+      element.innerHTML = `
+        <div class="ai-analysis-error">
+          <div class="error-icon">⚠️</div>
+          <div class="error-text">${analysisText.replace(/\[AI 분석 오류:.*?\]/g, "").trim() || "AI 분석 중 오류가 발생했습니다."}</div>
+        </div>
+      `;
+      return;
+    }
+    
     // 마크다운을 HTML로 변환 (marked 라이브러리 사용)
     let htmlContent = "";
     

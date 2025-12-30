@@ -359,6 +359,29 @@
   max-width: 100%;
 }
 
+/* AI 분석 에러 메시지 스타일 */
+.ai-analysis-error {
+  padding: 16px;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ai-analysis-error .error-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ai-analysis-error .error-text {
+  flex: 1;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 /* ✅ 마크다운 콘텐츠 스타일링 */
 .ai-analysis-text.markdown-content {
   white-space: normal;

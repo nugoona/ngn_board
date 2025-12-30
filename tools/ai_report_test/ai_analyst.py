@@ -672,29 +672,78 @@ def extract_section_content(full_text: str, target_section: int) -> str:
 def extract_json_from_section(text: str) -> Optional[Dict]:
     """텍스트에서 ```json ... ``` 블록을 찾아 파싱하여 반환 (섹션 7용)"""
     try:
-        match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
-        if match:
-            return json.loads(match.group(1))
-    except Exception:
-        pass
+        # 방법 1: 정규식으로 JSON 블록 찾기 (개선된 버전)
+        # 중괄호 매칭을 더 정확하게 처리하기 위해 여러 시도
+        patterns = [
+            r'```json\s*(\{[\s\S]*?\})\s*```',  # 기본 패턴
+            r'```json\s*(\{.*?\})\s*```',       # 간단한 패턴 (fallback)
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.DOTALL)
+            if match:
+                json_str = match.group(1).strip()
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    # JSON 파싱 실패 시 다음 패턴 시도
+                    continue
+        
+        # 방법 2: 정규식으로 찾지 못한 경우, ```json과 ``` 사이의 모든 내용 추출
+        json_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', text, re.DOTALL)
+        if json_block_match:
+            json_str = json_block_match.group(1).strip()
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError:
+                pass
+                
+    except Exception as e:
+        print(f"⚠️ [WARN] 섹션 7 JSON 추출 실패: {e}", file=sys.stderr)
+    
     return None
 
 
 def parse_section_9_cards(text: str) -> List[Dict]:
     """섹션 9 텍스트를 ### 기준으로 분리하여 카드 리스트로 변환"""
     cards = []
-    # ### 로 시작하는 구간들 분리
-    parts = re.split(r'(^|\n)###\s+', text)
-    for part in parts:
+    
+    if not text or not text.strip():
+        return cards
+    
+    # ### 로 시작하는 구간들 분리 (개선된 버전)
+    # 정규식: ### 로 시작하는 줄을 찾아서 분리
+    parts = re.split(r'\n###\s+', text)
+    
+    for i, part in enumerate(parts):
         part = part.strip()
-        if not part or len(part) < 10: continue # 너무 짧거나 빈 구간 제외
+        
+        # 첫 번째 부분이 ###로 시작하지 않는 경우 (헤더가 없는 경우)
+        if i == 0 and not part.startswith('###'):
+            # 첫 번째 부분이 헤더가 아니면 건너뛰기
+            if not part or len(part) < 10:
+                continue
+            # 첫 번째 부분이 헤더가 아니지만 내용이 있으면, 제목 없이 내용만 저장
+            cards.append({"title": "전략", "content": part})
+            continue
+        
+        # ### 헤더가 있는 경우
+        if not part or len(part) < 5:  # 너무 짧거나 빈 구간 제외
+            continue
         
         # 첫 줄을 제목, 나머지를 내용으로 분리
         lines = part.split('\n', 1)
         title = lines[0].strip()
+        
+        # 제목에서 이모지나 특수 문자 제거 (선택사항)
+        # title = re.sub(r'^[💡🎯📦🚀⭐🔥]\s*', '', title).strip()
+        
         content = lines[1].strip() if len(lines) > 1 else ""
         
-        cards.append({"title": title, "content": content})
+        # 제목과 내용이 모두 있는 경우만 추가
+        if title:
+            cards.append({"title": title, "content": content})
+    
     return cards
 
 

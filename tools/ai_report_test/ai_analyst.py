@@ -353,13 +353,23 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
         next_month = "다음 달"
     
     # 섹션별 데이터 준비
+    # 1. 이벤트 데이터 구조 명확히 파싱 (중첩 구조 해제)
+    raw_events = safe_get(facts, "events", default={})
+    # 만약 {'events': [...]} 형태의 딕셔너리라면 내부 리스트만 추출
+    if isinstance(raw_events, dict) and "events" in raw_events:
+        marketing_calendar = safe_get_list(raw_events, "events", default=[])
+    elif isinstance(raw_events, list):
+        marketing_calendar = raw_events
+    else:
+        marketing_calendar = []
+    
     section_data_map = {
         1: {
             "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
             "mall_sales_prev": safe_get_dict(facts, "mall_sales", "prev", default={}),
             "comparisons": safe_get_dict(facts, "comparisons", "mall_sales", default={}),
             "daily_this": safe_get_list(facts, "mall_sales", "daily_this", default=[]),
-            "events": safe_get_list(facts, "events", default=[]),
+            "marketing_calendar": marketing_calendar,
         },
         2: {
             "ga4_traffic_this": safe_get_dict(facts, "ga4_traffic", "this", default={}),
@@ -412,22 +422,24 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 전월 매출: {json.dumps(section_data.get('mall_sales_prev', {}), ensure_ascii=False, indent=2)}
 - 비교 데이터: {json.dumps(section_data.get('comparisons', {}), ensure_ascii=False, indent=2)}
 - 일별 매출: {json.dumps(section_data.get('daily_this', [])[:10], ensure_ascii=False, indent=2)}
-- 이벤트 일정: {json.dumps(section_data.get('events', {}), ensure_ascii=False, indent=2)}
+- 📅 마케팅_프로모션_일정: {json.dumps(section_data.get('marketing_calendar', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 데이터를 단순 나열하지 말고, **아래 4가지 항목으로 구분하여 인사이트를 포함한 문장**으로 작성하십시오.
 
 ⚠️ **이벤트와 매출의 상관관계 해석 지침 (매우 중요)**:
-1. **[자사몰] 태그 이벤트:** 해당 기간 매출 **급등** 시, 이벤트가 성공적으로 구매를 유도했다고 평가하십시오.
-2. **타 플랫폼([29cm] 등) 태그 이벤트:** 해당 기간 자사몰 매출이 **하락하거나 저조**할 경우, "타 플랫폼 행사가 진행됨에 따라 자사몰 수요가 해당 채널로 **분산(Channel Shift)**되었을 가능성"을 언급하십시오. (경쟁이 아니라 채널 간 이동으로 해석)
+1. **'marketing_calendar' 데이터 필독:** 위 데이터에서 `memo`가 **[자사몰]**인 행사를 찾으십시오.
+2. **[자사몰] 행사 기간:** 해당 기간 매출 급등 시, 행사가 성공적으로 구매를 유도했다고 평가하십시오.
+3. **타 플랫폼([29cm] 등) 행사 기간:** 자사몰 매출이 하락/정체 시, "타 플랫폼 행사로 인한 수요 분산"으로 해석하십시오.
 
 ⚠️ **출력 형식 (Markdown 필수)**:
 * **매출 실적 (Growth):** [전월/전년 대비 증감 수치와 성장세 진단]
 * **효율성 진단 (Efficiency):** [주문 건수와 객단가(AOV) 관계 분석]
 * **고객 유입 (Acquisition):** [신규/재구매/취소 건수 기반 진단]
-* **일별 추이 (Daily):** [위의 '해석 지침'을 적용하여 날짜별 매출 등락의 원인을 이벤트 일정과 연관 지어 설명]
+* **일별 추이 (Daily):** [위 '마케팅_프로모션_일정'을 날짜별 매출 데이터와 대조하여, 구체적인 행사명('Winter Holiday Sale' 등)을 들어 원인을 설명]
 
 - 주요 수치는 **굵게** 표시 (예: **14,983,561원**)
+- 퍼센트(%) 수치는 숫자만 굵게, %는 바깥에 둡니다 (예: **92.5**%)
 - 각 항목은 불렛 포인트(`*`)와 굵은 제목으로 시작할 것.
 """,
         2: f"""
@@ -449,7 +461,8 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 * **개선 필요 영역 (Weakness):** [유입은 많으나 이탈률이 높은 채널 진단]
 * **전략 제안 (Action Plan):** [핵심 채널 개선을 위한 액션 플랜]
 
-- 주요 수치는 **굵게** 표시 (예: **49.04%**)
+- 주요 수치는 **굵게** 표시 (예: **49.04**%)
+- 퍼센트(%) 수치는 숫자만 굵게, %는 바깥에 둡니다 (예: **92.5**%)
 - 각 항목은 불렛 포인트(`*`)와 굵은 제목으로 시작할 것.
 """,
         3: f"""
@@ -476,7 +489,8 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 ### 3. 개선 제안
 * [구체적인 액션 아이템]
 
-- 주요 수치는 **굵게** 표시 (예: **0.94%**)
+- 주요 수치는 **굵게** 표시 (예: **0.94**%)
+- 퍼센트(%) 수치는 숫자만 굵게, %는 바깥에 둡니다 (예: **92.5**%)
 - 소제목은 `###` 헤더 사용.
 """,
         4: f"""
@@ -559,6 +573,8 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 * **향후 운영 전략:** [소재별 예산 재배치 제안] 및 [유입된 트래픽을 전환으로 연결할 구체적 리타겟팅 시나리오]
 
 - 주요 수치는 **굵게** 표시.
+- 통화 단위는 'KRW' 대신 한글 **'원'**으로 표기하세요 (예: **1,000,000원**).
+- 퍼센트(%) 수치는 숫자만 굵게, %는 바깥에 둡니다 (예: **92.5**%)
 - 각 항목은 2~3문장의 깊이 있는 줄글로 작성.
 - Ad ID (예: 12023...) 절대 표기 금지.
 """,
@@ -573,13 +589,21 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 자사몰 상품(섹션4 결과): {json.dumps(section_data.get('top_products', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
-시장 트렌드와 자사몰의 현황을 각각 독립적으로 분석한 뒤, **JSON 포맷**으로 출력하십시오.
+시장 트렌드와 자사몰의 현황을 비교하여 JSON으로 출력하되, **자사몰 분석에는 단순 나열이 아닌 '전략적 제안'을 담으십시오.**
 
 ⚠️ **출력 형식 (반드시 JSON)**:
 ```json
 {{
-  "market_analysis": "**시장 트렌드 요약:**\\n[시장 가격대]와 [주요 경쟁사 아이템]을 중심으로 29CM 시장의 특징을 3~4문장으로 요약하십시오. 특히 소비자가 경쟁사 제품에서 느끼는 불만(Pain Point)을 언급하십시오.",
-  "company_analysis": "**자사 포지셔닝:**\\n시장의 불만 요소를 우리가 어떻게 해결하고 있는지(예: 털 빠짐 없는 소재, 합리적 가격 등) 언급하고, [자사몰 주력 상품]이 시장 대비 갖는 **가격 및 품질 경쟁력**을 어필하십시오. 그리고 [타겟 고객]을 정의하십시오."
+  "table_data": {{
+    "가격대": {{ "market": "시장 가격 요약", "company": "자사 가격 요약" }},
+    "주력_아이템": {{ "market": "시장 아이템", "company": "자사 아이템" }},
+    "타겟_고객층": {{ "market": "시장 타겟", "company": "자사 타겟" }},
+    "핵심_소재": {{ "market": "시장 소재", "company": "자사 소재" }}
+  }},
+  "card_summary": {{
+    "market_analysis": "**시장 트렌드 요약:**\\n(겨울 아우터 위주의 시장 흐름과 '털 빠짐', '무거움', '배송 지연' 등 소비자의 구체적인 불만 사항(Pain Point)을 강조하여 요약)",
+    "company_analysis": "**자사 포지셔닝:**\\n(단순 상품 소개 금지. 1. 시장의 고가 아우터 대비 **'합리적인 가격 경쟁력'**을 강조하십시오. 2. 시장의 불만(털 빠짐 등)을 해결할 수 있는 자사 제품의 **'실용성/관리 용이성'**을 어필하십시오. 3. 이를 바탕으로 **'2030 스마트 컨슈머'** 등 구체적인 타겟을 정의하십시오.)"
+  }}
 }}
 ```
 """,
@@ -609,7 +633,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 """,
         9: f"""
 [섹션 9: 종합 제안 (Action Cards)]
-앞선 모든 분석을 종합하여, 다음 달 실행할 구체적인 전략 3가지를 제안해주세요.
+앞선 모든 분석(섹션 1~8)을 종합하여, 다음 달 실행할 구체적인 전략 3가지를 제안해주세요.
 
 ⚠️ **중요: 이 섹션 9만 분석하고 답변하세요.**
 
@@ -617,26 +641,29 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 섹션 1~8의 주요 분석 내용 참고.
 
 분석 요청:
-마케팅, 상품 기획, 프로모션 관점에서 실행 가능한 구체적 전략을 카드 형태로 제안하십시오.
+마케팅, 상품 기획, 프로모션 관점에서 **구체적인 상품명과 데이터에 기반한 전략**을 카드 형태로 제안하십시오.
+단순히 "할인하세요"가 아니라, **"왜(Why)"**와 **"어떻게(How)"**가 포함된 3~4문장의 깊이 있는 제안이어야 합니다.
 
 ⚠️ **출력 형식 (반드시 JSON)**:
 - 결과는 반드시 **3개의 객체를 가진 JSON 배열(Array)**이어야 합니다.
-- `title`: **마크다운 문법(`**`)을 절대 사용하지 마십시오.** 이모지와 텍스트만 포함하세요.
-- `content`: 본문 내용은 **마크다운 형식**을 사용하여 핵심 키워드를 **굵게(`**...**`)** 강조하십시오.
+- `title`: **마크다운(`**`) 및 특수기호 사용 금지.** 오직 "이모지 1개 + 공백 + 텍스트"로만 구성하십시오.
+- `content`: 본문은 **마크다운**을 사용하되, **퍼센트(%) 기호는 볼드 바깥**에 두십시오.
+
+🛑 **주의: 아래는 '형식 예시'일 뿐입니다. 절대 이 내용을 그대로 복사하지 마십시오. 반드시 위 '데이터'를 바탕으로 새로운 전략을 생성하십시오.**
 
 ```json
 [
   {{
-    "title": "💡 [전략 1] 데일리 완벽 세트: 스커트 & 후디",
-    "content": "자사몰 매출 1위인 **스커트 팬츠**와 조회수 1위인 **후드티**를 묶어 세트 상품을 구성하세요. 객단가(AOV) 상승을 기대할 수 있습니다."
+    "title": "💡 [전략 1 제목 예시]",
+    "content": "섹션 4의 **[실제 매출 1위 상품명]**과 **[조회수 높은 상품명]**을 연계하여 세트 상품을 구성하십시오. 이는 객단가(**AOV**)를 높이는 효과가 있습니다."
   }},
   {{
-    "title": "🎯 [전략 2] 품질 강조 캠페인",
-    "content": "경쟁사의 **털 빠짐 이슈**를 공략하여, 자사 제품의 **관리 용이성**을 강조하는 마케팅을 진행하십시오."
+    "title": "🎯 [전략 2 제목 예시]",
+    "content": "섹션 5의 경쟁사 불만 요소인 **[소비자 불만 키워드]**를 해결하는 자사의 **[강점 요소]**를 강조하는 캠페인을 제안합니다."
   }},
   {{
-    "title": "📦 [전략 3] 연휴 대비 타임 세일",
-    "content": "**설 연휴 배송 마감** 임박을 알리는 긴급 프로모션으로 **재고 소진**을 유도하십시오."
+    "title": "📦 [전략 3 제목 예시]",
+    "content": "다가오는 **[시즌 이슈/명절]**을 활용하여 **[재고 상품]** 소진을 위한 프로모션을 진행하십시오. 단, 재고 수량과 이익률 시뮬레이션이 선행되어야 합니다."
   }}
 ]
 ```
@@ -1032,13 +1059,21 @@ def generate_ai_analysis(
                     signals["section_7_data"] = json_data
                     print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료", file=sys.stderr)
                     
-                    # JSON에서 market_analysis와 company_analysis 추출
-                    if "market_analysis" in json_data:
-                        signals["section_7_analysis_1"] = json_data["market_analysis"]
+                    # JSON에서 card_summary의 market_analysis와 company_analysis 추출
+                    card_summary = json_data.get("card_summary", {})
+                    if "market_analysis" in card_summary:
+                        signals["section_7_analysis_1"] = card_summary["market_analysis"]
                         print(f"✅ [INFO] 섹션 7 시장 분석 추출 완료", file=sys.stderr)
-                    if "company_analysis" in json_data:
-                        signals["section_7_analysis_2"] = json_data["company_analysis"]
+                    elif "market_analysis" in json_data:  # 하위 호환성
+                        signals["section_7_analysis_1"] = json_data["market_analysis"]
+                        print(f"✅ [INFO] 섹션 7 시장 분석 추출 완료 (하위 호환)", file=sys.stderr)
+                    
+                    if "company_analysis" in card_summary:
+                        signals["section_7_analysis_2"] = card_summary["company_analysis"]
                         print(f"✅ [INFO] 섹션 7 자사몰 분석 추출 완료", file=sys.stderr)
+                    elif "company_analysis" in json_data:  # 하위 호환성
+                        signals["section_7_analysis_2"] = json_data["company_analysis"]
+                        print(f"✅ [INFO] 섹션 7 자사몰 분석 추출 완료 (하위 호환)", file=sys.stderr)
                 else:
                     # JSON 추출 실패 시 기존 방식으로 분리 시도
                     analysis_parts = split_section_7_analysis(analysis_text)

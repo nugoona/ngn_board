@@ -414,9 +414,9 @@ function setupLazySectionRendering(data) {
   
   // Section 3-9 관찰 시작
   const lazySections = [
-    '.section-2-funnel',
-    '.section-3-products',
-    '.section-4-market-trend',
+    '.section-3-funnel',
+    '.section-4-products',
+    '.section-5-market-trend',
     '.section-6-ads',
     '.section-7-comparison',
     '.section-8-forecast',
@@ -1427,22 +1427,17 @@ function renderSection9(data) {
           }
         }
         
-        // 제목에서 ### 제거 및 이모지 추출
-        let cleanTitle = title.replace(/^###\s*/, '').trim(); // ### 제거
-        cleanTitle = cleanTitle.replace(/^#+\s*/, '').trim(); // 다른 # 마크다운 헤더도 제거
+        // 제목 정리: ###, 이모지, [전략 N] 패턴 제거
+        let cleanTitle = title
+          .replace(/^###\s*/, '') // ### 제거
+          .replace(/^#+\s*/, '') // 다른 # 마크다운 헤더도 제거
+          .replace(/^[💡🎯📦🚀⭐🔥]\s*/, '') // 앞쪽 이모지 제거
+          .replace(/\[전략\s*\d+\]\s*/i, '') // [전략 1] 패턴 제거
+          .trim();
         
-        // 제목에서 이모지 추출 (이미 있으면 중복 방지)
-        const emojiMatch = cleanTitle.match(/^[💡🎯📦🚀⭐🔥]/);
-        const existingEmoji = emojiMatch ? emojiMatch[0] : null;
-        
-        // 아이콘 선택 (제목에 이모지가 없으면 추가, 있으면 그대로 사용)
+        // 아이콘 선택 (제목과 무관하게 인덱스 기반으로 선택)
         const icons = ['💡', '🎯', '📦', '🚀', '⭐', '🔥'];
-        const icon = existingEmoji || icons[index % icons.length];
-        
-        // 제목에서 이미 있는 이모지 제거 (중복 방지)
-        if (existingEmoji) {
-          cleanTitle = cleanTitle.replace(/^[💡🎯📦🚀⭐🔥]\s*/, '').trim();
-        }
+        const icon = icons[index % icons.length];
         
         return `
           <div class="strategy-card">

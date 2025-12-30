@@ -2510,6 +2510,13 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # -----------------------
     crawl_29cm_result = crawl_29cm_best()
     
+    # 디버깅: 29CM 크롤링 결과 확인
+    if crawl_29cm_result is None:
+        print(f"⚠️ [WARN] 29CM 크롤링 결과가 None입니다. (SKIP_29CM_CRAWL 플래그 또는 크롤링 실패)", file=sys.stderr)
+    else:
+        items_count = len(crawl_29cm_result.get("items", [])) if isinstance(crawl_29cm_result, dict) else 0
+        print(f"✅ [INFO] 29CM 크롤링 결과: {items_count}개 상품 수집됨", file=sys.stderr)
+    
     # -----------------------
     # Event 데이터 조회 (지난달 이벤트)
     # -----------------------
@@ -2518,7 +2525,8 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         try:
             # use_current_month_events 플래그에 따라 이벤트 조회 월 결정
             # False (기본값): 전월 이벤트 조회 (배포 후 자동 실행 시, 예: 1월 리포트 → 12월 이벤트)
-            # True: 동월 이벤트 조회 (테스트 시, 예: 1월 리포트 → 1월 이벤트)
+            # True: 동월 이벤트 조회 (테스트 시, 예: 12월 리포트 → 12월 이벤트)
+            # 주의: 12월 리포트를 생성할 때는 12월 이벤트를 조회해야 하므로, 테스트 시에는 --use-current-month-events 플래그 사용
             event_month = report_month if use_current_month_events else prev_month
             event_month_label = "동월" if use_current_month_events else "전월"
             
@@ -2676,6 +2684,19 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             blob = bucket.blob(blob_path)
             
             print(f"📤 [INFO] GCS 저장 시작: {blob_path}", file=sys.stderr)
+            
+            # 디버깅: 29cm_best 필드 확인
+            if "facts" in snapshot_data and "29cm_best" in snapshot_data["facts"]:
+                cm_best = snapshot_data["facts"]["29cm_best"]
+                if cm_best is None:
+                    print(f"⚠️ [WARN] facts.29cm_best가 None입니다.", file=sys.stderr)
+                elif isinstance(cm_best, dict):
+                    items_count = len(cm_best.get("items", []))
+                    print(f"✅ [INFO] facts.29cm_best 저장 확인: {items_count}개 상품", file=sys.stderr)
+                else:
+                    print(f"⚠️ [WARN] facts.29cm_best 타입 이상: {type(cm_best)}", file=sys.stderr)
+            else:
+                print(f"❌ [ERROR] facts.29cm_best 필드가 없습니다!", file=sys.stderr)
             
             # JSON 문자열 생성
             snapshot_json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2, sort_keys=True)

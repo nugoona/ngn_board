@@ -2,21 +2,7 @@
 AI 분석 모듈
 - Google Gemini API를 사용하여 월간 리포트 스냅샷 데이터를 분석
 - 섹션별 분석 텍스트를 생성하여 signals 필드에 추가
-"""
-
-"""
-AI 분석 모듈
-- Google Gemini API를 사용하여 월간 리포트 스냅샷 데이터를 분석
-- 섹션별 분석 텍스트를 생성하여 signals 필드에 추가
-
-사용 예시:
-    from tools.ai_report_test.ai_analyst import generate_ai_analysis
-    
-    # 스냅샷 데이터에 AI 분석 추가
-    snapshot_with_analysis = generate_ai_analysis(
-        snapshot_data,
-        system_prompt_file="tools/ai_report_test/system_prompt_v44.txt"
-    )
+- 섹션별 개별 API 호출 방식으로 정확도 향상
 """
 
 import os
@@ -25,7 +11,8 @@ import json
 import gzip
 import re
 import traceback
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
+from datetime import datetime
 
 # .env 파일에서 환경 변수 로드
 try:
@@ -53,7 +40,7 @@ try:
     # 3. 기본 load_dotenv() 시도 (현재 디렉토리 및 상위 디렉토리 자동 탐색)
     if not env_loaded:
         load_dotenv(override=True)  # .env 파일이 없어도 에러 없이 진행
-    
+        
 except ImportError:
     print("⚠️ [WARN] python-dotenv 패키지가 설치되지 않았습니다.", file=sys.stderr)
     print("   설치: pip install python-dotenv", file=sys.stderr)
@@ -79,10 +66,9 @@ except ImportError:
 
 # 환경 변수
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")  # 기본 모델 (가성비 및 안정성 최적화)
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
 # System Prompt는 별도 파일에서 로드하거나 함수 파라미터로 받음
-# 사용자가 나중에 붙여넣을 예정이므로, 기본 템플릿만 제공
 DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
 당신은 전자상거래 데이터 분석 전문가입니다.
 제공된 월간 리포트 데이터를 분석하여 각 섹션별로 인사이트를 제공해주세요.
@@ -96,6 +82,77 @@ DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
 [출력 형식]
 각 섹션별로 분석 텍스트를 제공하되, 섹션 7의 경우 마지막에 JSON 비교표를 포함해주세요.
 """
+
+
+# ============================================
+# 유틸리티 함수
+# ============================================
+
+def safe_get(data: Dict, *keys, default: Any = None) -> Any:
+    """
+    안전한 딕셔너리 접근 함수 (중첩된 키 경로 지원)
+    
+    Args:
+        data: 딕셔너리 데이터
+        *keys: 키 경로 (예: 'facts', 'ga4_traffic', 'this')
+        default: 기본값 (키가 없을 때 반환)
+    
+    Returns:
+        찾은 값 또는 default
+    """
+    current = data
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    return current if current is not None else default
+
+
+def safe_get_list(data: Dict, *keys, default: List = None) -> List:
+    """리스트를 반환하는 safe_get (기본값은 빈 리스트)"""
+    result = safe_get(data, *keys, default=default)
+    if result is None:
+        return []
+    if isinstance(result, list):
+        return result
+    return []
+
+
+def safe_get_dict(data: Dict, *keys, default: Dict = None) -> Dict:
+    """딕셔너리를 반환하는 safe_get (기본값은 빈 딕셔너리)"""
+    result = safe_get(data, *keys, default=default)
+    if result is None:
+        return {}
+    if isinstance(result, dict):
+        return result
+    return {}
+
+
+def log_prompt_to_file(section_num: int, prompt: str, log_file: str = "debug_prompts.log"):
+    """
+    프롬프트를 로그 파일에 저장
+    
+    Args:
+        section_num: 섹션 번호
+        prompt: 프롬프트 내용
+        log_file: 로그 파일 경로
+    """
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"""
+{'='*80}
+[섹션 {section_num}] 프롬프트 로그 - {timestamp}
+{'='*80}
+{prompt}
+{'='*80}
+
+"""
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+        print(f"📝 [INFO] 섹션 {section_num} 프롬프트가 {log_file}에 저장되었습니다.", file=sys.stderr)
+    except Exception as e:
+        print(f"⚠️ [WARN] 프롬프트 로그 저장 실패: {e}", file=sys.stderr)
 
 
 def parse_gcs_path(gcs_path: str) -> tuple:
@@ -261,9 +318,13 @@ def load_system_prompt(prompt_file: Optional[str] = None) -> str:
         return DEFAULT_SYSTEM_PROMPT_TEMPLATE
 
 
+# ============================================
+# 섹션별 프롬프트 생성 함수
+# ============================================
+
 def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     """
-    섹션별 프롬프트 생성
+    섹션별 프롬프트 생성 (안전한 데이터 접근 및 명확한 지시)
     
     Args:
         section_num: 섹션 번호 (1-9)
@@ -272,25 +333,77 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     Returns:
         섹션별 프롬프트 문자열
     """
-    facts = snapshot_data.get("facts", {})
-    report_meta = snapshot_data.get("report_meta", {})
-    company_name = report_meta.get("company_name", "업체")
-    report_month = report_meta.get("report_month", "")
+    facts = safe_get_dict(snapshot_data, "facts", default={})
+    report_meta = safe_get_dict(snapshot_data, "report_meta", default={})
+    company_name = safe_get(report_meta, "company_name", default="업체")
+    report_month = safe_get(report_meta, "report_month", default="")
     
+    # 섹션별 데이터 준비
+    section_data_map = {
+        1: {
+            "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
+            "mall_sales_prev": safe_get_dict(facts, "mall_sales", "prev", default={}),
+            "comparisons": safe_get_dict(facts, "comparisons", "mall_sales", default={}),
+            "daily_this": safe_get_list(facts, "mall_sales", "daily_this", default=[]),
+            "events": safe_get_list(facts, "events", default=[]),
+        },
+        2: {
+            "ga4_traffic_this": safe_get_dict(facts, "ga4_traffic", "this", default={}),
+            "top_sources": safe_get_list(facts, "ga4_traffic", "this", "top_sources", default=[]),
+        },
+        3: {
+            "ga4_totals": safe_get_dict(facts, "ga4_traffic", "this", "totals", default={}),
+            "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
+        },
+        4: {
+            "top_products_sales": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:5],
+            "top_items_view": safe_get_list(facts, "viewitem", "this", "top_items_by_view_item", default=[])[:5],
+        },
+        5: {
+            "29cm_items": safe_get_list(facts, "29cm_best", "items", default=[])[:10],
+        },
+        6: {
+            "meta_ads_goals_this": safe_get_dict(facts, "meta_ads_goals", "this", default={}),
+            "top_ads": safe_get_dict(facts, "meta_ads_goals", "this", "top_ads", default={}),
+        },
+        7: {
+            "29cm_items": safe_get_list(facts, "29cm_best", "items", default=[])[:10],
+            "top_products_sales": safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[])[:10],
+        },
+        8: {
+            "forecast": safe_get_dict(facts, "forecast_next_month", default={}),
+            "mall_sales_forecast": safe_get_dict(facts, "forecast_next_month", "mall_sales", default={}),
+        },
+        9: {
+            "mall_sales_this": safe_get_dict(facts, "mall_sales", "this", default={}),
+            "meta_ads_this": safe_get_dict(facts, "meta_ads", "this", default={}),
+            "ga4_totals": safe_get_dict(facts, "ga4_traffic", "this", "totals", default={}),
+            "signals": safe_get_dict(snapshot_data, "signals", default={}),
+        },
+    }
+    
+    section_data = section_data_map.get(section_num, {})
+    
+    # 섹션별 프롬프트 템플릿
     section_prompts = {
         1: f"""
 [섹션 1: 지난달 매출 분석]
 {company_name}의 {report_month} 매출 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 1만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- 이번 달 매출: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
-- 전월 매출: {json.dumps(facts.get('mall_sales', {}).get('prev', {}), ensure_ascii=False, indent=2)}
-- 비교 데이터: {json.dumps(facts.get('comparisons', {}).get('mall_sales', {}), ensure_ascii=False, indent=2)}
+- 이번 달 매출: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
+- 전월 매출: {json.dumps(section_data.get('mall_sales_prev', {}), ensure_ascii=False, indent=2)}
+- 비교 데이터: {json.dumps(section_data.get('comparisons', {}), ensure_ascii=False, indent=2)}
+- 일별 매출 (이번 달): {json.dumps(section_data.get('daily_this', [])[:10], ensure_ascii=False, indent=2)}
+- 이벤트: {json.dumps(section_data.get('events', [])[:5], ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 매출 증감 요인 분석
 - 주요 성과 지표 해석
 - 전월 대비 변화 인사이트
+- 이벤트와 매출의 인과관계
 
 🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
 """,
@@ -298,9 +411,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 2: 주요 유입 채널]
 {company_name}의 {report_month} 유입 채널 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 2만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- GA4 트래픽: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}), ensure_ascii=False, indent=2)}
-- 상위 유입 소스: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('top_sources', [])[:5], ensure_ascii=False, indent=2)}
+- GA4 트래픽: {json.dumps(section_data.get('ga4_traffic_this', {}), ensure_ascii=False, indent=2)}
+- 상위 유입 소스: {json.dumps(section_data.get('top_sources', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 주요 유입 채널 성과 분석
@@ -313,9 +428,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 3: 고객 방문 및 구매 여정]
 {company_name}의 {report_month} 고객 여정 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 3만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- GA4 퍼널: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('totals', {}), ensure_ascii=False, indent=2)}
-- 매출 데이터: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
+- GA4 퍼널: {json.dumps(section_data.get('ga4_totals', {}), ensure_ascii=False, indent=2)}
+- 매출 데이터: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 유입 → 장바구니 → 구매 전환율 분석
@@ -328,9 +445,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 4: 자사몰 베스트 상품 성과]
 {company_name}의 {report_month} 베스트 상품 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 4만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- 베스트 상품 (매출 기준): {json.dumps(facts.get('products', {}).get('this', {}).get('rolling', {}).get('d30', {}).get('top_products_by_sales', [])[:5], ensure_ascii=False, indent=2)}
-- 베스트 상품 (조회 기준): {json.dumps(facts.get('viewitem', {}).get('this', {}).get('top_items_by_view_item', [])[:5], ensure_ascii=False, indent=2)}
+- 베스트 상품 (매출 기준): {json.dumps(section_data.get('top_products_sales', []), ensure_ascii=False, indent=2)}
+- 베스트 상품 (조회 기준): {json.dumps(section_data.get('top_items_view', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 베스트 상품 성과 분석
@@ -343,8 +462,10 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 5: 시장 트렌드 확인 (29CM)]
 {company_name}의 {report_month} 시장 트렌드 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 5만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- 29CM 베스트 상품: {json.dumps(facts.get('29cm_best', {}).get('items', [])[:10], ensure_ascii=False, indent=2)}
+- 29CM 베스트 상품: {json.dumps(section_data.get('29cm_items', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 시장 트렌드 분석
@@ -357,9 +478,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 6: 매체 성과 및 효율 진단]
 {company_name}의 {report_month} 광고 매체 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 6만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- Meta Ads 성과: {json.dumps(facts.get('meta_ads_goals', {}).get('this', {}), ensure_ascii=False, indent=2)}
-- 상위 광고: {json.dumps(facts.get('meta_ads_goals', {}).get('this', {}).get('top_ads', {}), ensure_ascii=False, indent=2)}
+- Meta Ads 성과: {json.dumps(section_data.get('meta_ads_goals_this', {}), ensure_ascii=False, indent=2)}
+- 상위 광고: {json.dumps(section_data.get('top_ads', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 광고 매체 효율 분석
@@ -372,9 +495,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 7: 시장 트렌드와 자사몰 비교]
 {company_name}의 {report_month} 시장 비교 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 7만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- 29CM 베스트: {json.dumps(facts.get('29cm_best', {}).get('items', [])[:10], ensure_ascii=False, indent=2)}
-- 자사몰 상품: {json.dumps(facts.get('products', {}).get('this', {}).get('rolling', {}).get('d30', {}).get('top_products_by_sales', [])[:10], ensure_ascii=False, indent=2)}
+- 29CM 베스트: {json.dumps(section_data.get('29cm_items', []), ensure_ascii=False, indent=2)}
+- 자사몰 상품: {json.dumps(section_data.get('top_products_sales', []), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - **경향성 중심 분석**: 모든 상품을 개별적으로 나열하지 말고, 전체적인 시장 경향성과 트렌드만 요약하세요.
@@ -413,9 +538,11 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 8: 익월 목표 설정 및 시장 전망]
 {company_name}의 {report_month} 전망 데이터를 분석해주세요.
 
+⚠️ **중요: 이 섹션 8만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터:
-- 전망 데이터: {json.dumps(facts.get('forecast_next_month', {}), ensure_ascii=False, indent=2)}
-- 작년 동월/익월 매출: {json.dumps(facts.get('forecast_next_month', {}).get('mall_sales', {}), ensure_ascii=False, indent=2)}
+- 전망 데이터: {json.dumps(section_data.get('forecast', {}), ensure_ascii=False, indent=2)}
+- 작년 동월/익월 매출: {json.dumps(section_data.get('mall_sales_forecast', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 다음 달 목표 설정 제안
@@ -428,11 +555,13 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 [섹션 9: 데이터 기반 전략 액션 플랜]
 {company_name}의 {report_month} 전체 데이터를 종합하여 전략을 제안해주세요.
 
+⚠️ **중요: 이 섹션 9만 분석하고 답변하세요. 다른 섹션은 언급하지 마세요.**
+
 데이터 요약:
-- 매출: {json.dumps(facts.get('mall_sales', {}).get('this', {}), ensure_ascii=False, indent=2)}
-- 광고: {json.dumps(facts.get('meta_ads', {}).get('this', {}), ensure_ascii=False, indent=2)}
-- 유입: {json.dumps(facts.get('ga4_traffic', {}).get('this', {}).get('totals', {}), ensure_ascii=False, indent=2)}
-- 신호: {json.dumps(snapshot_data.get('signals', {}), ensure_ascii=False, indent=2)}
+- 매출: {json.dumps(section_data.get('mall_sales_this', {}), ensure_ascii=False, indent=2)}
+- 광고: {json.dumps(section_data.get('meta_ads_this', {}), ensure_ascii=False, indent=2)}
+- 유입: {json.dumps(section_data.get('ga4_totals', {}), ensure_ascii=False, indent=2)}
+- 신호: {json.dumps(section_data.get('signals', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
 - 종합 전략 액션 플랜
@@ -440,11 +569,25 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - KPI 및 목표 설정
 
 🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+
+[중요] 각 전략은 반드시 **`###` (헤더3)**로 구분하여 작성하십시오:
+  ### 💡 [전략 1] (제목)
+  (내용...)
+  
+  ### 🎯 [전략 2] (제목)
+  (내용...)
+  
+  ### 📦 [전략 3] (제목)
+  (내용...)
 """
     }
     
     return section_prompts.get(section_num, "")
 
+
+# ============================================
+# 응답 파싱 함수
+# ============================================
 
 def extract_section_content(full_text: str, target_section: int) -> str:
     """
@@ -541,15 +684,21 @@ def parse_section_9_cards(text: str) -> List[Dict]:
     return cards
 
 
+# ============================================
+# 메인 AI 분석 함수
+# ============================================
+
 def generate_ai_analysis(
     snapshot_data: Dict,
     system_prompt: Optional[str] = None,
     system_prompt_file: Optional[str] = None,
     sections: Optional[List[int]] = None,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    enable_prompt_logging: bool = True
 ) -> Dict:
     """
     스냅샷 데이터를 AI에게 분석시키고 결과를 signals 필드에 추가
+    섹션별 개별 API 호출 방식으로 정확도 향상
     
     Args:
         snapshot_data: 스냅샷 JSON 데이터 (report_meta, facts, signals 포함)
@@ -557,6 +706,7 @@ def generate_ai_analysis(
         system_prompt_file: System Prompt 파일 경로
         sections: 분석할 섹션 번호 리스트 (None이면 1-9 모두)
         api_key: Gemini API 키 (None이면 환경변수에서 로드)
+        enable_prompt_logging: 프롬프트 로깅 활성화 여부
     
     Returns:
         signals 필드에 AI 분석 텍스트가 추가된 snapshot_data
@@ -580,6 +730,9 @@ def generate_ai_analysis(
     if system_prompt:
         system_prompt_text = system_prompt
     else:
+        system_prompt_file = system_prompt_file or os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "system_prompt_v44.txt"
+        )
         system_prompt_text = load_system_prompt(system_prompt_file)
     
     # signals 초기화 (없으면 생성)
@@ -592,7 +745,7 @@ def generate_ai_analysis(
     if sections is None:
         sections = list(range(1, 10))
     
-    # 각 섹션별 분석 수행
+    # 각 섹션별 개별 API 호출로 분석 수행
     for section_num in sections:
         section_key = f"section_{section_num}_analysis"
         
@@ -602,8 +755,43 @@ def generate_ai_analysis(
             # 섹션별 프롬프트 생성
             section_prompt = build_section_prompt(section_num, snapshot_data)
             
+            # 데이터 존재 여부 확인 및 로깅
+            facts = safe_get_dict(snapshot_data, "facts", default={})
+            print(f"📊 [INFO] 섹션 {section_num} 데이터 확인:", file=sys.stderr)
+            if section_num == 1:
+                has_data = bool(safe_get_dict(facts, "mall_sales", "this", default={}))
+                print(f"   - mall_sales.this: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 2:
+                has_data = bool(safe_get_dict(facts, "ga4_traffic", "this", default={}))
+                print(f"   - ga4_traffic.this: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 3:
+                has_data = bool(safe_get_dict(facts, "ga4_traffic", "this", "totals", default={}))
+                print(f"   - ga4_traffic.this.totals: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 4:
+                has_data = bool(safe_get_list(facts, "products", "this", "rolling", "d30", "top_products_by_sales", default=[]))
+                print(f"   - products.this.rolling.d30.top_products_by_sales: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 5:
+                has_data = bool(safe_get_list(facts, "29cm_best", "items", default=[]))
+                print(f"   - 29cm_best.items: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 6:
+                has_data = bool(safe_get_dict(facts, "meta_ads_goals", "this", default={}))
+                print(f"   - meta_ads_goals.this: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 7:
+                has_data = bool(safe_get_list(facts, "29cm_best", "items", default=[]))
+                print(f"   - 29cm_best.items: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 8:
+                has_data = bool(safe_get_dict(facts, "forecast_next_month", default={}))
+                print(f"   - forecast_next_month: {'✅ 있음' if has_data else '❌ 없음'}", file=sys.stderr)
+            elif section_num == 9:
+                has_data = True  # 섹션 9는 종합 데이터이므로 항상 있음
+                print(f"   - 종합 데이터: ✅ 있음", file=sys.stderr)
+            
             # 전체 프롬프트 구성
             full_prompt = f"{system_prompt_text}\n\n{section_prompt}"
+            
+            # 프롬프트 로깅
+            if enable_prompt_logging:
+                log_prompt_to_file(section_num, full_prompt)
             
             # Google Gen AI SDK (v1.0+) API 호출
             response = client.models.generate_content(
@@ -639,6 +827,20 @@ def generate_ai_analysis(
             if len(analysis_text) < len(raw_analysis_text):
                 reduction_pct = (1 - len(analysis_text) / len(raw_analysis_text)) * 100
                 print(f"📝 [INFO] 섹션 {section_num} 내용 추출: {len(raw_analysis_text)}자 → {len(analysis_text)}자 ({reduction_pct:.1f}% 감소)", file=sys.stderr)
+            
+            # 섹션 7: JSON 추출 및 별도 저장
+            if section_num == 7:
+                json_data = extract_json_from_section(analysis_text)
+                if json_data:
+                    signals["section_7_data"] = json_data
+                    print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료", file=sys.stderr)
+            
+            # 섹션 9: 카드 파싱 및 별도 저장
+            if section_num == 9:
+                cards = parse_section_9_cards(analysis_text)
+                if cards:
+                    signals["section_9_cards"] = cards
+                    print(f"✅ [INFO] 섹션 9 카드 파싱 완료: {len(cards)}개 카드", file=sys.stderr)
             
             # signals에 저장
             signals[section_key] = analysis_text
@@ -745,4 +947,3 @@ if __name__ == "__main__":
         output_file=output_file,
         system_prompt_file=system_prompt_file
     )
-

@@ -1464,14 +1464,14 @@ function renderSection9(data) {
         try {
           marked.setOptions({
             breaks: true,
-            gfm: false
+            gfm: true  // GitHub Flavored Markdown 활성화 (표 지원)
           });
           
           const markdownHtml = marked.parse(analysis);
           
           if (typeof DOMPurify !== 'undefined') {
             htmlContent = DOMPurify.sanitize(markdownHtml, {
-              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
               ALLOWED_ATTR: []
             });
           } else {
@@ -1562,19 +1562,19 @@ function renderAiAnalysis(elementId, analysisText) {
     if (typeof marked !== 'undefined') {
       // marked 라이브러리가 로드된 경우
       try {
-        // 마크다운 설정: 표(Table)는 제외 (시스템 프롬프트 요구사항)
+        // 마크다운 설정: 표(Table) 지원 활성화
         marked.setOptions({
           breaks: true,  // 줄바꿈 지원
-          gfm: false     // GitHub Flavored Markdown 비활성화 (표 제외)
+          gfm: true      // GitHub Flavored Markdown 활성화 (표 지원)
         });
         
         // 마크다운을 HTML로 변환
         const markdownHtml = marked.parse(analysisText);
         
-        // XSS 방지를 위해 DOMPurify로 정제
+        // XSS 방지를 위해 DOMPurify로 정제 (표 관련 태그 포함)
         if (typeof DOMPurify !== 'undefined') {
           htmlContent = DOMPurify.sanitize(markdownHtml, {
-            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre'],
+            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
             ALLOWED_ATTR: []
           });
         } else {

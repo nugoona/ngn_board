@@ -453,6 +453,154 @@
   font-style: italic;
 }
 
+/* ✅ 마크다운 표(Table) 스타일링 */
+.ai-analysis-text.markdown-content table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  display: block;
+}
+
+.ai-analysis-text.markdown-content table thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.ai-analysis-text.markdown-content table th {
+  padding: 0.75em 1em;
+  text-align: left;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+
+.ai-analysis-text.markdown-content table th:last-child {
+  border-right: none;
+}
+
+.ai-analysis-text.markdown-content table tbody tr {
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.ai-analysis-text.markdown-content table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.ai-analysis-text.markdown-content table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.ai-analysis-text.markdown-content table td {
+  padding: 0.75em 1em;
+  border-right: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.ai-analysis-text.markdown-content table td:last-child {
+  border-right: none;
+}
+
+/* 섹션 7 비교 분석용 표 스타일 */
+.comparison-ai-content.markdown-content table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-ai-content.markdown-content table thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.comparison-ai-content.markdown-content table th {
+  padding: 0.75em 1em;
+  text-align: left;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+
+.comparison-ai-content.markdown-content table th:last-child {
+  border-right: none;
+}
+
+.comparison-ai-content.markdown-content table tbody tr {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.comparison-ai-content.markdown-content table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.comparison-ai-content.markdown-content table td {
+  padding: 0.75em 1em;
+  border-right: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.comparison-ai-content.markdown-content table td:last-child {
+  border-right: none;
+}
+
+/* 섹션 9 전략 카드용 표 스타일 */
+.strategy-card-content.markdown-content table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.strategy-card-content.markdown-content table thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.strategy-card-content.markdown-content table th {
+  padding: 0.75em 1em;
+  text-align: left;
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: 2px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+
+.strategy-card-content.markdown-content table th:last-child {
+  border-right: none;
+}
+
+.strategy-card-content.markdown-content table tbody tr {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.strategy-card-content.markdown-content table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.strategy-card-content.markdown-content table td {
+  padding: 0.75em 1em;
+  border-right: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.strategy-card-content.markdown-content table td:last-child {
+  border-right: none;
+}
+
 /* ✅ 스켈레톤 UI */
 .ai-analysis-skeleton {
   display: flex;

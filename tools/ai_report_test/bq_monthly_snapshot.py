@@ -576,19 +576,22 @@ def load_snapshot_from_gcs(company_name: str, year: int, month: int):
                 print(f"⚠️ [WARN] GCS에 스냅샷 파일이 없습니다. 시도한 경로: {', '.join(blob_paths)}", file=sys.stderr)
             return None
         
-        # 파일 읽기 (Gzip 압축 여부에 따라 처리)
-        if is_gzip:
-            # Gzip 압축된 파일 읽기
-            snapshot_gzip_bytes = blob.download_as_bytes()
-            snapshot_json_str = gzip.decompress(snapshot_gzip_bytes).decode('utf-8')
-        else:
-            # 압축 없는 파일 읽기 (하위 호환)
-            snapshot_json_str = blob.download_as_text(encoding='utf-8')
+        # 파일 읽기 (하이브리드 리더: 압축/비압축 자동 감지)
+        snapshot_bytes = blob.download_as_bytes(raw_download=True)
+        
+        # Gzip 압축 해제 시도 (성공하면 압축된 파일, 실패하면 압축되지 않은 파일)
+        try:
+            snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+            is_actually_gzipped = True
+        except (gzip.BadGzipFile, OSError, Exception):
+            # Gzip 압축 해제 실패 → 압축되지 않은 JSON 파일로 처리
+            snapshot_json_str = snapshot_bytes.decode('utf-8')
+            is_actually_gzipped = False
         
         snapshot_data = json.loads(snapshot_json_str)
         
         gcs_url = f"gs://{GCS_BUCKET}/{found_path}"
-        print(f"✅ [SUCCESS] GCS에서 스냅샷을 불러왔습니다: {gcs_url} ({'Gzip 압축' if is_gzip else '압축 없음'})", file=sys.stderr)
+        print(f"✅ [SUCCESS] GCS에서 스냅샷을 불러왔습니다: {gcs_url} ({'Gzip 압축' if is_actually_gzipped else '압축 없음'})", file=sys.stderr)
         return snapshot_data
     except Exception as e:
         print("=" * 80, file=sys.stderr)

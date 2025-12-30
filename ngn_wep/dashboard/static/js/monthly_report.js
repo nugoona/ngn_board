@@ -201,16 +201,6 @@ async function loadMonthlyReport(companyName, year, month) {
     // 헤더 업데이트
     updateReportHeader(companyName, year, month);
     
-    // 섹션 7 헤더 설정
-    const trendHeader = document.getElementById("section7TrendHeader");
-    const companyHeader = document.getElementById("section7CompanyHeader");
-    if (trendHeader) {
-      trendHeader.textContent = "29CM 베스트";
-    }
-    if (companyHeader) {
-      companyHeader.textContent = companyName.toUpperCase();
-    }
-    
     updateLoadingProgress(85);
     
     // 모든 섹션 렌더링
@@ -317,7 +307,7 @@ async function renderAllSections(data) {
   }
   
   try {
-    await renderSection5(data); // 2. 주요 유입 채널
+    await renderSection2(data); // 2. 주요 유입 채널
   } catch (e) {
     console.error("[월간 리포트] 섹션 2 (주요 유입 채널) 렌더링 실패:", e);
   }
@@ -334,23 +324,23 @@ async function renderAllSections(data) {
 function setupLazySectionRendering(data) {
   // 섹션별 렌더링 함수 매핑
   const sectionRenderers = {
-    'section-2-funnel': () => {
+    'section-3-funnel': () => {
       try {
-        renderSection2(data); // 3. 고객 방문 및 구매 여정
+        renderSection3(data); // 3. 고객 방문 및 구매 여정
       } catch (e) {
         console.error("[월간 리포트] 섹션 3 (고객 방문 및 구매 여정) 렌더링 실패:", e);
       }
     },
-    'section-3-products': () => {
+    'section-4-products': () => {
       try {
-        renderSection3(data); // 4. 자사몰 베스트 상품 성과
+        renderSection4(data); // 4. 자사몰 베스트 상품 성과
       } catch (e) {
         console.error("[월간 리포트] 섹션 4 (자사몰 베스트 상품 성과) 렌더링 실패:", e);
       }
     },
-    'section-4-market-trend': () => {
+    'section-5-market-trend': () => {
       try {
-        renderSection4(data); // 5. 시장 트렌드 확인 (29CM)
+        renderSection5(data); // 5. 시장 트렌드 확인 (29CM)
       } catch (e) {
         console.error("[월간 리포트] 섹션 5 (시장 트렌드 확인) 렌더링 실패:", e);
       }
@@ -598,14 +588,114 @@ function renderSection2(data) {
   const facts = data.facts || {};
   const ga4 = facts.ga4_traffic || {};
   const ga4This = ga4.this || {};
+  
+  console.log("[섹션 2] GA4 전체 구조:", ga4);
+  console.log("[섹션 2] GA4 this 데이터:", ga4This);
+  console.log("[섹션 2] GA4 this 키 목록:", Object.keys(ga4This || {}));
+  console.log("[섹션 2] GA4 this 전체 내용:", JSON.stringify(ga4This, null, 2));
+  
+  // top_sources가 없을 수 있으므로 다른 경로 확인
+  let topSources = ga4This.top_sources || ga4This.topSources || [];
+  
+  console.log("[섹션 2] top_sources (첫 시도):", topSources);
+  
+  // 대체 경로 시도
+  if (topSources.length === 0 && ga4This.sources) {
+    topSources = ga4This.sources;
+    console.log("[섹션 2] sources 경로 사용:", topSources);
+  }
+  
+  // 추가 경로 시도
+  if (topSources.length === 0 && ga4.top_sources) {
+    topSources = ga4.top_sources;
+    console.log("[섹션 2] ga4.top_sources 경로 사용:", topSources);
+  }
+  
+  console.log("[섹션 2] 최종 topSources:", topSources);
+  
+  const container = document.getElementById("section2ChannelsTable");
+  console.log("[섹션 2] container 요소:", container);
+  
+  if (container) {
+    const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);
+    console.log("[섹션 2] 계산된 total:", total);
+    console.log("[섹션 2] topSources.length:", topSources.length);
+    console.log("[섹션 2] topSources 데이터:", topSources);
+    
+    if (topSources.length > 0 && total > 0) {
+      // Top 5만 선택하고 정렬
+      const top5 = topSources
+        .map(s => ({
+          source: s.source || s.name || "Unknown",
+          users: s.total_users || s.users || s.value || 0,
+          bounce_rate: s.bounce_rate || 0
+        }))
+        .sort((a, b) => b.users - a.users)
+        .slice(0, 5);
+      
+      console.log("[섹션 2] Top 5 데이터:", top5);
+      
+      // 표 생성
+      const tableHTML = `
+        <table class="channels-table">
+          <thead>
+            <tr>
+              <th>채널</th>
+              <th class="text-right">유입수</th>
+              <th class="text-right">유입비중</th>
+              <th class="text-right">이탈률</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${top5.map(item => {
+              const share = total > 0 ? ((item.users / total) * 100).toFixed(1) : "0.0";
+              return `
+                <tr>
+                  <td>${item.source}</td>
+                  <td class="text-right">${formatNumber(item.users)}</td>
+                  <td class="text-right">${share}%</td>
+                  <td class="text-right">${item.bounce_rate.toFixed(1)}%</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = tableHTML;
+      console.log("[섹션 2] 표 HTML 생성 완료, container.innerHTML 길이:", container.innerHTML.length);
+    } else {
+      console.warn("[섹션 2] 데이터가 없거나 total이 0입니다. topSources:", topSources, "total:", total);
+      container.innerHTML = `
+        <div class="channels-table-empty">
+          <div class="empty-text">유입 채널 데이터가 없습니다.</div>
+        </div>
+      `;
+    }
+  } else {
+    console.error("[섹션 2] container 요소를 찾을 수 없습니다!");
+  }
+  
+  // AI 분석 (섹션 2: 주요 유입 채널)
+  renderAiAnalysis("section2AiAnalysis", data.signals?.section_2_analysis);
+}
+
+// ============================================
+// 섹션 3: 고객 방문 및 구매 여정
+// ============================================
+function renderSection3(data) {
+  console.log("[섹션 3] 데이터 로드 시작", data);
+  const facts = data.facts || {};
+  const ga4 = facts.ga4_traffic || {};
+  const ga4This = ga4.this || {};
   const mallSales = facts.mall_sales || {};
   const salesThis = mallSales.this || {};
   
-  console.log("[섹션 2] GA4 전체 구조:", ga4);
-  console.log("[섹션 2] GA4 데이터:", ga4This);
-  console.log("[섹션 2] GA4 데이터 키 목록:", Object.keys(ga4This || {}));
-  console.log("[섹션 2] GA4 데이터 전체 내용:", JSON.stringify(ga4This, null, 2));
-  console.log("[섹션 2] 매출 데이터:", salesThis);
+  console.log("[섹션 3] GA4 전체 구조:", ga4);
+  console.log("[섹션 3] GA4 데이터:", ga4This);
+  console.log("[섹션 3] GA4 데이터 키 목록:", Object.keys(ga4This || {}));
+  console.log("[섹션 3] GA4 데이터 전체 내용:", JSON.stringify(ga4This, null, 2));
+  console.log("[섹션 3] 매출 데이터:", salesThis);
   
   // GA4 데이터 매핑 수정 - totals 객체에서 가져오기
   const totals = ga4This.totals || {};
@@ -613,8 +703,8 @@ function renderSection2(data) {
   const cartUsers = totals.add_to_cart_users || 0;
   const purchases = salesThis.total_orders || 0;
   
-  console.log("[섹션 2] 계산된 값:", { visitors, cartUsers, purchases });
-  console.log("[섹션 2] visitors 경로 확인:", {
+  console.log("[섹션 3] 계산된 값:", { visitors, cartUsers, purchases });
+  console.log("[섹션 3] visitors 경로 확인:", {
     "total_users": ga4This.total_users,
     "users": ga4This.users,
     "visitors": ga4This.visitors,
@@ -627,7 +717,7 @@ function renderSection2(data) {
     { label: "주문 건수", value: purchases, color: "#ec4899" }
   ];
   
-  const container = document.getElementById("section2Funnel");
+  const container = document.getElementById("section3Funnel");
   if (container) {
     const maxValue = Math.max(...funnelData.map(d => d.value), 1);
     
@@ -657,15 +747,15 @@ function renderSection2(data) {
     }).join("");
   }
   
-  // AI 분석
-  renderAiAnalysis("section2AiAnalysis", data.signals?.section_2_analysis);
+  // AI 분석 (섹션 3: 고객 방문 및 구매 여정)
+  renderAiAnalysis("section3AiAnalysis", data.signals?.section_3_analysis);
 }
 
 // ============================================
-// 섹션 3: 베스트 상품 성과
+// 섹션 4: 자사몰 베스트 상품 성과
 // ============================================
-function renderSection3(data) {
-  console.log("[섹션 3] 데이터 로드 시작", data);
+function renderSection4(data) {
+  console.log("[섹션 4] 데이터 로드 시작", data);
   const facts = data.facts || {};
   
   // 구매 데이터 (매출 베스트)
@@ -680,21 +770,21 @@ function renderSection3(data) {
   const viewitemThis = viewitem.this || {};
   const topItemsByView = viewitemThis.top_items_by_view_item || [];
   
-  console.log("[섹션 3] top_products_by_sales:", topProductsBySales);
-  console.log("[섹션 3] top_items_by_view_item:", topItemsByView);
+  console.log("[섹션 4] top_products_by_sales:", topProductsBySales);
+  console.log("[섹션 4] top_items_by_view_item:", topItemsByView);
   
   // 탭 버튼 이벤트 설정
-  setupSection3Tabs(data);
+  setupSection4Tabs(data);
   
   // 초기 렌더링 (구매 탭)
-  renderSection3ByTab("sales", data);
+  renderSection4ByTab("sales", data);
   
-  // AI 분석
-  renderAiAnalysis("section3AiAnalysis", data.signals?.section_3_analysis);
+  // AI 분석 (섹션 4: 자사몰 베스트 상품 성과)
+  renderAiAnalysis("section4AiAnalysis", data.signals?.section_4_analysis);
 }
 
-function setupSection3Tabs(data) {
-  const tabButtons = document.querySelectorAll("#section3Tabs .products-tab-btn");
+function setupSection4Tabs(data) {
+  const tabButtons = document.querySelectorAll("#section4Tabs .products-tab-btn");
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const tab = btn.getAttribute("data-tab");
@@ -704,14 +794,14 @@ function setupSection3Tabs(data) {
       btn.classList.add("active");
       
       // 해당 탭 렌더링
-      renderSection3ByTab(tab, data);
+      renderSection4ByTab(tab, data);
     });
   });
 }
 
-function renderSection3ByTab(tab, data) {
+function renderSection4ByTab(tab, data) {
   const facts = data.facts || {};
-  const container = document.getElementById("section3BarChart");
+  const container = document.getElementById("section4BarChart");
   
   if (!container) return;
   
@@ -775,20 +865,20 @@ function renderSection3ByTab(tab, data) {
 }
 
 // ============================================
-// 섹션 4: 외부 시장 트렌드 (29CM) - Top 5 카드
+// 섹션 5: 외부 시장 트렌드 (29CM) - Top 5 카드
 // ============================================
-let section4Data = null;
+let section5Data = null;
 
-function renderSection4(data) {
+async function renderSection5(data) {
   const facts = data.facts || {};
   const cm29Data = facts["29cm_best"] || {};
   const items = cm29Data.items || [];
   
   // 디버그: 첫 번째 아이템의 구조 확인
   if (items.length > 0) {
-    console.log("[섹션 4] 첫 번째 아이템 데이터 구조:", JSON.stringify(items[0], null, 2));
-    console.log("[섹션 4] 첫 번째 아이템의 모든 키:", Object.keys(items[0]));
-    console.log("[섹션 4] 첫 번째 아이템의 각 필드 값:", {
+    console.log("[섹션 5] 첫 번째 아이템 데이터 구조:", JSON.stringify(items[0], null, 2));
+    console.log("[섹션 5] 첫 번째 아이템의 모든 키:", Object.keys(items[0]));
+    console.log("[섹션 5] 첫 번째 아이템의 각 필드 값:", {
       "tab": items[0].tab,
       "rank": items[0].rank,
       "name": items[0].name,
@@ -803,32 +893,33 @@ function renderSection4(data) {
     });
   }
   
-  section4Data = items;
+  section5Data = items;
   
-  setupSection4Tabs(items);
-  renderSection4ByTab("전체", items, 1);
+  setupSection5Tabs(items);
+  renderSection5ByTab("전체", items, 1);
   
-  renderAiAnalysis("section4AiAnalysis", data.signals?.section_4_analysis);
+  // AI 분석 (섹션 5: 시장 트렌드 확인)
+  renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
 }
 
-function setupSection4Tabs(items) {
-  const tabButtons = document.querySelectorAll("#section4Tabs .market-trend-tab-btn");
+function setupSection5Tabs(items) {
+  const tabButtons = document.querySelectorAll("#section5Tabs .market-trend-tab-btn");
   
   tabButtons.forEach(btn => {
     btn.addEventListener("click", function() {
       const selectedTab = this.dataset.tab;
       tabButtons.forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-      renderSection4ByTab(selectedTab, items, 1); // 페이지 리셋
+      renderSection5ByTab(selectedTab, items, 1); // 페이지 리셋
     });
   });
 }
 
-// 섹션 4 페이지네이션 상태
-let section4CurrentPage = 1;
+// 섹션 5 페이지네이션 상태
+let section5CurrentPage = 1;
 
-function renderSection4ByTab(tabName, items, page = 1) {
-  const container = document.getElementById("section4MarketTrend");
+function renderSection5ByTab(tabName, items, page = 1) {
+  const container = document.getElementById("section5MarketTrend");
   if (!container) return;
   
   let filteredItems;
@@ -846,7 +937,7 @@ function renderSection4ByTab(tabName, items, page = 1) {
     filteredItems = items.filter(item => item.tab === dataTabName);
   }
   
-  section4CurrentPage = page;
+  section5CurrentPage = page;
   const startIdx = (page - 1) * 5;
   const endIdx = startIdx + 5;
   const itemsToRender = filteredItems.slice(startIdx, endIdx);
@@ -859,7 +950,7 @@ function renderSection4ByTab(tabName, items, page = 1) {
   setTimeout(() => {
     container.innerHTML = `
       ${hasPrev ? `
-        <button class="market-trend-nav-btn market-trend-nav-prev" onclick="renderSection4ByTab('${tabName}', section4Data, ${page - 1})">
+        <button class="market-trend-nav-btn market-trend-nav-prev" onclick="renderSection5ByTab('${tabName}', section5Data, ${page - 1})">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -900,14 +991,14 @@ function renderSection4ByTab(tabName, items, page = 1) {
             } else {
               // 디버그: URL과 item_id가 모두 없는 경우
               if (index === 0) {
-                console.warn("[섹션 4] URL과 item_id가 모두 없습니다. item 객체:", item);
+                console.warn("[섹션 5] URL과 item_id가 모두 없습니다. item 객체:", item);
               }
             }
           }
           
           // 디버그: 최종 URL 확인
           if (index === 0) {
-            console.log("[섹션 4] URL 변환 결과:", {
+            console.log("[섹션 5] URL 변환 결과:", {
               "rawUrl": rawUrl,
               "item_id": item.item_id || item.itemId,
               "최종 productUrl": productUrl
@@ -945,7 +1036,7 @@ function renderSection4ByTab(tabName, items, page = 1) {
         }).join("")}
       </div>
       ${hasNext ? `
-        <button class="market-trend-nav-btn market-trend-nav-next" onclick="renderSection4ByTab('${tabName}', section4Data, ${page + 1})">
+        <button class="market-trend-nav-btn market-trend-nav-next" onclick="renderSection5ByTab('${tabName}', section5Data, ${page + 1})">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -959,154 +1050,6 @@ function renderSection4ByTab(tabName, items, page = 1) {
   }, 150);
 }
 
-// ============================================
-// 섹션 5: 주요 유입 채널
-// ============================================
-async function renderSection5(data) {
-  console.log("[섹션 5] 데이터 로드 시작", data);
-  const facts = data.facts || {};
-  const ga4 = facts.ga4_traffic || {};
-  const ga4This = ga4.this || {};
-  
-  console.log("[섹션 5] GA4 전체 구조:", ga4);
-  console.log("[섹션 5] GA4 this 데이터:", ga4This);
-  console.log("[섹션 5] GA4 this 키 목록:", Object.keys(ga4This || {}));
-  console.log("[섹션 5] GA4 this 전체 내용:", JSON.stringify(ga4This, null, 2));
-  
-  // top_sources가 없을 수 있으므로 다른 경로 확인
-  let topSources = ga4This.top_sources || ga4This.topSources || [];
-  
-  console.log("[섹션 5] top_sources (첫 시도):", topSources);
-  
-  // 대체 경로 시도
-  if (topSources.length === 0 && ga4This.sources) {
-    topSources = ga4This.sources;
-    console.log("[섹션 5] sources 경로 사용:", topSources);
-  }
-  
-  // 추가 경로 시도
-  if (topSources.length === 0 && ga4.top_sources) {
-    topSources = ga4.top_sources;
-    console.log("[섹션 5] ga4.top_sources 경로 사용:", topSources);
-  }
-  
-  console.log("[섹션 5] 최종 topSources:", topSources);
-  
-  // 섹션 5 요소를 먼저 찾고, 그 안에서 container 찾기
-  const section5 = document.querySelector(".section-5-channels");
-  console.log("[섹션 5] section-5-channels 요소:", section5);
-  
-  let container = null;
-  if (section5) {
-    // 먼저 section-main 내부를 확인
-    const sectionMain = section5.querySelector(".section-main");
-    console.log("[섹션 5] section-main 요소:", sectionMain);
-    
-    if (sectionMain) {
-      // 기존 donut-chart-wrapper가 있으면 제거하고 channels-table-wrapper 생성
-      const donutChart = sectionMain.querySelector("#section5DonutChart, .donut-chart-wrapper");
-      if (donutChart) {
-        console.log("[섹션 5] 기존 donut-chart-wrapper 발견, 제거하고 table-wrapper 생성");
-        donutChart.remove();
-      }
-      
-      // channels-table-wrapper가 없으면 생성
-      container = sectionMain.querySelector("#section5ChannelsTable");
-      if (!container) {
-        console.log("[섹션 5] channels-table-wrapper 생성");
-        container = document.createElement("div");
-        container.className = "channels-table-wrapper";
-        container.id = "section5ChannelsTable";
-        sectionMain.appendChild(container);
-      }
-    } else {
-      container = section5.querySelector("#section5ChannelsTable");
-    }
-    console.log("[섹션 5] 섹션 내부에서 찾은 container:", container);
-  }
-  
-  // 섹션 내부에서 못 찾으면 전체 문서에서 찾기
-  if (!container) {
-    container = document.getElementById("section5ChannelsTable");
-    console.log("[섹션 5] 전체 문서에서 찾은 container:", container);
-  }
-  
-  if (!container) {
-    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
-    console.error("[섹션 5] section-5-channels 존재 여부:", !!section5);
-    if (section5) {
-      console.error("[섹션 5] section-5-channels의 innerHTML 일부:", section5.innerHTML.substring(0, 300));
-    }
-    // 나중에 다시 시도하도록 설정
-    setTimeout(() => {
-      console.log("[섹션 5] 재시도: container 요소 찾기");
-      renderSection5(data);
-    }, 200);
-    return;
-  }
-  
-  if (container) {
-    const total = topSources.reduce((sum, s) => sum + (s.total_users || s.users || s.value || 0), 0);
-    console.log("[섹션 5] 계산된 total:", total);
-    console.log("[섹션 5] topSources.length:", topSources.length);
-    console.log("[섹션 5] topSources 데이터:", topSources);
-    
-    if (topSources.length > 0 && total > 0) {
-      // Top 5만 선택하고 정렬
-      const top5 = topSources
-        .map(s => ({
-          source: s.source || s.name || "Unknown",
-          users: s.total_users || s.users || s.value || 0,
-          bounce_rate: s.bounce_rate || 0
-        }))
-        .sort((a, b) => b.users - a.users)
-        .slice(0, 5);
-      
-      console.log("[섹션 5] Top 5 데이터:", top5);
-      
-      // 표 생성
-      const tableHTML = `
-        <table class="channels-table">
-          <thead>
-            <tr>
-              <th>채널</th>
-              <th class="text-right">유입수</th>
-              <th class="text-right">유입비중</th>
-              <th class="text-right">이탈률</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${top5.map(item => {
-              const share = total > 0 ? ((item.users / total) * 100).toFixed(1) : "0.0";
-              return `
-                <tr>
-                  <td>${item.source}</td>
-                  <td class="text-right">${formatNumber(item.users)}</td>
-                  <td class="text-right">${share}%</td>
-                  <td class="text-right">${item.bounce_rate.toFixed(1)}%</td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      `;
-      
-      container.innerHTML = tableHTML;
-      console.log("[섹션 5] 표 HTML 생성 완료, container.innerHTML 길이:", container.innerHTML.length);
-    } else {
-      console.warn("[섹션 5] 데이터가 없거나 total이 0입니다. topSources:", topSources, "total:", total);
-      container.innerHTML = `
-        <div class="channels-table-empty">
-          <div class="empty-text">유입 채널 데이터가 없습니다.</div>
-        </div>
-      `;
-    }
-  } else {
-    console.error("[섹션 5] container 요소를 찾을 수 없습니다!");
-  }
-  
-  renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
-}
 
 // ============================================
 // 섹션 6: 광고 매체 효율
@@ -1209,33 +1152,10 @@ function renderSection7(data) {
   // 업체명 가져오기
   const companyName = currentCompany || "업체명";
   
-  // 섹션 제목 명시적으로 설정
-  const section7 = document.querySelector(".section-7-comparison");
-  if (section7) {
-    const sectionTitle = section7.querySelector(".section-title");
-    if (sectionTitle) {
-      sectionTitle.textContent = "7. 시장 트렌드와 자사몰 비교";
-    }
-  }
-  
-  // 헤더 업데이트
-  const trendHeader = document.getElementById("section7TrendHeader");
-  const companyHeader = document.getElementById("section7CompanyHeader");
-  if (trendHeader) trendHeader.textContent = "29CM 베스트";
-  if (companyHeader) companyHeader.textContent = companyName.toUpperCase();
-  
   // ============================================
-  // 1. section_7_data JSON 사용 (백엔드에서 구조화된 데이터)
+  // 1. 단일 통합 비교표 렌더링
   // ============================================
-  const comparisonTableData = section7Data;
-  
-  // ============================================
-  // 2. 비교표 렌더링 (상단)
-  // ============================================
-  const marketTableBody = document.getElementById("section7MarketTableBody");
-  const ourTableBody = document.getElementById("section7OurTableBody");
-  
-  // 기본 비교 항목
+  const comparisonTableBody = document.getElementById("section7ComparisonTableBody");
   const defaultComparisonItems = [
     { key: "주력_아이템", label: "주력 아이템" },
     { key: "평균_가격", label: "평균 가격" },
@@ -1244,55 +1164,22 @@ function renderSection7(data) {
     { key: "가격대", label: "가격대" }
   ];
   
-  // 29CM 베스트 테이블 렌더링
-  if (marketTableBody) {
-    const marketRows = [];
+  if (comparisonTableBody) {
+    const rows = [];
     
-    if (comparisonTableData) {
+    if (section7Data) {
       // 백엔드에서 구조화된 JSON 데이터 사용
-      for (const [key, value] of Object.entries(comparisonTableData)) {
+      for (const [key, value] of Object.entries(section7Data)) {
         if (typeof value === 'object' && value !== null) {
           const marketValue = value.market || value.trend || value["29cm"] || "-";
-          const label = key.replace(/_/g, " ");
-          
-          marketRows.push(`
-            <tr>
-              <td class="comparison-label">${label}</td>
-              <td class="comparison-market">${marketValue}</td>
-            </tr>
-          `);
-        }
-      }
-    } else {
-      // 데이터가 없으면 기본 항목 표시
-      defaultComparisonItems.forEach(item => {
-        marketRows.push(`
-          <tr>
-            <td class="comparison-label">${item.label}</td>
-            <td class="comparison-market">-</td>
-          </tr>
-        `);
-      });
-    }
-    
-    marketTableBody.innerHTML = marketRows.join("");
-  }
-  
-  // 자사몰 테이블 렌더링
-  if (ourTableBody) {
-    const ourRows = [];
-    
-    if (comparisonTableData) {
-      // 백엔드에서 구조화된 JSON 데이터 사용
-      for (const [key, value] of Object.entries(comparisonTableData)) {
-        if (typeof value === 'object' && value !== null) {
           const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
           const label = key.replace(/_/g, " ");
           
-          ourRows.push(`
+          rows.push(`
             <tr>
-              <td class="comparison-label">${label}</td>
-              <td class="comparison-company">${companyValue}</td>
+              <td>${label}</td>
+              <td>${marketValue}</td>
+              <td>${companyValue}</td>
             </tr>
           `);
         }
@@ -1300,20 +1187,21 @@ function renderSection7(data) {
     } else {
       // 데이터가 없으면 기본 항목 표시
       defaultComparisonItems.forEach(item => {
-        ourRows.push(`
+        rows.push(`
           <tr>
-            <td class="comparison-label">${item.label}</td>
-            <td class="comparison-company">-</td>
+            <td>${item.label}</td>
+            <td>-</td>
+            <td>-</td>
           </tr>
         `);
       });
     }
     
-    ourTableBody.innerHTML = ourRows.join("");
+    comparisonTableBody.innerHTML = rows.join("");
   }
   
   // ============================================
-  // 3. AI 분석 텍스트에서 JSON 코드 블록 제거
+  // 2. AI 분석 텍스트에서 JSON 코드 블록 제거
   // ============================================
   if (analysis) {
     // ```json ... ``` 블록 제거
@@ -1326,14 +1214,97 @@ function renderSection7(data) {
   }
   
   // ============================================
-  // 4. AI 분석 텍스트를 표 아래 전체 너비로 렌더링
+  // 3. AI 분석 텍스트를 두 개 박스로 분리
   // ============================================
-  const section7AnalysisContainer = document.getElementById("section7AnalysisFull");
-  if (section7AnalysisContainer) {
-    if (analysis && analysis.trim()) {
-      renderAiAnalysis("section7AnalysisFull", analysis);
+  let leftAnalysis = "";
+  let rightAnalysis = "";
+  
+  if (analysis && analysis.trim()) {
+    // 더 정확한 패턴 매칭: "29cm 시장은" 또는 "29CM 시장은"으로 시작하는 부분
+    // 그리고 "자사몰은" 또는 "자사몰"로 시작하는 부분을 찾기
+    const marketStartPatterns = [
+      /(?:29cm|29CM)\s*시장[\s은는이가의]?/i,
+      /29cm\s*시장[\s은는이가의]?/i,
+      /29CM\s*시장[\s은는이가의]?/i
+    ];
+    
+    const companyStartPatterns = [
+      /자사몰[\s은는이가의]?/i,
+      /(?:우리|본사|회사)[\s은는이가의]?/i
+    ];
+    
+    // "29cm 시장은" 또는 "29CM 시장은"으로 시작하는 위치 찾기
+    let marketStartIndex = -1;
+    for (const pattern of marketStartPatterns) {
+      const match = analysis.search(pattern);
+      if (match >= 0) {
+        marketStartIndex = match;
+        break;
+      }
+    }
+    
+    // "자사몰은" 또는 "자사몰"로 시작하는 위치 찾기
+    let companyStartIndex = -1;
+    for (const pattern of companyStartPatterns) {
+      const match = analysis.search(pattern);
+      if (match >= 0 && match > marketStartIndex) {
+        companyStartIndex = match;
+        break;
+      }
+    }
+    
+    // 두 위치를 모두 찾은 경우
+    if (marketStartIndex >= 0 && companyStartIndex > marketStartIndex) {
+      leftAnalysis = analysis.substring(marketStartIndex, companyStartIndex).trim();
+      rightAnalysis = analysis.substring(companyStartIndex).trim();
+    } else if (marketStartIndex >= 0) {
+      // 시장 부분만 찾은 경우
+      leftAnalysis = analysis.substring(marketStartIndex).trim();
+      rightAnalysis = analysis.substring(0, marketStartIndex).trim();
+    } else if (companyStartIndex >= 0) {
+      // 자사몰 부분만 찾은 경우
+      rightAnalysis = analysis.substring(companyStartIndex).trim();
+      leftAnalysis = analysis.substring(0, companyStartIndex).trim();
     } else {
-      section7AnalysisContainer.innerHTML = `
+      // 패턴 매칭이 실패한 경우, 텍스트를 중간에서 분할
+      const midPoint = Math.floor(analysis.length / 2);
+      // 문단 구분자로 분할 시도
+      const splitPoint = analysis.lastIndexOf('\n\n', midPoint);
+      
+      if (splitPoint > 0 && splitPoint < analysis.length * 0.8) {
+        leftAnalysis = analysis.substring(0, splitPoint).trim();
+        rightAnalysis = analysis.substring(splitPoint).trim();
+      } else {
+        // 단순히 중간에서 분할
+        leftAnalysis = analysis.substring(0, midPoint).trim();
+        rightAnalysis = analysis.substring(midPoint).trim();
+      }
+    }
+  }
+  
+  // 왼쪽 박스 렌더링 (29CM 시장 분석)
+  const leftContainer = document.getElementById("section7AnalysisLeft");
+  if (leftContainer) {
+    if (leftAnalysis && leftAnalysis.trim()) {
+      renderAiAnalysis("section7AnalysisLeft", leftAnalysis);
+    } else {
+      leftContainer.innerHTML = `
+        <div class="ai-analysis-skeleton">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      `;
+    }
+  }
+  
+  // 오른쪽 박스 렌더링 (자사몰 분석)
+  const rightContainer = document.getElementById("section7AnalysisRight");
+  if (rightContainer) {
+    if (rightAnalysis && rightAnalysis.trim()) {
+      renderAiAnalysis("section7AnalysisRight", rightAnalysis);
+    } else {
+      rightContainer.innerHTML = `
         <div class="ai-analysis-skeleton">
           <div class="skeleton-line"></div>
           <div class="skeleton-line"></div>
@@ -1461,15 +1432,28 @@ function renderSection9(data) {
           }
         }
         
-        // 아이콘 선택 (순서에 따라)
+        // 제목에서 ### 제거 및 이모지 추출
+        let cleanTitle = title.replace(/^###\s*/, '').trim(); // ### 제거
+        cleanTitle = cleanTitle.replace(/^#+\s*/, '').trim(); // 다른 # 마크다운 헤더도 제거
+        
+        // 제목에서 이모지 추출 (이미 있으면 중복 방지)
+        const emojiMatch = cleanTitle.match(/^[💡🎯📦🚀⭐🔥]/);
+        const existingEmoji = emojiMatch ? emojiMatch[0] : null;
+        
+        // 아이콘 선택 (제목에 이모지가 없으면 추가, 있으면 그대로 사용)
         const icons = ['💡', '🎯', '📦', '🚀', '⭐', '🔥'];
-        const icon = icons[index % icons.length];
+        const icon = existingEmoji || icons[index % icons.length];
+        
+        // 제목에서 이미 있는 이모지 제거 (중복 방지)
+        if (existingEmoji) {
+          cleanTitle = cleanTitle.replace(/^[💡🎯📦🚀⭐🔥]\s*/, '').trim();
+        }
         
         return `
           <div class="strategy-card">
             <div class="strategy-card-header">
               <span class="strategy-card-icon">${icon}</span>
-              <h4 class="strategy-card-title">${title}</h4>
+              <h4 class="strategy-card-title">${cleanTitle}</h4>
             </div>
             <div class="strategy-card-content markdown-content">${htmlContent || "내용 없음"}</div>
           </div>

@@ -492,24 +492,30 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 상위 광고: {json.dumps(section_data.get('top_ads', {}), ensure_ascii=False, indent=2)}
 
 분석 요청:
-1. **[KPI 이원화 평가 (가장 중요)]**:
+1. **[캠페인 성과 진단]** (200자 내외로 간결하게):
    - **전환(Conversion) 캠페인**: ROAS, 구매 건수, CVR을 기준으로 '매출 기여도'를 평가하십시오.
    - **유입(Traffic) 캠페인**: **절대 ROAS나 구매 전환율로 평가하지 마십시오.** 이 캠페인의 목적은 '저렴한 비용(Low CPC)'과 '높은 관심(High CTR)'입니다. CTR이 높고 CPC가 낮다면 "성공적인 모수 확보"로 칭찬하십시오.
 
-2. **[소재 형식(Format) 비교]**:
+2. **[소재 효율 분석]** (200자 내외로 간결하게):
    - 개별 광고 ID나 이름을 나열하지 말고, **'카탈로그', '영상', '단일 이미지'** 등 형식 간의 성과 차이를 비교하십시오.
    - 예: "구매를 유도하는 데는 카탈로그가 강력했고, 초기 시선을 끄는 데는 영상 소재가 탁월했습니다."
 
-3. **[전략적 제안]**:
+3. **[운영 전략 제안]** (400자 내외, 1, 2, 3으로 구분):
    - "숫자 읽어주기"를 멈추고 **"왜?"**를 분석하십시오.
    - 유입 캠페인으로 확보된 트래픽을 어떻게 활용할지(리타겟팅 등) 제안하십시오.
    - 예산의 효율적 재배치(Budget Reallocation) 방향을 제시하십시오.
+   - **반드시 다음 형식으로 작성하세요:**
+     ```
+     1. (첫 번째 전략 제안)
+     2. (두 번째 전략 제안)
+     3. (세 번째 전략 제안)
+     ```
 
 🛑 **제약 사항 (Strict Rules):**
 - **Ad ID (예: 12023...) 절대 표기 금지.** (가독성 해치는 주범)
 - 지출액, 노출수 등 단순 수치는 나열하지 말고 '약 400%', '10% 대' 등으로 둥글게 표현.
 - 독자가 읽기 편하게 **'1. 캠페인 성과 진단', '2. 소재 효율 분석', '3. 운영 전략 제안'**의 소제목을 사용하여 구조화된 줄글로 작성.
-- 분량: 800자 내외.
+- 분량: 전체 800자 내외 (1번 200자, 2번 200자, 3번 400자).
 """,
         7: f"""
 [섹션 7: 시장 트렌드와 자사몰 비교]
@@ -527,6 +533,10 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 - 구체적인 브랜드명이나 상품명은 필요시 2-3개만 대표적으로 언급하고, 나머지는 경향성으로 요약하세요.
 
 🛑 **절대적 제한: 반드시 1000자 이내로 작성하고 마무리하세요. 1000자를 초과하면 응답이 거부됩니다. 핵심 내용만 간결하게 요약하세요.**
+
+[중요] 분석 텍스트는 반드시 두 부분으로 구분하여 작성하세요:
+1. **29CM 시장 분석**: "29CM 시장은..." 또는 "29CM 시장의..."로 시작하여 시장 트렌드와 특징을 설명하세요.
+2. **자사몰 분석**: "반면, 자사몰은..." 또는 "자사몰은..."으로 시작하여 자사몰의 특징과 시장과의 차별점을 설명하세요.
 
 [중요] 분석 텍스트 마지막에 다음 형식의 JSON 비교표를 포함해주세요:
 ```json
@@ -674,6 +684,71 @@ def extract_section_content(full_text: str, target_section: int) -> str:
         # (이건 에러가 아님)
         print(f"ℹ️ [INFO] 섹션 {target_section} 제목 패턴을 찾지 못했습니다. 제목 없이 본문 바로 사용합니다.", file=sys.stderr)
         return full_text.strip()
+
+
+def split_section_7_analysis(text: str) -> List[str]:
+    """
+    섹션 7 분석 텍스트를 두 부분으로 분리 (29CM 시장 분석 / 자사몰 분석)
+    
+    Args:
+        text: 섹션 7 분석 텍스트
+    
+    Returns:
+        [29CM 시장 분석, 자사몰 분석] 리스트
+    """
+    if not text or not text.strip():
+        return ["", ""]
+    
+    # JSON 블록 제거 (분리 전에 제거)
+    text_without_json = re.sub(r'```json\s*[\s\S]*?\s*```', '', text, flags=re.DOTALL)
+    text_without_json = text_without_json.strip()
+    
+    # 분리 키워드 패턴 (여러 패턴 시도)
+    split_patterns = [
+        r'\n\n반면,\s*자사몰은',
+        r'\n\n자사몰은',
+        r'\n반면,\s*자사몰은',
+        r'\n자사몰은',
+        r'반면,\s*자사몰은',
+        r'자사몰은',
+    ]
+    
+    for pattern in split_patterns:
+        match = re.search(pattern, text_without_json, re.IGNORECASE)
+        if match:
+            split_pos = match.start()
+            part1 = text_without_json[:split_pos].strip()
+            part2 = text_without_json[split_pos:].strip()
+            
+            # "반면, 자사몰은" 같은 키워드 제거
+            part2 = re.sub(r'^(반면,\s*)?자사몰은\s*', '', part2, flags=re.IGNORECASE).strip()
+            
+            if part1 and part2:
+                return [part1, part2]
+    
+    # 분리 실패 시 중간 지점에서 분리 시도
+    lines = text_without_json.split('\n')
+    if len(lines) > 3:
+        mid_point = len(lines) // 2
+        part1 = '\n'.join(lines[:mid_point]).strip()
+        part2 = '\n'.join(lines[mid_point:]).strip()
+        
+        # "반면" 또는 "자사몰" 키워드가 있는 줄 찾기
+        for i, line in enumerate(lines):
+            if re.search(r'반면|자사몰', line, re.IGNORECASE):
+                if i > 0:
+                    part1 = '\n'.join(lines[:i]).strip()
+                    part2 = '\n'.join(lines[i:]).strip()
+                    # 키워드 제거
+                    part2 = re.sub(r'^(반면,\s*)?자사몰은\s*', '', part2, flags=re.IGNORECASE).strip()
+                    if part1 and part2:
+                        return [part1, part2]
+        
+        if part1 and part2:
+            return [part1, part2]
+    
+    # 모든 분리 시도 실패 시 전체를 첫 번째로 반환
+    return [text_without_json, ""]
 
 
 def extract_json_from_section(text: str) -> Optional[Dict]:
@@ -901,12 +976,27 @@ def generate_ai_analysis(
                 reduction_pct = (1 - len(analysis_text) / len(raw_analysis_text)) * 100
                 print(f"📝 [INFO] 섹션 {section_num} 내용 추출: {len(raw_analysis_text)}자 → {len(analysis_text)}자 ({reduction_pct:.1f}% 감소)", file=sys.stderr)
             
-            # 섹션 7: JSON 추출 및 별도 저장
+            # 섹션 7: JSON 추출 및 분석 텍스트 분리
             if section_num == 7:
                 json_data = extract_json_from_section(analysis_text)
                 if json_data:
                     signals["section_7_data"] = json_data
                     print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료", file=sys.stderr)
+                
+                # 분석 텍스트를 두 개로 분리 (29CM 시장 분석 / 자사몰 분석)
+                analysis_parts = split_section_7_analysis(analysis_text)
+                if len(analysis_parts) >= 2:
+                    signals["section_7_analysis_1"] = analysis_parts[0]  # 29CM 시장 분석
+                    signals["section_7_analysis_2"] = analysis_parts[1]  # 자사몰 분석
+                    print(f"✅ [INFO] 섹션 7 분석 텍스트 분리 완료 (1: {len(analysis_parts[0])}자, 2: {len(analysis_parts[1])}자)", file=sys.stderr)
+                else:
+                    # 분리 실패 시 전체를 첫 번째로 저장
+                    signals["section_7_analysis_1"] = analysis_text
+                    signals["section_7_analysis_2"] = ""
+                    print(f"⚠️ [WARN] 섹션 7 분석 텍스트 분리 실패, 전체를 첫 번째로 저장", file=sys.stderr)
+                
+                # 기존 section_7_analysis는 제거하지 않고 유지 (하위 호환성)
+                signals[section_key] = analysis_text
             
             # 섹션 9: 카드 파싱 및 별도 저장
             if section_num == 9:

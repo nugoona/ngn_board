@@ -324,14 +324,32 @@
   /* z-index 제거 (sticky가 아니므로 불필요) */
 }
 
-/* 섹션 7 하단 분석 텍스트 박스 */
-.section-ai-analysis-full {
-  width: 100%;
+/* 섹션 7 하단 분석 텍스트 박스 (두 개 박스로 분리) */
+.section-7-analysis-boxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.section-7-analysis-box {
   background-color: #f9fafb; /* 연한 회색 (gray-50) */
   border-radius: 8px;
   padding: 24px;
-  margin-top: 24px;
   border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.section-7-analysis-box .ai-analysis-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 12px;
+}
+
+.section-7-analysis-box .ai-analysis-content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #495057;
 }
 
 /* ✅ AI 분석 라벨 */
@@ -424,18 +442,42 @@
 
 .ai-analysis-text.markdown-content p {
   margin: 0.8em 0;
-  line-height: 1.7;
+  line-height: 1.8;
+  color: #344054;
 }
 
 .ai-analysis-text.markdown-content ul,
 .ai-analysis-text.markdown-content ol {
-  margin: 0.8em 0;
+  margin: 1em 0;
   padding-left: 1.8em;
+  line-height: 1.8;
 }
 
 .ai-analysis-text.markdown-content li {
-  margin: 0.4em 0;
-  line-height: 1.6;
+  margin: 0.6em 0;
+  line-height: 1.8;
+  color: #344054;
+}
+
+/* 숫자 리스트 스타일 개선 (1. 2. 3. 형식) */
+.ai-analysis-text.markdown-content ol > li::marker {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+/* 문단 간격 개선 */
+.ai-analysis-text.markdown-content p + p {
+  margin-top: 1em;
+}
+
+.ai-analysis-text.markdown-content p + ul,
+.ai-analysis-text.markdown-content p + ol {
+  margin-top: 1em;
+}
+
+.ai-analysis-text.markdown-content ul + p,
+.ai-analysis-text.markdown-content ol + p {
+  margin-top: 1em;
 }
 
 .ai-analysis-text.markdown-content strong {
@@ -1267,14 +1309,63 @@
 /* ============================================
    섹션 7: 시장 트렌드와 자사몰 비교
    ============================================ */
-/* 비교표 스타일 */
+/* 단일 비교표 스타일 */
 .comparison-table-wrapper {
   margin-bottom: 24px;
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
   border-radius: 8px;
-  padding: 20px;
+  overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  padding: 0; /* 여백 제거 */
+}
+
+/* 단일 통합 비교표 */
+.comparison-table-unified {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.comparison-table-unified thead {
+  background-color: #2563eb; /* 진한 파란색 */
+}
+
+.comparison-table-unified th {
+  padding: 16px 12px;
+  text-align: center;
+  font-weight: 700;
+  color: #ffffff; /* 흰색 */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.comparison-table-unified tbody tr {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.comparison-table-unified tbody tr:last-child {
+  border-bottom: none;
+}
+
+.comparison-table-unified td {
+  padding: 12px;
+  color: #495057;
+  border: 1px solid #e9ecef;
+  text-align: left;
+}
+
+.comparison-table-unified td:first-child {
+  font-weight: 500;
+  background-color: #f8f9fa;
+  width: 30%;
+}
+
+.comparison-table-unified td:nth-child(2) {
+  color: #0066CC;
+}
+
+.comparison-table-unified td:nth-child(3) {
+  color: #DC3545;
 }
 
 .comparison-table {

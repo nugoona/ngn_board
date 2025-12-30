@@ -1201,25 +1201,20 @@ function renderSection7(data) {
   }
   
   // ============================================
-  // 2. AI 분석 텍스트에서 JSON 코드 블록 제거
+  // 2. AI 분석 텍스트를 두 개 박스로 분리
   // ============================================
-  if (analysis) {
-    // ```json ... ``` 블록 제거
+  // 백엔드에서 이미 분리된 분석 텍스트 사용
+  let leftAnalysis = signals.section_7_analysis_1 || "";
+  let rightAnalysis = signals.section_7_analysis_2 || "";
+  
+  // 하위 호환성: section_7_analysis가 있으면 분리 시도
+  if ((!leftAnalysis || !rightAnalysis) && analysis && analysis.trim()) {
+    // JSON 코드 블록 제거
     const jsonBlockRegex = /```json\s*[\s\S]*?\s*```/g;
     analysis = analysis.replace(jsonBlockRegex, "").trim();
-    
-    // ``` ... ``` (일반 코드 블록)도 제거
     const codeBlockRegex = /```[\s\S]*?```/g;
     analysis = analysis.replace(codeBlockRegex, "").trim();
-  }
-  
-  // ============================================
-  // 3. AI 분석 텍스트를 두 개 박스로 분리
-  // ============================================
-  let leftAnalysis = "";
-  let rightAnalysis = "";
-  
-  if (analysis && analysis.trim()) {
+    
     // 더 정확한 패턴 매칭: "29cm 시장은" 또는 "29CM 시장은"으로 시작하는 부분
     // 그리고 "자사몰은" 또는 "자사몰"로 시작하는 부분을 찾기
     const marketStartPatterns = [

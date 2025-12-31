@@ -1433,10 +1433,15 @@ function renderSection9(data) {
         let cleanTitle = title
           .replace(/^###\s*/, '') // ### 제거
           .replace(/^#+\s*/, '') // 다른 # 마크다운 헤더도 제거
-          .replace(/^[💡🎯📦🚀⭐🔥]\s*/, '') // 앞쪽 이모지 제거
+          .replace(/^[💡🎯📦🚀⭐🔥📅💎🏷️🤝]\s*/, '') // 앞쪽 이모지 제거 (새로운 이모지 추가)
           .replace(/\[전략\s*\d+\]\s*/i, '') // [전략 1] 패턴 제거
           .replace(/\*\*/g, '') // ** 마크다운 굵게 제거
           .replace(/\*/g, '') // * 마크다운 제거
+          .replace(/&amp;/g, '&') // HTML 엔티티 디코딩
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
           .trim();
         
         // 아이콘 선택 (제목과 무관하게 인덱스 기반으로 선택)

@@ -79,9 +79,11 @@ function openMonthlyReportModal() {
     });
   });
   
+  // 전월 리포트를 보기 위해 1개월 전으로 계산
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = prevMonth.getFullYear();
+  const month = prevMonth.getMonth() + 1;
   
   currentCompany = companyName;
   currentYear = year;

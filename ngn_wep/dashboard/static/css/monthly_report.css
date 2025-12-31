@@ -1340,13 +1340,13 @@
 }
 
 .comparison-table-unified th:first-child {
-  width: 15%;
-  min-width: 100px;
+  width: 12%;
+  min-width: 80px;
 }
 
 .comparison-table-unified th:nth-child(2),
 .comparison-table-unified th:nth-child(3) {
-  width: 42.5%;
+  width: 44%;
 }
 
 .comparison-table-unified tbody tr {

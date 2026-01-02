@@ -2194,7 +2194,9 @@ window.addEventListener('load', function() {
   console.log("[월간 리포트] window.load 이벤트 발생");
   setTimeout(initMonthlyReportButton, 100); // 약간의 지연 후 실행
 });
-  
+
+// 모달 닫기 및 기타 이벤트 리스너
+document.addEventListener("DOMContentLoaded", function() {
   const closeBtn = document.getElementById("closeMonthlyReportBtn");
   if (closeBtn) {
     closeBtn.addEventListener("click", closeMonthlyReportModal);

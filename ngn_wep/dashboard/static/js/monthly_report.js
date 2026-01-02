@@ -1575,19 +1575,21 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
     const competitorsList = [];
     
     // 각 줄에서 경쟁 상품 정보 파싱
-    // 형식: * **[업체명] [상품명] [탭명 TOP순위]** 또는 * **업체명 상품명 탭명 TOP순위**
+    // 형식: * **업체명 | 상품명 | 탭명 TOP순위**
     const lines = competitorsSection.split('\n');
     
     lines.forEach(line => {
       // 전체 텍스트에서 마크다운 제거
       const fullText = line.replace(/\*\s*\*\*/g, '').replace(/\*\*/g, '').replace(/^\*\s*/, '').trim();
       
-      // "탭명 TOP숫자" 패턴 찾기 (예: "상의 TOP1", "아우터 TOP7")
-      const topMatch = fullText.match(/(.+?)\s+(.+?\s+TOP\d+)$/);
+      // 파이프(|) 구분자로 분리 시도
+      const parts = fullText.split(/\s*\|\s*/);
       
-      if (topMatch) {
-        const rankInfo = topMatch[2].trim(); // "상의 TOP1"
-        const beforeTop = topMatch[1].trim(); // "비터셀즈 2 PACKEssential Golgi Tee-7 colors"
+      if (parts.length >= 3) {
+        // 새로운 형식: 업체명 | 상품명 | 탭명 TOP순위
+        const brand = parts[0].trim();
+        const productName = parts[1].trim();
+        const rankInfo = parts[2].trim(); // "상의 TOP1"
         
         // 순위 정보에서 탭명과 순위 추출
         const rankMatch = rankInfo.match(/(.+?)\s+TOP(\d+)/);
@@ -1595,74 +1597,33 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
           const tabName = rankMatch[1].trim();
           const rank = parseInt(rankMatch[2], 10);
           
-          // 29CM 데이터에서 해당 탭과 순위로 먼저 찾기
-          const candidateItems = items.filter(item => item.tab === tabName && item.rank === rank);
+          // 29CM 데이터에서 해당 탭과 순위로 찾기
+          const foundItem = items.find(item => item.tab === tabName && item.rank === rank);
           
-          let brand = "";
-          let productName = "";
           let url = "";
-          let foundItem = null;
-          
-          if (candidateItems.length > 0) {
-            // 후보 중에서 브랜드명으로 매칭 시도
-            // beforeTop에서 브랜드명을 찾기 위해 실제 데이터의 브랜드명과 비교
-            for (const item of candidateItems) {
-              const itemBrand = item.brand || "";
-              const itemName = item.name || "";
-              
-              // 브랜드명으로 시작하는지 확인 (공백 포함)
-              if (itemBrand && beforeTop.startsWith(itemBrand)) {
-                foundItem = item;
-                brand = itemBrand;
-                productName = beforeTop.substring(itemBrand.length).trim();
-                break;
-              }
-              
-              // 상품명이 beforeTop에 포함되어 있는지 확인
-              if (itemName && beforeTop.includes(itemName)) {
-                foundItem = item;
-                brand = itemBrand;
-                productName = itemName;
-                break;
-              }
-            }
+          if (foundItem) {
+            // URL 추출 (여러 필드 확인)
+            url = foundItem.url || foundItem.item_url || foundItem.itemUrl || "";
             
-            // 브랜드 매칭 실패 시, 첫 번째 후보 사용하고 실제 데이터의 브랜드/상품명 사용
-            if (!foundItem && candidateItems.length > 0) {
-              foundItem = candidateItems[0];
-              brand = foundItem.brand || "";
-              productName = foundItem.name || "";
-              
-              // 실제 데이터의 브랜드/상품명이 없으면 beforeTop을 파싱
-              if (!brand || !productName) {
-                const words = beforeTop.split(/\s+/);
-                if (words.length >= 2) {
-                  brand = brand || words[0];
-                  productName = productName || words.slice(1).join(' ');
-                } else {
-                  brand = brand || beforeTop;
-                  productName = productName || "";
-                }
+            // URL이 없으면 item_id로 생성
+            if (!url) {
+              const itemId = foundItem.item_id || foundItem.itemId;
+              if (itemId) {
+                url = `https://29cm.co.kr/products/${itemId}`;
               }
-            }
-            
-            // URL 추출
-            if (foundItem) {
-              url = foundItem.url || foundItem.item_url || "";
-              // URL이 없으면 item_id로 생성
-              if (!url && foundItem.item_id) {
-                url = `https://product.29cm.co.kr/catalog/${foundItem.item_id}`;
-              }
-            }
-          } else {
-            // 후보가 없으면 기본 파싱 (탭과 순위가 맞지 않는 경우)
-            const words = beforeTop.split(/\s+/);
-            if (words.length >= 2) {
-              brand = words[0];
-              productName = words.slice(1).join(' ');
             } else {
-              brand = beforeTop;
-              productName = "";
+              // URL 형식 변환 (product.29cm.co.kr/catalog/ → 29cm.co.kr/products/)
+              if (url.includes('product.29cm.co.kr/catalog/')) {
+                const catalogMatch = url.match(/catalog\/(\d+)/);
+                if (catalogMatch) {
+                  url = `https://29cm.co.kr/products/${catalogMatch[1]}`;
+                }
+              } else if (url.includes('29cm.co.kr/products/')) {
+                // 이미 올바른 형식
+              } else if (url.match(/^\d+$/)) {
+                // 숫자만 있으면 item_id로 간주
+                url = `https://29cm.co.kr/products/${url}`;
+              }
             }
           }
           
@@ -1672,6 +1633,109 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             rank: rankInfo,
             url: url
           });
+        }
+      } else {
+        // 기존 형식 지원 (하위 호환성): 업체명 상품명 탭명 TOP순위
+        const topMatch = fullText.match(/(.+?)\s+(.+?\s+TOP\d+)$/);
+        
+        if (topMatch) {
+          const rankInfo = topMatch[2].trim(); // "상의 TOP1"
+          const beforeTop = topMatch[1].trim(); // "비터셀즈 2 PACKEssential Golgi Tee-7 colors"
+          
+          // 순위 정보에서 탭명과 순위 추출
+          const rankMatch = rankInfo.match(/(.+?)\s+TOP(\d+)/);
+          if (rankMatch) {
+            const tabName = rankMatch[1].trim();
+            const rank = parseInt(rankMatch[2], 10);
+            
+            // 29CM 데이터에서 해당 탭과 순위로 먼저 찾기
+            const candidateItems = items.filter(item => item.tab === tabName && item.rank === rank);
+            
+            let brand = "";
+            let productName = "";
+            let url = "";
+            let foundItem = null;
+            
+            if (candidateItems.length > 0) {
+              // 후보 중에서 브랜드명으로 매칭 시도
+              for (const item of candidateItems) {
+                const itemBrand = item.brand || "";
+                const itemName = item.name || "";
+                
+                // 브랜드명으로 시작하는지 확인 (공백 포함)
+                if (itemBrand && beforeTop.startsWith(itemBrand)) {
+                  foundItem = item;
+                  brand = itemBrand;
+                  productName = beforeTop.substring(itemBrand.length).trim();
+                  break;
+                }
+                
+                // 상품명이 beforeTop에 포함되어 있는지 확인
+                if (itemName && beforeTop.includes(itemName)) {
+                  foundItem = item;
+                  brand = itemBrand;
+                  productName = itemName;
+                  break;
+                }
+              }
+              
+              // 브랜드 매칭 실패 시, 첫 번째 후보 사용하고 실제 데이터의 브랜드/상품명 사용
+              if (!foundItem && candidateItems.length > 0) {
+                foundItem = candidateItems[0];
+                brand = foundItem.brand || "";
+                productName = foundItem.name || "";
+                
+                // 실제 데이터의 브랜드/상품명이 없으면 beforeTop을 파싱
+                if (!brand || !productName) {
+                  const words = beforeTop.split(/\s+/);
+                  if (words.length >= 2) {
+                    brand = brand || words[0];
+                    productName = productName || words.slice(1).join(' ');
+                  } else {
+                    brand = brand || beforeTop;
+                    productName = productName || "";
+                  }
+                }
+              }
+              
+              // URL 추출
+              if (foundItem) {
+                url = foundItem.url || foundItem.item_url || foundItem.itemUrl || "";
+                // URL이 없으면 item_id로 생성
+                if (!url) {
+                  const itemId = foundItem.item_id || foundItem.itemId;
+                  if (itemId) {
+                    url = `https://29cm.co.kr/products/${itemId}`;
+                  }
+                } else {
+                  // URL 형식 변환
+                  if (url.includes('product.29cm.co.kr/catalog/')) {
+                    const catalogMatch = url.match(/catalog\/(\d+)/);
+                    if (catalogMatch) {
+                      url = `https://29cm.co.kr/products/${catalogMatch[1]}`;
+                    }
+                  }
+                }
+              }
+            } else {
+              // 후보가 없으면 기본 파싱 (탭과 순위가 맞지 않는 경우)
+              const words = beforeTop.split(/\s+/);
+              if (words.length >= 2) {
+                brand = words[0];
+                productName = words.slice(1).join(' ');
+              } else {
+                brand = beforeTop;
+                productName = "";
+              }
+            }
+            
+            competitorsList.push({
+              brand: brand,
+              productName: productName,
+              rank: rankInfo,
+              url: url
+            });
+          }
         }
       }
     });

@@ -1702,10 +1702,15 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             }
           }
           
+          // 순위에서 숫자 추출
+          const rankNumber = rank;
+          
           competitorsList.push({
             brand: brand,
             productName: productName,
             rank: rankInfo,
+            rankNumber: rankNumber,
+            tabName: tabName,
             url: url
           });
         }
@@ -1718,13 +1723,13 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
           const beforeTop = topMatch[1].trim(); // "비터셀즈 2 PACKEssential Golgi Tee-7 colors"
           
           // 순위 정보에서 탭명과 순위 추출
-          const rankMatch = rankInfo.match(/(.+?)\s+TOP(\d+)/);
-          if (rankMatch) {
-            const tabName = rankMatch[1].trim();
-            const rank = parseInt(rankMatch[2], 10);
+          const rankMatch2 = rankInfo.match(/(.+?)\s+TOP(\d+)/);
+          if (rankMatch2) {
+            const tabName2 = rankMatch2[1].trim();
+            const rank = parseInt(rankMatch2[2], 10);
             
             // 29CM 데이터에서 해당 탭과 순위로 먼저 찾기
-            const candidateItems = items.filter(item => item.tab === tabName && item.rank === rank);
+            const candidateItems = items.filter(item => item.tab === tabName2 && item.rank === rank);
             
             let brand = "";
             let productName = "";
@@ -1804,20 +1809,15 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
               }
             }
             
-            // 순위에서 숫자 추출
-            const rankMatch = rankInfo.match(/TOP(\d+)/);
-            const rankNumber = rankMatch ? parseInt(rankMatch[1], 10) : 999;
-            
-            // 탭명 추출
-            const tabMatch = rankInfo.match(/(.+?)\s+TOP/);
-            const tabName = tabMatch ? tabMatch[1].trim() : '';
+            // 순위에서 숫자 추출 (이미 위에서 추출한 값 사용)
+            const rankNumber = rank;
             
             competitorsList.push({
               brand: brand,
               productName: productName,
               rank: rankInfo,
               rankNumber: rankNumber,
-              tabName: tabName,
+              tabName: tabName2,
               url: url
             });
           }

@@ -4,6 +4,7 @@ import sys
 import datetime
 import json
 import gzip
+import io
 from flask import Blueprint, request, jsonify, session, Response
 from google.cloud import bigquery
 from google.cloud import storage
@@ -671,7 +672,9 @@ def get_monthly_report():
             
             # Gzip 압축 해제 시도 (성공하면 압축된 파일, 실패하면 압축되지 않은 파일)
             try:
-                snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+                # Python 버전 호환성을 위해 gzip.GzipFile 사용 (max_length 파라미터 문제 회피)
+                with gzip.GzipFile(fileobj=io.BytesIO(snapshot_bytes)) as gz_file:
+                    snapshot_json_str = gz_file.read().decode('utf-8')
                 print(f"✅ GCS에서 스냅샷을 불러왔습니다: {found_path} (Gzip 압축 해제됨)", file=sys.stderr)
             except (gzip.BadGzipFile, OSError, Exception) as e:
                 # Gzip 압축 해제 실패 → 압축되지 않은 JSON 파일로 처리 (하위 호환)

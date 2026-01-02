@@ -2,16 +2,8 @@
    월간 프리미엄 전략 리포트 스타일
    ============================================ */
 
-/* ✅ 성과 요약 섹션에 position: relative 추가 (버튼 배치용) */
-.performance-summary-wrapper {
-  position: relative;
-}
-
-/* ✅ 월간 리포트 버튼 (성과 요약 섹션 우측 하단) */
+/* ✅ 월간 리포트 버튼 (상단 여백 중간) */
 .monthly-report-toggle-btn {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
   background-color: #003366;
   color: #ffffff;
   font-weight: bold;
@@ -26,6 +18,7 @@
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  pointer-events: auto;
 }
 
 .monthly-report-toggle-btn:hover {

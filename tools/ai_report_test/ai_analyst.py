@@ -1152,6 +1152,9 @@ def generate_ai_analysis(
                 log_prompt_to_file(section_num, full_prompt)
             
             # Google Gen AI SDK (v1.0+) API 호출
+            # 섹션 5는 토큰 제한을 더 크게 설정 (경쟁 상품 리스트가 길어질 수 있음)
+            max_tokens = 16384 if section_num == 5 else 8192
+            
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
                 contents=full_prompt,
@@ -1159,7 +1162,7 @@ def generate_ai_analysis(
                     temperature=0.7,
                     top_p=0.95,
                     top_k=40,
-                    max_output_tokens=8192  # 답변이 중간에 잘리지 않도록 토큰 한도 증량
+                    max_output_tokens=max_tokens  # 섹션 5는 16384, 나머지는 8192
                 )
             )
             

@@ -1843,7 +1843,13 @@ th.sortable.desc::after {
   margin-right: 60px;  /* ← 여기 숫자를 조절하여 햄버거와 거리 최소화 */
 }
 
-
+/* 중간: 월간 리포트 버튼 */
+.nav-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
 
 /* 오른쪽: 햄버거 메뉴 */
 .nav-right {

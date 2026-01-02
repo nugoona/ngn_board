@@ -1782,10 +1782,20 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
               }
             }
             
+            // 순위에서 숫자 추출
+            const rankMatch = rankInfo.match(/TOP(\d+)/);
+            const rankNumber = rankMatch ? parseInt(rankMatch[1], 10) : 999;
+            
+            // 탭명 추출
+            const tabMatch = rankInfo.match(/(.+?)\s+TOP/);
+            const tabName = tabMatch ? tabMatch[1].trim() : '';
+            
             competitorsList.push({
               brand: brand,
               productName: productName,
               rank: rankInfo,
+              rankNumber: rankNumber,
+              tabName: tabName,
               url: url
             });
           }
@@ -1811,6 +1821,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
 
 let competitorsListGlobal = [];
 let competitorsSortOrder = 'asc'; // 'asc' or 'desc'
+let competitorsRankSortOrder = 'asc'; // 순위 정렬 순서
 
 function renderCompetitorsTable(competitorsList) {
   const tableContainer = document.getElementById("section5CompetitorsTable");
@@ -1824,7 +1835,7 @@ function renderCompetitorsTable(competitorsList) {
   // 전역 변수에 저장
   competitorsListGlobal = [...competitorsList];
   
-  // 정렬 헤더 클릭 이벤트 추가
+  // 업체명 정렬 헤더 클릭 이벤트 추가
   const sortHeader = document.getElementById("sortBrandHeader");
   if (sortHeader && !sortHeader.hasAttribute('data-listener-added')) {
     sortHeader.setAttribute('data-listener-added', 'true');
@@ -1838,6 +1849,26 @@ function renderCompetitorsTable(competitorsList) {
     });
   }
   
+  // 순위 정렬 헤더 클릭 이벤트 추가
+  const sortRankHeader = document.getElementById("sortRankHeader");
+  if (sortRankHeader && !sortRankHeader.hasAttribute('data-listener-added')) {
+    sortRankHeader.setAttribute('data-listener-added', 'true');
+    sortRankHeader.addEventListener('click', function() {
+      competitorsRankSortOrder = competitorsRankSortOrder === 'asc' ? 'desc' : 'asc';
+      const sortedList = [...competitorsListGlobal].sort((a, b) => {
+        // 먼저 카테고리(탭명)로 정렬
+        const tabComparison = (a.tabName || '').localeCompare(b.tabName || '', 'ko');
+        if (tabComparison !== 0) {
+          return tabComparison;
+        }
+        // 같은 카테고리 내에서 순위로 정렬
+        const rankComparison = a.rankNumber - b.rankNumber;
+        return competitorsRankSortOrder === 'asc' ? rankComparison : -rankComparison;
+      });
+      renderCompetitorsTable(sortedList);
+    });
+  }
+  
   // 정렬 아이콘 업데이트
   if (sortHeader) {
     const sortIcon = sortHeader.querySelector('.sort-icon');
@@ -1846,13 +1877,20 @@ function renderCompetitorsTable(competitorsList) {
     }
   }
   
-  const showAll = competitorsList.length <= 5;
-  const displayCount = showAll ? competitorsList.length : 5;
+  if (sortRankHeader) {
+    const sortIcon = sortRankHeader.querySelector('.sort-icon');
+    if (sortIcon) {
+      sortIcon.textContent = competitorsRankSortOrder === 'asc' ? '↑' : '↓';
+    }
+  }
+  
+  const showAll = competitorsListGlobal.length <= 5;
+  const displayCount = showAll ? competitorsListGlobal.length : 5;
   
   tableBody.innerHTML = "";
   
   for (let i = 0; i < displayCount; i++) {
-    const competitor = competitorsList[i];
+    const competitor = competitorsListGlobal[i];
     const row = document.createElement("tr");
     row.style.borderBottom = "1px solid #e9ecef";
     

@@ -160,7 +160,7 @@
             </div>
             <!-- 경쟁 상품 표 -->
             <div id="section5CompetitorsTable" style="display: none;">
-              <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 16px; font-weight: 600;">경쟁 상품</h4>
+              <h4 class="section5-title-box" style="margin-top: 24px; margin-bottom: 12px; font-size: 16px; font-weight: 600; display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 8px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">경쟁 상품</h4>
               <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px;">
                 <table class="competitors-table" style="width: 100%; border-collapse: collapse;">
                   <thead style="position: sticky; top: 0; z-index: 10; background-color: #2563eb;">
@@ -170,7 +170,10 @@
                         <span class="sort-icon" style="margin-left: 4px; font-size: 12px;">⇅</span>
                       </th>
                       <th style="padding: 12px; text-align: center; font-weight: 600; color: #ffffff; background-color: #2563eb;">상품명</th>
-                      <th style="padding: 12px; text-align: center; font-weight: 600; color: #ffffff; background-color: #2563eb;">순위</th>
+                      <th id="sortRankHeader" style="padding: 12px; text-align: center; font-weight: 600; color: #ffffff; background-color: #2563eb; cursor: pointer; user-select: none;">
+                        순위
+                        <span class="sort-icon" style="margin-left: 4px; font-size: 12px;">⇅</span>
+                      </th>
                       <th style="padding: 12px; text-align: center; font-weight: 600; color: #ffffff; background-color: #2563eb;">URL</th>
                     </tr>
                   </thead>

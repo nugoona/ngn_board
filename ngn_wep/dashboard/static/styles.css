@@ -1826,7 +1826,7 @@ th.sortable.desc::after {
 
 .nav-buttons {
   position: fixed;
-  top: 10px;
+  top: 60px; /* filter-wrapper 아래로 이동 (padding 12px + custom-dropdown 높이 약 40px + 여유 공간) */
   left: 0;
   right: 0;
   z-index: 1100;

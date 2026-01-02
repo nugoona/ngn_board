@@ -53,9 +53,27 @@ echo "   빌드 ID: $BUILD_ID"
 echo "🧹 6. 임시 파일 정리 중..."
 rm ./Dockerfile
 
-# 7️⃣ 빌드 완료 확인
+# 7️⃣ 빌드 완료 확인 (polling 방식)
 echo "⏳ 7. 빌드 완료 대기 중..."
-gcloud builds wait "$BUILD_ID" --project="$PROJECT"
+if [ -n "$BUILD_ID" ]; then
+  echo "   빌드 상태 확인 중..."
+  while true; do
+    STATUS=$(gcloud builds describe "$BUILD_ID" --project="$PROJECT" --format="value(status)" 2>/dev/null || echo "UNKNOWN")
+    if [ "$STATUS" = "SUCCESS" ]; then
+      echo "   ✅ 빌드 완료!"
+      break
+    elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "CANCELLED" ]; then
+      echo "   ❌ 빌드 실패 또는 취소됨: $STATUS"
+      echo "   빌드 로그 확인: gcloud builds log $BUILD_ID --project=$PROJECT"
+      exit 1
+    else
+      echo "   빌드 진행 중... (상태: $STATUS)"
+      sleep 10
+    fi
+  done
+else
+  echo "   ⚠️  빌드 ID를 가져올 수 없습니다. 계속 진행합니다..."
+fi
 
 # 8️⃣ 배포
 echo "🚀 8. Cloud Run 서비스 배포 중..."

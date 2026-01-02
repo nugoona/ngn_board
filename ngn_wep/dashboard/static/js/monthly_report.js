@@ -1589,74 +1589,80 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
         const rankInfo = topMatch[2].trim(); // "상의 TOP1"
         const beforeTop = topMatch[1].trim(); // "비터셀즈 2 PACKEssential Golgi Tee-7 colors"
         
-        let brand, productName;
-        
-        // 대괄호 형식: [브랜드] [상품명]
-        const bracketMatch = beforeTop.match(/\[([^\]]+)\]\s+\[([^\]]+)\]/);
-        if (bracketMatch) {
-          brand = bracketMatch[1].trim();
-          productName = bracketMatch[2].trim();
-        } else {
-          // 일반 형식: 브랜드 상품명
-          // 브랜드는 보통 첫 번째 단어이지만, 상품명이 여러 단어일 수 있음
-          // 간단하게 첫 번째 단어를 브랜드로, 나머지를 상품명으로
-          const words = beforeTop.split(/\s+/);
-          if (words.length >= 2) {
-            brand = words[0];
-            productName = words.slice(1).join(' ');
-          } else {
-            brand = beforeTop;
-            productName = "";
-          }
-        }
-        
         // 순위 정보에서 탭명과 순위 추출
         const rankMatch = rankInfo.match(/(.+?)\s+TOP(\d+)/);
         if (rankMatch) {
           const tabName = rankMatch[1].trim();
           const rank = parseInt(rankMatch[2], 10);
           
-          // 29CM 데이터에서 해당 상품 찾기 (유연한 매칭)
+          // 29CM 데이터에서 해당 탭과 순위로 먼저 찾기
+          const candidateItems = items.filter(item => item.tab === tabName && item.rank === rank);
+          
+          let brand = "";
+          let productName = "";
           let url = "";
-          // 1순위: 정확한 매칭 (탭, 순위, 브랜드, 상품명)
-          let foundItem = items.find(item => 
-            item.tab === tabName && 
-            item.rank === rank &&
-            item.brand === brand &&
-            item.name === productName
-          );
+          let foundItem = null;
           
-          // 2순위: 탭과 순위만 매칭, 브랜드 유사도
-          if (!foundItem) {
-            foundItem = items.find(item => 
-              item.tab === tabName && 
-              item.rank === rank &&
-              (item.brand === brand || item.brand?.includes(brand) || brand.includes(item.brand))
-            );
-          }
-          
-          // 3순위: 탭과 순위만 매칭, 상품명 유사도
-          if (!foundItem) {
-            foundItem = items.find(item => 
-              item.tab === tabName && 
-              item.rank === rank &&
-              (item.name === productName || item.name?.includes(productName) || productName.includes(item.name))
-            );
-          }
-          
-          // 4순위: 탭과 순위만 매칭
-          if (!foundItem) {
-            foundItem = items.find(item => 
-              item.tab === tabName && 
-              item.rank === rank
-            );
-          }
-          
-          if (foundItem) {
-            url = foundItem.url || foundItem.item_url || "";
-            // URL이 없으면 item_id로 생성
-            if (!url && foundItem.item_id) {
-              url = `https://product.29cm.co.kr/catalog/${foundItem.item_id}`;
+          if (candidateItems.length > 0) {
+            // 후보 중에서 브랜드명으로 매칭 시도
+            // beforeTop에서 브랜드명을 찾기 위해 실제 데이터의 브랜드명과 비교
+            for (const item of candidateItems) {
+              const itemBrand = item.brand || "";
+              const itemName = item.name || "";
+              
+              // 브랜드명으로 시작하는지 확인 (공백 포함)
+              if (itemBrand && beforeTop.startsWith(itemBrand)) {
+                foundItem = item;
+                brand = itemBrand;
+                productName = beforeTop.substring(itemBrand.length).trim();
+                break;
+              }
+              
+              // 상품명이 beforeTop에 포함되어 있는지 확인
+              if (itemName && beforeTop.includes(itemName)) {
+                foundItem = item;
+                brand = itemBrand;
+                productName = itemName;
+                break;
+              }
+            }
+            
+            // 브랜드 매칭 실패 시, 첫 번째 후보 사용하고 실제 데이터의 브랜드/상품명 사용
+            if (!foundItem && candidateItems.length > 0) {
+              foundItem = candidateItems[0];
+              brand = foundItem.brand || "";
+              productName = foundItem.name || "";
+              
+              // 실제 데이터의 브랜드/상품명이 없으면 beforeTop을 파싱
+              if (!brand || !productName) {
+                const words = beforeTop.split(/\s+/);
+                if (words.length >= 2) {
+                  brand = brand || words[0];
+                  productName = productName || words.slice(1).join(' ');
+                } else {
+                  brand = brand || beforeTop;
+                  productName = productName || "";
+                }
+              }
+            }
+            
+            // URL 추출
+            if (foundItem) {
+              url = foundItem.url || foundItem.item_url || "";
+              // URL이 없으면 item_id로 생성
+              if (!url && foundItem.item_id) {
+                url = `https://product.29cm.co.kr/catalog/${foundItem.item_id}`;
+              }
+            }
+          } else {
+            // 후보가 없으면 기본 파싱 (탭과 순위가 맞지 않는 경우)
+            const words = beforeTop.split(/\s+/);
+            if (words.length >= 2) {
+              brand = words[0];
+              productName = words.slice(1).join(' ');
+            } else {
+              brand = beforeTop;
+              productName = "";
             }
           }
           

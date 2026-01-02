@@ -1831,7 +1831,9 @@ th.sortable.desc::after {
   right: 0;
   z-index: 1100;
   display: flex;
-  justify-content: center; /* ✅ 가운데 정렬 기준 */
+  justify-content: space-between; /* 좌우 배치 */
+  align-items: center;
+  padding: 0 20px; /* 좌우 여백 */
   pointer-events: none;     /* 내부 클릭 이벤트 방지 안되도록 */
 }
 
@@ -1840,14 +1842,13 @@ th.sortable.desc::after {
   display: flex;
   align-items: center;
   gap: 20px;  /* 버튼과 업데이트 문구 사이 간격 */
-  margin-left: 20px;  /* 왼쪽 여백 */
   pointer-events: auto;
 }
 
 /* 오른쪽: 햄버거 메뉴 */
 .nav-right {
-  position: absolute;
-  right: 20px;
+  display: flex;
+  align-items: center;
   pointer-events: auto;
 }
 

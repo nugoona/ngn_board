@@ -63,7 +63,6 @@
           <div class="hamburger-dropdown" id="hamburgerDropdown">
             <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
             <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
-            <a href="#" id="openFormModalBtn" class="form-modal-trigger">새 항목 추가</a>
             <a href="{{ url_for('auth.logout') }}">로그아웃</a>
           </div>
         </div>
@@ -221,10 +220,6 @@
   <!-- ✅ 월간 리포트 모달 -->
   {% include 'components/monthly_report_modal.html' %}
   <script src="{{ url_for('static', filename='js/monthly_report.js') }}?v=1.0"></script>
-  
-  <!-- ✅ Form Modal -->
-  {% include 'components/form_modal.html' %}
-  <script src="{{ url_for('static', filename='js/form_modal.js') }}?v=1.0"></script>
 
 
 

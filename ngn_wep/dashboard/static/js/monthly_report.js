@@ -52,6 +52,9 @@ function openMonthlyReportModal() {
     return;
   }
   
+  // NEW 표시 제거
+  hideMonthlyReportNewBadge();
+  
   const modal = document.getElementById("monthlyReportModal");
   console.log("[월간 리포트] 모달 요소:", modal);
   if (!modal) {
@@ -90,6 +93,56 @@ function openMonthlyReportModal() {
   currentMonth = month;
   
   loadMonthlyReport(companyName, year, month);
+}
+
+/**
+ * 새로운 데이터 확인 및 배지 표시
+ */
+function checkAndShowNewBadge() {
+  const lastViewed = localStorage.getItem('monthlyReportLastViewed');
+  if (!lastViewed) {
+    // 처음 방문하는 경우 배지 표시하지 않음
+    return;
+  }
+  
+  // 실제로는 서버 API를 호출하여 새로운 데이터가 있는지 확인
+  // 여기서는 예시로 항상 표시 (실제 구현 시 API 호출로 변경)
+  // 예: fetch('/api/monthly-report/check-new').then(...)
+  
+  // 예시: 마지막으로 본 시간 이후 새로운 데이터가 생성되었는지 확인
+  // 현재는 항상 표시하도록 설정 (실제로는 서버에서 확인)
+  showMonthlyReportNewBadge();
+}
+
+/**
+ * NEW 배지 표시
+ */
+function showMonthlyReportNewBadge() {
+  const btn = document.getElementById("openMonthlyReportBtn");
+  if (!btn) return;
+  
+  // 이미 배지가 있으면 제거하지 않음
+  if (btn.querySelector('.new-badge')) return;
+  
+  const badge = document.createElement('span');
+  badge.className = 'new-badge';
+  badge.setAttribute('aria-label', '새로운 데이터');
+  btn.appendChild(badge);
+}
+
+/**
+ * NEW 배지 숨기기
+ */
+function hideMonthlyReportNewBadge() {
+  const btn = document.getElementById("openMonthlyReportBtn");
+  if (!btn) return;
+  
+  const badge = btn.querySelector('.new-badge');
+  if (badge) {
+    badge.remove();
+    // localStorage에 마지막으로 본 시간 저장
+    localStorage.setItem('monthlyReportLastViewed', Date.now().toString());
+  }
 }
 
 /**
@@ -1743,18 +1796,21 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
     // 경쟁 상품 섹션 제거한 나머지 분석 텍스트
     const analysisWithoutCompetitors = analysisText.replace(/### 경쟁 상품\s*\n[\s\S]*?(?=\n###|$)/, '').trim();
     
-    // AI 분석 렌더링
-    renderAiAnalysis("section5AiAnalysis", analysisWithoutCompetitors);
+    // AI 분석 렌더링 (섹션 5는 특별 처리)
+    renderAiAnalysis("section5AiAnalysis", analysisWithoutCompetitors, true);
     
     // 경쟁 상품 표 렌더링
     if (competitorsList.length > 0) {
       renderCompetitorsTable(competitorsList);
     }
   } else {
-    // 경쟁 상품 섹션이 없으면 일반 렌더링
-    renderAiAnalysis("section5AiAnalysis", analysisText);
+    // 경쟁 상품 섹션이 없으면 일반 렌더링 (섹션 5는 특별 처리)
+    renderAiAnalysis("section5AiAnalysis", analysisText, true);
   }
 }
+
+let competitorsListGlobal = [];
+let competitorsSortOrder = 'asc'; // 'asc' or 'desc'
 
 function renderCompetitorsTable(competitorsList) {
   const tableContainer = document.getElementById("section5CompetitorsTable");
@@ -1764,6 +1820,31 @@ function renderCompetitorsTable(competitorsList) {
   if (!tableContainer || !tableBody) return;
   
   tableContainer.style.display = "block";
+  
+  // 전역 변수에 저장
+  competitorsListGlobal = [...competitorsList];
+  
+  // 정렬 헤더 클릭 이벤트 추가
+  const sortHeader = document.getElementById("sortBrandHeader");
+  if (sortHeader && !sortHeader.hasAttribute('data-listener-added')) {
+    sortHeader.setAttribute('data-listener-added', 'true');
+    sortHeader.addEventListener('click', function() {
+      competitorsSortOrder = competitorsSortOrder === 'asc' ? 'desc' : 'asc';
+      const sortedList = [...competitorsListGlobal].sort((a, b) => {
+        const comparison = a.brand.localeCompare(b.brand, 'ko');
+        return competitorsSortOrder === 'asc' ? comparison : -comparison;
+      });
+      renderCompetitorsTable(sortedList);
+    });
+  }
+  
+  // 정렬 아이콘 업데이트
+  if (sortHeader) {
+    const sortIcon = sortHeader.querySelector('.sort-icon');
+    if (sortIcon) {
+      sortIcon.textContent = competitorsSortOrder === 'asc' ? '↑' : '↓';
+    }
+  }
   
   const showAll = competitorsList.length <= 5;
   const displayCount = showAll ? competitorsList.length : 5;
@@ -1777,10 +1858,12 @@ function renderCompetitorsTable(competitorsList) {
     
     const brandCell = document.createElement("td");
     brandCell.style.padding = "12px";
+    brandCell.style.textAlign = "center";
     brandCell.textContent = competitor.brand;
     
     const productCell = document.createElement("td");
     productCell.style.padding = "12px";
+    productCell.style.textAlign = "center";
     productCell.textContent = competitor.productName;
     
     const rankCell = document.createElement("td");
@@ -1822,17 +1905,19 @@ function renderCompetitorsTable(competitorsList) {
     showMoreBtn.style.display = "block";
     showMoreBtn.onclick = function() {
       // 나머지 항목 추가
-      for (let i = displayCount; i < competitorsList.length; i++) {
-        const competitor = competitorsList[i];
+      for (let i = displayCount; i < competitorsListGlobal.length; i++) {
+        const competitor = competitorsListGlobal[i];
         const row = document.createElement("tr");
         row.style.borderBottom = "1px solid #e9ecef";
         
         const brandCell = document.createElement("td");
         brandCell.style.padding = "12px";
+        brandCell.style.textAlign = "center";
         brandCell.textContent = competitor.brand;
         
         const productCell = document.createElement("td");
         productCell.style.padding = "12px";
+        productCell.style.textAlign = "center";
         productCell.textContent = competitor.productName;
         
         const rankCell = document.createElement("td");
@@ -1875,7 +1960,7 @@ function renderCompetitorsTable(competitorsList) {
   }
 }
 
-function renderAiAnalysis(elementId, analysisText) {
+function renderAiAnalysis(elementId, analysisText, isSection5 = false) {
   const element = document.getElementById(elementId);
   if (!element) {
     console.warn(`[AI 분석] 요소를 찾을 수 없습니다: ${elementId}`);
@@ -1907,13 +1992,21 @@ function renderAiAnalysis(elementId, analysisText) {
         });
         
         // 마크다운을 HTML로 변환
-        const markdownHtml = marked.parse(analysisText);
+        let markdownHtml = marked.parse(analysisText);
+        
+        // 섹션 5인 경우 제목 부분에 텍스트 박스 추가
+        if (isSection5) {
+          markdownHtml = markdownHtml.replace(
+            /<h3[^>]*>(시장 인기 트렌드|긍정적 리뷰 참고|부정적 리뷰 참고|경쟁 상품)<\/h3>/g,
+            '<h3 class="section5-title-box">$1</h3>'
+          );
+        }
         
         // XSS 방지를 위해 DOMPurify로 정제 (표 관련 태그 포함)
         if (typeof DOMPurify !== 'undefined') {
           htmlContent = DOMPurify.sanitize(markdownHtml, {
             ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-            ALLOWED_ATTR: []
+            ALLOWED_ATTR: ['class']
           });
         } else {
           htmlContent = markdownHtml;
@@ -1967,6 +2060,11 @@ document.addEventListener("DOMContentLoaded", function() {
   const openBtn = document.getElementById("openMonthlyReportBtn");
   if (openBtn) {
     openBtn.addEventListener("click", openMonthlyReportModal);
+    
+    // 페이지 로드 시 새로운 데이터 확인 및 NEW 배지 표시
+    // 실제로는 서버에서 새로운 데이터 여부를 확인해야 함
+    // 여기서는 예시로 항상 표시 (실제 구현 시 API 호출로 변경)
+    checkAndShowNewBadge();
   }
   
   const closeBtn = document.getElementById("closeMonthlyReportBtn");

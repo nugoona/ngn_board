@@ -364,7 +364,7 @@ function updateReportHeader(companyName, year, month) {
   const titleEl = document.getElementById("monthlyReportTitle");
   if (titleEl) {
     const monthStr = String(month).padStart(2, '0');
-    titleEl.textContent = `${year}.${monthStr} 월간 AI 리포트 - ${companyName.toUpperCase()}`;
+    titleEl.textContent = `${year}.${monthStr} 월간 NGN 리포트 - ${companyName.toUpperCase()}`;
   }
 }
 
@@ -2207,12 +2207,6 @@ document.addEventListener("DOMContentLoaded", function() {
     backdrop.addEventListener("click", closeMonthlyReportModal);
   }
   
-  const downloadBtn = document.getElementById("downloadMonthlyReportBtn");
-  if (downloadBtn) {
-    downloadBtn.addEventListener("click", function() {
-      console.log("다운로드 기능은 향후 구현 예정");
-    });
-  }
   
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") {

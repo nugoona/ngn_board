@@ -1,0 +1,13 @@
+{
+  "powershell.integratedConsole.showOnStartup": false,
+  "powershell.scriptAnalysis.enable": false,
+  "powershell.codeFormatting.enable": false,
+  "terminal.integrated.defaultProfile.windows": "Command Prompt"
+}
+
+
+
+
+
+
+

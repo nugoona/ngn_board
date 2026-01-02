@@ -28,14 +28,14 @@ bash tools/29cm_best/create_scheduler.sh
 
 #### Pub/Sub 토픽 생성
 ```bash
-gcloud pubsub topics create 29cm-best-weekly-trigger \
+gcloud pubsub topics create weekly-29cm-best-trigger \
   --project=winged-precept-443218-v8
 ```
 
 #### Pub/Sub 구독 생성
 ```bash
-gcloud pubsub subscriptions create 29cm-best-weekly-sub \
-  --topic=29cm-best-weekly-trigger \
+gcloud pubsub subscriptions create weekly-29cm-best-sub \
+  --topic=weekly-29cm-best-trigger \
   --ack-deadline=20 \
   --push-endpoint="https://asia-northeast3-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/winged-precept-443218-v8/jobs/ngn-29cm-best-job:run" \
   --push-auth-service-account=439320386143-compute@developer.gserviceaccount.com \
@@ -47,7 +47,7 @@ gcloud pubsub subscriptions create 29cm-best-weekly-sub \
 gcloud scheduler jobs create pubsub 29cm-best-weekly-scheduler \
   --location=asia-northeast3 \
   --schedule="0 8 * * 1" \
-  --topic=29cm-best-weekly-trigger \
+  --topic=weekly-29cm-best-trigger \
   --message-body='{"trigger":"weekly"}' \
   --time-zone="Asia/Seoul" \
   --project=winged-precept-443218-v8

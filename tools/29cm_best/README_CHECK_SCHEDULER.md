@@ -90,7 +90,7 @@ bash tools/29cm_best/deploy_29cm_jobs.sh
 
 - 주간 Job 이름: `ngn-29cm-best-job`
 - 주간 스케줄러 이름: `29cm-best-weekly-scheduler`
-- 주간 Pub/Sub 토픽: `29cm-best-weekly-trigger`
+- 주간 Pub/Sub 토픽: `weekly-29cm-best-trigger`
 - 월간 Job 이름: `ngn-29cm-best-monthly-job`
 - 월간 스케줄러 이름: `29cm-best-monthly-scheduler`
 - 월간 Pub/Sub 토픽: `29cm-best-monthly-trigger`

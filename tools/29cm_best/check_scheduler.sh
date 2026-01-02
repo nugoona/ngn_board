@@ -112,8 +112,8 @@ echo ""
 # 3. Pub/Sub 토픽 및 구독 확인
 echo "📢 3. Pub/Sub 토픽 및 구독 확인"
 echo "----------------------------------------"
-TOPIC_WEEKLY="29cm-best-weekly-trigger"
-TOPIC_MONTHLY="29cm-best-monthly-trigger"
+TOPIC_WEEKLY="weekly-29cm-best-trigger"
+TOPIC_MONTHLY="monthly-29cm-best-trigger"
 
 if gcloud pubsub topics describe "$TOPIC_WEEKLY" --project="$PROJECT" &>/dev/null; then
   echo "✅ 주간 토픽 존재: $TOPIC_WEEKLY"

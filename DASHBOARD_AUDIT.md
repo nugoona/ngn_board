@@ -480,3 +480,9 @@ def invalidate_cache_by_pattern(pattern):
 **문서 버전**: 1.0  
 **최종 업데이트**: 2025-01-29
 
+
+
+
+
+
+

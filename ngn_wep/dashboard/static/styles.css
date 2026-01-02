@@ -1835,19 +1835,12 @@ th.sortable.desc::after {
   pointer-events: none;     /* 내부 클릭 이벤트 방지 안되도록 */
 }
 
-/* 왼쪽: 업데이트 문구 */
+/* 왼쪽: 월간 리포트 버튼 + 업데이트 문구 */
 .nav-left {
   display: flex;
   align-items: center;
-  margin-left: auto;
-  margin-right: 20px;  /* 버튼과의 간격 */
-  pointer-events: auto;
-}
-
-/* 중간: 월간 리포트 버튼 (최종 업데이트 오른쪽) */
-.nav-center {
-  display: flex;
-  align-items: center;
+  gap: 20px;  /* 버튼과 업데이트 문구 사이 간격 */
+  margin-left: 20px;  /* 왼쪽 여백 */
   pointer-events: auto;
 }
 

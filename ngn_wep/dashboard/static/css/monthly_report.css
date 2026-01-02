@@ -12,13 +12,13 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  z-index: 100;
+  z-index: 1200; /* nav-buttons의 z-index(1100)보다 높게 */
   display: flex;
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
-  pointer-events: auto;
+  pointer-events: auto !important; /* 강제로 클릭 가능하게 */
   position: relative;
   height: 40px; /* custom-dropdown과 동일한 높이 */
   box-sizing: border-box;

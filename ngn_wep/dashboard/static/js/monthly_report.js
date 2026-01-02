@@ -44,7 +44,13 @@ function showToast(message) {
 /**
  * 모달 열기
  */
-function openMonthlyReportModal() {
+function openMonthlyReportModal(event) {
+  // 이벤트 전파 방지
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
   console.log("[월간 리포트] 모달 열기 시작");
   const companyName = getSelectedCompany();
   if (!companyName) {

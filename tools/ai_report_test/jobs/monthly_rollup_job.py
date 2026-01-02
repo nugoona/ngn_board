@@ -311,7 +311,9 @@ WHEN NOT MATCHED THEN INSERT (
 def main():
     client = bigquery.Client(project=PROJECT_ID)
 
-    today = date.today()
+    # ✅ 한국 시간대(KST) 기준으로 오늘 날짜 계산
+    KST = timezone(timedelta(hours=9))
+    today = datetime.now(timezone.utc).astimezone(KST).date()
     start_date, end_date, ym = prev_month_range(today)
 
     print(f"[INFO] PROJECT_ID={PROJECT_ID} DATASET={DATASET}")

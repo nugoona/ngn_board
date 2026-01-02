@@ -1831,7 +1831,7 @@ th.sortable.desc::after {
   right: 0;
   z-index: 1100;
   display: flex;
-  justify-content: flex-start; /* 일렬 배치 */
+  justify-content: flex-end; /* 오른쪽 정렬 */
   align-items: center;
   padding: 0 20px; /* 좌우 여백 */
   pointer-events: none;     /* 내부 클릭 이벤트 방지 안되도록 */

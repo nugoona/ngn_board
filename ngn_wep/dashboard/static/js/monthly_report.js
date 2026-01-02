@@ -45,54 +45,76 @@ function showToast(message) {
  * 모달 열기
  */
 function openMonthlyReportModal() {
-  console.log("[월간 리포트] 모달 열기 시작");
-  const companyName = getSelectedCompany();
-  if (!companyName) {
-    showToast("업체를 먼저 선택해주세요");
-    return;
-  }
+  console.log("[월간 리포트] ===== 모달 열기 함수 호출 ===== ");
   
-  // NEW 표시 제거
-  hideMonthlyReportNewBadge();
-  
-  const modal = document.getElementById("monthlyReportModal");
-  console.log("[월간 리포트] 모달 요소:", modal);
-  if (!modal) {
-    console.error("[월간 리포트] 모달 요소를 찾을 수 없습니다!");
-    return;
-  }
-  
-  console.log("[월간 리포트] 모달 클래스 (열기 전):", modal.className);
-  modal.classList.remove("hidden");
-  console.log("[월간 리포트] hidden 클래스 제거 후:", modal.className);
-  
-  // display를 먼저 flex로 설정 (hidden 클래스가 display: none을 설정했을 수 있음)
-  modal.style.display = "flex";
-  
-  // requestAnimationFrame을 두 번 사용하여 브라우저가 스타일을 계산할 시간을 줌
-  requestAnimationFrame(() => {
+  try {
+    const companyName = getSelectedCompany();
+    console.log("[월간 리포트] 선택된 업체:", companyName);
+    
+    if (!companyName) {
+      console.warn("[월간 리포트] 업체가 선택되지 않았습니다.");
+      if (typeof showToast === 'function') {
+        showToast("업체를 먼저 선택해주세요");
+      } else {
+        alert("업체를 먼저 선택해주세요");
+      }
+      return;
+    }
+    
+    // NEW 표시 제거
+    try {
+      hideMonthlyReportNewBadge();
+    } catch (e) {
+      console.warn("[월간 리포트] NEW 배지 제거 실패:", e);
+    }
+    
+    const modal = document.getElementById("monthlyReportModal");
+    console.log("[월간 리포트] 모달 요소:", modal);
+    
+    if (!modal) {
+      console.error("[월간 리포트] 모달 요소를 찾을 수 없습니다!");
+      alert("월간 리포트 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.");
+      return;
+    }
+    
+    console.log("[월간 리포트] 모달 클래스 (열기 전):", modal.className);
+    
+    // hidden 클래스 제거
+    modal.classList.remove("hidden");
+    console.log("[월간 리포트] hidden 클래스 제거 후:", modal.className);
+    
+    // display를 먼저 flex로 설정
+    modal.style.display = "flex";
+    modal.style.opacity = "0";
+    modal.style.pointerEvents = "all";
+    
+    // requestAnimationFrame을 사용하여 브라우저가 스타일을 계산할 시간을 줌
     requestAnimationFrame(() => {
-      modal.classList.add("active");
-      // 인라인 스타일로 opacity를 강제로 설정 (CSS transition이 작동하도록)
-      modal.style.opacity = "1";
-      modal.style.pointerEvents = "all";
-      console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
-      console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
-      console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
+      requestAnimationFrame(() => {
+        modal.classList.add("active");
+        modal.style.opacity = "1";
+        console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
+        console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
+        console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
+      });
     });
-  });
-  
-  // 전월 리포트를 보기 위해 1개월 전으로 계산
-  const now = new Date();
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const year = prevMonth.getFullYear();
-  const month = prevMonth.getMonth() + 1;
-  
-  currentCompany = companyName;
-  currentYear = year;
-  currentMonth = month;
-  
-  loadMonthlyReport(companyName, year, month);
+    
+    // 전월 리포트를 보기 위해 1개월 전으로 계산
+    const now = new Date();
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = prevMonth.getFullYear();
+    const month = prevMonth.getMonth() + 1;
+    
+    currentCompany = companyName;
+    currentYear = year;
+    currentMonth = month;
+    
+    console.log("[월간 리포트] 리포트 로드 시작:", { companyName, year, month });
+    loadMonthlyReport(companyName, year, month);
+  } catch (error) {
+    console.error("[월간 리포트] 모달 열기 중 오류 발생:", error);
+    alert("월간 리포트를 열 수 없습니다. 콘솔을 확인해주세요.");
+  }
 }
 
 /**
@@ -2092,18 +2114,86 @@ function formatChange(pct) {
 }
 
 // ============================================
+// 이벤트 리스너 초기화 함수
+// ============================================
+function initMonthlyReportButton() {
+  console.log("[월간 리포트] 버튼 초기화 시작");
+  
+  const openBtn = document.getElementById("openMonthlyReportBtn");
+  console.log("[월간 리포트] 버튼 요소:", openBtn);
+  
+  if (!openBtn) {
+    console.error("[월간 리포트] 버튼 요소를 찾을 수 없습니다!");
+    return;
+  }
+  
+  // 기존 이벤트 리스너 제거 (중복 방지)
+  const newBtn = openBtn.cloneNode(true);
+  openBtn.parentNode.replaceChild(newBtn, openBtn);
+  const freshBtn = document.getElementById("openMonthlyReportBtn");
+  
+  // 클릭 이벤트 리스너 추가
+  freshBtn.addEventListener("click", function(e) {
+    console.log("[월간 리포트] 버튼 클릭 이벤트 발생!", e);
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    openMonthlyReportModal();
+    return false;
+  }, true); // capture phase에서도 실행
+  
+  // onclick 속성도 추가 (백업)
+  freshBtn.onclick = function(e) {
+    console.log("[월간 리포트] onclick 이벤트 발생!", e);
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+    openMonthlyReportModal();
+    return false;
+  };
+  
+  // mousedown 이벤트도 추가 (추가 보장)
+  freshBtn.addEventListener("mousedown", function(e) {
+    console.log("[월간 리포트] mousedown 이벤트 발생!");
+    e.preventDefault();
+    e.stopPropagation();
+    openMonthlyReportModal();
+    return false;
+  });
+  
+  // 페이지 로드 시 새로운 데이터 확인 및 NEW 배지 표시
+  try {
+    checkAndShowNewBadge();
+  } catch (e) {
+    console.warn("[월간 리포트] NEW 배지 표시 실패:", e);
+  }
+  
+  console.log("[월간 리포트] 버튼 초기화 완료");
+}
+
+// ============================================
 // 이벤트 리스너
 // ============================================
 document.addEventListener("DOMContentLoaded", function() {
-  const openBtn = document.getElementById("openMonthlyReportBtn");
-  if (openBtn) {
-    openBtn.addEventListener("click", openMonthlyReportModal);
-    
-    // 페이지 로드 시 새로운 데이터 확인 및 NEW 배지 표시
-    // 실제로는 서버에서 새로운 데이터 여부를 확인해야 함
-    // 여기서는 예시로 항상 표시 (실제 구현 시 API 호출로 변경)
-    checkAndShowNewBadge();
-  }
+  console.log("[월간 리포트] DOMContentLoaded 이벤트 발생");
+  initMonthlyReportButton();
+});
+
+// DOMContentLoaded가 이미 발생했을 경우를 대비
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMonthlyReportButton);
+} else {
+  // DOM이 이미 로드된 경우 즉시 실행
+  initMonthlyReportButton();
+}
+
+// window.onload도 추가 (추가 보장)
+window.addEventListener('load', function() {
+  console.log("[월간 리포트] window.load 이벤트 발생");
+  setTimeout(initMonthlyReportButton, 100); // 약간의 지연 후 실행
+});
   
   const closeBtn = document.getElementById("closeMonthlyReportBtn");
   if (closeBtn) {

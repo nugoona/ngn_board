@@ -54,7 +54,7 @@ def collect_ga4_traffic(start_date, end_date):
     logging.info(f"🗑️ 중복 방지: {start_date} ~ {end_date} 기간의 기존 데이터 삭제 중...")
     delete_query = f"""
     DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TRAFFIC}`
-    WHERE DATE(event_date) BETWEEN DATE("{start_date}") AND DATE("{end_date}")
+    WHERE event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
     """
     try:
         delete_job = bigquery_client.query(delete_query)
@@ -204,7 +204,7 @@ def update_ga4_traffic_ngn(start_date, end_date):
         FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TRAFFIC}` t
         LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.company_info` c 
             ON t.ga4_property_id = c.ga4_property_id
-        WHERE DATE(t.event_date) BETWEEN DATE("{start_date}") AND DATE("{end_date}")
+        WHERE t.event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
           AND c.company_name IS NOT NULL
         GROUP BY t.event_date, c.company_name, t.ga4_property_id, t.first_user_source
     ) AS source
@@ -212,7 +212,7 @@ def update_ga4_traffic_ngn(start_date, end_date):
        AND target.company_name = source.company_name
        AND target.ga4_property_id = source.ga4_property_id
        AND target.first_user_source = source.first_user_source
-       AND (target.event_date IS NULL OR DATE(target.event_date) BETWEEN DATE("{start_date}") AND DATE("{end_date}"))
+       AND target.event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
     WHEN MATCHED THEN
         UPDATE SET 
             target.total_users = source.total_users,

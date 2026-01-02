@@ -45,7 +45,21 @@ def get_ga4_property_ids():
 
 def collect_ga4_traffic(start_date, end_date):
     """ ✅ GA4 API에서 트래픽 데이터를 수집하여 BigQuery에 저장 """
-    # ✅ 동적으로 GA4 Property IDs 가져오기
+    # ✅ 1. 중복 방지: 해당 기간의 기존 데이터 삭제
+    logging.info(f"🗑️ 중복 방지: {start_date} ~ {end_date} 기간의 기존 데이터 삭제 중...")
+    delete_query = f"""
+    DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TRAFFIC}`
+    WHERE event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
+    """
+    try:
+        delete_job = bigquery_client.query(delete_query)
+        delete_job.result()
+        logging.info(f"✅ 기존 데이터 삭제 완료")
+    except Exception as e:
+        logging.error(f"❌ 기존 데이터 삭제 실패: {e}")
+        raise
+    
+    # ✅ 2. 동적으로 GA4 Property IDs 가져오기
     GA4_PROPERTY_IDS = get_ga4_property_ids()
     
     date_range = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d").tolist()
@@ -60,7 +74,7 @@ def collect_ga4_traffic(start_date, end_date):
                     "dateRanges": [{"startDate": target_date, "endDate": target_date}],
                     "dimensions": [{"name": "date"}, {"name": "firstUserSource"}],
                     "metrics": [
-                        {"name": "totalUsers"},
+                        {"name": "activeUsers"},  # ✅ 봇 트래픽 제거를 위해 totalUsers 대신 activeUsers 사용
                         {"name": "engagementRate"},
                         {"name": "bounceRate"},
                         {"name": "eventCount"},
@@ -110,7 +124,7 @@ def collect_ga4_traffic(start_date, end_date):
                         "event_date": event_date,
                         "ga4_property_id": GA4_PROPERTY_ID,
                         "first_user_source": first_user_source,
-                        "total_users": int(metrics[0]),
+                        "total_users": int(metrics[0]),  # ✅ activeUsers 값을 total_users 컬럼에 매핑 (스키마 유지)
                         "engagement_rate": engagement_rate_final,
                         "bounce_rate": bounce_rate_final,
                         "event_count": int(metrics[3]),
@@ -125,13 +139,13 @@ def collect_ga4_traffic(start_date, end_date):
         df_traffic["event_date"] = pd.to_datetime(df_traffic["event_date"]).dt.date
         df_traffic["ga4_property_id"] = df_traffic["ga4_property_id"].astype(int)
         
-        # ✅ 중복 데이터 확인 및 로깅
+        # ✅ 3. DataFrame 레벨 중복 데이터 확인 및 로깅 (API 응답에서 중복이 올 수 있으므로)
         before_dedup = len(df_traffic)
         # 같은 날짜/소스/property_id에 중복이 있는지 확인
         duplicates = df_traffic.duplicated(subset=['event_date', 'ga4_property_id', 'first_user_source'], keep=False)
         if duplicates.any():
             dup_count = duplicates.sum()
-            logging.warning(f"⚠️ 중복 데이터 발견: {dup_count}개 행 (전체: {before_dedup}개)")
+            logging.warning(f"⚠️ DataFrame 내 중복 데이터 발견: {dup_count}개 행 (전체: {before_dedup}개)")
             # 중복된 행의 샘플 로깅
             dup_rows = df_traffic[duplicates].head(5)
             for _, row in dup_rows.iterrows():
@@ -144,8 +158,9 @@ def collect_ga4_traffic(start_date, end_date):
         )
         after_dedup = len(df_traffic)
         if before_dedup != after_dedup:
-            logging.info(f"✅ 중복 제거: {before_dedup}개 → {after_dedup}개")
+            logging.info(f"✅ DataFrame 중복 제거: {before_dedup}개 → {after_dedup}개")
 
+        # ✅ 4. BigQuery 적재
         table_ref_traffic = bigquery_client.dataset(DATASET_ID).table(TABLE_ID_TRAFFIC)
         load_job_traffic = bigquery_client.load_table_from_dataframe(df_traffic, table_ref_traffic)
         load_job_traffic.result()
@@ -182,7 +197,7 @@ def update_ga4_traffic_ngn(start_date, end_date):
         FROM `{PROJECT_ID}.{DATASET_ID}.{TABLE_ID_TRAFFIC}` t
         LEFT JOIN `{PROJECT_ID}.{DATASET_ID}.company_info` c 
             ON t.ga4_property_id = c.ga4_property_id
-        WHERE DATE(t.event_date) BETWEEN DATE("{start_date}") AND DATE("{end_date}")
+        WHERE t.event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
           AND c.company_name IS NOT NULL
         GROUP BY t.event_date, c.company_name, t.ga4_property_id, t.first_user_source
     ) AS source
@@ -190,7 +205,7 @@ def update_ga4_traffic_ngn(start_date, end_date):
        AND target.company_name = source.company_name
        AND target.ga4_property_id = source.ga4_property_id
        AND target.first_user_source = source.first_user_source
-       AND (target.event_date IS NULL OR DATE(target.event_date) BETWEEN DATE("{start_date}") AND DATE("{end_date}"))
+       AND target.event_date BETWEEN DATE("{start_date}") AND DATE("{end_date}")
     WHEN MATCHED THEN
         UPDATE SET 
             target.total_users = source.total_users,

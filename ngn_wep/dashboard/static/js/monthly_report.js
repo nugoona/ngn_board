@@ -901,7 +901,8 @@ async function renderSection5(data) {
   renderSection5ByTab("전체", items, 1);
   
   // AI 분석 (섹션 5: 시장 트렌드 확인)
-  renderAiAnalysis("section5AiAnalysis", data.signals?.section_5_analysis);
+  const analysisText = data.signals?.section_5_analysis || "";
+  renderSection5AnalysisWithCompetitors(analysisText, items);
 }
 
 function setupSection5Tabs(items) {
@@ -1557,6 +1558,251 @@ function renderAiAnalysisForSection7(element, analysisText) {
   }
   
   element.innerHTML = `<div class="comparison-ai-content markdown-content">${htmlContent}</div>`;
+}
+
+// 섹션 5 전용: 경쟁 상품 파싱 및 표 렌더링
+function renderSection5AnalysisWithCompetitors(analysisText, items) {
+  if (!analysisText || !analysisText.trim()) {
+    renderAiAnalysis("section5AiAnalysis", analysisText);
+    return;
+  }
+  
+  // 경쟁 상품 섹션 찾기
+  const competitorsMatch = analysisText.match(/### 경쟁 상품\s*\n([\s\S]*?)(?=\n###|$)/);
+  
+  if (competitorsMatch) {
+    const competitorsSection = competitorsMatch[1];
+    const competitorsList = [];
+    
+    // 각 줄에서 경쟁 상품 정보 파싱
+    // 형식: * **[업체명] [상품명] [탭명 TOP순위]** 또는 * **업체명 상품명 탭명 TOP순위**
+    const lines = competitorsSection.split('\n');
+    
+    lines.forEach(line => {
+      // 전체 텍스트에서 마크다운 제거
+      const fullText = line.replace(/\*\s*\*\*/g, '').replace(/\*\*/g, '').replace(/^\*\s*/, '').trim();
+      
+      // "탭명 TOP숫자" 패턴 찾기 (예: "상의 TOP1", "아우터 TOP7")
+      const topMatch = fullText.match(/(.+?)\s+(.+?\s+TOP\d+)$/);
+      
+      if (topMatch) {
+        const rankInfo = topMatch[2].trim(); // "상의 TOP1"
+        const beforeTop = topMatch[1].trim(); // "비터셀즈 2 PACKEssential Golgi Tee-7 colors"
+        
+        let brand, productName;
+        
+        // 대괄호 형식: [브랜드] [상품명]
+        const bracketMatch = beforeTop.match(/\[([^\]]+)\]\s+\[([^\]]+)\]/);
+        if (bracketMatch) {
+          brand = bracketMatch[1].trim();
+          productName = bracketMatch[2].trim();
+        } else {
+          // 일반 형식: 브랜드 상품명
+          // 브랜드는 보통 첫 번째 단어이지만, 상품명이 여러 단어일 수 있음
+          // 간단하게 첫 번째 단어를 브랜드로, 나머지를 상품명으로
+          const words = beforeTop.split(/\s+/);
+          if (words.length >= 2) {
+            brand = words[0];
+            productName = words.slice(1).join(' ');
+          } else {
+            brand = beforeTop;
+            productName = "";
+          }
+        }
+        
+        // 순위 정보에서 탭명과 순위 추출
+        const rankMatch = rankInfo.match(/(.+?)\s+TOP(\d+)/);
+        if (rankMatch) {
+          const tabName = rankMatch[1].trim();
+          const rank = parseInt(rankMatch[2], 10);
+          
+          // 29CM 데이터에서 해당 상품 찾기 (유연한 매칭)
+          let url = "";
+          // 1순위: 정확한 매칭 (탭, 순위, 브랜드, 상품명)
+          let foundItem = items.find(item => 
+            item.tab === tabName && 
+            item.rank === rank &&
+            item.brand === brand &&
+            item.name === productName
+          );
+          
+          // 2순위: 탭과 순위만 매칭, 브랜드 유사도
+          if (!foundItem) {
+            foundItem = items.find(item => 
+              item.tab === tabName && 
+              item.rank === rank &&
+              (item.brand === brand || item.brand?.includes(brand) || brand.includes(item.brand))
+            );
+          }
+          
+          // 3순위: 탭과 순위만 매칭, 상품명 유사도
+          if (!foundItem) {
+            foundItem = items.find(item => 
+              item.tab === tabName && 
+              item.rank === rank &&
+              (item.name === productName || item.name?.includes(productName) || productName.includes(item.name))
+            );
+          }
+          
+          // 4순위: 탭과 순위만 매칭
+          if (!foundItem) {
+            foundItem = items.find(item => 
+              item.tab === tabName && 
+              item.rank === rank
+            );
+          }
+          
+          if (foundItem) {
+            url = foundItem.url || foundItem.item_url || "";
+            // URL이 없으면 item_id로 생성
+            if (!url && foundItem.item_id) {
+              url = `https://product.29cm.co.kr/catalog/${foundItem.item_id}`;
+            }
+          }
+          
+          competitorsList.push({
+            brand: brand,
+            productName: productName,
+            rank: rankInfo,
+            url: url
+          });
+        }
+      }
+    });
+    
+    // 경쟁 상품 섹션 제거한 나머지 분석 텍스트
+    const analysisWithoutCompetitors = analysisText.replace(/### 경쟁 상품\s*\n[\s\S]*?(?=\n###|$)/, '').trim();
+    
+    // AI 분석 렌더링
+    renderAiAnalysis("section5AiAnalysis", analysisWithoutCompetitors);
+    
+    // 경쟁 상품 표 렌더링
+    if (competitorsList.length > 0) {
+      renderCompetitorsTable(competitorsList);
+    }
+  } else {
+    // 경쟁 상품 섹션이 없으면 일반 렌더링
+    renderAiAnalysis("section5AiAnalysis", analysisText);
+  }
+}
+
+function renderCompetitorsTable(competitorsList) {
+  const tableContainer = document.getElementById("section5CompetitorsTable");
+  const tableBody = document.getElementById("section5CompetitorsTableBody");
+  const showMoreBtn = document.getElementById("section5CompetitorsShowMore");
+  
+  if (!tableContainer || !tableBody) return;
+  
+  tableContainer.style.display = "block";
+  
+  const showAll = competitorsList.length <= 5;
+  const displayCount = showAll ? competitorsList.length : 5;
+  
+  tableBody.innerHTML = "";
+  
+  for (let i = 0; i < displayCount; i++) {
+    const competitor = competitorsList[i];
+    const row = document.createElement("tr");
+    row.style.borderBottom = "1px solid #e9ecef";
+    
+    const brandCell = document.createElement("td");
+    brandCell.style.padding = "12px";
+    brandCell.textContent = competitor.brand;
+    
+    const productCell = document.createElement("td");
+    productCell.style.padding = "12px";
+    productCell.textContent = competitor.productName;
+    
+    const rankCell = document.createElement("td");
+    rankCell.style.padding = "12px";
+    rankCell.style.textAlign = "center";
+    rankCell.textContent = competitor.rank;
+    
+    const urlCell = document.createElement("td");
+    urlCell.style.padding = "12px";
+    urlCell.style.textAlign = "center";
+    if (competitor.url) {
+      const link = document.createElement("a");
+      link.href = competitor.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "바로가기";
+      link.style.color = "#2563eb";
+      link.style.textDecoration = "none";
+      link.style.padding = "6px 12px";
+      link.style.border = "1px solid #2563eb";
+      link.style.borderRadius = "4px";
+      link.style.display = "inline-block";
+      link.onmouseover = function() { this.style.backgroundColor = "#2563eb"; this.style.color = "#fff"; };
+      link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#2563eb"; };
+      urlCell.appendChild(link);
+    } else {
+      urlCell.textContent = "-";
+    }
+    
+    row.appendChild(brandCell);
+    row.appendChild(productCell);
+    row.appendChild(rankCell);
+    row.appendChild(urlCell);
+    tableBody.appendChild(row);
+  }
+  
+  // 더보기 버튼
+  if (!showAll) {
+    showMoreBtn.style.display = "block";
+    showMoreBtn.onclick = function() {
+      // 나머지 항목 추가
+      for (let i = displayCount; i < competitorsList.length; i++) {
+        const competitor = competitorsList[i];
+        const row = document.createElement("tr");
+        row.style.borderBottom = "1px solid #e9ecef";
+        
+        const brandCell = document.createElement("td");
+        brandCell.style.padding = "12px";
+        brandCell.textContent = competitor.brand;
+        
+        const productCell = document.createElement("td");
+        productCell.style.padding = "12px";
+        productCell.textContent = competitor.productName;
+        
+        const rankCell = document.createElement("td");
+        rankCell.style.padding = "12px";
+        rankCell.style.textAlign = "center";
+        rankCell.textContent = competitor.rank;
+        
+        const urlCell = document.createElement("td");
+        urlCell.style.padding = "12px";
+        urlCell.style.textAlign = "center";
+        if (competitor.url) {
+          const link = document.createElement("a");
+          link.href = competitor.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "바로가기";
+          link.style.color = "#2563eb";
+          link.style.textDecoration = "none";
+          link.style.padding = "6px 12px";
+          link.style.border = "1px solid #2563eb";
+          link.style.borderRadius = "4px";
+          link.style.display = "inline-block";
+          link.onmouseover = function() { this.style.backgroundColor = "#2563eb"; this.style.color = "#fff"; };
+          link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#2563eb"; };
+          urlCell.appendChild(link);
+        } else {
+          urlCell.textContent = "-";
+        }
+        
+        row.appendChild(brandCell);
+        row.appendChild(productCell);
+        row.appendChild(rankCell);
+        row.appendChild(urlCell);
+        tableBody.appendChild(row);
+      }
+      showMoreBtn.style.display = "none";
+    };
+  } else {
+    showMoreBtn.style.display = "none";
+  }
 }
 
 function renderAiAnalysis(elementId, analysisText) {

@@ -2,9 +2,9 @@
    월간 프리미엄 전략 리포트 스타일
    ============================================ */
 
-/* ✅ 월간 리포트 버튼 (상단 여백 중간) */
+/* ✅ 월간 리포트 버튼 (최종 업데이트 오른쪽) */
 .monthly-report-toggle-btn {
-  background-color: #003366;
+  background-color: #d94538;
   color: #ffffff;
   font-weight: bold;
   font-size: 14px;
@@ -22,9 +22,8 @@
 }
 
 .monthly-report-toggle-btn:hover {
-  background-color: #ffffff;
-  color: #d2455a;
-  border: 1px solid #d2455a;
+  background-color: #b8382d;
+  color: #ffffff;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
 }

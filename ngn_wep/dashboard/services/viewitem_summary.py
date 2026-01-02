@@ -54,10 +54,11 @@ def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: in
              OR LOWER(t.first_user_source) IN ('ig', 'linktr.ee', 'lookbook', 'igshopping') THEN 'instagram'
         -- Naver 관련 통합
         WHEN LOWER(t.first_user_source) LIKE '%naver%' THEN 'naver.com'
-        -- Meta/Facebook 관련 통합
-        WHEN LOWER(t.first_user_source) LIKE '%meta_ad%'
-             OR LOWER(t.first_user_source) LIKE '%facebook%'
-             OR LOWER(t.first_user_source) = 'fb' THEN 'meta_ad'
+        -- Meta Ad 관련 (별도 유지)
+        WHEN LOWER(t.first_user_source) LIKE '%meta_ad%' THEN 'meta_ad'
+        -- Facebook 관련 통합 (facebook.com, m.facebook.com 등)
+        WHEN LOWER(t.first_user_source) LIKE '%facebook%'
+             OR LOWER(t.first_user_source) = 'fb' THEN 'facebook'
         -- YouTube 관련 통합
         WHEN LOWER(t.first_user_source) LIKE '%youtube%' THEN 'youtube.com'
         -- TikTok

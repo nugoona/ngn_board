@@ -4,6 +4,7 @@ google-cloud-storage==2.10.0
 google-genai>=0.2.0
 python-dotenv==1.0.0
 requests==2.31.0
+urllib3<2.0.0
 Werkzeug==3.0.0
 gunicorn==21.2.0
 redis==4.6.0

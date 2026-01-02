@@ -697,6 +697,68 @@ def get_monthly_report():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@data_blueprint.route("/monthly_report/check_new", methods=["POST"])
+def check_new_monthly_report():
+    """GCS 파일 수정 시간만 확인 (파일 다운로드 안 함, 비용 최소화)"""
+    try:
+        data = request.get_json()
+        company_name = data.get("company_name")
+        year = int(data.get("year"))
+        month = int(data.get("month"))
+        
+        if not company_name or company_name == "all":
+            return jsonify({"status": "error", "message": "업체를 선택해주세요"}), 400
+        
+        # GCS 버킷에서 스냅샷 파일 메타데이터만 확인 (파일 다운로드 안 함)
+        PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
+        GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
+        
+        month_str = f"{year}-{month:02d}"
+        
+        # 여러 경로 시도
+        blob_paths = [
+            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json.gz",
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json.gz",
+            f"ai-reports/monthly/{company_name}/{month_str}/snapshot.json",
+            f"ai-reports/monthly/{company_name.lower()}/{month_str}/snapshot.json",
+        ]
+        
+        try:
+            client = storage.Client(project=PROJECT_ID)
+            bucket = client.bucket(GCS_BUCKET)
+            
+            # 여러 경로 시도 (메타데이터만 확인, 파일 다운로드 안 함)
+            blob = None
+            for blob_path in blob_paths:
+                test_blob = bucket.blob(blob_path)
+                if test_blob.exists():
+                    blob = test_blob
+                    # 메타데이터만 가져오기 (파일 다운로드 안 함)
+                    blob.reload()
+                    break
+            
+            if not blob:
+                return jsonify({
+                    "status": "error",
+                    "message": f"{year}년 {month}월 리포트가 아직 생성되지 않았습니다."
+                }), 404
+            
+            # 파일 수정 시간만 반환 (ISO 형식)
+            return jsonify({
+                "status": "success",
+                "snapshot_updated": blob.updated.isoformat() if blob.updated else None,
+                "snapshot_created": blob.time_created.isoformat() if blob.time_created else None
+            }), 200
+            
+        except Exception as e:
+            return jsonify({
+                "status": "error",
+                "message": f"스냅샷 파일 확인 중 오류가 발생했습니다: {str(e)}"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @data_blueprint.route("/proxy_image", methods=["GET"])
 def proxy_image():
     """

@@ -109,6 +109,10 @@ function openMonthlyReportModal() {
     currentYear = year;
     currentMonth = month;
     
+    // 마지막으로 본 시간 저장 (유저별, 업체별 구분)
+    const storageKey = `monthlyReportLastViewed_${currentUserId}_${companyName}_${year}_${month}`;
+    localStorage.setItem(storageKey, Date.now().toString());
+    
     console.log("[월간 리포트] 리포트 로드 시작:", { companyName, year, month });
     loadMonthlyReport(companyName, year, month);
   } catch (error) {
@@ -120,20 +124,58 @@ function openMonthlyReportModal() {
 /**
  * 새로운 데이터 확인 및 배지 표시
  */
-function checkAndShowNewBadge() {
-  const lastViewed = localStorage.getItem('monthlyReportLastViewed');
-  if (!lastViewed) {
-    // 처음 방문하는 경우 배지 표시하지 않음
+async function checkAndShowNewBadge() {
+  const companyName = getSelectedCompany();
+  if (!companyName) {
+    // 업체가 선택되지 않았으면 배지 표시 안 함
     return;
   }
   
-  // 실제로는 서버 API를 호출하여 새로운 데이터가 있는지 확인
-  // 여기서는 예시로 항상 표시 (실제 구현 시 API 호출로 변경)
-  // 예: fetch('/api/monthly-report/check-new').then(...)
+  // 전월 리포트를 보기 위해 1개월 전으로 계산
+  const now = new Date();
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = prevMonth.getFullYear();
+  const month = prevMonth.getMonth() + 1;
   
-  // 예시: 마지막으로 본 시간 이후 새로운 데이터가 생성되었는지 확인
-  // 현재는 항상 표시하도록 설정 (실제로는 서버에서 확인)
-  showMonthlyReportNewBadge();
+  // localStorage 키에 user_id와 company_name 포함 (유저별 구분)
+  const storageKey = `monthlyReportLastViewed_${currentUserId}_${companyName}_${year}_${month}`;
+  const lastViewed = localStorage.getItem(storageKey);
+  
+  try {
+    // 서버에서 GCS 파일 수정 시간만 확인 (파일 다운로드 안 함, 비용 최소화)
+    const response = await fetch('/dashboard/monthly_report/check_new', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        company_name: companyName,
+        year: year,
+        month: month
+      })
+    });
+    
+    if (!response.ok) {
+      // 파일이 없거나 오류 발생 시 배지 표시 안 함
+      return;
+    }
+    
+    const result = await response.json();
+    if (result.status !== 'success' || !result.snapshot_updated) {
+      return;
+    }
+    
+    const snapshotUpdated = new Date(result.snapshot_updated);
+    const lastViewedDate = lastViewed ? new Date(parseInt(lastViewed)) : null;
+    
+    // 마지막으로 본 시간이 없거나, 파일이 더 최신이면 배지 표시
+    if (!lastViewedDate || snapshotUpdated > lastViewedDate) {
+      showMonthlyReportNewBadge();
+    }
+  } catch (error) {
+    console.warn('[월간 리포트] NEW 배지 확인 실패:', error);
+    // 오류 발생 시 배지 표시 안 함
+  }
 }
 
 /**
@@ -162,8 +204,20 @@ function hideMonthlyReportNewBadge() {
   const badge = btn.querySelector('.new-badge');
   if (badge) {
     badge.remove();
-    // localStorage에 마지막으로 본 시간 저장
-    localStorage.setItem('monthlyReportLastViewed', Date.now().toString());
+    
+    // localStorage에 마지막으로 본 시간 저장 (유저별, 업체별 구분)
+    const companyName = getSelectedCompany();
+    if (companyName) {
+      // 전월 리포트를 보기 위해 1개월 전으로 계산
+      const now = new Date();
+      const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const year = prevMonth.getFullYear();
+      const month = prevMonth.getMonth() + 1;
+      
+      // localStorage 키에 user_id와 company_name 포함
+      const storageKey = `monthlyReportLastViewed_${currentUserId}_${companyName}_${year}_${month}`;
+      localStorage.setItem(storageKey, Date.now().toString());
+    }
   }
 }
 

@@ -1362,6 +1362,10 @@
   color: #495057;
   border: 1px solid #e9ecef;
   text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
 .comparison-table-unified td:first-child {

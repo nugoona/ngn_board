@@ -1533,6 +1533,19 @@ function renderSection9(data) {
         let htmlContent = "";
         
         if (content && content.trim()) {
+          // ✅ 전처리: 마크다운 파싱 전에 특수문자 정리
+          let cleanedContent = content
+            // 잘못된 마크다운 문법 정리 (예: ** 앞뒤 공백 없이 붙어있는 경우)
+            .replace(/([^\s])\*\*([^\s])/g, '$1 **$2') // ** 앞에 공백 추가
+            .replace(/([^\s])\*\*([^\s])/g, '$1** $2') // ** 뒤에 공백 추가
+            // 연속된 ** 제거 (예: **** -> **)
+            .replace(/\*{3,}/g, '**')
+            // 괄호 안의 특수문자 이스케이프 (마크다운 파싱 방해 방지)
+            .replace(/\(([^)]*)\)/g, (match, inner) => {
+              // 괄호 안에 마크다운 문법이 있으면 제거
+              return '(' + inner.replace(/\*\*/g, '').replace(/\*/g, '') + ')';
+            });
+          
           if (typeof marked !== 'undefined') {
             try {
               marked.setOptions({
@@ -1540,22 +1553,54 @@ function renderSection9(data) {
                 gfm: true  // GitHub Flavored Markdown 활성화 (표 지원)
               });
               
-              const markdownHtml = marked.parse(content);
+              const markdownHtml = marked.parse(cleanedContent);
               
               if (typeof DOMPurify !== 'undefined') {
                 htmlContent = DOMPurify.sanitize(markdownHtml, {
                   ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-                  ALLOWED_ATTR: []
+                  ALLOWED_ATTR: ['class', 'style']
                 });
               } else {
                 htmlContent = markdownHtml;
               }
+              
+              // ✅ 후처리: 마크다운 파싱 후 남은 ** 같은 문자 제거
+              // DOM을 직접 조작하여 남은 마크다운 문법 제거
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = htmlContent;
+              
+              // 텍스트 노드에서 남은 ** 제거
+              const walker = document.createTreeWalker(
+                tempDiv,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+              );
+              
+              let node;
+              while (node = walker.nextNode()) {
+                if (node.textContent.includes('**') || node.textContent.includes('*')) {
+                  node.textContent = node.textContent
+                    .replace(/\*\*/g, '')
+                    .replace(/\*/g, '');
+                }
+              }
+              
+              htmlContent = tempDiv.innerHTML;
             } catch (e) {
               console.warn("[섹션 9] 마크다운 변환 실패:", e);
-              htmlContent = content.replace(/\n/g, '<br>');
+              // 실패 시에도 특수문자 제거
+              htmlContent = content
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '')
+                .replace(/\n/g, '<br>');
             }
           } else {
-            htmlContent = content.replace(/\n/g, '<br>');
+            // marked 라이브러리가 없을 때도 특수문자 제거
+            htmlContent = content
+              .replace(/\*\*/g, '')
+              .replace(/\*/g, '')
+              .replace(/\n/g, '<br>');
           }
         }
         
@@ -1598,6 +1643,15 @@ function renderSection9(data) {
       // 원본 텍스트를 마크다운으로 렌더링
       let htmlContent = "";
       
+      // ✅ 전처리: 마크다운 파싱 전에 특수문자 정리
+      let cleanedAnalysis = analysis
+        .replace(/([^\s])\*\*([^\s])/g, '$1 **$2')
+        .replace(/([^\s])\*\*([^\s])/g, '$1** $2')
+        .replace(/\*{3,}/g, '**')
+        .replace(/\(([^)]*)\)/g, (match, inner) => {
+          return '(' + inner.replace(/\*\*/g, '').replace(/\*/g, '') + ')';
+        });
+      
       if (typeof marked !== 'undefined') {
         try {
           marked.setOptions({
@@ -1605,22 +1659,50 @@ function renderSection9(data) {
             gfm: true
           });
           
-          const markdownHtml = marked.parse(analysis);
+          const markdownHtml = marked.parse(cleanedAnalysis);
           
           if (typeof DOMPurify !== 'undefined') {
             htmlContent = DOMPurify.sanitize(markdownHtml, {
               ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-              ALLOWED_ATTR: []
+              ALLOWED_ATTR: ['class', 'style']
             });
           } else {
             htmlContent = markdownHtml;
           }
+          
+          // ✅ 후처리: 마크다운 파싱 후 남은 ** 같은 문자 제거
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          const walker = document.createTreeWalker(
+            tempDiv,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+          );
+          
+          let node;
+          while (node = walker.nextNode()) {
+            if (node.textContent.includes('**') || node.textContent.includes('*')) {
+              node.textContent = node.textContent
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '');
+            }
+          }
+          
+          htmlContent = tempDiv.innerHTML;
         } catch (e) {
           console.warn("[섹션 9] 마크다운 변환 실패:", e);
-          htmlContent = analysis.replace(/\n/g, '<br>');
+          htmlContent = analysis
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '')
+            .replace(/\n/g, '<br>');
         }
       } else {
-        htmlContent = analysis.replace(/\n/g, '<br>');
+        htmlContent = analysis
+          .replace(/\*\*/g, '')
+          .replace(/\*/g, '')
+          .replace(/\n/g, '<br>');
       }
       
       container.innerHTML = `

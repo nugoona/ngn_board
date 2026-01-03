@@ -38,7 +38,7 @@ if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &
     --cpu=1 \
     --max-retries=3 \
     --task-timeout=1800s \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset" \
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset" \
     --project="$PROJECT"
 else
   echo "새 Job 생성 중..."
@@ -95,11 +95,11 @@ echo ""
 echo "✅ 모든 설정 완료!"
 echo ""
 echo "📋 생성된 리소스:"
-echo "  - Cloud Run Job: ${JOB_NAME}"
+echo "  - Cloud Run Job: ${JOB}"
 echo "  - Pub/Sub Topic: ${TOPIC_NAME}"
 echo "  - Pub/Sub Subscription: ${SUBSCRIPTION_NAME}"
 echo "  - Cloud Scheduler: monthly-rollup-scheduler (매월 1일 새벽 4시 한국시간 실행)"
 echo ""
 echo "📝 수동 실행:"
-echo "  gcloud run jobs execute ${JOB_NAME} --region=${REGION} --project=${PROJECT_ID}"
+echo "  gcloud run jobs execute ${JOB} --region=${REGION_RUN} --project=${PROJECT}"
 

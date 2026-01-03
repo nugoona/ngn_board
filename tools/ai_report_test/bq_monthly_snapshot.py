@@ -620,10 +620,37 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     if load_from_gcs_flag:
         snapshot_from_gcs = load_snapshot_from_gcs(company_name, year, month)
         if snapshot_from_gcs:
-            print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
-            # 수집 데이터는 콘솔에 출력하지 않음 (JSON 파일에만 저장)
-            # 전체 JSON이 필요하면 GCS에서 직접 다운로드: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz
-            return
+            # ✅ 데이터 무결성 검증: 필수 데이터가 있는지 확인
+            report_month = month_to_ym(year, month)
+            yoy_y, yoy_m = year - 1, month
+            yoy_month = month_to_ym(yoy_y, yoy_m)
+            
+            # facts.mall_sales.this가 없으면 데이터 불완전으로 간주
+            facts = snapshot_from_gcs.get("facts", {})
+            mall_sales = facts.get("mall_sales", {})
+            sales_this = mall_sales.get("this")
+            
+            if sales_this is None:
+                print(f"⚠️ [WARN] GCS 스냅샷에 필수 데이터(mall_sales.this)가 없습니다. BigQuery에서 재조회합니다.", file=sys.stderr)
+                snapshot_from_gcs = None  # 재조회하도록 None으로 설정
+            else:
+                # 전년 동월 데이터 확인 (있으면 좋지만 없어도 경고만)
+                sales_yoy = mall_sales.get("yoy")
+                yoy_available = snapshot_from_gcs.get("report_meta", {}).get("yoy_available", {})
+                mall_sales_yoy_available = yoy_available.get("mall_sales", False)
+                
+                if not mall_sales_yoy_available and sales_yoy is None:
+                    print(f"⚠️ [WARN] GCS 스냅샷에 전년 동월 데이터({yoy_month})가 없습니다. BigQuery에서 재조회합니다.", file=sys.stderr)
+                    snapshot_from_gcs = None  # 재조회하도록 None으로 설정
+                else:
+                    print(f"✅ [SUCCESS] GCS에서 스냅샷을 성공적으로 불러왔습니다. (BigQuery 조회 스킵)", file=sys.stderr)
+                    # 수집 데이터는 콘솔에 출력하지 않음 (JSON 파일에만 저장)
+                    # 전체 JSON이 필요하면 GCS에서 직접 다운로드: gs://{GCS_BUCKET}/ai-reports/monthly/{company_name}/{year}-{month:02d}/snapshot.json.gz
+                    return
+        
+        # GCS에서 읽지 못했거나 데이터가 불완전하면 BigQuery에서 재조회
+        if snapshot_from_gcs is None:
+            print(f"ℹ️ [INFO] GCS 스냅샷이 없거나 불완전하여 BigQuery에서 데이터를 조회합니다.", file=sys.stderr)
     
     # -----------------------
     # BigQuery에서 데이터 조회 (GCS에 없을 때만)
@@ -721,6 +748,14 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     sales_this_data = get_monthly_data_from_13m(monthly_13m, report_month)
     sales_prev_data = get_monthly_data_from_13m(monthly_13m, prev_month)
     sales_yoy_data = get_monthly_data_from_13m(monthly_13m, yoy_month)
+    
+    # ✅ 디버그: 조회된 데이터 확인
+    if ENABLE_DEBUG_LOGS:
+        print(f"[DEBUG] Mall Sales 데이터 조회 결과:", file=sys.stderr)
+        print(f"   report_month ({report_month}): {'✅ 있음' if sales_this_data else '❌ 없음'}", file=sys.stderr)
+        print(f"   prev_month ({prev_month}): {'✅ 있음' if sales_prev_data else '❌ 없음'}", file=sys.stderr)
+        print(f"   yoy_month ({yoy_month}): {'✅ 있음' if sales_yoy_data else '❌ 없음'}", file=sys.stderr)
+        print(f"   monthly_13m 조회된 월 목록: {[item.get('ym') for item in monthly_13m]}", file=sys.stderr)
     
     # 데이터가 있으면 사용, 없으면 None (실제 수집되지 않은 경우)
     sales_this = {

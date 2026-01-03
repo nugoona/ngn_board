@@ -168,20 +168,37 @@ def parse_two_col_list(json_data, category_name, collected_at, run_id, period_ty
                     nudge_num = re.sub(r'[^0-9]', '', str(raw_nudge))
                     sales_count = int(nudge_num) if nudge_num else 0
 
-                    # 상품명 정제
-                    raw_name = basic_info.get('name', '')
-                    clean_name = clean_product_name(raw_name)
+                    # 상품명: 원본 그대로 수집 (정제 로직 사용 안 함)
+                    product_name = basic_info.get('name', '')
+
+                    # 리뷰 수 추출: item_entity > logging > analytics > REVIEW_COUNT
+                    review_count = analytics.get('REVIEW_COUNT', 0)
+                    if review_count is None:
+                        review_count = 0
+
+                    # 마켓 태그 추출: item_entity > render > data > badges 리스트에서 label 추출
+                    badges = render_data.get('badges', [])
+                    market_tags_list = []
+                    if isinstance(badges, list):
+                        for badge in badges:
+                            if isinstance(badge, dict):
+                                label = badge.get('label', '')
+                                if label:
+                                    market_tags_list.append(label)
+                    market_tags = ','.join(market_tags_list) if market_tags_list else ''
 
                     items.append({
                         "platform": "ably",
                         # rank는 수집 순서대로 나중에 부여
                         "brand_name": basic_info.get('market_name'),
-                        "product_name": clean_name,
+                        "product_name": product_name,
                         "category_medium": category_name,
                         "price": basic_info.get('price'),
                         "discount_rate": basic_info.get('discount_rate', 0),
                         "like_count": analytics.get('LIKES_COUNT', 0),
+                        "review_count": review_count,
                         "sales_count": sales_count,
+                        "market_tags": market_tags,
                         "item_url": f"https://m.a-bly.com/goods/{basic_info.get('sno')}",
                         "thumbnail_url": basic_info.get('image'),
                         "collected_at": collected_at,
@@ -245,31 +262,53 @@ def main():
         print(f"\n📂 [{cat['name']}] 카테고리 수집 중...")
         cat_items = []
         params = {'next_token': cat['sort_param'], 'category_list[]': cat['id'], 'sorting_type': 'POPULAR'}
+        max_items = 100
+        page_count = 0
 
-        while len(cat_items) < 100:
+        while len(cat_items) < max_items:
+            page_count += 1
             try:
                 url = 'https://api.a-bly.com/api/v2/screens/CATEGORY_DEPARTMENT/'
                 response = requests.get(url, params=params, headers=headers, timeout=10)
                 if response.status_code != 200:
                     print(f"   ❌ 요청 실패 (Code: {response.status_code})")
                     break
+                
                 data = response.json()
                 new_items = parse_two_col_list(data, cat['name'], collected_at, run_id, period_type)
                 
-                for item in new_items:
-                    if len(cat_items) < 100:
-                        item['rank'] = len(cat_items) + 1 # 순위 부여
-                        cat_items.append(item)
+                if not new_items:
+                    print(f"   ⚠️ 더 이상 수집할 아이템이 없습니다.")
+                    break
                 
+                # 수집된 아이템을 100개까지 추가
+                for item in new_items:
+                    if len(cat_items) >= max_items:
+                        break
+                    item['rank'] = len(cat_items) + 1  # 순위 부여
+                    cat_items.append(item)
+                
+                print(f"   📊 현재 수집: {len(cat_items)}/{max_items}개 (페이지 {page_count})")
+                
+                # 100개를 채웠으면 종료
+                if len(cat_items) >= max_items:
+                    print(f"   ✅ 목표 수집량 달성: {len(cat_items)}개")
+                    break
+                
+                # 다음 페이지 토큰 확인
                 next_tk = data.get('next_token')
-                if next_tk and len(cat_items) < 100:
+                if next_tk:
                     params['next_token'] = next_tk
                     time.sleep(random.uniform(0.5, 1))
-                else: break
+                else:
+                    print(f"   ⚠️ 다음 페이지 토큰이 없습니다. 수집 종료.")
+                    break
+                    
             except Exception as e:
                 print(f"   ⚠️ 에러: {e}")
                 break
         
+        print(f"   ✅ [{cat['name']}] 최종 수집: {len(cat_items)}개")
         all_results.extend(cat_items)
         time.sleep(1)
 

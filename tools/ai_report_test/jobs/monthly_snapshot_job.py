@@ -43,16 +43,16 @@ def main():
             print(f"{'='*60}\n", file=sys.stderr)
             
             # 스냅샷 생성 (GCS에 저장, 강제 재생성)
-            # use_current_month_events는 기본값 False 사용 (전월 이벤트 조회)
-            # 예: 1월 실행 시 → 12월 이벤트 조회
+            # use_current_month_events=True: 리포트 대상 월의 이벤트를 조회
+            # 예: 12월 리포트 생성 시 → 12월 이벤트 조회 (동월 이벤트)
             run(
                 company_name=company_name,
                 year=target_year,
                 month=target_month,
                 upsert_flag=False,
                 save_to_gcs_flag=True,
-                load_from_gcs_flag=False  # --force와 동일 (재생성)
-                # use_current_month_events=False (기본값: 전월 이벤트)
+                load_from_gcs_flag=False,  # --force와 동일 (재생성)
+                use_current_month_events=True  # 동월 이벤트 조회 (리포트 대상 월의 이벤트)
             )
             
             success_count += 1

@@ -246,7 +246,7 @@ def main():
         cat_items = []
         params = {'next_token': cat['sort_param'], 'category_list[]': cat['id'], 'sorting_type': 'POPULAR'}
 
-        while len(cat_items) < 20:
+        while len(cat_items) < 100:
             try:
                 url = 'https://api.a-bly.com/api/v2/screens/CATEGORY_DEPARTMENT/'
                 response = requests.get(url, params=params, headers=headers, timeout=10)
@@ -257,12 +257,12 @@ def main():
                 new_items = parse_two_col_list(data, cat['name'], collected_at, run_id, period_type)
                 
                 for item in new_items:
-                    if len(cat_items) < 20:
+                    if len(cat_items) < 100:
                         item['rank'] = len(cat_items) + 1 # 순위 부여
                         cat_items.append(item)
                 
                 next_tk = data.get('next_token')
-                if next_tk and len(cat_items) < 20:
+                if next_tk and len(cat_items) < 100:
                     params['next_token'] = next_tk
                     time.sleep(random.uniform(0.5, 1))
                 else: break

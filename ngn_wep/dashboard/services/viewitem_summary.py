@@ -76,7 +76,7 @@ def get_viewitem_summary(company_name, start_date: str, end_date: str, limit: in
         WHEN LOWER(t.first_user_source) LIKE '%cafe24%' THEN 'cafe24.com'
         -- 특수 케이스
         WHEN LOWER(t.first_user_source) = '인트로 mdgt' THEN 'from madgoat'
-        WHEN LOWER(t.first_user_source) IN ('(data not available)', 'data not available') THEN '(data not available)'
+        WHEN LOWER(t.first_user_source) IN ('(data not available)', 'data not available') THEN NULL
         -- 나머지는 원본 유지
         ELSE t.first_user_source
       END AS source_raw,

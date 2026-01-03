@@ -339,18 +339,75 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
     report_month = safe_get(report_meta, "report_month", default="")
     
     # 다음 달 계산 (예: "2025-12" -> "2026-01")
+    next_year = None
+    next_month_num = None
     try:
-        from datetime import datetime
+        from datetime import datetime, timedelta
         if report_month and len(report_month) >= 7:  # "2025-12" 형식
             year, month = map(int, report_month.split("-"))
             if month == 12:
                 next_month = f"{year + 1}-01"
+                next_year = year + 1
+                next_month_num = 1
             else:
                 next_month = f"{year}-{month + 1:02d}"
+                next_year = year
+                next_month_num = month + 1
         else:
             next_month = "다음 달"
     except:
         next_month = "다음 달"
+    
+    # 공휴일 계산 함수 (한국 공휴일)
+    def get_korean_holidays(target_year, target_month):
+        """특정 년/월의 한국 공휴일 리스트 반환"""
+        holidays = []
+        try:
+            # 고정 공휴일
+            if target_month == 1:
+                holidays.append(f"{target_year}-01-01 (신정)")
+            if target_month == 3:
+                holidays.append(f"{target_year}-03-01 (삼일절)")
+            if target_month == 5:
+                holidays.append(f"{target_year}-05-05 (어린이날)")
+            if target_month == 6:
+                holidays.append(f"{target_year}-06-06 (현충일)")
+            if target_month == 8:
+                holidays.append(f"{target_year}-08-15 (광복절)")
+            if target_month == 10:
+                holidays.append(f"{target_year}-10-03 (개천절)")
+            if target_month == 10:
+                holidays.append(f"{target_year}-10-09 (한글날)")
+            if target_month == 12:
+                holidays.append(f"{target_year}-12-25 (크리스마스)")
+            
+            # 음력 공휴일 (설날, 추석) - 간단한 근사치 계산
+            # 실제로는 음력 계산이 복잡하므로, 알려진 날짜를 하드코딩하거나 라이브러리 사용 필요
+            # 여기서는 주요 연도의 설날/추석 날짜를 하드코딩
+            lunar_holidays = {
+                2025: {"설날": "2025-01-28", "추석": "2025-10-05"},
+                2026: {"설날": "2026-02-16", "추석": "2026-09-24"},
+                2027: {"설날": "2027-02-06", "추석": "2027-09-15"},
+            }
+            
+            if target_year in lunar_holidays:
+                if target_month == 1 or target_month == 2:
+                    설날 = lunar_holidays[target_year].get("설날", "")
+                    if 설날 and 설날.startswith(f"{target_year}-{target_month:02d}"):
+                        holidays.append(f"{설날} (설날)")
+                if target_month == 9 or target_month == 10:
+                    추석 = lunar_holidays[target_year].get("추석", "")
+                    if 추석 and 추석.startswith(f"{target_year}-{target_month:02d}"):
+                        holidays.append(f"{추석} (추석)")
+        except Exception as e:
+            pass  # 공휴일 계산 실패 시 빈 리스트 반환
+        
+        return holidays
+    
+    # 공휴일 계산: 12월 리포트는 내년 시점으로, 나머지는 실행 시점(다음 달)으로
+    holiday_list = []
+    if next_year and next_month_num:
+        holiday_list = get_korean_holidays(next_year, next_month_num)
     
     # 섹션별 데이터 준비
     # 1. 이벤트 데이터 구조 명확히 파싱 (중첩 구조 해제)
@@ -657,10 +714,10 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
      - 예) 시장(고가 아우터 위주) vs 자사(아우터와 코디하기 좋은 데일리 이너)
      - 예) 시장(트렌디하지만 비쌈) vs 자사(매일 입는 편안한 가성비)
    - **키 이름 규칙:** 키 이름에는 영어를 포함하지 마십시오. 예: "주력 카테고리 (Category)" (X) → "주력 카테고리" (O)
-   - **값 길이:** 각 값은 **한 줄을 꽉 채우도록 충분히 작성**하십시오. 내용이 길어지면 자연스럽게 줄바꿈이 되므로, 20자 제한 없이 의미 있는 내용을 모두 포함하십시오.
+   - **값 길이:** 🛑 **테이블은 요약형으로 작성하십시오.** 각 값은 **20자 이내의 단답형 키워드**로 압축하십시오. 상세한 분석은 아래 `card_summary`에 작성하므로, 테이블은 핵심만 간결하게 표현하십시오.
    - **평균 가격대 추가:** "소비 패턴" 항목에 반드시 평균 가격 정보를 포함하십시오.
-     - 29CM 시장: 전체 탭 Top10 상품의 평균 가격을 계산하여 포함 (예: "평균 25만원대의 고단가 아이템 투자")
-     - 자사몰: 판매 Top10 상품의 평균 가격을 계산하여 포함 (예: "평균 8만원대의 가심비 아이템 구매")
+     - 29CM 시장: 전체 탭 Top10 상품의 평균 가격을 계산하여 포함 (예: "평균 25만원대")
+     - 자사몰: 판매 Top10 상품의 평균 가격을 계산하여 포함 (예: "평균 8만원대")
 
 ⚠️ **출력 형식 (반드시 JSON - 마크다운 금지)**:
 - **따옴표(`'`) 사용 금지.**
@@ -671,20 +728,20 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 {{
   "table_data": {{
     "주력 카테고리": {{ 
-      "market": "[시장 베스트 상품의 핵심 카테고리 (예: 헤비 아우터, 무스탕, 니트 등) - 한 줄을 꽉 채우도록 충분히 작성]", 
-      "company": "[자사 베스트 상품의 핵심 카테고리 (예: 데일리 하의, 셋업, 후드티 등) - 한 줄을 꽉 채우도록 충분히 작성]" 
+      "market": "[20자 이내 단답형: 예: 헤비 아우터, 니트]", 
+      "company": "[20자 이내 단답형: 예: 데일리 하의, 후드티]" 
     }},
     "소비 패턴": {{ 
-      "market": "[시장 소비 성향과 평균 가격대 (예: 평균 25만원대의 계절감 있는 고단가 아이템 투자) - 반드시 평균 가격 포함]", 
-      "company": "[자사 소비 성향과 평균 가격대 (예: 평균 8만원대의 활용도 높은 가심비 아이템 구매) - 반드시 평균 가격 포함]" 
+      "market": "[20자 이내 단답형: 예: 평균 25만원대 고단가]", 
+      "company": "[20자 이내 단답형: 예: 평균 8만원대 가심비]" 
     }},
     "스타일 무드": {{ 
-      "market": "[시장의 디자인 특징 (예: 오버핏, 소재감 강조, 개성 있는 실루엣 등) - 한 줄을 꽉 채우도록 충분히 작성]", 
-      "company": "[자사의 디자인 특징 (예: 베이직, 체형 보정, 편안한 핏 등) - 한 줄을 꽉 채우도록 충분히 작성]" 
+      "market": "[20자 이내 단답형: 예: 오버핏, 소재감 강조]", 
+      "company": "[20자 이내 단답형: 예: 베이직, 체형 보정]" 
     }},
     "시장 기회": {{ 
-      "market": "[시장의 틈새 (예: 고가 아우터 구매 후의 이너웨어 니즈, 계절 전환기 아이템 등) - 한 줄을 꽉 채우도록 충분히 작성]", 
-      "company": "[자사의 공략 포인트 (예: 아우터 속 받쳐 입기 좋은 핏, 데일리룩 보완재 제공 등) - 한 줄을 꽉 채우도록 충분히 작성]" 
+      "market": "[20자 이내 단답형: 예: 고가 아우터 이너웨어 니즈]", 
+      "company": "[20자 이내 단답형: 예: 아우터 코디용 데일리웨어]" 
     }}
   }},
   "card_summary": {{
@@ -702,9 +759,10 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 
 데이터:
 - 예측 데이터: {json.dumps(section_data.get('forecast_next_month', {}), ensure_ascii=False, indent=2)}
+- {next_month} 공휴일: {', '.join(holiday_list) if holiday_list else '없음'}
 
 분석 요청:
-기계적 예측치와 도전적 목표치를 제시하고, 그 근거를 설명하십시오.
+기계적 예측치와 도전적 목표치를 제시하고, 그 근거를 설명하십시오. **위 공휴일 정보를 반드시 고려하여 매출 예측에 반영하십시오.**
 
 ⚠️ **출력 형식 (Markdown 필수)**:
 ### {next_month} 매출 목표 제안

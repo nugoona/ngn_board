@@ -77,7 +77,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
         WHEN LOWER(first_user_source) LIKE '%cafe24%' THEN 'cafe24.com'
         -- 특수 케이스
         WHEN LOWER(first_user_source) = '인트로 mdgt' THEN 'from madgoat'
-        WHEN LOWER(first_user_source) IN ('(data not available)', 'data not available') THEN '(data not available)'
+        WHEN LOWER(first_user_source) IN ('(data not available)', 'data not available') THEN NULL
         -- 나머지는 원본 유지
         ELSE LOWER(first_user_source)
       END AS source,
@@ -95,6 +95,7 @@ def get_ga4_source_summary(company_name, start_date: str, end_date: str, limit: 
       AND first_user_source != ''
       AND first_user_source != '(not set)'
       AND first_user_source != 'not set'
+      AND first_user_source NOT IN ('(data not available)', 'data not available')
       AND total_users > 0
     GROUP BY company_name, source
     HAVING total_users > 0

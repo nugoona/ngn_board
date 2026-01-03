@@ -474,7 +474,8 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
         # _debug_section4: 섹션 4 데이터 로딩 시 조회수(product_views) 데이터 존재 여부 확인
         # 조회수 데이터는 GA4에서 가져와야 하며, bq_monthly_snapshot.py에서 병합되어야 함
         5: {
-            "market_reviews": safe_get_list(facts, "29cm_best", "items", default=[]),  # 모든 탭의 TOP10 상품 포함
+            "market_reviews": safe_get_list(facts, "29cm_best", "items", default=[]),  # 모든 탭의 TOP10 상품 포함 (최대 60개)
+            "market_reviews_count": len(safe_get_list(facts, "29cm_best", "items", default=[])),  # 경쟁 상품 총 개수
         },
         6: {
             "meta_ads_goals_this": safe_get_dict(facts, "meta_ads_goals", "this", default={}),
@@ -634,6 +635,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 
 데이터:
 - 29CM 리뷰 데이터: {json.dumps(section_data.get('market_reviews', []), ensure_ascii=False, indent=2)}
+- 경쟁 상품 총 개수: {section_data.get('market_reviews_count', 0)}개 (각 탭별 최대 10개씩)
 
 분석 요청:
 경쟁사 상품의 **긍정적 리뷰**와 **부정적 리뷰**를 명확히 구분하여 분석하십시오.
@@ -652,7 +654,13 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
 * **[업체명 색상] 상품명:** [구체적 불만 내용]
 
 ### 경쟁 상품
-위 데이터에서 **각 탭(tab)별 TOP10 안에 들어있는 상품들**을 최대한 많이 나열하십시오.
+위 데이터에서 **각 탭(tab)별 TOP10 안에 들어있는 상품들**을 **최대한 많이 나열**하십시오.
+
+⚠️ **중요: 경쟁 상품은 최대한 많이 나열해야 합니다.**
+- 제공된 데이터에는 각 탭별로 최대 10개씩의 상품이 있습니다 (전체, 아우터, 니트웨어, 바지, 스커트, 상의).
+- **자사몰 판매 상품과 비슷한 카테고리의 경쟁 상품은 가능한 한 모두 나열하십시오.**
+- 최소 20개 이상, 가능하면 30개 이상의 경쟁 상품을 나열하십시오.
+
 - 🛑 **절대 금지:** 자사몰에 없는 카테고리 상품(예: 아우터)을 언급하지 마십시오.
 - ✅ **작성 방향:** 자사몰 판매 상품과 비슷한 카테고리의 경쟁 상품만 선별하여 나열하십시오.
 - **형식:** `* **업체명 | 상품명 | 탭명 TOP순위**` (예: `* **비터셀즈 | 2 PACKEssential Golgi Tee-7 colors | 상의 TOP1**`)
@@ -660,7 +668,7 @@ def build_section_prompt(section_num: int, snapshot_data: Dict) -> str:
   - 업체명과 상품명 사이, 상품명과 순위 사이는 반드시 ` | ` (공백+파이프+공백)로 구분하십시오.
   - 상품명 내부의 공백은 그대로 유지하되, 구분자는 반드시 ` | `를 사용하십시오.
   - 순위는 `탭명 TOP숫자` 형식으로 작성하십시오 (예: `상의 TOP1`, `바지 TOP2`).
-- **최대한 많이 보여주십시오.** 각 탭별로 TOP10 안에 있는 상품들을 가능한 한 모두 나열하십시오.
+- **반드시 각 탭별로 TOP10 안에 있는 상품들을 가능한 한 모두 나열하십시오.**
 """,
         6: f"""
 [섹션 6: 매체 성과 및 효율 진단]

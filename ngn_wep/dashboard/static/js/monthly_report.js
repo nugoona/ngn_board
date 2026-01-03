@@ -1691,8 +1691,64 @@ function renderAiAnalysisForSection7(element, analysisText) {
 
 // 섹션 5 전용: 경쟁 상품 파싱 및 표 렌더링
 function renderSection5AnalysisWithCompetitors(analysisText, items) {
+  // ✅ 29CM 데이터에서 직접 경쟁 상품 추출 (AI 파싱 결과와 병합)
+  const competitorsFromData = [];
+  if (items && items.length > 0) {
+    // 자사몰 판매 상품과 비슷한 카테고리 필터링
+    // 아우터는 제외하고, 상의, 니트웨어, 바지, 스커트만 포함
+    const targetTabs = ["상의", "니트웨어", "바지", "스커트", "전체"];
+    
+    items.forEach(item => {
+      const tab = item.tab || "";
+      if (targetTabs.includes(tab)) {
+        const brand = item.brand || "";
+        const name = item.name || "";
+        const rank = item.rank || 0;
+        const itemId = item.item_id || item.itemId || "";
+        
+        // URL 생성
+        let url = item.url || item.item_url || item.itemUrl || "";
+        if (!url && itemId) {
+          url = `https://29cm.co.kr/products/${itemId}`;
+        } else if (url && url.includes('product.29cm.co.kr/catalog/')) {
+          const catalogMatch = url.match(/catalog\/(\d+)/);
+          if (catalogMatch) {
+            url = `https://29cm.co.kr/products/${catalogMatch[1]}`;
+          }
+        }
+        
+        if (brand && name) {
+          competitorsFromData.push({
+            brand: brand,
+            productName: name,
+            rank: `${tab} TOP${rank}`,
+            rankNumber: rank,
+            tabName: tab,
+            url: url,
+            source: "data" // 데이터에서 직접 추출
+          });
+        }
+      }
+    });
+  }
+  
   if (!analysisText || !analysisText.trim()) {
-    renderAiAnalysis("section5AiAnalysis", analysisText);
+    // AI 분석 텍스트가 없어도 29CM 데이터가 있으면 경쟁 상품 표시
+    renderAiAnalysis("section5AiAnalysis", "");
+    if (competitorsFromData.length > 0) {
+      console.log(`[섹션 5] AI 분석 없음. 29CM 데이터에서 ${competitorsFromData.length}개 경쟁 상품 표시`);
+      // 탭명과 순위로 정렬
+      const tabOrder = {"전체": 0, "상의": 1, "니트웨어": 2, "바지": 3, "스커트": 4};
+      competitorsFromData.sort((a, b) => {
+        const tabA = tabOrder[a.tabName] !== undefined ? tabOrder[a.tabName] : 999;
+        const tabB = tabOrder[b.tabName] !== undefined ? tabOrder[b.tabName] : 999;
+        if (tabA !== tabB) {
+          return tabA - tabB;
+        }
+        return a.rankNumber - b.rankNumber;
+      });
+      renderCompetitorsTable(competitorsFromData);
+    }
     return;
   }
   
@@ -1701,7 +1757,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
   
   if (competitorsMatch) {
     const competitorsSection = competitorsMatch[1];
-    const competitorsList = [];
+    const competitorsListFromAI = [];
     
     // 각 줄에서 경쟁 상품 정보 파싱
     // 형식: * **업체명 | 상품명 | 탭명 TOP순위**
@@ -1759,7 +1815,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
           // 순위에서 숫자 추출
           const rankNumber = rank;
           
-          competitorsList.push({
+          competitorsListFromAI.push({
             brand: brand,
             productName: productName,
             rank: rankInfo,
@@ -1866,7 +1922,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             // 순위에서 숫자 추출 (이미 위에서 추출한 값 사용)
             const rankNumber = rank;
             
-            competitorsList.push({
+            competitorsListFromAI.push({
               brand: brand,
               productName: productName,
               rank: rankInfo,
@@ -1879,15 +1935,49 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
       }
     });
     
+    // ✅ AI 파싱 결과와 29CM 데이터에서 추출한 결과 병합
+    // 중복 제거: 같은 탭과 순위를 가진 상품은 하나만 유지 (AI 파싱 결과 우선)
+    const mergedCompetitors = [...competitorsListFromAI];
+    const seenKeys = new Set();
+    competitorsListFromAI.forEach(item => {
+      const key = `${item.tabName}_${item.rankNumber}`;
+      seenKeys.add(key);
+    });
+    
+    // 29CM 데이터에서 추출한 상품 중 AI 파싱 결과에 없는 것만 추가
+    competitorsFromData.forEach(item => {
+      const key = `${item.tabName}_${item.rankNumber}`;
+      if (!seenKeys.has(key)) {
+        mergedCompetitors.push(item);
+        seenKeys.add(key);
+      }
+    });
+    
+    // 탭명과 순위로 정렬 (전체 > 상의 > 니트웨어 > 바지 > 스커트 순서)
+    const tabOrder = {"전체": 0, "상의": 1, "니트웨어": 2, "바지": 3, "스커트": 4};
+    mergedCompetitors.sort((a, b) => {
+      const tabA = tabOrder[a.tabName] !== undefined ? tabOrder[a.tabName] : 999;
+      const tabB = tabOrder[b.tabName] !== undefined ? tabOrder[b.tabName] : 999;
+      if (tabA !== tabB) {
+        return tabA - tabB;
+      }
+      return a.rankNumber - b.rankNumber;
+    });
+    
     // 경쟁 상품 섹션 제거한 나머지 분석 텍스트
     const analysisWithoutCompetitors = analysisText.replace(/### 경쟁 상품\s*\n[\s\S]*?(?=\n###|$)/, '').trim();
     
     // AI 분석 렌더링 (섹션 5는 특별 처리)
     renderAiAnalysis("section5AiAnalysis", analysisWithoutCompetitors, true);
     
-    // 경쟁 상품 표 렌더링
-    if (competitorsList.length > 0) {
-      renderCompetitorsTable(competitorsList);
+    // 경쟁 상품 표 렌더링 (병합된 리스트 사용)
+    if (mergedCompetitors.length > 0) {
+      console.log(`[섹션 5] 경쟁 상품 총 ${mergedCompetitors.length}개 표시 (AI 파싱: ${competitorsListFromAI.length}개, 데이터 추출: ${competitorsFromData.length}개)`);
+      renderCompetitorsTable(mergedCompetitors);
+    } else if (competitorsFromData.length > 0) {
+      // AI 파싱 결과가 없어도 29CM 데이터가 있으면 표시
+      console.log(`[섹션 5] AI 파싱 결과 없음. 29CM 데이터에서 ${competitorsFromData.length}개 경쟁 상품 표시`);
+      renderCompetitorsTable(competitorsFromData);
     }
   } else {
     // 경쟁 상품 섹션이 없으면 일반 렌더링 (섹션 5는 특별 처리)

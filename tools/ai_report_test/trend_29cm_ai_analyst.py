@@ -211,11 +211,11 @@ def generate_trend_analysis(
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
     
-    # Google Gen AI SDK 초기화 (API 키 설정)
+    # Google Gen AI SDK Client 초기화
     try:
-        genai.configure(api_key=api_key)
+        client = genai.Client(api_key=api_key)
     except Exception as e:
-        raise ImportError(f"google-genai API 키 설정 실패: {e}")
+        raise ImportError(f"google-genai 초기화 실패: {e}")
     
     try:
         print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작...", file=sys.stderr)
@@ -234,15 +234,19 @@ def generate_trend_analysis(
                 print(f"   - 상품명 (첫 번째 상품): '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
         
         # 프롬프트 생성 (데이터만 포함, 지시사항은 system_instruction에 위임)
-        prompt = build_trend_analysis_prompt(snapshot_data)
+        data_prompt = build_trend_analysis_prompt(snapshot_data)
+        
+        # System Instruction과 데이터 프롬프트 결합
+        # (거대 데이터로 인한 지시사항 손실 방지를 위해 system_instruction을 프롬프트 앞부분에 명시적으로 포함)
+        full_prompt = f"{SYSTEM_INSTRUCTION}\n\n{data_prompt}"
         
         # 프롬프트 데이터 검증 (정밀 디버깅)
-        prompt_length = len(prompt)
+        prompt_length = len(full_prompt)
         print(f"🔍 [DEBUG] 프롬프트 총 길이: {prompt_length:,} 자", file=sys.stderr)
         
         # 데이터 부분에 한글과 유니코드 이스케이프 확인
-        has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in prompt)
-        has_unicode_in_data = '\\u' in prompt
+        has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in data_prompt)
+        has_unicode_in_data = '\\u' in data_prompt
         print(f"🔍 [DEBUG] 프롬프트 한글 포함 여부: {has_korean_in_data}", file=sys.stderr)
         print(f"🔍 [DEBUG] 프롬프트 유니코드 이스케이프 포함 여부: {has_unicode_in_data}", file=sys.stderr)
         if has_unicode_in_data:
@@ -254,7 +258,7 @@ def generate_trend_analysis(
             print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자).", file=sys.stderr)
         
         # 프롬프트에 한글 포함 여부 확인 (디버깅)
-        if "어반드레스" in prompt or "비터셀즈" in prompt or "썸웨어버터" in prompt:
+        if "어반드레스" in data_prompt or "비터셀즈" in data_prompt or "썸웨어버터" in data_prompt:
             print(f"✅ [DEBUG] 프롬프트에 한글 브랜드명이 포함되어 있습니다.", file=sys.stderr)
         
         # Safety Settings 설정 (한글 필터링 방지)
@@ -296,36 +300,26 @@ def generate_trend_analysis(
         else:
             print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
         
-        # AI 모델 초기화 (System Instruction 사용 - 지시사항 손실 방지)
-        print(f"📤 [INFO] Gemini API 호출 중... (System Instruction 사용)", file=sys.stderr)
+        # AI 모델 호출 (System Instruction을 프롬프트 앞부분에 포함)
+        print(f"📤 [INFO] Gemini API 호출 중... (System Instruction 포함)", file=sys.stderr)
         
-        # GenerativeModel 초기화 (system_instruction 포함)
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            system_instruction=SYSTEM_INSTRUCTION
-        )
-        
-        # GenerationConfig 구성
-        generation_config = types.GenerationConfig(
-            temperature=0.7,  # 월간 리포트와 동일
-            top_p=0.95,
-            top_k=40,
-            max_output_tokens=max_tokens,  # 8192 유지
-        )
+        # GenerateContentConfig 구성
+        config_kwargs = {
+            "temperature": 0.7,  # 월간 리포트와 동일
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": max_tokens,  # 8192 유지
+        }
         
         # Safety Settings 추가 (있는 경우)
         if safety_settings:
-            # Safety Settings를 config에 포함
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config,
-                safety_settings=safety_settings
-            )
-        else:
-            response = model.generate_content(
-                prompt,
-                generation_config=generation_config
-            )
+            config_kwargs["safety_settings"] = safety_settings
+        
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(**config_kwargs)
+        )
         
         # Finish Reason 및 Safety Ratings 확인 (정밀 디버깅)
         finish_reason = None

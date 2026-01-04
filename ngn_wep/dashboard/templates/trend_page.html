@@ -20,11 +20,11 @@
     .trend-sticky-header {
       position: sticky;
       top: 0;
-      background: #ffffff;
+      background: transparent;
       z-index: 100;
       padding: 20px 0;
       margin-bottom: 32px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: none;
     }
     
     .trend-page-header {
@@ -114,7 +114,7 @@
       font-weight: 600;
       color: #212529;
       border-bottom: 1px solid #E9ECEF;
-      background: #F8F9FA;
+      background: transparent;
       flex-shrink: 0;
     }
     
@@ -126,6 +126,7 @@
       max-height: 600px;
       border: 1px solid #E9ECEF;
       border-radius: 8px;
+      background: transparent;
     }
     
     /* 테이블 헤더 고정 */
@@ -146,11 +147,17 @@
       display: flex;
       flex-direction: column;
       gap: 0;
+      background: transparent;
     }
     
     .trend-table {
       width: 100%;
       border-collapse: collapse;
+      background: transparent;
+    }
+    
+    .trend-table tbody {
+      background: transparent;
     }
     
     .trend-table thead {
@@ -249,7 +256,7 @@
     }
     
     .trend-table tbody tr:hover {
-      background: #F8F9FA;
+      background: rgba(248, 249, 250, 0.5);
     }
     
     .trend-table tbody tr:last-child td {

@@ -472,6 +472,19 @@ def generate_trend_analysis(
             print(f"⚠️ [WARN] 모든 섹션 분석 실패", file=sys.stderr)
             return None
         
+        # 섹션별 결과 검증 (디버깅)
+        for section_num in [1, 2, 3]:
+            if section_num in section_results:
+                section_content = section_results[section_num]
+                korean_count = sum(1 for char in section_content if '\uac00' <= char <= '\ud7a3')
+                total_chars = len(section_content)
+                korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
+                first_line = section_content.split('\n')[0].strip()[:100] if section_content else ""
+                print(f"🔍 [DEBUG] 섹션 {section_num} 최종 저장 내용 검증:", file=sys.stderr)
+                print(f"   - 길이: {total_chars}자", file=sys.stderr)
+                print(f"   - 한글 포함: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+                print(f"   - 첫 줄 (100자): {first_line}", file=sys.stderr)
+        
         # 리포트 구성 (섹션 제목 포함)
         analysis_parts = []
         
@@ -485,6 +498,15 @@ def generate_trend_analysis(
             analysis_parts.append(f"\n\n## 카테고리별 심층 분석\n\n{section_results[3]}")
         
         analysis_text = "\n".join(analysis_parts)
+        
+        # 합친 직후 검증 (디버깅)
+        if analysis_text:
+            korean_count_temp = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
+            total_chars_temp = len(analysis_text)
+            korean_ratio_temp = (korean_count_temp / total_chars_temp * 100) if total_chars_temp > 0 else 0
+            print(f"🔍 [DEBUG] 합친 직후 리포트 검증:", file=sys.stderr)
+            print(f"   - 길이: {total_chars_temp}자", file=sys.stderr)
+            print(f"   - 한글 포함: {korean_count_temp}/{total_chars_temp} ({korean_ratio_temp:.1f}%)", file=sys.stderr)
         
         # 최종 한글 포함 여부 확인
         if analysis_text:

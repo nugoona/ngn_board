@@ -286,31 +286,117 @@ def generate_trend_analysis_from_snapshot(
         return snapshot_data
 
 
+def generate_ai_analysis_from_file(
+    snapshot_file: str,
+    output_file: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> Dict:
+    """
+    스냅샷 파일(GCS 또는 로컬)에서 읽어서 AI 분석 후 저장
+    월간 리포트와 동일한 방식
+    
+    Args:
+        snapshot_file: 입력 스냅샷 파일 경로 (로컬 파일 또는 gs:// 경로)
+        output_file: 출력 파일 경로 (None이면 입력 파일에 덮어쓰기, 로컬 파일 또는 gs:// 경로)
+        api_key: Gemini API 키
+    
+    Returns:
+        AI 분석 리포트가 추가된 snapshot_data
+    """
+    try:
+        from google.cloud import storage
+        import gzip
+        import io
+    except ImportError:
+        print("❌ [ERROR] google-cloud-storage 패키지가 필요합니다.", file=sys.stderr)
+        raise
+    
+    # 입력 파일 읽기 (GCS 또는 로컬)
+    if snapshot_file.startswith("gs://"):
+        print(f"📥 [INFO] GCS에서 파일 로드 중: {snapshot_file}", file=sys.stderr)
+        # GCS에서 다운로드
+        parts = snapshot_file.replace("gs://", "").split("/", 1)
+        if len(parts) != 2:
+            raise ValueError(f"GCS 경로 파싱 실패: {snapshot_file}")
+        
+        bucket_name = parts[0]
+        blob_path = parts[1]
+        
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        if not blob.exists():
+            raise FileNotFoundError(f"GCS 파일이 존재하지 않습니다: {snapshot_file}")
+        
+        # Gzip 압축 해제
+        snapshot_bytes = blob.download_as_bytes()
+        try:
+            with gzip.GzipFile(fileobj=io.BytesIO(snapshot_bytes)) as gz_file:
+                snapshot_json_str = gz_file.read().decode('utf-8')
+        except (gzip.BadGzipFile, OSError):
+            snapshot_json_str = snapshot_bytes.decode('utf-8')
+        
+        snapshot_data = json.loads(snapshot_json_str)
+    else:
+        print(f"📥 [INFO] 로컬 파일 로드 중: {snapshot_file}", file=sys.stderr)
+        with open(snapshot_file, 'r', encoding='utf-8') as f:
+            snapshot_data = json.load(f)
+    
+    # AI 분석 수행
+    snapshot_data = generate_trend_analysis_from_snapshot(
+        snapshot_data,
+        api_key=api_key
+    )
+    
+    # 결과 저장 (출력 경로 미지정 시 입력 파일 경로에 덮어쓰기)
+    output_path = output_file or snapshot_file
+    
+    if output_path.startswith("gs://"):
+        print(f"📤 [INFO] GCS에 파일 업로드 중: {output_path}", file=sys.stderr)
+        # GCS에 업로드
+        parts = output_path.replace("gs://", "").split("/", 1)
+        if len(parts) != 2:
+            raise ValueError(f"GCS 경로 파싱 실패: {output_path}")
+        
+        bucket_name = parts[0]
+        blob_path = parts[1]
+        
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        # JSON 직렬화 및 Gzip 압축
+        json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
+        json_bytes = json_str.encode('utf-8')
+        compressed_bytes = gzip.compress(json_bytes)
+        
+        blob.upload_from_string(compressed_bytes, content_type='application/gzip')
+    else:
+        print(f"📤 [INFO] 로컬 파일 저장 중: {output_path}", file=sys.stderr)
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(snapshot_data, f, ensure_ascii=False, indent=2, sort_keys=True)
+    
+    print(f"✅ [SUCCESS] AI 분석 결과 저장 완료: {output_path}", file=sys.stderr)
+    
+    return snapshot_data
+
+
 if __name__ == "__main__":
     # CLI 사용 예시
     import argparse
     
     parser = argparse.ArgumentParser(description="29CM 트렌드 분석 AI 리포트 생성")
-    parser.add_argument("snapshot_file", help="스냅샷 JSON 파일 경로")
+    parser.add_argument("snapshot_file", help="스냅샷 파일 경로 (로컬 또는 gs:// 경로)")
     parser.add_argument("--output", "-o", help="출력 파일 경로 (기본값: 입력 파일에 덮어쓰기)")
     parser.add_argument("--api-key", help="Gemini API 키 (기본값: 환경변수에서 로드)")
     
     args = parser.parse_args()
     
-    # 스냅샷 파일 읽기
-    with open(args.snapshot_file, 'r', encoding='utf-8') as f:
-        snapshot_data = json.load(f)
-    
-    # AI 분석 추가
-    snapshot_data = generate_trend_analysis_from_snapshot(
-        snapshot_data,
+    # AI 분석 추가 (GCS 지원)
+    generate_ai_analysis_from_file(
+        snapshot_file=args.snapshot_file,
+        output_file=args.output,
         api_key=args.api_key
     )
-    
-    # 결과 저장
-    output_file = args.output or args.snapshot_file
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(snapshot_data, f, ensure_ascii=False, indent=2)
-    
-    print(f"✅ [SUCCESS] 결과 저장 완료: {output_file}", file=sys.stderr)
 

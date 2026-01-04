@@ -133,8 +133,21 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     # 전체 카테고리 목록 (참고용)
     all_tab_names = list(tabs_data.keys())
     
-    # JSON 데이터 준비
+    # JSON 데이터 준비 (한글 유니코드 변환 방지 필수)
     data_json = json.dumps(all_categories_data, ensure_ascii=False, indent=2)
+    
+    # 디버깅: 데이터 JSON에 한글이 제대로 포함되었는지 확인
+    print(f"🔍 [DEBUG] 데이터 JSON 길이: {len(data_json):,} 자", file=sys.stderr)
+    print(f"🔍 [DEBUG] 프롬프트 데이터 일부 (처음 200자): {data_json[:200]}", file=sys.stderr)
+    
+    # 한글 포함 여부 확인
+    has_korean = any('\uac00' <= char <= '\ud7a3' for char in data_json)
+    has_unicode_escape = '\\u' in data_json
+    print(f"🔍 [DEBUG] 데이터 JSON 한글 포함 여부: {has_korean}", file=sys.stderr)
+    print(f"🔍 [DEBUG] 데이터 JSON 유니코드 이스케이프 포함 여부: {has_unicode_escape}", file=sys.stderr)
+    if has_unicode_escape:
+        print(f"⚠️ [WARN] ⚠️⚠️⚠️ 경고: 데이터에 유니코드 이스케이프(\\u...)가 포함되어 있습니다!", file=sys.stderr)
+        print(f"   - 이는 ensure_ascii=False가 제대로 작동하지 않았음을 의미합니다.", file=sys.stderr)
     
     prompt = f"""IMPORTANT: You MUST write the entire report in Korean (Hangul). Do not filter out any Korean text.
 
@@ -220,8 +233,32 @@ def generate_trend_analysis(
         # 프롬프트 생성
         prompt = build_trend_analysis_prompt(snapshot_data)
         
-        # 프롬프트 크기 확인
+        # 프롬프트 데이터 검증 (정밀 디버깅)
         prompt_length = len(prompt)
+        print(f"🔍 [DEBUG] 프롬프트 총 길이: {prompt_length:,} 자", file=sys.stderr)
+        
+        # 데이터 부분 추출 및 확인
+        if '[데이터]' in prompt:
+            data_section_start = prompt.find('[데이터]')
+            data_section = prompt[data_section_start:]
+            print(f"🔍 [DEBUG] 데이터 부분 미리보기 (끝부분 500자):\n{prompt[-500:]}", file=sys.stderr)
+            
+            # 데이터 부분에 한글과 유니코드 이스케이프 확인
+            has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in data_section)
+            has_unicode_in_data = '\\u' in data_section
+            print(f"🔍 [DEBUG] 프롬프트 데이터 부분 한글 포함 여부: {has_korean_in_data}", file=sys.stderr)
+            print(f"🔍 [DEBUG] 프롬프트 데이터 부분 유니코드 이스케이프 포함 여부: {has_unicode_in_data}", file=sys.stderr)
+            if has_unicode_in_data:
+                print(f"⚠️ [WARN] ⚠️⚠️⚠️ 프롬프트 데이터 부분에 유니코드 이스케이프(\\u...)가 발견되었습니다!", file=sys.stderr)
+                # 유니코드 이스케이프 예시 찾기
+                import re
+                unicode_matches = re.findall(r'\\u[0-9a-fA-F]{4}', data_section)
+                if unicode_matches:
+                    print(f"   - 발견된 유니코드 이스케이프 샘플 (처음 10개): {unicode_matches[:10]}", file=sys.stderr)
+        else:
+            print(f"⚠️ [WARN] 프롬프트에서 '[데이터]' 섹션을 찾을 수 없습니다.", file=sys.stderr)
+        
+        # 프롬프트 크기 확인
         print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
         if prompt_length > 100000:  # 10만자 이상이면 경고
             print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자). 데이터 요약이 필요할 수 있습니다.", file=sys.stderr)
@@ -293,20 +330,87 @@ def generate_trend_analysis(
             config=types.GenerateContentConfig(**config_kwargs)
         )
         
+        # Finish Reason 및 Safety Ratings 확인 (정밀 디버깅)
+        finish_reason = None
+        safety_ratings = None
+        prompt_feedback = None
+        
+        if hasattr(response, 'candidates') and response.candidates:
+            candidate = response.candidates[0]
+            # Finish Reason 확인
+            if hasattr(candidate, 'finish_reason'):
+                finish_reason = candidate.finish_reason
+            elif hasattr(candidate, 'finishReason'):
+                finish_reason = candidate.finishReason
+            elif hasattr(candidate, 'finishMessage'):
+                finish_reason = candidate.finishMessage
+            
+            # Safety Ratings 확인
+            if hasattr(candidate, 'safety_ratings'):
+                safety_ratings = candidate.safety_ratings
+            elif hasattr(candidate, 'safetyRatings'):
+                safety_ratings = candidate.safetyRatings
+        
+        # Prompt Feedback 확인
+        if hasattr(response, 'prompt_feedback'):
+            prompt_feedback = response.prompt_feedback
+        elif hasattr(response, 'promptFeedback'):
+            prompt_feedback = response.promptFeedback
+        
+        # 디버깅 정보 출력
+        print(f"🔍 [DEBUG] 종료 원인(Finish Reason): {finish_reason}", file=sys.stderr)
+        if finish_reason and finish_reason in ['SAFETY', 'RECITATION', 'OTHER']:
+            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 중대한 문제 발견: Finish Reason이 '{finish_reason}'입니다!", file=sys.stderr)
+            print(f"   - SAFETY: 안전 설정에 의해 차단됨 (한글 필터링 가능성)", file=sys.stderr)
+            print(f"   - RECITATION: 저작권 보호에 의해 차단됨", file=sys.stderr)
+            print(f"   - OTHER: 기타 이유로 차단됨", file=sys.stderr)
+        
+        print(f"🔍 [DEBUG] 안전 등급(Safety Ratings): {safety_ratings}", file=sys.stderr)
+        print(f"🔍 [DEBUG] 프롬프트 피드백(Prompt Feedback): {prompt_feedback}", file=sys.stderr)
+        
+        # Safety Ratings 상세 출력
+        if safety_ratings:
+            print(f"🔍 [DEBUG] Safety Ratings 상세:", file=sys.stderr)
+            if isinstance(safety_ratings, list):
+                for rating in safety_ratings:
+                    category = getattr(rating, 'category', getattr(rating, 'categoryName', 'UNKNOWN'))
+                    probability = getattr(rating, 'probability', getattr(rating, 'severity', 'UNKNOWN'))
+                    threshold = getattr(rating, 'threshold', 'UNKNOWN')
+                    print(f"   - {category}: probability={probability}, threshold={threshold}", file=sys.stderr)
+            elif isinstance(safety_ratings, dict):
+                for key, value in safety_ratings.items():
+                    print(f"   - {key}: {value}", file=sys.stderr)
+        
+        # Prompt Feedback 상세 출력
+        if prompt_feedback:
+            print(f"🔍 [DEBUG] Prompt Feedback 상세:", file=sys.stderr)
+            if hasattr(prompt_feedback, 'block_reason'):
+                print(f"   - Block Reason: {prompt_feedback.block_reason}", file=sys.stderr)
+            if hasattr(prompt_feedback, 'safety_ratings'):
+                print(f"   - Safety Ratings: {prompt_feedback.safety_ratings}", file=sys.stderr)
+        
         # 응답 파싱
         analysis_text = None
         if hasattr(response, 'text'):
             analysis_text = response.text
         elif hasattr(response, 'candidates') and response.candidates:
-            if hasattr(response.candidates[0].content, 'parts') and response.candidates[0].content.parts:
-                analysis_text = response.candidates[0].content.parts[0].text
-            elif hasattr(response.candidates[0], 'content'):
-                analysis_text = str(response.candidates[0].content)
+            candidate = response.candidates[0]
+            if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts') and candidate.content.parts:
+                analysis_text = candidate.content.parts[0].text
+            elif hasattr(candidate, 'content'):
+                analysis_text = str(candidate.content)
             else:
-                analysis_text = str(response.candidates[0])
+                analysis_text = str(candidate)
         
         if not analysis_text:
             analysis_text = str(response)
+            
+        # Finish Reason이 문제가 있는 경우 경고
+        if finish_reason and finish_reason in ['SAFETY', 'RECITATION']:
+            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 응답이 '{finish_reason}'로 인해 차단되었습니다!", file=sys.stderr)
+            print(f"   - analysis_text 길이: {len(analysis_text) if analysis_text else 0}자", file=sys.stderr)
+            if analysis_text:
+                print(f"   - analysis_text 미리보기 (처음 200자): {analysis_text[:200]}", file=sys.stderr)
         
         if not analysis_text or len(analysis_text.strip()) < 100:
             print(f"⚠️ [WARN] AI 응답이 너무 짧습니다 ({len(analysis_text) if analysis_text else 0}자).", file=sys.stderr)

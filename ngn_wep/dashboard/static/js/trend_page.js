@@ -453,10 +453,9 @@ function createTableWithPagination(data, showRankChange, tableId) {
         showMoreBtn.addEventListener('click', function() {
             isExpanded = true;
             
-            // 스크롤 컨테이너 활성화 (테이블 헤더 고정)
+            // 스크롤 컨테이너 활성화 (헤더 고정 없이 단순 스크롤)
             tableContainer.style.overflowY = 'auto';
             tableContainer.style.maxHeight = '600px';
-            tableContainer.classList.add('scroll-enabled');
             
             reRenderTable();
         });
@@ -467,7 +466,6 @@ function createTableWithPagination(data, showRankChange, tableId) {
             // 스크롤 컨테이너 비활성화
             tableContainer.style.overflowY = 'visible';
             tableContainer.style.maxHeight = 'none';
-            tableContainer.classList.remove('scroll-enabled');
             tableContainer.scrollTop = 0;
             
             reRenderTable();

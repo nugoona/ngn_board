@@ -98,14 +98,13 @@
     }
     
     .trend-table-container {
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
+      background: transparent;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
       margin-bottom: 32px;
       display: flex;
       flex-direction: column;
-      max-height: 800px; /* 최대 높이 제한 */
     }
     
     .trend-table-container h3 {
@@ -119,22 +118,34 @@
       flex-shrink: 0;
     }
     
-    .trend-table-wrapper {
+    .trend-table-scroll-wrapper {
       overflow-x: auto;
       overflow-y: auto;
       flex: 1;
       position: relative;
+      max-height: 600px;
+      border: 1px solid #E9ECEF;
+      border-radius: 8px;
     }
     
     /* 테이블 헤더 고정 */
-    .trend-table-wrapper table {
+    .trend-table-scroll-wrapper table {
       width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
     }
     
-    .trend-table-wrapper thead {
+    .trend-table-scroll-wrapper thead {
       position: sticky;
       top: 0;
       z-index: 10;
+      background: #6366f1;
+    }
+    
+    .trend-table-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
     
     .trend-table {
@@ -249,13 +260,14 @@
     .trend-pagination-container {
       padding: 20px;
       text-align: center;
-      background: #F8F9FA;
-      border-top: 1px solid #E9ECEF;
+      background: transparent;
+      border-top: none;
       flex-shrink: 0;
       display: flex;
       gap: 12px;
       justify-content: center;
       align-items: center;
+      margin-bottom: 24px; /* 더보기 버튼 밑 여백 추가 */
     }
     
     .trend-show-more-btn,

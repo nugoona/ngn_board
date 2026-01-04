@@ -187,30 +187,68 @@ AI는 문장을 작성할 때 반드시 아래 **[데이터 근거]**를 포함�
 **핵심 6대 카테고리 데이터** (각 세그먼트당 상위 20개):
 {json.dumps(all_categories_data, ensure_ascii=False, indent=2)}
 
+**⚠️⚠️⚠️ 매우 중요 - 데이터 형식 및 샘플 확인 ⚠️⚠️⚠️**:
+위 JSON 데이터에서 `Brand` 필드와 `Product` 필드는 **한글이 포함될 수 있습니다**.
+
+**실제 데이터 샘플** (위 JSON에서 확인 가능):
+- `"Brand": "어반드레스"` (한글 브랜드명)
+- `"Brand": "비터셀즈"` (한글 브랜드명)  
+- `"Brand": "수아레 우먼"` (한글 브랜드명)
+- `"Product": "스트라이프 럭비 니트"` (한글 상품명)
+- `"Product": "라이트 시어쉘 패딩 점퍼"` (한글 상품명)
+
+**⚠️ 절대 규칙**:
+1. 위 JSON 데이터를 **반드시 직접 확인**하세요.
+2. 각 상품의 `Brand` 필드 값을 **반드시 포함**하여 인용하세요.
+3. 한글 브랜드명을 영어로 번역하거나 생략하면 **절대 안 됩니다**.
+4. `** **`처럼 브랜드명을 비워두면 **절대 안 됩니다**.
+
 ---
 
 위 지침을 정확히 따르며, 제공된 데이터를 기반으로 분석 리포트를 작성해주세요.
 특히 **구체적인 수치, 브랜드명, 상품명**을 반드시 포함하여 근거 기반 분석을 해주세요.
 
-⚠️ **중요 - 한글 데이터 처리 (반드시 확인)**:
-- JSON 데이터의 **브랜드명(Brand)**과 **상품명(Product)** 필드는 **한글이 포함될 수 있습니다**.
-- 브랜드명과 상품명을 그대로 인용할 때는 **반드시 원문을 정확히, 완전히** 사용하세요.
-- **절대로** 한글 브랜드명/상품명을 영어로 번역하거나, 생략하거나, `** **`처럼 비워두지 마세요.
-- **절대로** `** **: '' "Rosen Garden Sweat Shirt-Grey"`처럼 브랜드명을 비워두지 마세요.
+⚠️ **⚠️⚠️⚠️ 매우 중요 - 한글 데이터 처리 (절대 규칙) ⚠️⚠️⚠️**:
 
-**올바른 예시**:
-- JSON: `{{"Brand":"어반드레스","Product":"스트라이프 럭비 니트","Rank_Change":74,"Price":74000}}`
-- 올바른 인용: **'어반드레스'**의 **'스트라이프 럭비 니트'**가 74계단 상승했다.
+**필수 규칙 (반드시 따라야 함)**:
+1. JSON 데이터의 **브랜드명(Brand)** 필드는 **한글이 포함될 수 있습니다**. 예: "어반드레스", "비터셀즈", "수아레 우먼" 등
+2. JSON 데이터의 **상품명(Product)** 필드도 **한글이 포함될 수 있습니다**. 예: "스트라이프 럭비 니트", "라이트 시어쉘 패딩 점퍼" 등
+3. 브랜드명과 상품명을 인용할 때는 **반드시 JSON에 있는 원문을 그대로, 완전히** 사용하세요.
+4. **절대로** 한글 브랜드명을 영어로 번역하거나, 생략하거나, `** **`처럼 비워두지 마세요.
+5. **절대로** `** **: '' "Rosen Garden Sweat Shirt-Grey"`처럼 브랜드명을 비워두지 마세요.
 
-**잘못된 예시 (금지)**:
-- ❌ `** **: '' "스트라이프 럭비 니트"` (브랜드명 생략)
-- ❌ `**Unknown**: "스트라이프 럭비 니트"` (브랜드명 번역/생략)
-- ❌ `어반드레스의 "Stripe Rugby Knit"` (상품명 번역)
+**올바른 인용 예시 (필수 참고)**:
+- JSON 데이터: `{{"Brand":"어반드레스","Product":"스트라이프 럭비 니트","Rank_Change":74,"Price":74000}}`
+- ✅ 올바른 인용: **'어반드레스'**의 **'스트라이프 럭비 니트'**가 74계단 상승했다.
+- ✅ 올바른 인용: **'수아레 우먼'**의 **'라이트 시어쉘 패딩 점퍼'**가 급상승했다.
+- ✅ 올바른 인용: **'비터셀즈'**의 **'Essential Golgi Tee-7 colors'**가 신규 진입했다.
 
-**반드시 지켜야 할 규칙**:
-1. JSON의 `Brand` 필드 값을 **그대로** 인용하세요 (한글이면 한글, 영어면 영어).
-2. JSON의 `Product` 필드 값을 **그대로** 인용하세요 (한글이면 한글, 영어면 영어).
-3. 브랜드명이 비어있거나 null인 경우에만 생략하세요. 그 외에는 반드시 표시하세요.
+**잘못된 인용 예시 (절대 금지)**:
+- ❌ `** **: '' "스트라이프 럭비 니트"` (브랜드명 생략 - 절대 안 됨!)
+- ❌ `** **: '' "Rosen Garden Sweat Shirt-Grey"` (브랜드명 생략 - 절대 안 됨!)
+- ❌ `**Unknown**: "스트라이프 럭비 니트"` (브랜드명 번역/생략 - 절대 안 됨!)
+- ❌ `어반드레스의 "Stripe Rugby Knit"` (상품명 번역 - 절대 안 됨!)
+- ❌ `**비어있음**의 "..."` (브랜드명 비움 - 절대 안 됨!)
+
+**최종 확인 사항 (작성 후 반드시 체크)**:
+1. 리포트를 작성한 후, 모든 `** **` 패턴을 찾아서 브랜드명을 제대로 채웠는지 확인하세요.
+2. 브랜드명이 비어있으면, 위 JSON 데이터에서 해당 상품의 `Brand` 필드 값을 찾아서 **반드시** 채우세요.
+3. 브랜드명은 한글일 수도 있고 영어일 수도 있습니다. 어떤 언어든 JSON에 있는 그대로 사용하세요.
+4. 예를 들어 JSON에 `"Brand": "어반드레스"`가 있으면, 반드시 `**'어반드레스'**`로 표시해야 합니다.
+5. 절대로 `** **`처럼 브랜드명을 비워두지 마세요.
+
+**작성 예시 (반드시 이 형식으로, 위 JSON 데이터를 참고하여)**:
+```
+**'어반드레스'**의 **'스트라이프 럭비 니트'**가 74계단 상승했다.
+**'수아레 우먼'**의 **'라이트 시어쉘 패딩 점퍼'**가 55계단 상승했다.
+**'비터셀즈'**의 **'Essential Golgi Tee-7 colors'**가 신규 진입했다.
+```
+
+**⚠️ 최종 확인**:
+- 리포트를 작성하기 **전에**, 위 JSON 데이터의 `Brand` 필드와 `Product` 필드를 확인하세요.
+- 각 상품을 인용할 때, 반드시 JSON 데이터의 `Brand` 값을 포함하세요.
+- `** **` 패턴을 사용하지 마세요. 항상 실제 브랜드명을 넣으세요.
+- 위 예시처럼 브랜드명과 상품명을 **반드시 포함**하여 작성하세요.
 """
 
     return prompt
@@ -461,6 +499,16 @@ def generate_ai_analysis_from_file(
         api_key=api_key
     )
     
+    # AI 분석 결과 확인 (디버깅)
+    if "insights" in snapshot_data and snapshot_data["insights"].get("analysis_report"):
+        analysis_report_len = len(snapshot_data["insights"]["analysis_report"])
+        print(f"✅ [DEBUG] AI 분석 리포트가 스냅샷 데이터에 포함되어 있습니다 ({analysis_report_len}자).", file=sys.stderr)
+    else:
+        print(f"⚠️ [DEBUG] AI 분석 리포트가 스냅샷 데이터에 포함되지 않았습니다.", file=sys.stderr)
+        print(f"   - insights 필드 존재: {'insights' in snapshot_data}", file=sys.stderr)
+        if "insights" in snapshot_data:
+            print(f"   - analysis_report 존재: {'analysis_report' in snapshot_data['insights']}", file=sys.stderr)
+    
     # 결과 저장 (출력 경로 미지정 시 입력 파일 경로에 덮어쓰기)
     output_path = output_file or snapshot_file
     
@@ -483,7 +531,16 @@ def generate_ai_analysis_from_file(
         json_bytes = json_str.encode('utf-8')
         compressed_bytes = gzip.compress(json_bytes)
         
+        # 저장 전 insights 필드 확인 (디버깅)
+        if "insights" in snapshot_data and snapshot_data["insights"].get("analysis_report"):
+            print(f"✅ [DEBUG] GCS 업로드 전 insights 필드 확인 완료.", file=sys.stderr)
+        else:
+            print(f"⚠️ [DEBUG] GCS 업로드 전 insights 필드가 없습니다.", file=sys.stderr)
+        
         blob.upload_from_string(compressed_bytes, content_type='application/gzip')
+        
+        # 저장 후 확인 (디버깅)
+        print(f"✅ [DEBUG] GCS 업로드 완료. 파일 크기: {len(compressed_bytes):,} bytes", file=sys.stderr)
     else:
         print(f"📤 [INFO] 로컬 파일 저장 중: {output_path}", file=sys.stderr)
         with open(output_path, 'w', encoding='utf-8') as f:

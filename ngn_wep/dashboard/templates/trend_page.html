@@ -10,10 +10,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/monthly_report.css') }}?v=1.0">
   <style>
     /* 트렌드 페이지 전용 스타일 */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    
     .trend-page-wrapper {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 0 24px 12px 24px;
+      padding: 0 24px 8px 24px;
       margin-top: 0;
       padding-top: 0;
     }
@@ -24,20 +30,21 @@
       top: 0;
       background: #f8fafc;
       z-index: 100;
-      padding: 8px 0 0 0;
+      padding: 4px 0 0 0;
       margin-bottom: 0;
       box-shadow: none;
     }
     
     .trend-page-header {
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     
     .trend-page-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       color: #212529;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      line-height: 1.2;
     }
     
     .trend-tabs-wrapper {
@@ -101,7 +108,7 @@
     .trend-type-tabs-wrapper {
       background: transparent;
       padding: 0;
-      margin: 12px 0;
+      margin: 8px 0;
     }
     
     .trend-type-tabs {
@@ -491,7 +498,7 @@
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
 <!-- ✅ 햄버거 메뉴 -->
-<div class="nav-buttons" style="top: 8px;">
+<div class="nav-buttons" style="top: 4px;">
   <div class="nav-left">
     <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
   </div>

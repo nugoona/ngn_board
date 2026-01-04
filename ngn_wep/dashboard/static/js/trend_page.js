@@ -8,13 +8,63 @@ let allTabsData = {}; // 모든 탭 데이터를 메모리에 저장 (비용 효
 let currentWeek = "";
 let currentTrendType = "risingStar"; // 현재 선택된 트렌드 타입 (risingStar, newEntry, rankDrop)
 
+// 햄버거 메뉴 설정 (common.js와 충돌 방지)
+function setupHamburgerMenu() {
+    // common.js가 먼저 실행되므로, 모든 이벤트를 완전히 제거하고 재등록
+    // 즉시 실행 + ready에서도 실행 (이중 보장)
+    function initHamburger() {
+        // 모든 관련 이벤트 완전히 제거
+        $('#hamburgerIcon').off();
+        $(document).off('click');
+        $('.hamburger-dropdown a').off();
+        
+        // 새로운 이벤트 등록
+        $('#hamburgerIcon').on('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('[TREND] 햄버거 메뉴 클릭됨');
+            const $dropdown = $('#hamburgerDropdown');
+            if ($dropdown.is(':visible')) {
+                $dropdown.hide();
+            } else {
+                $dropdown.css('display', 'flex').show();
+            }
+            return false;
+        });
+        
+        // 외부 클릭 시 닫기
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
+                $('#hamburgerDropdown').hide();
+            }
+        });
+        
+        // 드롭다운 내부 링크 클릭 시 닫기
+        $('.hamburger-dropdown a').on('click', function() {
+            $('#hamburgerDropdown').hide();
+        });
+    }
+    
+    // 즉시 실행 (common.js보다 먼저 실행되도록)
+    if ($('#hamburgerIcon').length) {
+        initHamburger();
+    }
+    
+    // ready에서도 실행
+    $(document).ready(function() {
+        setTimeout(initHamburger, 50); // common.js 실행 후 재등록
+    });
+}
+
 // 페이지 로드 시 초기화
 $(document).ready(function() {
+    // 햄버거 메뉴 먼저 설정
+    setupHamburgerMenu();
+    
     loadTabs().then(() => {
         // 탭 목록을 받은 후 모든 탭 데이터를 한 번에 로드
         loadAllTabsData();
     });
-    setupHamburgerMenu();
     setupTrendTypeTabs();
 });
 
@@ -36,37 +86,6 @@ function setupTrendTypeTabs() {
             // 현재 탭 데이터 재표시
             displayCurrentTabData();
         });
-    });
-}
-
-// 햄버거 메뉴 설정 (common.js와 충돌 방지)
-function setupHamburgerMenu() {
-    // 기존 이벤트 완전히 제거
-    $('#hamburgerIcon').off('click');
-    $(document).off('click', '#hamburgerIcon');
-    
-    // 새로운 이벤트 등록
-    $('#hamburgerIcon').on('click', function(e) {
-        e.stopPropagation();
-        e.preventDefault();
-        const $dropdown = $('#hamburgerDropdown');
-        if ($dropdown.is(':visible')) {
-            $dropdown.hide();
-        } else {
-            $dropdown.css('display', 'flex').show();
-        }
-    });
-    
-    // 외부 클릭 시 닫기 (이벤트 네임스페이스 사용)
-    $(document).off('click.hamburger').on('click.hamburger', function(e) {
-        if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
-            $('#hamburgerDropdown').hide();
-        }
-    });
-    
-    // 드롭다운 내부 링크 클릭 시 닫기
-    $('.hamburger-dropdown a').off('click').on('click', function() {
-        $('#hamburgerDropdown').hide();
     });
 }
 

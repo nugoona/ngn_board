@@ -430,11 +430,15 @@ def main():
     print(f"\n🤖 AI 분석 리포트 생성 중...")
     try:
         # 프로젝트 루트를 Python 경로에 추가
+        # tools/trend_29cm_snapshot.py -> tools/ -> 프로젝트 루트 (ngn_board)
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(script_dir)
+        project_root = os.path.dirname(script_dir)  # tools/ -> 프로젝트 루트
         tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
         if tools_path not in sys.path:
             sys.path.insert(0, tools_path)
+        
+        print(f"[DEBUG] 프로젝트 루트: {project_root}", file=sys.stderr)
+        print(f"[DEBUG] tools 경로: {tools_path}", file=sys.stderr)
         
         from trend_29cm_ai_analyst import generate_ai_analysis_from_file
         
@@ -442,7 +446,7 @@ def main():
         generate_ai_analysis_from_file(
             snapshot_file=snapshot_path,
             output_file=None,  # 입력 파일에 덮어쓰기
-            api_key=None  # 환경변수에서 로드
+            api_key=None  # 환경변수에서 로드 (.env 파일 자동 찾기)
         )
         
         print(f"✅ AI 분석 리포트 추가 완료!")

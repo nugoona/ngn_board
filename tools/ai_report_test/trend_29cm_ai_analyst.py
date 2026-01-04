@@ -25,15 +25,18 @@ try:
         env_loaded = True
         print(f"✅ [INFO] .env 파일 로드됨: {cwd_env}", file=sys.stderr)
     
-    # 2. 스크립트 위치 기준으로 프로젝트 루트 찾기
+    # 2. 스크립트 위치 기준으로 프로젝트 루트 찾기 (ngn_board)
     if not env_loaded:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))  # tools/ai_report_test/ -> 프로젝트 루트
+        # tools/ai_report_test/ -> tools/ -> 프로젝트 루트 (ngn_board)
+        project_root = os.path.dirname(os.path.dirname(script_dir))
         env_path = os.path.join(project_root, ".env")
         if os.path.exists(env_path):
             load_dotenv(env_path, override=True)
             env_loaded = True
             print(f"✅ [INFO] .env 파일 로드됨: {env_path}", file=sys.stderr)
+        else:
+            print(f"⚠️ [DEBUG] .env 파일을 찾을 수 없습니다: {env_path}", file=sys.stderr)
     
     # 3. 기본 load_dotenv() 시도 (현재 디렉토리 및 상위 디렉토리 자동 탐색)
     if not env_loaded:

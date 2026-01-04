@@ -72,14 +72,32 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
     
-    # 전체 데이터 준비 (모든 탭의 데이터 통합)
+    # 데이터 요약 및 필수 필드만 추출 (썸네일 URL 등 불필요한 데이터 제거)
+    def extract_essential_fields(items: list, max_items: int = 30) -> list:
+        """필수 필드만 추출하여 AI 프롬프트 크기 최적화"""
+        essential = []
+        for item in items[:max_items]:  # 상위 N개만 사용
+            essential.append({
+                "Ranking": item.get("Ranking"),
+                "Brand_Name": item.get("Brand_Name"),
+                "Product_Name": item.get("Product_Name"),
+                "Rank_Change": item.get("Rank_Change"),
+                "This_Week_Rank": item.get("This_Week_Rank"),
+                "Last_Week_Rank": item.get("Last_Week_Rank"),
+                "price": item.get("price"),
+                "item_url": item.get("item_url")
+                # thumbnail_url 제외 (이미지 URL은 AI 분석에 불필요)
+            })
+        return essential
+    
+    # 전체 데이터 준비 (필수 필드만 추출, 상위 30개만)
     all_categories_data = {}
     
     for tab_name, tab_data in tabs_data.items():
         all_categories_data[tab_name] = {
-            "rising_star": tab_data.get("rising_star", []),
-            "new_entry": tab_data.get("new_entry", []),
-            "rank_drop": tab_data.get("rank_drop", [])
+            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=30),
+            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=30),
+            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=30)
         }
     
     # 데이터 요약 통계
@@ -204,6 +222,12 @@ def generate_trend_analysis(
         # 프롬프트 생성
         prompt = build_trend_analysis_prompt(snapshot_data)
         
+        # 프롬프트 크기 확인
+        prompt_length = len(prompt)
+        print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
+        if prompt_length > 100000:  # 10만자 이상이면 경고
+            print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자). 데이터 요약이 필요할 수 있습니다.", file=sys.stderr)
+        
         # AI 모델 호출
         print(f"📤 [INFO] Gemini API 호출 중...", file=sys.stderr)
         
@@ -218,24 +242,39 @@ def generate_trend_analysis(
         )
         
         # 응답 파싱
+        analysis_text = None
         if hasattr(response, 'text'):
             analysis_text = response.text
         elif hasattr(response, 'candidates') and response.candidates:
-            analysis_text = response.candidates[0].content.parts[0].text
-        else:
+            if hasattr(response.candidates[0].content, 'parts') and response.candidates[0].content.parts:
+                analysis_text = response.candidates[0].content.parts[0].text
+            elif hasattr(response.candidates[0], 'content'):
+                analysis_text = str(response.candidates[0].content)
+            else:
+                analysis_text = str(response.candidates[0])
+        
+        if not analysis_text:
             analysis_text = str(response)
+        
+        if not analysis_text or len(analysis_text.strip()) < 100:
+            print(f"⚠️ [WARN] AI 응답이 너무 짧습니다 ({len(analysis_text) if analysis_text else 0}자).", file=sys.stderr)
+            print(f"[DEBUG] 원본 응답 타입: {type(response)}", file=sys.stderr)
+            if hasattr(response, '__dict__'):
+                print(f"[DEBUG] 응답 속성: {list(response.__dict__.keys())[:10]}", file=sys.stderr)
         
         # 아이콘/이모지 제거 (안전장치)
         analysis_text = remove_icons_and_emojis(analysis_text)
         
         # 토큰 수 체크 (경고만)
         char_count = len(analysis_text)
-        if char_count > max_tokens * 2:  # 한글 기준으로 대략 계산
+        if char_count < 500:
+            print(f"⚠️ [WARN] 분석 리포트가 너무 짧습니다 ({char_count}자). 데이터가 제대로 전달되었는지 확인하세요.", file=sys.stderr)
+        elif char_count > max_tokens * 2:  # 한글 기준으로 대략 계산
             print(f"⚠️ [WARN] 분석 리포트가 길 수 있습니다 ({char_count}자). 토큰 제한: 약 {max_tokens}", file=sys.stderr)
         else:
             print(f"✅ [INFO] 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
         
-        return analysis_text.strip()
+        return analysis_text.strip() if analysis_text else None
         
     except Exception as e:
         print(f"❌ [ERROR] AI 분석 생성 실패: {e}", file=sys.stderr)

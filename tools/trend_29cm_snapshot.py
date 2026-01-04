@@ -427,6 +427,8 @@ def main():
     print(f"   경로: {snapshot_path}")
     
     # AI 분석 자동 추가 (월간 리포트 방식)
+    # 사용자가 원하면 별도로 실행할 수 있도록 주석 처리하거나 옵션으로 만들 수 있음
+    # 현재는 자동 실행하되, 실패해도 스냅샷 생성은 성공으로 처리
     print(f"\n🤖 AI 분석 리포트 생성 중...")
     try:
         # 프로젝트 루트를 Python 경로에 추가
@@ -436,9 +438,6 @@ def main():
         tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
         if tools_path not in sys.path:
             sys.path.insert(0, tools_path)
-        
-        print(f"[DEBUG] 프로젝트 루트: {project_root}", file=sys.stderr)
-        print(f"[DEBUG] tools 경로: {tools_path}", file=sys.stderr)
         
         from trend_29cm_ai_analyst import generate_ai_analysis_from_file
         
@@ -453,7 +452,7 @@ def main():
     except Exception as e:
         print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}")
         import traceback
-        traceback.print_exc()
+        traceback.print_exc(file=sys.stderr)
         # AI 분석 실패해도 스냅샷은 정상적으로 저장되었으므로 계속 진행
 
 

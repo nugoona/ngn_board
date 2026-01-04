@@ -35,7 +35,10 @@ from ..services.trend_29cm_service import (
     get_new_entry,
     get_rank_drop,
     get_current_week_info,
-    get_available_tabs
+    get_available_tabs,
+    load_trend_snapshot_from_gcs,
+    save_trend_snapshot_to_gcs,
+    get_all_tabs_data_from_bigquery
 )
 
 
@@ -1180,63 +1183,159 @@ def get_batch_dashboard_data_route():
 
 @data_blueprint.route("/trend", methods=["POST"])
 def get_trend_data():
-    """29CM 트렌드 데이터 조회"""
+    """29CM 트렌드 데이터 조회 (스냅샷 우선, 없으면 BigQuery 조회)"""
     try:
         data = request.get_json() or {}
         tab_names = data.get("tab_names")  # 리스트로 받아서 여러 탭 한 번에 처리
         tab_name = data.get("tab_name")  # 단일 탭 (하위 호환)
         trend_type = data.get("trend_type", "all")  # "rising", "new_entry", "rank_drop", "all"
         
-        # tab_names가 있으면 여러 탭 처리, 없으면 단일 탭 처리
-        if tab_names and isinstance(tab_names, list):
-            # 여러 탭 데이터를 한 번에 반환 (비용 효율화)
-            result = {
-                "status": "success",
-                "tabs_data": {}
-            }
+        # 주차 정보 조회 (스냅샷 경로 생성을 위해)
+        current_week = get_current_week_info()
+        if not current_week:
+            return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
+        
+        # 스냅샷에서 로드 시도
+        snapshot_data = load_trend_snapshot_from_gcs(current_week)
+        
+        if snapshot_data:
+            # 스냅샷 데이터 사용
+            print(f"[INFO] 스냅샷에서 트렌드 데이터 로드: {current_week}")
             
-            # 주차 정보 조회 (한 번만)
-            current_week = get_current_week_info()
-            result["current_week"] = current_week or ""
-            
-            # 각 탭별 데이터 조회
-            for tab in tab_names:
-                tab_data = {}
-                if trend_type == "rising" or trend_type == "all":
-                    tab_data["rising_star"] = get_rising_star(tab)
-                if trend_type == "new_entry" or trend_type == "all":
-                    tab_data["new_entry"] = get_new_entry(tab)
-                if trend_type == "rank_drop" or trend_type == "all":
-                    tab_data["rank_drop"] = get_rank_drop(tab)
-                result["tabs_data"][tab] = tab_data
-            
-            return jsonify(result), 200
+            if tab_names and isinstance(tab_names, list):
+                # 여러 탭 처리
+                result = {
+                    "status": "success",
+                    "current_week": snapshot_data.get("current_week", current_week),
+                    "tabs_data": {}
+                }
+                
+                for tab in tab_names:
+                    tab_data = snapshot_data.get("tabs_data", {}).get(tab, {})
+                    if trend_type == "all":
+                        result["tabs_data"][tab] = tab_data
+                    else:
+                        filtered_data = {}
+                        if trend_type == "rising" and "rising_star" in tab_data:
+                            filtered_data["rising_star"] = tab_data["rising_star"]
+                        if trend_type == "new_entry" and "new_entry" in tab_data:
+                            filtered_data["new_entry"] = tab_data["new_entry"]
+                        if trend_type == "rank_drop" and "rank_drop" in tab_data:
+                            filtered_data["rank_drop"] = tab_data["rank_drop"]
+                        result["tabs_data"][tab] = filtered_data
+                
+                return jsonify(result), 200
+            else:
+                # 단일 탭 처리 (하위 호환)
+                tab_name = tab_name or "전체"
+                tab_data = snapshot_data.get("tabs_data", {}).get(tab_name, {})
+                
+                result = {
+                    "status": "success",
+                    "tab_name": tab_name,
+                    "current_week": snapshot_data.get("current_week", current_week)
+                }
+                
+                if trend_type == "all":
+                    result["rising_star"] = tab_data.get("rising_star", [])
+                    result["new_entry"] = tab_data.get("new_entry", [])
+                    result["rank_drop"] = tab_data.get("rank_drop", [])
+                else:
+                    if trend_type == "rising" or trend_type == "all":
+                        result["rising_star"] = tab_data.get("rising_star", [])
+                    if trend_type == "new_entry" or trend_type == "all":
+                        result["new_entry"] = tab_data.get("new_entry", [])
+                    if trend_type == "rank_drop" or trend_type == "all":
+                        result["rank_drop"] = tab_data.get("rank_drop", [])
+                
+                return jsonify(result), 200
         else:
-            # 단일 탭 처리 (하위 호환)
-            tab_name = tab_name or "전체"
-            result = {
-                "status": "success",
-                "tab_name": tab_name
-            }
+            # 스냅샷이 없으면 BigQuery에서 조회 (Fallback)
+            print(f"[INFO] 스냅샷 없음, BigQuery에서 조회: {current_week}")
             
-            # 주차 정보 조회
-            current_week = get_current_week_info()
-            result["current_week"] = current_week or ""
-            
-            # 트렌드 타입별 데이터 조회
-            if trend_type == "rising" or trend_type == "all":
-                result["rising_star"] = get_rising_star(tab_name)
-            
-            if trend_type == "new_entry" or trend_type == "all":
-                result["new_entry"] = get_new_entry(tab_name)
-            
-            if trend_type == "rank_drop" or trend_type == "all":
-                result["rank_drop"] = get_rank_drop(tab_name)
-            
-            return jsonify(result), 200
+            if tab_names and isinstance(tab_names, list):
+                # 여러 탭 데이터를 한 번에 반환
+                result = {
+                    "status": "success",
+                    "tabs_data": {},
+                    "current_week": current_week
+                }
+                
+                # 각 탭별 데이터 조회
+                for tab in tab_names:
+                    tab_data = {}
+                    if trend_type == "rising" or trend_type == "all":
+                        tab_data["rising_star"] = get_rising_star(tab)
+                    if trend_type == "new_entry" or trend_type == "all":
+                        tab_data["new_entry"] = get_new_entry(tab)
+                    if trend_type == "rank_drop" or trend_type == "all":
+                        tab_data["rank_drop"] = get_rank_drop(tab)
+                    result["tabs_data"][tab] = tab_data
+                
+                return jsonify(result), 200
+            else:
+                # 단일 탭 처리 (하위 호환)
+                tab_name = tab_name or "전체"
+                result = {
+                    "status": "success",
+                    "tab_name": tab_name,
+                    "current_week": current_week
+                }
+                
+                # 트렌드 타입별 데이터 조회
+                if trend_type == "rising" or trend_type == "all":
+                    result["rising_star"] = get_rising_star(tab_name)
+                
+                if trend_type == "new_entry" or trend_type == "all":
+                    result["new_entry"] = get_new_entry(tab_name)
+                
+                if trend_type == "rank_drop" or trend_type == "all":
+                    result["rank_drop"] = get_rank_drop(tab_name)
+                
+                return jsonify(result), 200
         
     except Exception as e:
         print(f"[ERROR] get_trend_data 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/trend/snapshot/create", methods=["POST"])
+def create_trend_snapshot():
+    """트렌드 스냅샷 생성 (수동 실행용, 스케줄 추가 예정)"""
+    try:
+        data = request.get_json() or {}
+        tab_names = data.get("tab_names", [])
+        
+        if not tab_names:
+            # 기본 탭 목록 조회
+            tab_names = get_available_tabs()
+        
+        # 주차 정보 조회
+        current_week = get_current_week_info()
+        if not current_week:
+            return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
+        
+        # 모든 탭 데이터 조회 (캐시 무시하고 직접 조회)
+        print(f"[INFO] 스냅샷 생성 시작: {current_week}")
+        tabs_data = get_all_tabs_data_from_bigquery(tab_names)
+        
+        # GCS에 저장
+        success = save_trend_snapshot_to_gcs(current_week, tabs_data, current_week)
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": f"스냅샷 생성 완료: {current_week}",
+                "run_id": current_week,
+                "tabs_count": len(tab_names)
+            }), 200
+        else:
+            return jsonify({"status": "error", "message": "스냅샷 저장 실패"}), 500
+        
+    except Exception as e:
+        print(f"[ERROR] create_trend_snapshot 실패: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500

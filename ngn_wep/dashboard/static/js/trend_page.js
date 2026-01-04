@@ -153,9 +153,22 @@ function updatePageTitle(currentWeek) {
     if (titleElement && currentWeek) {
         const weekMatch = currentWeek.match(/(\d{4})W(\d{2})/);
         if (weekMatch) {
-            const year = weekMatch[1];
+            const year = parseInt(weekMatch[1]);
             const week = parseInt(weekMatch[2]);
-            titleElement.textContent = `29CM ${year}년 ${week}주차 트렌드`;
+            
+            // ISO 주차를 사용하여 월 계산
+            // 첫 번째 주 목요일을 기준으로 주차 시작일 계산
+            const jan4 = new Date(year, 0, 4);
+            const jan4Day = jan4.getDay() || 7; // 일요일을 7로 변환
+            const daysToThursday = 4 - jan4Day;
+            const firstThursday = new Date(year, 0, 4 + daysToThursday);
+            
+            // 주차 시작일 (목요일 기준 월요일)
+            const weekStartDate = new Date(firstThursday);
+            weekStartDate.setDate(firstThursday.getDate() - 3 + (week - 1) * 7);
+            const month = weekStartDate.getMonth() + 1;
+            
+            titleElement.textContent = `29CM ${year}년 ${month}월 ${week}주차 트렌드`;
         } else {
             titleElement.textContent = `29CM ${currentWeek} 트렌드`;
         }
@@ -255,42 +268,56 @@ function createTableWithPagination(data, showRankChange, tableId) {
     paginationDiv.id = `${tableId}Pagination`;
     wrapper.appendChild(paginationDiv);
     
-    // 초기 데이터 렌더링 (7개만)
-    renderTableRows(data.slice(0, 7), tbody, showRankChange, tableId);
+    // 초기 데이터 렌더링 (5개만)
+    const INITIAL_ITEMS = 5;
+    let currentShown = INITIAL_ITEMS;
+    renderTableRows(data.slice(0, INITIAL_ITEMS), tbody, showRankChange, tableId);
     
-    // 더보기 버튼 생성 (7개 이상인 경우)
-    if (data.length > 7) {
+    // 더보기/접기 버튼 생성
+    if (data.length > INITIAL_ITEMS) {
         const showMoreBtn = document.createElement('button');
         showMoreBtn.className = 'trend-show-more-btn';
-        showMoreBtn.textContent = `더보기 (${data.length - 7}개 더)`;
-        showMoreBtn.dataset.tableId = tableId;
-        showMoreBtn.dataset.totalItems = data.length;
-        showMoreBtn.dataset.showRankChange = showRankChange;
+        showMoreBtn.textContent = `더보기 (${data.length - INITIAL_ITEMS}개 더)`;
         
-        let currentShown = 7;
+        const collapseBtn = document.createElement('button');
+        collapseBtn.className = 'trend-collapse-btn';
+        collapseBtn.textContent = '접기';
+        collapseBtn.style.display = 'none'; // 초기에는 숨김
+        
         showMoreBtn.addEventListener('click', function() {
             const startIdx = currentShown;
-            const endIdx = Math.min(startIdx + 7, data.length);
+            const endIdx = data.length; // 나머지 모두 표시
             const moreData = data.slice(startIdx, endIdx);
             
             renderTableRows(moreData, tbody, showRankChange, tableId);
             currentShown = endIdx;
             
-            // 스크롤 애니메이션
-            const firstNewRow = tbody.children[startIdx];
-            if (firstNewRow) {
-                firstNewRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // 버튼 상태 변경
+            showMoreBtn.style.display = 'none';
+            collapseBtn.style.display = 'inline-block';
+        });
+        
+        collapseBtn.addEventListener('click', function() {
+            // 초기 5개만 남기고 나머지 제거
+            while (tbody.children.length > INITIAL_ITEMS) {
+                tbody.removeChild(tbody.lastChild);
+            }
+            currentShown = INITIAL_ITEMS;
+            
+            // 스크롤 맨 위로
+            const tableWrapper = wrapper.querySelector('.trend-table-wrapper');
+            if (tableWrapper) {
+                tableWrapper.scrollTop = 0;
             }
             
-            // 더이상 보여줄 데이터가 없으면 버튼 제거
-            if (currentShown >= data.length) {
-                showMoreBtn.remove();
-            } else {
-                showMoreBtn.textContent = `더보기 (${data.length - currentShown}개 더)`;
-            }
+            // 버튼 상태 변경
+            showMoreBtn.style.display = 'inline-block';
+            collapseBtn.style.display = 'none';
+            showMoreBtn.textContent = `더보기 (${data.length - INITIAL_ITEMS}개 더)`;
         });
         
         paginationDiv.appendChild(showMoreBtn);
+        paginationDiv.appendChild(collapseBtn);
     }
     
     return wrapper;
@@ -321,8 +348,11 @@ function renderTableRows(items, tbody, showRankChange, tableId) {
             img.src = item.thumbnail_url;
             img.alt = item.Product_Name || '';
             img.className = 'trend-thumbnail';
+            img.style.display = 'block';
+            img.style.margin = '0';
+            img.style.padding = '0';
             img.onerror = function() {
-                this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PCEtLSBJbWFnZSBub3QgZm91bmQgLS0+PC9zdmc+';
+                this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48L3N2Zz4=';
             };
             
             imgLink.appendChild(img);

@@ -16,6 +16,17 @@
       padding: 20px;
     }
     
+    /* 헤더와 탭 고정 */
+    .trend-sticky-header {
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      z-index: 100;
+      padding: 20px 0;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
     .trend-page-header {
       margin-bottom: 24px;
     }
@@ -28,7 +39,6 @@
     }
     
     .trend-tabs-wrapper {
-      margin-bottom: 32px;
       overflow-x: auto;
       scrollbar-width: none;
       -ms-overflow-style: none;
@@ -93,6 +103,9 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       overflow: hidden;
       margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      max-height: 800px; /* 최대 높이 제한 */
     }
     
     .trend-table-container h3 {
@@ -103,10 +116,25 @@
       color: #212529;
       border-bottom: 1px solid #E9ECEF;
       background: #F8F9FA;
+      flex-shrink: 0;
     }
     
     .trend-table-wrapper {
       overflow-x: auto;
+      overflow-y: auto;
+      flex: 1;
+      position: relative;
+    }
+    
+    /* 테이블 헤더 고정 */
+    .trend-table-wrapper table {
+      width: 100%;
+    }
+    
+    .trend-table-wrapper thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     
     .trend-table {
@@ -135,11 +163,23 @@
       vertical-align: middle;
     }
     
-    /* 썸네일 셀 - 여백 없음 */
+    /* 썸네일 셀 - 여백 없음, 크게 */
     .trend-thumbnail-cell {
       padding: 0 !important;
-      width: 60px;
-      height: 60px;
+      width: 120px !important; /* 두 배로 증가 (60px → 120px) */
+      height: 120px !important;
+      vertical-align: middle;
+      text-align: center;
+    }
+    
+    /* 썸네일 셀의 링크도 여백 없게 */
+    .trend-thumbnail-cell a {
+      display: inline-block;
+      width: 120px;
+      height: 120px;
+      padding: 0;
+      margin: 0;
+      line-height: 0;
     }
     
     .trend-thumbnail-cell a {
@@ -151,25 +191,27 @@
     }
     
     .trend-thumbnail {
-      width: 60px;
-      height: 60px;
+      width: 120px;
+      height: 120px;
       object-fit: cover;
       display: block;
       margin: 0;
       padding: 0;
     }
     
-    /* 상품명 줄바꿈 허용 */
-    .trend-table td:nth-child(4) {
+    /* 상품명 줄바꿈 허용, 너비 줄임 */
+    .trend-table tbody td:nth-child(4) {
       word-wrap: break-word;
       word-break: break-word;
-      max-width: 300px;
+      max-width: 180px; /* 200px → 180px로 더 줄임 */
+      min-width: 150px;
       line-height: 1.4;
+      padding: 12px 8px; /* 좌우 패딩 줄임 */
     }
     
     /* 숫자 컬럼 크게 */
     .trend-rank-number {
-      font-size: 18px;
+      font-size: 22px; /* 18px → 22px로 증가 */
       font-weight: 700;
       text-align: center;
     }
@@ -180,7 +222,7 @@
       justify-content: center;
       gap: 4px;
       font-weight: 700;
-      font-size: 18px;
+      font-size: 22px; /* 18px → 22px로 증가 */
     }
     
     .trend-rank-change.up {
@@ -203,15 +245,21 @@
       border-bottom: none;
     }
     
-    /* 더보기 버튼 */
+    /* 더보기/접기 버튼 */
     .trend-pagination-container {
       padding: 20px;
       text-align: center;
       background: #F8F9FA;
       border-top: 1px solid #E9ECEF;
+      flex-shrink: 0;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
     }
     
-    .trend-show-more-btn {
+    .trend-show-more-btn,
+    .trend-collapse-btn {
       padding: 12px 32px;
       background: #6366f1;
       color: #ffffff;
@@ -223,10 +271,19 @@
       transition: all 0.2s ease;
     }
     
-    .trend-show-more-btn:hover {
+    .trend-show-more-btn:hover,
+    .trend-collapse-btn:hover {
       background: #4f46e5;
       transform: translateY(-1px);
       box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+    }
+    
+    .trend-collapse-btn {
+      background: #868E96;
+    }
+    
+    .trend-collapse-btn:hover {
+      background: #6C757D;
     }
     
     .trend-loading {
@@ -263,21 +320,21 @@
       }
       
       .trend-thumbnail-cell {
-        width: 50px;
-        height: 50px;
+        width: 100px;
+        height: 100px;
       }
       
       .trend-thumbnail {
-        width: 50px;
-        height: 50px;
+        width: 100px;
+        height: 100px;
       }
       
       .trend-rank-number {
-        font-size: 16px;
+        font-size: 18px;
       }
       
       .trend-rank-change {
-        font-size: 16px;
+        font-size: 18px;
       }
       
       /* 모바일에서 일부 컬럼 숨김 */
@@ -316,15 +373,18 @@
 </div>
 
 <div class="trend-page-wrapper">
-  <!-- 페이지 헤더 -->
-  <div class="trend-page-header">
-    <h1 class="trend-page-title" id="trendPageTitle">29CM 트렌드</h1>
-  </div>
-  
-  <!-- 카테고리 탭 -->
-  <div class="trend-tabs-wrapper">
-    <div class="trend-tabs" id="trendTabs">
-      <!-- 동적으로 생성됨 -->
+  <!-- 고정 헤더 및 탭 -->
+  <div class="trend-sticky-header">
+    <!-- 페이지 헤더 -->
+    <div class="trend-page-header">
+      <h1 class="trend-page-title" id="trendPageTitle">29CM 트렌드</h1>
+    </div>
+    
+    <!-- 카테고리 탭 -->
+    <div class="trend-tabs-wrapper">
+      <div class="trend-tabs" id="trendTabs">
+        <!-- 동적으로 생성됨 -->
+      </div>
     </div>
   </div>
   

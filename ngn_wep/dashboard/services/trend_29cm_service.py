@@ -2,7 +2,13 @@
 29CM 트렌드 분석 서비스
 주간 베스트 상품 데이터를 분석하여 급상승, 신규 진입, 순위 하락 상품을 조회
 """
+import os
+import json
+import gzip
+import io
+from datetime import datetime, timezone, timedelta
 from google.cloud import bigquery
+from google.cloud import storage
 from ..utils.cache_utils import cached_query
 from typing import List, Dict, Any, Optional
 
@@ -257,4 +263,165 @@ def get_available_tabs() -> List[str]:
     except Exception as e:
         print(f"[ERROR] get_available_tabs 실패: {e}")
         return ["전체"]  # 기본값 반환
+
+
+# ─────────────────────────────────────────────────────────────
+# 스냅샷 관련 함수
+# ─────────────────────────────────────────────────────────────
+
+def get_trend_snapshot_path(run_id: str) -> str:
+    """
+    스냅샷 파일 경로 생성
+    형식: ai-reports/trend/29cm/{YYYY}-{MM}-{week}/snapshot.json.gz
+    """
+    import re
+    
+    # run_id 형식: {YYYY}W{WW}_WEEKLY_...
+    match = re.match(r'(\d{4})W(\d{2})', run_id)
+    if not match:
+        raise ValueError(f"Invalid run_id format: {run_id}")
+    
+    year = match.group(1)
+    week = match.group(2)
+    
+    # ISO 주차를 사용하여 월 계산 (간단한 방법)
+    # 1월 4일을 기준으로 첫 번째 주 목요일 찾기
+    jan4 = datetime(int(year), 1, 4)
+    jan4_day = jan4.weekday()  # 0=월요일, 6=일요일
+    days_to_thursday = (3 - jan4_day + 7) % 7
+    first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+    
+    # 주차 시작일 계산
+    week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
+    month = week_start.month
+    
+    return f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
+
+
+def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
+    """
+    GCS 버킷에서 트렌드 스냅샷 로드
+    """
+    try:
+        import re
+        
+        PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
+        GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
+        
+        # run_id에서 경로 생성
+        week_match = re.match(r'(\d{4})W(\d{2})', run_id)
+        if not week_match:
+            return None
+        
+        year = week_match.group(1)
+        week = week_match.group(2)
+        
+        # ISO 주차를 사용하여 월 계산
+        jan4 = datetime(int(year), 1, 4)
+        jan4_day = jan4.weekday()
+        days_to_thursday = (3 - jan4_day + 7) % 7
+        first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+        week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
+        month = week_start.month
+        
+        blob_path = f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
+        
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+        
+        if not blob.exists():
+            return None
+        
+        # 파일 읽기 (Gzip 압축 해제)
+        snapshot_bytes = blob.download_as_bytes()
+        
+        try:
+            with gzip.GzipFile(fileobj=io.BytesIO(snapshot_bytes)) as gz_file:
+                snapshot_json_str = gz_file.read().decode('utf-8')
+        except (gzip.BadGzipFile, OSError):
+            snapshot_json_str = snapshot_bytes.decode('utf-8')
+        
+        snapshot_data = json.loads(snapshot_json_str)
+        print(f"[INFO] GCS에서 트렌드 스냅샷 로드: {blob_path}")
+        return snapshot_data
+        
+    except Exception as e:
+        print(f"[ERROR] load_trend_snapshot_from_gcs 실패: {e}")
+        return None
+
+
+def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[Dict]]], current_week: str) -> bool:
+    """
+    트렌드 데이터를 GCS 버킷에 스냅샷으로 저장
+    썸네일 URL만 저장 (실제 이미지는 저장하지 않음)
+    """
+    try:
+        import re
+        
+        PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
+        GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
+        
+        # run_id에서 경로 생성
+        week_match = re.match(r'(\d{4})W(\d{2})', run_id)
+        if not week_match:
+            print(f"[ERROR] Invalid run_id format: {run_id}")
+            return False
+        
+        year = week_match.group(1)
+        week = week_match.group(2)
+        
+        # ISO 주차를 사용하여 월 계산
+        jan4 = datetime(int(year), 1, 4)
+        jan4_day = jan4.weekday()
+        days_to_thursday = (3 - jan4_day + 7) % 7
+        first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+        week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
+        month = week_start.month
+        
+        blob_path = f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
+        
+        # 스냅샷 데이터 구조 (썸네일 URL은 유지)
+        snapshot_data = {
+            "run_id": run_id,
+            "current_week": current_week,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "tabs_data": tabs_data
+        }
+        
+        # JSON 직렬화 및 Gzip 압축
+        json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
+        json_bytes = json_str.encode('utf-8')
+        compressed_bytes = gzip.compress(json_bytes)
+        
+        # GCS에 업로드
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+        blob.upload_from_string(compressed_bytes, content_type='application/gzip')
+        
+        print(f"[INFO] 트렌드 스냅샷 저장 완료: {blob_path}")
+        return True
+        
+    except Exception as e:
+        print(f"[ERROR] save_trend_snapshot_to_gcs 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def get_all_tabs_data_from_bigquery(tab_names: List[str]) -> Dict[str, Dict[str, List[Dict]]]:
+    """
+    BigQuery에서 모든 탭 데이터 조회 (스냅샷 생성용)
+    """
+    result = {}
+    
+    for tab_name in tab_names:
+        result[tab_name] = {
+            "rising_star": get_rising_star(tab_name),
+            "new_entry": get_new_entry(tab_name),
+            "rank_drop": get_rank_drop(tab_name)
+        }
+    
+    return result
 

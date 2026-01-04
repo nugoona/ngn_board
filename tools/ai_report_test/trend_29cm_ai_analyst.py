@@ -379,15 +379,36 @@ def generate_ai_analysis_from_file(
         if not blob.exists():
             raise FileNotFoundError(f"GCS 파일이 존재하지 않습니다: {snapshot_file}")
         
-        # Gzip 압축 해제
-        snapshot_bytes = blob.download_as_bytes()
+        # Gzip 압축 해제 (월간 리포트와 동일한 방식)
+        snapshot_bytes = blob.download_as_bytes(raw_download=True)
         try:
-            with gzip.GzipFile(fileobj=io.BytesIO(snapshot_bytes)) as gz_file:
-                snapshot_json_str = gz_file.read().decode('utf-8')
-        except (gzip.BadGzipFile, OSError):
+            # 월간 리포트와 동일한 방식: gzip.decompress() 사용
+            snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+            print(f"✅ [DEBUG] Gzip 압축 해제 성공", file=sys.stderr)
+        except (gzip.BadGzipFile, OSError) as e:
+            # Gzip 압축 해제 실패 → 압축되지 않은 JSON 파일로 처리
             snapshot_json_str = snapshot_bytes.decode('utf-8')
+            print(f"⚠️ [WARN] Gzip 압축 해제 실패, 일반 텍스트로 처리: {e}", file=sys.stderr)
         
         snapshot_data = json.loads(snapshot_json_str)
+        
+        # 데이터 확인 (디버깅)
+        print(f"✅ [DEBUG] 스냅샷 데이터 로드 완료", file=sys.stderr)
+        if "tabs_data" in snapshot_data:
+            tabs_count = len(snapshot_data["tabs_data"])
+            print(f"   - 탭 개수: {tabs_count}", file=sys.stderr)
+            # 첫 번째 탭의 첫 번째 상품 확인
+            first_tab = list(snapshot_data["tabs_data"].keys())[0] if snapshot_data["tabs_data"] else None
+            if first_tab:
+                first_tab_data = snapshot_data["tabs_data"][first_tab]
+                if first_tab_data.get("rising_star"):
+                    first_item = first_tab_data["rising_star"][0]
+                    brand_name = first_item.get("Brand_Name", "")
+                    product_name = first_item.get("Product_Name", "")
+                    print(f"   - 샘플 데이터 확인:", file=sys.stderr)
+                    print(f"     * 탭: {first_tab}", file=sys.stderr)
+                    print(f"     * 브랜드명: '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
+                    print(f"     * 상품명: '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
     else:
         print(f"📥 [INFO] 로컬 파일 로드 중: {snapshot_file}", file=sys.stderr)
         with open(snapshot_file, 'r', encoding='utf-8') as f:

@@ -416,14 +416,41 @@ def main():
     print(f"\n💾 스냅샷 저장 중...")
     success = save_snapshot_to_gcs(run_id, tabs_data)
     
-    if success:
-        print(f"\n✅ 스냅샷 생성 완료!")
-        print(f"   Run ID: {run_id}")
-        print(f"   탭 개수: {len(tabs)}")
-        print(f"   경로: gs://{GCS_BUCKET}/{get_snapshot_path(run_id)}")
-    else:
+    if not success:
         print(f"\n❌ 스냅샷 생성 실패")
         sys.exit(1)
+    
+    snapshot_path = f"gs://{GCS_BUCKET}/{get_snapshot_path(run_id)}"
+    print(f"\n✅ 스냅샷 생성 완료!")
+    print(f"   Run ID: {run_id}")
+    print(f"   탭 개수: {len(tabs)}")
+    print(f"   경로: {snapshot_path}")
+    
+    # AI 분석 자동 추가 (월간 리포트 방식)
+    print(f"\n🤖 AI 분석 리포트 생성 중...")
+    try:
+        # 프로젝트 루트를 Python 경로에 추가
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+        if tools_path not in sys.path:
+            sys.path.insert(0, tools_path)
+        
+        from trend_29cm_ai_analyst import generate_ai_analysis_from_file
+        
+        # GCS 스냅샷에 AI 분석 추가 (같은 파일에 덮어쓰기)
+        generate_ai_analysis_from_file(
+            snapshot_file=snapshot_path,
+            output_file=None,  # 입력 파일에 덮어쓰기
+            api_key=None  # 환경변수에서 로드
+        )
+        
+        print(f"✅ AI 분석 리포트 추가 완료!")
+    except Exception as e:
+        print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}")
+        import traceback
+        traceback.print_exc()
+        # AI 분석 실패해도 스냅샷은 정상적으로 저장되었으므로 계속 진행
 
 
 if __name__ == "__main__":

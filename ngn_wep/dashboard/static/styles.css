@@ -1845,6 +1845,10 @@ th.sortable.desc::after {
   pointer-events: auto;
 }
 
+.nav-right {
+  pointer-events: auto;
+}
+
 /* ✅ 햄버거 아이콘 스타일 */
 .hamburger-menu-wrapper {
   position: relative;

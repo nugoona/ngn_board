@@ -420,31 +420,43 @@ def generate_trend_analysis(
                 if not section_text:
                     section_text = str(response)
                 
-                # 섹션 제목 제거 (AI가 섹션 제목을 포함할 수 있음)
-                section_text = section_text.strip()
-                # 섹션 제목 패턴 제거
-                section_text = re.sub(r'^##\s*[섹션\s]*\d+\s*[:\-]?\s*.*$', '', section_text, flags=re.MULTILINE)
+                # 섹션 제목 제거 (AI가 섹션 제목을 포함할 수 있음) - 보수적으로 처리
                 section_text = section_text.strip()
                 
-                # 한글 포함 여부 확인 (디버깅)
+                # 원본 첫 줄 로그 출력 (제목 제거 전)
+                first_line_raw = section_text.split('\n')[0].strip() if section_text else ""
+                print(f"📄 [RESPONSE] 섹션 {section_num} 원본 첫 줄: {first_line_raw[:200]}", file=sys.stderr)
+                
+                # 섹션 제목 패턴 제거 (더 보수적으로 - 첫 줄만 제거)
+                lines = section_text.split('\n')
+                if lines and (lines[0].strip().startswith('##') or lines[0].strip().startswith('# 섹션')):
+                    # 첫 줄이 섹션 제목이면 제거
+                    if len(lines) > 1:
+                        section_text = '\n'.join(lines[1:]).strip()
+                    else:
+                        section_text = section_text.strip()
+                
+                # 한글 포함 여부 확인 (디버깅) - 제목 제거 후
                 if section_text:
                     korean_count = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
                     total_chars = len(section_text)
                     korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부 (제목 제거 후): {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
                     if korean_ratio < 30:
                         print(f"⚠️ [WARN] 섹션 {section_num}에 한글이 적습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
-                        print(f"   - 응답 미리보기 (처음 300자): {section_text[:300]}", file=sys.stderr)
+                        print(f"   - 응답 미리보기 (처음 500자): {section_text[:500]}", file=sys.stderr)
+                    
+                    # 섹션 제목 제거 후 첫 줄 로그 출력
+                    first_line_after = section_text.split('\n')[0].strip() if section_text else ""
+                    if first_line_after:
+                        print(f"📄 [RESPONSE] 섹션 {section_num} 제목 제거 후 첫 줄: {first_line_after[:200]}", file=sys.stderr)
+                    else:
+                        print(f"⚠️ [WARN] 섹션 {section_num} 제목 제거 후 첫 줄이 비어있습니다!", file=sys.stderr)
+                else:
+                    print(f"⚠️ [WARN] 섹션 {section_num} 전체 응답이 비어있습니다!", file=sys.stderr)
                 
                 # 아이콘/이모지 제거 (안전장치)
                 section_text = remove_icons_and_emojis(section_text)
-                
-                # 섹션 응답의 첫 줄 추출 및 로그 출력 (실패 여부 즉시 판단)
-                first_line = section_text.split('\n')[0].strip() if section_text else ""
-                if first_line:
-                    print(f"📄 [RESPONSE] 섹션 {section_num} 첫 줄: {first_line[:200]}", file=sys.stderr)
-                else:
-                    print(f"⚠️ [WARN] 섹션 {section_num} 첫 줄이 비어있습니다!", file=sys.stderr)
                 
                 section_results[section_num] = section_text
                 print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(section_text)}자)", file=sys.stderr)

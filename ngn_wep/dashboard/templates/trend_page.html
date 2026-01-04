@@ -84,8 +84,71 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     
+    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) */
+    .trend-type-tabs-wrapper {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid #E9ECEF;
+    }
+    
+    .trend-type-tabs {
+      display: flex;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+    
+    .trend-type-tab-btn {
+      padding: 12px 24px;
+      border: 2px solid #CED4DA;
+      background: #ffffff;
+      color: #495057;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .trend-type-tab-btn:hover {
+      background: #F8F9FA;
+      border-color: #ADB5BD;
+      transform: translateY(-1px);
+    }
+    
+    .trend-type-tab-btn.active {
+      background: #6366f1;
+      color: #ffffff;
+      font-weight: 600;
+      border-color: #6366f1;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    }
+    
     .trend-section {
       margin-bottom: 48px;
+    }
+    
+    /* 정렬 아이콘 스타일 */
+    .sort-icon {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 12px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    
+    .trend-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .trend-table th.sortable:hover {
+      background: #5b5ff0;
+    }
+    
+    .trend-table th.sortable:hover .sort-icon {
+      opacity: 1;
     }
     
     .trend-section-title {
@@ -118,31 +181,6 @@
       flex-shrink: 0;
     }
     
-    .trend-table-scroll-wrapper {
-      overflow-x: auto;
-      overflow-y: auto;
-      flex: 1;
-      position: relative;
-      max-height: 600px;
-      border: 1px solid #E9ECEF;
-      border-radius: 8px;
-      background: transparent;
-    }
-    
-    /* 테이블 헤더 고정 */
-    .trend-table-scroll-wrapper table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-    
-    .trend-table-scroll-wrapper thead {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: #6366f1 !important;
-      box-shadow: none;
-    }
     
     .trend-table-wrapper {
       display: flex;
@@ -409,32 +447,30 @@
         <!-- 동적으로 생성됨 -->
       </div>
     </div>
+    
+    <!-- 트렌드 타입 탭 (급상승, 신규진입, 순위하락) -->
+    <div class="trend-type-tabs-wrapper">
+      <div class="trend-type-tabs" id="trendTypeTabs">
+        <button class="trend-type-tab-btn active" data-type="risingStar">
+          🔥 급상승 랭킹
+        </button>
+        <button class="trend-type-tab-btn" data-type="newEntry">
+          🚀 신규 진입
+        </button>
+        <button class="trend-type-tab-btn" data-type="rankDrop">
+          📉 순위 하락
+        </button>
+      </div>
+    </div>
   </div>
   
   <!-- 트렌드 섹션 -->
   <div class="trend-section">
     <h2 class="trend-section-title" id="trendSectionTitle">베스트 상품 분석</h2>
     
-    <!-- 급상승 랭킹 -->
+    <!-- 단일 테이블 컨테이너 (탭 전환 시 내용 변경) -->
     <div class="trend-table-container">
-      <h3>🔥 급상승 랭킹 (Rising Star)</h3>
-      <div id="risingStarTable">
-        <div class="trend-loading">데이터를 불러오는 중...</div>
-      </div>
-    </div>
-    
-    <!-- 신규 진입 -->
-    <div class="trend-table-container">
-      <h3>🚀 신규 진입 (New Entry)</h3>
-      <div id="newEntryTable">
-        <div class="trend-loading">데이터를 불러오는 중...</div>
-      </div>
-    </div>
-    
-    <!-- 순위 하락 -->
-    <div class="trend-table-container">
-      <h3>📉 순위 하락 (Rank Drop)</h3>
-      <div id="rankDropTable">
+      <div id="trendTableContent">
         <div class="trend-loading">데이터를 불러오는 중...</div>
       </div>
     </div>

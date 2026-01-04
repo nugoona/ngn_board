@@ -24,7 +24,7 @@
       z-index: 100;
       padding: 20px 24px 0 24px;
       margin-bottom: 0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: none;
     }
     
     .trend-page-header {
@@ -94,25 +94,21 @@
       margin-bottom: 32px;
     }
     
-    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 헤더 내부 */
+    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - Segmented Control 스타일 */
     .trend-type-tabs-wrapper {
-      background: #ffffff;
-      border-bottom: 2px solid #d0d7e2;
+      background: transparent;
       padding: 0;
-      margin: 0;
-      margin-left: -24px;
-      margin-right: -24px;
-      padding-left: 24px;
-      padding-right: 24px;
+      margin: 16px 0;
     }
     
     .trend-type-tabs {
       display: flex;
-      gap: 0;
-      margin: 0;
-      padding: 0;
-      overflow-x: auto;
-      scrollbar-width: thin;
+      gap: 8px;
+      background: #E5E7EB; /* gray-200 */
+      border-radius: 12px; /* rounded-lg */
+      padding: 4px;
+      width: 100%;
+      position: relative;
     }
     
     .trend-type-tab-btn {
@@ -120,30 +116,29 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 14px 32px;
+      flex: 1;
+      padding: 12px 24px;
       border: none;
-      border-bottom: 3px solid transparent;
       background: transparent;
-      color: #6c757d;
+      color: #6B7280; /* gray-500 */
       font-size: 15px;
       font-weight: 600;
-      border-radius: 0;
+      border-radius: 8px;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.3s ease;
-      min-width: 140px;
+      z-index: 1;
     }
     
     .trend-type-tab-btn:hover {
-      background: #f8f9fa;
-      color: #495057;
+      color: #374151; /* gray-700 */
     }
     
     .trend-type-tab-btn.active {
-      background: #ffffff;
-      color: #6366f1;
-      border-bottom-color: #6366f1;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+      background: #ffffff; /* bg-white */
+      color: #212529; /* dark text */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* shadow-sm */
+      z-index: 2;
     }
     
     .trend-section {

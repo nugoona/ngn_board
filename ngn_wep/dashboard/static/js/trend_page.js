@@ -30,6 +30,8 @@ function setupTrendAnalysisToggle() {
         toggleBtn.addEventListener('click', function() {
             // 사이드바를 열 때 현재 주차 정보가 있으면 업데이트
             refreshTrendAnalysisTitle();
+            // 분석 리포트 로드
+            loadTrendAnalysisReport();
             sidebar.classList.remove('hidden');
             sidebar.classList.add('active');
         });
@@ -134,6 +136,11 @@ async function loadAllTabsData() {
             currentWeek = data.current_week || "";
             console.log("[DEBUG] 받은 current_week:", currentWeek);
             updatePageTitle(currentWeek);
+            
+            // insights 데이터 저장 (분석 리포트)
+            if (data.insights) {
+                window.trendInsights = data.insights;
+            }
             
             // 모든 탭 데이터를 메모리에 저장
             if (data.tabs_data) {
@@ -303,6 +310,109 @@ function refreshTrendAnalysisTitle() {
     if (currentWeek) {
         updateTrendAnalysisTitle(currentWeek);
     }
+}
+
+// 트렌드 분석 리포트 로드 및 표시
+function loadTrendAnalysisReport() {
+    const contentElement = document.getElementById('trendAnalysisContent');
+    const createdAtElement = document.getElementById('trendAnalysisCreatedAt');
+    
+    if (!contentElement) return;
+    
+    // 이미 로드된 insights가 있으면 바로 표시
+    if (window.trendInsights) {
+        renderTrendAnalysisReport(window.trendInsights, createdAtElement);
+        return;
+    }
+    
+    // 로딩 상태
+    contentElement.innerHTML = '<div class="trend-analysis-loading">분석 리포트를 불러오는 중...</div>';
+    
+    // API 호출로 분석 리포트 가져오기
+    fetch('/dashboard/trend', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            tab_names: Object.keys(allTabsData || {}),
+            trend_type: 'all'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // insights 데이터 저장
+            if (data.insights) {
+                window.trendInsights = data.insights;
+            }
+            
+            renderTrendAnalysisReport(data.insights || {}, createdAtElement);
+        } else {
+            contentElement.innerHTML = '<div class="trend-analysis-error">분석 리포트를 불러올 수 없습니다.</div>';
+        }
+    })
+    .catch(error => {
+        console.error('분석 리포트 로드 실패:', error);
+        contentElement.innerHTML = '<div class="trend-analysis-error">분석 리포트를 불러오는 중 오류가 발생했습니다.</div>';
+    });
+}
+
+// 트렌드 분석 리포트 렌더링 (마크다운 지원)
+function renderTrendAnalysisReport(insights, createdAtElement) {
+    const contentElement = document.getElementById('trendAnalysisContent');
+    if (!contentElement) return;
+    
+    const analysisText = insights.analysis_report;
+    
+    // 생성일 업데이트
+    if (insights && insights.generated_at && createdAtElement) {
+        try {
+            const date = new Date(insights.generated_at);
+            createdAtElement.textContent = `생성일: ${date.toLocaleDateString('ko-KR')} ${date.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}`;
+        } catch (e) {
+            console.warn('생성일 파싱 실패:', e);
+        }
+    }
+    
+    if (!analysisText || !analysisText.trim()) {
+        contentElement.innerHTML = '<div class="trend-analysis-empty">분석 리포트가 아직 생성되지 않았습니다.</div>';
+        return;
+    }
+    
+    // 마크다운을 HTML로 변환 (월간 리포트와 동일한 방식)
+    let htmlContent = "";
+    
+    if (typeof marked !== 'undefined') {
+        try {
+            // 마크다운 설정
+            marked.setOptions({
+                breaks: true,  // 줄바꿈 지원
+                gfm: false     // GitHub Flavored Markdown 비활성화 (표 제외)
+            });
+            
+            // 마크다운을 HTML로 변환
+            const markdownHtml = marked.parse(analysisText);
+            
+            // XSS 방지를 위해 DOMPurify로 정제
+            if (typeof DOMPurify !== 'undefined') {
+                htmlContent = DOMPurify.sanitize(markdownHtml, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
+                    ALLOWED_ATTR: []
+                });
+            } else {
+                htmlContent = markdownHtml;
+            }
+        } catch (e) {
+            console.warn("[트렌드 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
+            htmlContent = analysisText.replace(/\n/g, '<br>');
+        }
+    } else {
+        // marked 라이브러리가 없는 경우 줄바꿈만 처리
+        htmlContent = analysisText.replace(/\n/g, '<br>');
+    }
+    
+    contentElement.innerHTML = `<div class="trend-analysis-text markdown-content">${htmlContent}</div>`;
 }
 
 // 급상승 랭킹 테이블 렌더링

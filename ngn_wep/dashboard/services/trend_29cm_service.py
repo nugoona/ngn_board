@@ -396,10 +396,11 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[Dict]]], current_week: str) -> bool:
+def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[Dict]]], current_week: str, enable_ai_analysis: bool = False) -> bool:
     """
     트렌드 데이터를 GCS 버킷에 스냅샷으로 저장
     썸네일 URL만 저장 (실제 이미지는 저장하지 않음)
+    AI 분석 리포트도 함께 생성 가능 (enable_ai_analysis=True)
     """
     try:
         import re
@@ -433,6 +434,28 @@ def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[
             "created_at": datetime.now(timezone.utc).isoformat(),
             "tabs_data": tabs_data
         }
+        
+        # AI 분석 리포트 생성 (옵션)
+        if enable_ai_analysis:
+            try:
+                print(f"[INFO] AI 분석 리포트 생성 시작...")
+                # 프로젝트 루트 경로 계산
+                current_dir = os.path.dirname(os.path.abspath(__file__))  # services/
+                project_root = os.path.dirname(os.path.dirname(current_dir))  # ngn_wep/
+                tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+                if tools_path not in sys.path:
+                    sys.path.insert(0, tools_path)
+                
+                from trend_29cm_ai_analyst import generate_trend_analysis_from_snapshot
+                
+                snapshot_data = generate_trend_analysis_from_snapshot(snapshot_data)
+                print(f"[INFO] ✅ AI 분석 리포트 생성 완료")
+            except Exception as e:
+                print(f"[WARN] ⚠️ AI 분석 리포트 생성 실패, 스냅샷은 저장됩니다: {e}")
+                import traceback
+                traceback.print_exc()
+                # AI 분석 실패해도 스냅샷은 저장
+        
         
         # JSON 직렬화 및 Gzip 압축
         json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)

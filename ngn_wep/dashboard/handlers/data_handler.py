@@ -1207,7 +1207,8 @@ def get_trend_data():
                 result = {
                     "status": "success",
                     "current_week": snapshot_data.get("current_week", current_week),
-                    "tabs_data": {}
+                    "tabs_data": {},
+                    "insights": snapshot_data.get("insights", {})  # AI 분석 리포트 포함
                 }
                 
                 for tab in tab_names:

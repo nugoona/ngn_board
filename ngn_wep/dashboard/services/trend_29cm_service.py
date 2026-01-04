@@ -315,9 +315,40 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
         
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)
-        blob = bucket.blob(blob_path)
         
+        # 호환성을 위해 두 가지 경로 모두 시도
+        # 1. 새로운 포맷: 2026-01-01 (week를 01로)
+        # 2. 기존 포맷: 2026-01-1 (week를 1로)
+        blob = bucket.blob(blob_path)
         print(f"[DEBUG] 스냅샷 경로 확인: gs://{GCS_BUCKET}/{blob_path}")
+        
+        if not blob.exists():
+            # 기존 포맷 경로 시도 (week를 int로 변환하여 앞의 0 제거)
+            try:
+                import re
+                match = re.match(r'(\d{4})W(\d{2})', run_id)
+                if match:
+                    year = match.group(1)
+                    week_str = match.group(2)
+                    week_int = int(week_str)  # 01 -> 1
+                    
+                    # ISO 주차를 사용하여 월 계산
+                    jan4 = datetime(int(year), 1, 4)
+                    jan4_day = jan4.weekday()
+                    days_to_thursday = (3 - jan4_day + 7) % 7
+                    first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+                    week_start = first_thursday + timedelta(days=-3 + (week_int - 1) * 7)
+                    month = week_start.month
+                    
+                    old_blob_path = f"ai-reports/trend/29cm/{year}-{month:02d}-{week_int}/snapshot.json.gz"
+                    print(f"[DEBUG] 기존 포맷 경로도 시도: gs://{GCS_BUCKET}/{old_blob_path}")
+                    old_blob = bucket.blob(old_blob_path)
+                    if old_blob.exists():
+                        print(f"[INFO] 기존 포맷 경로에서 스냅샷 발견: {old_blob_path}")
+                        blob = old_blob
+                        blob_path = old_blob_path
+            except Exception as e:
+                print(f"[DEBUG] 기존 포맷 경로 시도 중 오류: {e}")
         
         if not blob.exists():
             print(f"[WARN] 스냅샷 파일이 존재하지 않음: {blob_path}")
@@ -330,8 +361,21 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
                     print(f"[DEBUG] 해당 폴더에 있는 파일들: {[b.name for b in blobs[:5]]}")
                 else:
                     print(f"[DEBUG] 해당 폴더가 비어있거나 존재하지 않음")
+                    
+                # 디버깅: trend 폴더 전체 확인
+                print(f"[DEBUG] trend/29cm 폴더 전체 확인 중...")
+                trend_prefix = "ai-reports/trend/29cm/"
+                all_trend_blobs = list(bucket.list_blobs(prefix=trend_prefix))
+                if all_trend_blobs:
+                    print(f"[DEBUG] trend/29cm 폴더에 있는 파일들 (최대 10개):")
+                    for b in all_trend_blobs[:10]:
+                        print(f"  - {b.name}")
+                else:
+                    print(f"[DEBUG] trend/29cm 폴더가 비어있음")
             except Exception as e:
                 print(f"[DEBUG] 폴더 확인 중 오류: {e}")
+                import traceback
+                traceback.print_exc()
             return None
         
         # 파일 읽기 (Gzip 압축 해제)

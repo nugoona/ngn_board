@@ -81,18 +81,65 @@ CORE_CATEGORIES = ["상의", "바지", "스커트", "원피스", "니트웨어",
 
 # System Instruction (거대 데이터로 인한 지시사항 손실 방지)
 SYSTEM_INSTRUCTION = """
-당신은 29CM 패션 트렌드 분석가입니다.
-사용자가 제공하는 JSON 데이터를 기반으로, 한국어(Korean)로 된 서술형 트렌드 리포트를 작성하십시오.
+당신은 데이터 분석가입니다.
+제공된 요약 데이터를 보고 한국어(Korean)로 서술형 리포트를 작성하세요.
 
 [절대 규칙]
 1. 모든 답변은 반드시 '완벽한 한국어'로 작성해야 합니다.
-2. JSON 문법이나 특수문자 기호(*, :)를 남발하지 말고, 자연스러운 줄글(Paragraph) 형태로 쓰세요.
+2. 자연스러운 줄글(Paragraph) 형태로 쓰세요.
 3. 데이터(브랜드명, 상품명)를 문장 속에 자연스럽게 포함시키세요.
 4. 중간에 끊기거나 영문만 출력되지 않도록 주의하세요.
 5. 섹션 제목도 반드시 한글로 작성하세요 (예: "## 시장 개요", "## 세그먼트별 심층 분석").
 6. 빈칸 채우기나 개조식(~함, ~임)을 절대 금지합니다.
 7. 반드시 "~했습니다.", "~입니다." 체를 사용하여, 옆에서 말해주듯이 자연스럽게 문장을 이으세요.
 """
+
+
+def optimize_data_for_flash(json_data: Dict) -> str:
+    """
+    JSON 데이터를 텍스트 형태로 압축하여 Flash 모델이 처리하기 쉽게 변환
+    JSON 기호를 제거하고 깔끔한 텍스트 형태로 변환
+    
+    Before (JSON): {"Brand": "비터셀즈", "Product": "니트", "Rank": 1} (5만자, 특수문자 밭)
+    After (텍스트): - 비터셀즈 | 니트 | 1위 변동 | 50000원 (1.5만자, 깔끔한 텍스트)
+    """
+    report_lines = []
+    
+    # JSON 구조 순회
+    for category, cat_data in json_data.items():
+        if category == 'insights':
+            continue  # 불필요한 메타데이터 제외
+        
+        report_lines.append(f"\n== {category} ==")
+        
+        for segment, items in cat_data.items():  # rising_star, new_entry, rank_drop
+            if not items:  # 빈 리스트는 건너뛰기
+                continue
+                
+            segment_name = segment.upper()
+            report_lines.append(f"[{segment_name}]")
+            
+            # 상위 15개 아이템만 처리 (데이터 줄이기)
+            for item in items[:15]:
+                brand = item.get('Brand', 'Brand') or 'Brand'
+                product = item.get('Product', 'Product') or 'Product'
+                # 한글 깨짐 방지를 위해 변수 직접 사용
+                change = item.get('Rank_Change', 0) or 0
+                price = item.get('Price', 0) or 0
+                
+                # 한 줄 요약 포맷 (한글 깨짐 방지)
+                # 순위 변화가 None이거나 0이면 표시하지 않음
+                if change is None or change == 0:
+                    change_str = "변동없음"
+                elif change > 0:
+                    change_str = f"+{change}위 상승"
+                else:
+                    change_str = f"{change}위 하락"
+                
+                line = f"- {brand} | {product} | {change_str} | {price}원"
+                report_lines.append(line)
+    
+    return "\n".join(report_lines)
 
 
 def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
@@ -148,23 +195,27 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     # 전체 카테고리 목록 (참고용)
     all_tab_names = list(tabs_data.keys())
     
-    # JSON 데이터 준비 (한글 유니코드 변환 방지 필수)
-    data_json = json.dumps(all_categories_data, ensure_ascii=False, indent=2)
+    # 데이터를 텍스트 형태로 압축 (Flash 모델 최적화)
+    optimized_data = optimize_data_for_flash(all_categories_data)
     
-    # 디버깅: 데이터 JSON에 한글이 제대로 포함되었는지 확인
-    print(f"🔍 [DEBUG] 데이터 JSON 길이: {len(data_json):,} 자", file=sys.stderr)
-    print(f"🔍 [DEBUG] 프롬프트 데이터 일부 (처음 200자): {data_json[:200]}", file=sys.stderr)
+    # 디버깅: 압축된 데이터에 한글이 제대로 포함되었는지 확인
+    print(f"🔍 [DEBUG] 압축된 데이터 길이: {len(optimized_data):,} 자", file=sys.stderr)
+    print(f"🔍 [DEBUG] 압축된 데이터 일부 (처음 300자):\n{optimized_data[:300]}", file=sys.stderr)
     
     # 한글 포함 여부 확인
-    has_korean = any('\uac00' <= char <= '\ud7a3' for char in data_json)
-    has_unicode_escape = '\\u' in data_json
-    print(f"🔍 [DEBUG] 데이터 JSON 한글 포함 여부: {has_korean}", file=sys.stderr)
-    print(f"🔍 [DEBUG] 데이터 JSON 유니코드 이스케이프 포함 여부: {has_unicode_escape}", file=sys.stderr)
+    has_korean = any('\uac00' <= char <= '\ud7a3' for char in optimized_data)
+    has_unicode_escape = '\\u' in optimized_data
+    print(f"🔍 [DEBUG] 압축된 데이터 한글 포함 여부: {has_korean}", file=sys.stderr)
+    print(f"🔍 [DEBUG] 압축된 데이터 유니코드 이스케이프 포함 여부: {has_unicode_escape}", file=sys.stderr)
     if has_unicode_escape:
-        print(f"⚠️ [WARN] ⚠️⚠️⚠️ 경고: 데이터에 유니코드 이스케이프(\\u...)가 포함되어 있습니다!", file=sys.stderr)
-        print(f"   - 이는 ensure_ascii=False가 제대로 작동하지 않았음을 의미합니다.", file=sys.stderr)
+        print(f"⚠️ [WARN] ⚠️⚠️⚠️ 경고: 압축된 데이터에 유니코드 이스케이프(\\u...)가 포함되어 있습니다!", file=sys.stderr)
     
-    # 프롬프트 단순화 (데이터만 포함, 지시사항은 system_instruction에 위임)
+    # 압축 효과 확인
+    original_size = len(json.dumps(all_categories_data, ensure_ascii=False, indent=2))
+    compression_ratio = (1 - len(optimized_data) / original_size) * 100 if original_size > 0 else 0
+    print(f"📊 [INFO] 데이터 압축 효과: {original_size:,}자 → {len(optimized_data):,}자 ({compression_ratio:.1f}% 감소)", file=sys.stderr)
+    
+    # 프롬프트 단순화 (압축된 텍스트 데이터만 포함, 지시사항은 system_instruction에 위임)
     prompt = f"""
 [분석할 데이터]
 현재 주차: {current_week}
@@ -174,8 +225,8 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 - 신규 진입 상품: {total_new_entry}개
 - 순위 하락 상품: {total_rank_drop}개
 
-핵심 6대 카테고리 데이터 (각 세그먼트당 상위 20개):
-{data_json}
+핵심 6대 카테고리 데이터 (각 세그먼트당 상위 15개):
+{optimized_data}
 
 위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요:
 1. 시장 개요: 소재, TPO, 가격 흐름을 문단으로 서술

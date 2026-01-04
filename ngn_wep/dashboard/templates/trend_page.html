@@ -299,6 +299,12 @@
       vertical-align: middle;
     }
     
+    /* 순위 숫자 셀은 기본 폰트 크기 무시하고 크게 */
+    .trend-table td.trend-rank-number {
+      font-size: 22px !important;
+      font-weight: 700 !important;
+    }
+    
     .trend-table td:first-child {
       padding-left: 16px;
     }
@@ -367,9 +373,21 @@
     
     /* 숫자 컬럼 크게 (순위변화, 이번주 순위, 지난주 순위 모두 동일 크기) */
     .trend-rank-number {
-      font-size: 22px;
-      font-weight: 700;
+      font-size: 22px !important;
+      font-weight: 700 !important;
       text-align: center;
+    }
+    
+    /* 이번주 순위, 지난주 순위 셀 내부 텍스트도 크게 (더 구체적인 선택자) */
+    .trend-table tbody td.trend-rank-number {
+      font-size: 22px !important;
+      font-weight: 700 !important;
+    }
+    
+    /* td 기본 스타일보다 우선순위 높이기 */
+    .trend-table td.trend-rank-number {
+      font-size: 22px !important;
+      font-weight: 700 !important;
     }
     
     .trend-rank-change {
@@ -377,14 +395,19 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      font-weight: 700;
-      font-size: 22px;
+      font-weight: 700 !important;
+      font-size: 22px !important;
     }
     
     /* 순위변화 내부 숫자도 동일 크기 */
     .trend-rank-change span:not(.trend-rank-change-icon) {
-      font-size: 22px;
-      font-weight: 700;
+      font-size: 22px !important;
+      font-weight: 700 !important;
+    }
+    
+    /* 순위변화 div 자체도 크게 */
+    .trend-table td.trend-rank-number .trend-rank-change {
+      font-size: 22px !important;
     }
     
     .trend-rank-change.up {

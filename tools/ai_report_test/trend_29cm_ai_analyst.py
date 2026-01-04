@@ -50,11 +50,27 @@ except ImportError:
 try:
     from google import genai
     from google.genai import types
+    # google-genai v1.0+에서 Safety Settings는 types 모듈에 포함됨
+    try:
+        from google.genai.types import HarmCategory, HarmBlockThreshold
+        SAFETY_SETTINGS_AVAILABLE = True
+    except ImportError:
+        # fallback: google.generativeai에서 시도 (구버전 호환)
+        try:
+            from google.generativeai.types import HarmCategory, HarmBlockThreshold
+            SAFETY_SETTINGS_AVAILABLE = True
+        except ImportError:
+            SAFETY_SETTINGS_AVAILABLE = False
+            HarmCategory = None
+            HarmBlockThreshold = None
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
+    SAFETY_SETTINGS_AVAILABLE = False
     genai = None
     types = None
+    HarmCategory = None
+    HarmBlockThreshold = None
 
 # 환경 변수
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -120,7 +136,9 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     # JSON 데이터 준비
     data_json = json.dumps(all_categories_data, ensure_ascii=False, indent=2)
     
-    prompt = f"""당신은 패션 매거진의 에디터이자 데이터 분석가입니다.
+    prompt = f"""IMPORTANT: You MUST write the entire report in Korean (Hangul). Do not filter out any Korean text.
+
+당신은 패션 매거진의 에디터이자 데이터 분석가입니다.
 독자가 편하게 읽을 수 있도록, 딱딱한 보고서 말투가 아닌 **'매끄러운 줄글'**로 리포트를 작성하세요.
 
 [절대 규칙]
@@ -214,19 +232,65 @@ def generate_trend_analysis(
         else:
             print(f"⚠️ [DEBUG] 프롬프트에 한글 브랜드명이 보이지 않습니다. JSON 데이터를 확인하세요.", file=sys.stderr)
         
+        # Safety Settings 설정 (한글 필터링 방지)
+        safety_settings = None
+        if SAFETY_SETTINGS_AVAILABLE and HarmCategory is not None and HarmBlockThreshold is not None:
+            try:
+                # google-genai v1.0+ 방식 시도
+                safety_settings = [
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE
+                    ),
+                    types.SafetySetting(
+                        category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold=types.HarmBlockThreshold.BLOCK_NONE
+                    ),
+                ]
+                print(f"✅ [DEBUG] Safety Settings 설정 완료 (모든 카테고리 BLOCK_NONE)", file=sys.stderr)
+            except (AttributeError, TypeError) as e:
+                # types.SafetySetting이 없으면 dict 형태로 시도
+                try:
+                    safety_settings = {
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                    }
+                    print(f"✅ [DEBUG] Safety Settings 설정 완료 (dict 형태, 모든 카테고리 BLOCK_NONE)", file=sys.stderr)
+                except Exception as e2:
+                    print(f"⚠️ [WARN] Safety Settings 설정 실패: {e2}, 기본 설정 사용", file=sys.stderr)
+        else:
+            print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
+        
         # AI 모델 호출
         print(f"📤 [INFO] Gemini API 호출 중...", file=sys.stderr)
+        
+        # GenerateContentConfig 구성
+        config_kwargs = {
+            "temperature": 0.8,  # 수다쟁이 모드: 말을 많이 하게 유도
+            "top_p": 0.9,
+            "top_k": 40,
+            "max_output_tokens": max_tokens,  # 8192 유지
+            # response_mime_type 제거: 절대 JSON 모드로 두지 않음
+        }
+        
+        # Safety Settings 추가 (있는 경우)
+        if safety_settings:
+            config_kwargs["safety_settings"] = safety_settings
         
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.8,  # 수다쟁이 모드: 말을 많이 하게 유도 (0.7에서 0.8로 상향)
-                top_p=0.9,
-                top_k=40,
-                max_output_tokens=max_tokens,  # 8192 유지
-                # response_mime_type 제거: 절대 JSON 모드로 두지 않음
-            )
+            config=types.GenerateContentConfig(**config_kwargs)
         )
         
         # 응답 파싱

@@ -255,11 +255,13 @@ function parseWeekInfo(currentWeek) {
     const year = parseInt(weekMatch[1]);
     const week = parseInt(weekMatch[2]);
     
-    // ISO 주차를 사용하여 월 계산
-    // 첫 번째 주 목요일을 기준으로 주차 시작일 계산
-    const jan4 = new Date(year, 0, 4);
-    const jan4Day = jan4.getDay() || 7; // 일요일을 7로 변환
-    const daysToThursday = 4 - jan4Day;
+    // ISO 주차를 사용하여 월 계산 (Python과 동일한 로직)
+    // 1월 4일을 기준으로 첫 번째 주 목요일 찾기
+    const jan4 = new Date(year, 0, 4);  // 1월 4일 (월은 0부터 시작)
+    const jan4Day = jan4.getDay();  // 0=일요일, 6=토요일
+    // Python weekday()는 0=월요일, 6=일요일이므로 변환 필요
+    const pythonWeekday = jan4Day === 0 ? 6 : jan4Day - 1;  // JavaScript -> Python 변환
+    const daysToThursday = (3 - pythonWeekday + 7) % 7;  // Python 로직과 동일
     const firstThursday = new Date(year, 0, 4 + daysToThursday);
     
     // 주차 시작일 (목요일 기준 월요일)

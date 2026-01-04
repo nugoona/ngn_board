@@ -303,34 +303,34 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
     GCS 버킷에서 트렌드 스냅샷 로드
     """
     try:
-        import re
-        
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
-        # run_id에서 경로 생성
-        week_match = re.match(r'(\d{4})W(\d{2})', run_id)
-        if not week_match:
+        # 경로 생성 (중복 코드 제거, get_trend_snapshot_path 사용)
+        try:
+            blob_path = get_trend_snapshot_path(run_id)
+        except ValueError:
+            print(f"[ERROR] Invalid run_id format: {run_id}")
             return None
-        
-        year = week_match.group(1)
-        week = week_match.group(2)
-        
-        # ISO 주차를 사용하여 월 계산
-        jan4 = datetime(int(year), 1, 4)
-        jan4_day = jan4.weekday()
-        days_to_thursday = (3 - jan4_day + 7) % 7
-        first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
-        week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
-        month = week_start.month
-        
-        blob_path = f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
         
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)
         blob = bucket.blob(blob_path)
         
+        print(f"[DEBUG] 스냅샷 경로 확인: gs://{GCS_BUCKET}/{blob_path}")
+        
         if not blob.exists():
+            print(f"[WARN] 스냅샷 파일이 존재하지 않음: {blob_path}")
+            # 디버깅: 해당 폴더의 다른 파일들 확인
+            try:
+                prefix = f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/"
+                blobs = list(bucket.list_blobs(prefix=prefix))
+                if blobs:
+                    print(f"[DEBUG] 해당 폴더에 있는 파일들: {[b.name for b in blobs[:5]]}")
+                else:
+                    print(f"[DEBUG] 해당 폴더가 비어있거나 존재하지 않음")
+            except Exception as e:
+                print(f"[DEBUG] 폴더 확인 중 오류: {e}")
             return None
         
         # 파일 읽기 (Gzip 압축 해제)

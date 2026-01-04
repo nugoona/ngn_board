@@ -85,18 +85,29 @@ def get_rising_star(tab_name: str, run_id: str) -> list:
     DECLARE target_tab STRING DEFAULT @tab_name;
     DECLARE target_run_id STRING DEFAULT @run_id;
     
-    WITH weeks AS (
+    WITH all_weeks AS (
       SELECT DISTINCT run_id 
       FROM `{}.{}.platform_29cm_best`
-      WHERE period_type = 'WEEKLY' 
-        AND run_id IN (
-          SELECT run_id
-          FROM `{}.{}.platform_29cm_best`
-          WHERE period_type = 'WEEKLY'
-          ORDER BY run_id DESC
-          LIMIT 2
-        )
-      ORDER BY run_id DESC 
+      WHERE period_type = 'WEEKLY'
+      ORDER BY run_id DESC
+    ),
+    target_week_idx AS (
+      SELECT 
+        run_id,
+        ROW_NUMBER() OVER (ORDER BY run_id DESC) as week_idx
+      FROM all_weeks
+    ),
+    target_week_info AS (
+      SELECT week_idx
+      FROM target_week_idx
+      WHERE run_id = target_run_id
+    ),
+    weeks AS (
+      SELECT t1.run_id
+      FROM target_week_idx t1
+      CROSS JOIN target_week_info t2
+      WHERE t1.week_idx IN (t2.week_idx, t2.week_idx + 1)
+      ORDER BY t1.run_id DESC
       LIMIT 2
     ),
     base_data AS (
@@ -149,18 +160,29 @@ def get_new_entry(tab_name: str, run_id: str) -> list:
     DECLARE target_tab STRING DEFAULT @tab_name;
     DECLARE target_run_id STRING DEFAULT @run_id;
     
-    WITH weeks AS (
+    WITH all_weeks AS (
       SELECT DISTINCT run_id 
       FROM `{}.{}.platform_29cm_best`
-      WHERE period_type = 'WEEKLY' 
-        AND run_id IN (
-          SELECT run_id
-          FROM `{}.{}.platform_29cm_best`
-          WHERE period_type = 'WEEKLY'
-          ORDER BY run_id DESC
-          LIMIT 2
-        )
-      ORDER BY run_id DESC 
+      WHERE period_type = 'WEEKLY'
+      ORDER BY run_id DESC
+    ),
+    target_week_idx AS (
+      SELECT 
+        run_id,
+        ROW_NUMBER() OVER (ORDER BY run_id DESC) as week_idx
+      FROM all_weeks
+    ),
+    target_week_info AS (
+      SELECT week_idx
+      FROM target_week_idx
+      WHERE run_id = target_run_id
+    ),
+    weeks AS (
+      SELECT t1.run_id
+      FROM target_week_idx t1
+      CROSS JOIN target_week_info t2
+      WHERE t1.week_idx IN (t2.week_idx, t2.week_idx + 1)
+      ORDER BY t1.run_id DESC
       LIMIT 2
     ),
     base_data AS (
@@ -213,18 +235,29 @@ def get_rank_drop(tab_name: str, run_id: str) -> list:
     DECLARE target_tab STRING DEFAULT @tab_name;
     DECLARE target_run_id STRING DEFAULT @run_id;
     
-    WITH weeks AS (
+    WITH all_weeks AS (
       SELECT DISTINCT run_id 
       FROM `{}.{}.platform_29cm_best`
-      WHERE period_type = 'WEEKLY' 
-        AND run_id IN (
-          SELECT run_id
-          FROM `{}.{}.platform_29cm_best`
-          WHERE period_type = 'WEEKLY'
-          ORDER BY run_id DESC
-          LIMIT 2
-        )
-      ORDER BY run_id DESC 
+      WHERE period_type = 'WEEKLY'
+      ORDER BY run_id DESC
+    ),
+    target_week_idx AS (
+      SELECT 
+        run_id,
+        ROW_NUMBER() OVER (ORDER BY run_id DESC) as week_idx
+      FROM all_weeks
+    ),
+    target_week_info AS (
+      SELECT week_idx
+      FROM target_week_idx
+      WHERE run_id = target_run_id
+    ),
+    weeks AS (
+      SELECT t1.run_id
+      FROM target_week_idx t1
+      CROSS JOIN target_week_info t2
+      WHERE t1.week_idx IN (t2.week_idx, t2.week_idx + 1)
+      ORDER BY t1.run_id DESC
       LIMIT 2
     ),
     base_data AS (

@@ -46,7 +46,7 @@
     
     .trend-tab-btn {
       padding: 10px 20px;
-      border: none;
+      border: 2px solid #E9ECEF;
       background: #F8F9FA;
       color: #212529;
       font-size: 14px;
@@ -56,16 +56,22 @@
       white-space: nowrap;
       transition: all 0.2s ease;
       flex-shrink: 0;
+      position: relative;
     }
     
     .trend-tab-btn:hover {
       background: #E9ECEF;
+      border-color: #CED4DA;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .trend-tab-btn.active {
       background: #212529;
       color: #ffffff;
       font-weight: 600;
+      border-color: #212529;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     
     .trend-section {
@@ -73,7 +79,7 @@
     }
     
     .trend-section-title {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 600;
       color: #212529;
       margin-bottom: 20px;
@@ -86,6 +92,21 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       overflow: hidden;
+      margin-bottom: 32px;
+    }
+    
+    .trend-table-container h3 {
+      padding: 20px;
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #212529;
+      border-bottom: 1px solid #E9ECEF;
+      background: #F8F9FA;
+    }
+    
+    .trend-table-wrapper {
+      overflow-x: auto;
     }
     
     .trend-table {
@@ -94,45 +115,72 @@
     }
     
     .trend-table thead {
-      background: #F8F9FA;
+      background: #6366f1;
     }
     
     .trend-table th {
       padding: 16px;
-      text-align: left;
+      text-align: center;
       font-weight: 600;
       font-size: 14px;
-      color: #495057;
-      border-bottom: 2px solid #E9ECEF;
+      color: #ffffff;
+      border-bottom: 2px solid #4f46e5;
     }
     
     .trend-table td {
-      padding: 16px;
+      padding: 12px 16px;
       border-bottom: 1px solid #F1F3F5;
       font-size: 14px;
       color: #212529;
+      vertical-align: middle;
     }
     
-    .trend-table tbody tr:hover {
-      background: #F8F9FA;
+    /* 썸네일 셀 - 여백 없음 */
+    .trend-thumbnail-cell {
+      padding: 0 !important;
+      width: 60px;
+      height: 60px;
     }
     
-    .trend-table tbody tr:last-child td {
-      border-bottom: none;
+    .trend-thumbnail-cell a {
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
     }
     
     .trend-thumbnail {
       width: 60px;
       height: 60px;
       object-fit: cover;
-      border-radius: 4px;
+      display: block;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* 상품명 줄바꿈 허용 */
+    .trend-table td:nth-child(4) {
+      word-wrap: break-word;
+      word-break: break-word;
+      max-width: 300px;
+      line-height: 1.4;
+    }
+    
+    /* 숫자 컬럼 크게 */
+    .trend-rank-number {
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
     }
     
     .trend-rank-change {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 18px;
     }
     
     .trend-rank-change.up {
@@ -144,7 +192,41 @@
     }
     
     .trend-rank-change-icon {
-      font-size: 12px;
+      font-size: 14px;
+    }
+    
+    .trend-table tbody tr:hover {
+      background: #F8F9FA;
+    }
+    
+    .trend-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* 더보기 버튼 */
+    .trend-pagination-container {
+      padding: 20px;
+      text-align: center;
+      background: #F8F9FA;
+      border-top: 1px solid #E9ECEF;
+    }
+    
+    .trend-show-more-btn {
+      padding: 12px 32px;
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .trend-show-more-btn:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
     }
     
     .trend-loading {
@@ -180,9 +262,22 @@
         padding: 10px 8px;
       }
       
+      .trend-thumbnail-cell {
+        width: 50px;
+        height: 50px;
+      }
+      
       .trend-thumbnail {
         width: 50px;
         height: 50px;
+      }
+      
+      .trend-rank-number {
+        font-size: 16px;
+      }
+      
+      .trend-rank-change {
+        font-size: 16px;
       }
       
       /* 모바일에서 일부 컬럼 숨김 */
@@ -238,20 +333,16 @@
     <h2 class="trend-section-title" id="trendSectionTitle">베스트 상품 분석</h2>
     
     <!-- 급상승 랭킹 -->
-    <div class="trend-table-container" style="margin-bottom: 32px;">
-      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
-        🔥 급상승 랭킹 (Rising Star)
-      </h3>
+    <div class="trend-table-container">
+      <h3>🔥 급상승 랭킹 (Rising Star)</h3>
       <div id="risingStarTable">
         <div class="trend-loading">데이터를 불러오는 중...</div>
       </div>
     </div>
     
     <!-- 신규 진입 -->
-    <div class="trend-table-container" style="margin-bottom: 32px;">
-      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
-        🚀 신규 진입 (New Entry)
-      </h3>
+    <div class="trend-table-container">
+      <h3>🚀 신규 진입 (New Entry)</h3>
       <div id="newEntryTable">
         <div class="trend-loading">데이터를 불러오는 중...</div>
       </div>
@@ -259,9 +350,7 @@
     
     <!-- 순위 하락 -->
     <div class="trend-table-container">
-      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
-        📉 순위 하락 (Rank Drop)
-      </h3>
+      <h3>📉 순위 하락 (Rank Drop)</h3>
       <div id="rankDropTable">
         <div class="trend-loading">데이터를 불러오는 중...</div>
       </div>

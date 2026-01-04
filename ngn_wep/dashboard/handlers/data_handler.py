@@ -1183,29 +1183,57 @@ def get_trend_data():
     """29CM 트렌드 데이터 조회"""
     try:
         data = request.get_json() or {}
-        tab_name = data.get("tab_name", "전체")
-        trend_type = data.get("trend_type")  # "rising", "new_entry", "rank_drop", "all"
+        tab_names = data.get("tab_names")  # 리스트로 받아서 여러 탭 한 번에 처리
+        tab_name = data.get("tab_name")  # 단일 탭 (하위 호환)
+        trend_type = data.get("trend_type", "all")  # "rising", "new_entry", "rank_drop", "all"
         
-        result = {
-            "status": "success",
-            "tab_name": tab_name
-        }
-        
-        # 주차 정보 조회
-        current_week = get_current_week_info()
-        result["current_week"] = current_week or ""
-        
-        # 트렌드 타입별 데이터 조회
-        if trend_type == "rising" or trend_type == "all":
-            result["rising_star"] = get_rising_star(tab_name)
-        
-        if trend_type == "new_entry" or trend_type == "all":
-            result["new_entry"] = get_new_entry(tab_name)
-        
-        if trend_type == "rank_drop" or trend_type == "all":
-            result["rank_drop"] = get_rank_drop(tab_name)
-        
-        return jsonify(result), 200
+        # tab_names가 있으면 여러 탭 처리, 없으면 단일 탭 처리
+        if tab_names and isinstance(tab_names, list):
+            # 여러 탭 데이터를 한 번에 반환 (비용 효율화)
+            result = {
+                "status": "success",
+                "tabs_data": {}
+            }
+            
+            # 주차 정보 조회 (한 번만)
+            current_week = get_current_week_info()
+            result["current_week"] = current_week or ""
+            
+            # 각 탭별 데이터 조회
+            for tab in tab_names:
+                tab_data = {}
+                if trend_type == "rising" or trend_type == "all":
+                    tab_data["rising_star"] = get_rising_star(tab)
+                if trend_type == "new_entry" or trend_type == "all":
+                    tab_data["new_entry"] = get_new_entry(tab)
+                if trend_type == "rank_drop" or trend_type == "all":
+                    tab_data["rank_drop"] = get_rank_drop(tab)
+                result["tabs_data"][tab] = tab_data
+            
+            return jsonify(result), 200
+        else:
+            # 단일 탭 처리 (하위 호환)
+            tab_name = tab_name or "전체"
+            result = {
+                "status": "success",
+                "tab_name": tab_name
+            }
+            
+            # 주차 정보 조회
+            current_week = get_current_week_info()
+            result["current_week"] = current_week or ""
+            
+            # 트렌드 타입별 데이터 조회
+            if trend_type == "rising" or trend_type == "all":
+                result["rising_star"] = get_rising_star(tab_name)
+            
+            if trend_type == "new_entry" or trend_type == "all":
+                result["new_entry"] = get_new_entry(tab_name)
+            
+            if trend_type == "rank_drop" or trend_type == "all":
+                result["rank_drop"] = get_rank_drop(tab_name)
+            
+            return jsonify(result), 200
         
     except Exception as e:
         print(f"[ERROR] get_trend_data 실패: {e}")

@@ -16,26 +16,30 @@ $(document).ready(function() {
     setupHamburgerMenu();
 });
 
-// 햄버거 메뉴 설정
+// 햄버거 메뉴 설정 (common.js와 충돌 방지)
 function setupHamburgerMenu() {
-    const hamburgerIcon = document.getElementById('hamburgerIcon');
-    const hamburgerDropdown = document.getElementById('hamburgerDropdown');
-    
-    if (hamburgerIcon && hamburgerDropdown) {
-        hamburgerIcon.addEventListener('click', function(e) {
+    // jQuery를 사용하여 common.js와 동일한 방식으로 처리
+    $(document).ready(function() {
+        $('#hamburgerIcon').off('click'); // 기존 이벤트 제거
+        $('#hamburgerIcon').on('click', function(e) {
             e.stopPropagation();
-            const isVisible = hamburgerDropdown.style.display === 'flex';
-            hamburgerDropdown.style.display = isVisible ? 'none' : 'flex';
+            e.preventDefault();
+            const $dropdown = $('#hamburgerDropdown');
+            $dropdown.toggle();
         });
         
-        document.addEventListener('click', function() {
-            hamburgerDropdown.style.display = 'none';
+        // 외부 클릭 시 닫기
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
+                $('#hamburgerDropdown').hide();
+            }
         });
         
-        hamburgerDropdown.addEventListener('click', function(e) {
+        // 드롭다운 내부 클릭 시 이벤트 전파 중지
+        $('#hamburgerDropdown').on('click', function(e) {
             e.stopPropagation();
         });
-    }
+    });
 }
 
 // 사용 가능한 탭 목록 로드
@@ -225,6 +229,12 @@ function createTableWithPagination(data, showRankChange, tableId) {
     const wrapper = document.createElement('div');
     wrapper.className = 'trend-table-wrapper';
     
+    // 스크롤 가능한 테이블 컨테이너 (초기에는 일반, 더보기 클릭 시 스크롤 활성화)
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.className = 'trend-table-scroll-wrapper';
+    scrollWrapper.style.overflowY = 'visible'; // 초기에는 스크롤 없음
+    scrollWrapper.style.maxHeight = 'none'; // 초기에는 높이 제한 없음
+    
     const table = document.createElement('table');
     table.className = 'trend-table';
     table.id = `${tableId}Table`;
@@ -255,12 +265,13 @@ function createTableWithPagination(data, showRankChange, tableId) {
     thead.appendChild(headerRow);
     table.appendChild(thead);
     
-    // 테이블 바디 (초기 7개만 표시)
+    // 테이블 바디 (초기 5개만 표시)
     const tbody = document.createElement('tbody');
     tbody.id = `${tableId}Tbody`;
     table.appendChild(tbody);
     
-    wrapper.appendChild(table);
+    scrollWrapper.appendChild(table);
+    wrapper.appendChild(scrollWrapper);
     
     // 페이지네이션 컨테이너
     const paginationDiv = document.createElement('div');
@@ -292,6 +303,10 @@ function createTableWithPagination(data, showRankChange, tableId) {
             renderTableRows(moreData, tbody, showRankChange, tableId);
             currentShown = endIdx;
             
+            // 스크롤 활성화 및 헤더 고정
+            scrollWrapper.style.overflowY = 'auto';
+            scrollWrapper.style.maxHeight = '600px';
+            
             // 버튼 상태 변경
             showMoreBtn.style.display = 'none';
             collapseBtn.style.display = 'inline-block';
@@ -304,11 +319,10 @@ function createTableWithPagination(data, showRankChange, tableId) {
             }
             currentShown = INITIAL_ITEMS;
             
-            // 스크롤 맨 위로
-            const tableWrapper = wrapper.querySelector('.trend-table-wrapper');
-            if (tableWrapper) {
-                tableWrapper.scrollTop = 0;
-            }
+            // 스크롤 비활성화
+            scrollWrapper.style.overflowY = 'visible';
+            scrollWrapper.style.maxHeight = 'none';
+            scrollWrapper.scrollTop = 0;
             
             // 버튼 상태 변경
             showMoreBtn.style.display = 'inline-block';

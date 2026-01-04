@@ -490,6 +490,137 @@
       color: #868E96;
     }
     
+    /* 트렌드 데이터 분석 섹션 (아코디언 스타일) */
+    .trend-analysis-section {
+      margin-top: 24px;
+      margin-bottom: 32px;
+      background: #ffffff;
+      border: 1px solid #E9ECEF;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    
+    .trend-analysis-toggle-btn {
+      width: 100%;
+      padding: 16px 24px;
+      background: #ffffff;
+      border: none;
+      border-bottom: 1px solid #E9ECEF;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 16px;
+      font-weight: 600;
+      color: #212529;
+    }
+    
+    .trend-analysis-toggle-btn:hover {
+      background: #F8F9FA;
+    }
+    
+    .trend-analysis-toggle-btn.active {
+      background: #F8F9FA;
+      border-bottom-color: #DEE2E6;
+    }
+    
+    .trend-analysis-toggle-btn .trend-analysis-icon {
+      font-size: 20px;
+      margin-right: 12px;
+    }
+    
+    .trend-analysis-toggle-btn .trend-analysis-title {
+      flex: 1;
+      text-align: left;
+    }
+    
+    .trend-analysis-toggle-btn .trend-analysis-arrow {
+      font-size: 14px;
+      color: #6C757D;
+      transition: transform 0.3s ease;
+    }
+    
+    .trend-analysis-toggle-btn.active .trend-analysis-arrow {
+      transform: rotate(180deg);
+    }
+    
+    .trend-analysis-content {
+      background: #ffffff;
+      border-top: 1px solid #E9ECEF;
+    }
+    
+    .trend-analysis-wrapper {
+      padding: 24px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .trend-analysis-header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #E9ECEF;
+    }
+    
+    .trend-analysis-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #212529;
+      margin: 0 0 8px 0;
+    }
+    
+    .trend-analysis-meta {
+      font-size: 13px;
+      color: #6C757D;
+    }
+    
+    .trend-analysis-body {
+      line-height: 1.8;
+      color: #495057;
+    }
+    
+    .analysis-section {
+      margin-bottom: 28px;
+    }
+    
+    .analysis-section:last-child {
+      margin-bottom: 0;
+    }
+    
+    .analysis-section h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #212529;
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #F1F3F5;
+    }
+    
+    .analysis-section p {
+      font-size: 14px;
+      line-height: 1.8;
+      margin: 0 0 12px 0;
+      color: #495057;
+    }
+    
+    .analysis-section ul {
+      margin: 12px 0;
+      padding-left: 24px;
+    }
+    
+    .analysis-section li {
+      font-size: 14px;
+      line-height: 1.8;
+      margin-bottom: 8px;
+      color: #495057;
+    }
+    
+    .analysis-section li strong {
+      color: #212529;
+      font-weight: 600;
+    }
+    
     /* 모바일 대응 */
     @media (max-width: 768px) {
       .trend-page-wrapper {
@@ -599,6 +730,70 @@
     </div>
   </div>
   
+  <!-- 트렌드 데이터 분석 섹션 (접을 수 있는 아코디언 스타일) -->
+  <div class="trend-analysis-section">
+    <button class="trend-analysis-toggle-btn" id="trendAnalysisToggleBtn">
+      <span class="trend-analysis-icon">📊</span>
+      <span class="trend-analysis-title">트렌드 데이터 분석</span>
+      <span class="trend-analysis-arrow">▼</span>
+    </button>
+    
+    <div class="trend-analysis-content" id="trendAnalysisContent" style="display: none;">
+      <div class="trend-analysis-wrapper">
+        <!-- 분석 리포트 내용 -->
+        <div class="trend-analysis-header">
+          <h3>2026년 12월 1주차 트렌드 분석 리포트</h3>
+          <div class="trend-analysis-meta">
+            <span>생성일: 2026-01-04 18:11</span>
+          </div>
+        </div>
+        
+        <div class="trend-analysis-body">
+          <div class="analysis-section">
+            <h4>📈 전체 트렌드 요약</h4>
+            <p>
+              이번 주 29CM 플랫폼에서는 패딩 및 아우터 카테고리에서 큰 변화가 있었습니다. 
+              특히 겨울 시즌을 맞아 보온성과 스타일을 모두 갖춘 제품들의 순위가 크게 상승했습니다.
+            </p>
+          </div>
+          
+          <div class="analysis-section">
+            <h4>🔥 급상승 랭킹 주요 인사이트</h4>
+            <ul>
+              <li><strong>수아레 우먼</strong>의 라이트 시어쉘 패딩 점퍼가 55위 상승하며 12위에 진입했습니다.</li>
+              <li><strong>비터셀즈</strong>의 Poddy Fleece Half Zip Up이 44위 상승하며 주목받고 있습니다.</li>
+              <li>패딩 및 플리스 제품들이 겨울 시즌을 앞두고 큰 관심을 받고 있습니다.</li>
+            </ul>
+          </div>
+          
+          <div class="analysis-section">
+            <h4>🚀 신규 진입 분석</h4>
+            <p>
+              이번 주 신규 진입 상품들은 주로 기본 아이템과 세련된 디자인의 조합으로 이루어져 있습니다. 
+              특히 다양한 컬러 옵션을 제공하는 제품들이 초기 순위에서 좋은 반응을 보이고 있습니다.
+            </p>
+          </div>
+          
+          <div class="analysis-section">
+            <h4>📉 순위 하락 주요 패턴</h4>
+            <p>
+              순위 하락을 보인 상품들은 주로 시즌 오프 제품들이거나 신제품 출시로 인한 관심 분산 효과가 있었습니다.
+              기존 인기 제품들의 하락폭은 크지 않아 안정적인 매출을 유지하고 있습니다.
+            </p>
+          </div>
+          
+          <div class="analysis-section">
+            <h4>💡 권장 사항</h4>
+            <ul>
+              <li>패딩 및 아우터 카테고리의 경우, 다양한 컬러 옵션 제공이 순위 상승에 긍정적인 영향을 미칩니다.</li>
+              <li>기본 아이템은 디자인보다는 착용감과 가격 경쟁력을 강조하는 것이 효과적입니다.</li>
+              <li>신규 진입 제품들은 초기 마케팅 강화가 중요합니다.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>

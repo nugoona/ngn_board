@@ -308,15 +308,15 @@ def get_snapshot_path(run_id: str) -> str:
     if not match:
         raise ValueError(f"Invalid run_id format: {run_id}")
     
-    year = int(match.group(1))
-    week = int(match.group(2))
+    year = match.group(1)  # 문자열로 유지
+    week = match.group(2)  # 문자열로 유지 (이미 2자리)
     
     # ISO 주차를 사용하여 월 계산
-    jan4 = datetime(year, 1, 4)
+    jan4 = datetime(int(year), 1, 4)
     jan4_day = jan4.weekday()
     days_to_thursday = (3 - jan4_day + 7) % 7
-    first_thursday = datetime(year, 1, 4 + days_to_thursday)
-    week_start = first_thursday + timedelta(days=-3 + (week - 1) * 7)
+    first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+    week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
     month = week_start.month
     
     return f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"

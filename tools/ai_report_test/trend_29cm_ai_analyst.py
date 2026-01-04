@@ -73,7 +73,7 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     current_week = snapshot_data.get("current_week", "")
     
     # 데이터 요약 및 필수 필드만 추출 (프롬프트 크기 최소화)
-    def extract_essential_fields(items: list, max_items: int = 10) -> list:
+    def extract_essential_fields(items: list, max_items: int = 20) -> list:
         """필수 필드만 추출하여 AI 프롬프트 크기 최적화"""
         essential = []
         for item in items[:max_items]:  # 상위 N개만 사용
@@ -104,9 +104,9 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
             continue
         tab_data = tabs_data[tab_name]
         all_categories_data[tab_name] = {
-            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=10),
-            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=10),
-            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=10)
+            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=20),
+            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=20),
+            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=20)
         }
     
     # 데이터 요약 통계 (전체 탭 기준)
@@ -130,7 +130,7 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 ### 2. 분석 범위 및 제약사항
 - **대상 데이터**: 제공된 29CM 랭킹 JSON 데이터 (브랜드, 상품명, 순위 변화, 가격)
 - **카테고리 집중**: 핵심 6대 카테고리({', '.join(CORE_CATEGORIES)})만 상세 분석
-- **데이터 규모**: 각 카테고리당 각 세그먼트(급상승/신규진입/순위하락)별 상위 10개 상품
+- **데이터 규모**: 각 카테고리당 각 세그먼트(급상승/신규진입/순위하락)별 상위 20개 상품
 - **금지 사항**:
   - 사용자의 자사몰 데이터에 대한 추측성 발언 금지
   - 근거 없는 뇌피셜 금지 (반드시 데이터에 기반한 팩트만 서술)
@@ -184,13 +184,19 @@ AI는 문장을 작성할 때 반드시 아래 **[데이터 근거]**를 포함�
 - 신규 진입 상품: {total_new_entry}개
 - 순위 하락 상품: {total_rank_drop}개
 
-**핵심 6대 카테고리 데이터** (각 세그먼트당 상위 10개):
-{json.dumps(all_categories_data, ensure_ascii=False, separators=(',', ':'))}
+**핵심 6대 카테고리 데이터** (각 세그먼트당 상위 20개):
+{json.dumps(all_categories_data, ensure_ascii=False, indent=2)}
 
 ---
 
 위 지침을 정확히 따르며, 제공된 데이터를 기반으로 분석 리포트를 작성해주세요.
 특히 **구체적인 수치, 브랜드명, 상품명**을 반드시 포함하여 근거 기반 분석을 해주세요.
+
+⚠️ **중요 - 한글 데이터 처리**:
+- JSON 데이터의 **브랜드명(Brand)**과 **상품명(Product)**은 한글이 포함될 수 있습니다.
+- 브랜드명과 상품명을 그대로 인용할 때는 반드시 원문을 정확히 사용하세요.
+- 한글 브랜드명/상품명을 영어로 번역하거나 생략하지 마세요.
+- 예: `{"Brand":"어반드레스","Product":"스트라이프 럭비 니트"}` → **'어반드레스'**의 **'스트라이프 럭비 니트'**
 """
 
     return prompt

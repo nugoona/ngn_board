@@ -157,3 +157,4 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     check_gcs_snapshot(company_name, year, month)
 
+

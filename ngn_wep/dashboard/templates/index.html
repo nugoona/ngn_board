@@ -63,6 +63,7 @@
           <div class="hamburger-dropdown" id="hamburgerDropdown">
             <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
             <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+            <a href="{{ url_for('trend_page') }}" class="{% if request.path == '/trend' %}active{% endif %}">TREND</a>
             <a href="{{ url_for('auth.logout') }}">로그아웃</a>
           </div>
         </div>

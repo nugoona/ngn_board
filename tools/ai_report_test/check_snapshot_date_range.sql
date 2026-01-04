@@ -43,3 +43,4 @@ ORDER BY month_date DESC;
 -- 이 쿼리는 실행할 수 없으므로, GCS 콘솔에서 확인하거나 gsutil로 확인:
 -- gsutil ls -l gs://winged-precept-443218-v8.appspot.com/ai-reports/monthly/piscess/2025-12/snapshot.json.gz
 
+

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>29CM 트렌드</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/monthly_report.css') }}?v=1.0">
+  <style>
+    /* 트렌드 페이지 전용 스타일 */
+    .trend-page-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .trend-page-header {
+      margin-bottom: 24px;
+    }
+    
+    .trend-page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #212529;
+      margin-bottom: 8px;
+    }
+    
+    .trend-tabs-wrapper {
+      margin-bottom: 32px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .trend-tabs-wrapper::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .trend-tabs {
+      display: flex;
+      gap: 8px;
+      padding-bottom: 4px;
+    }
+    
+    .trend-tab-btn {
+      padding: 10px 20px;
+      border: none;
+      background: #F8F9FA;
+      color: #212529;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .trend-tab-btn:hover {
+      background: #E9ECEF;
+    }
+    
+    .trend-tab-btn.active {
+      background: #212529;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    
+    .trend-section {
+      margin-bottom: 48px;
+    }
+    
+    .trend-section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #212529;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #E9ECEF;
+    }
+    
+    .trend-table-container {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    
+    .trend-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .trend-table thead {
+      background: #F8F9FA;
+    }
+    
+    .trend-table th {
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      color: #495057;
+      border-bottom: 2px solid #E9ECEF;
+    }
+    
+    .trend-table td {
+      padding: 16px;
+      border-bottom: 1px solid #F1F3F5;
+      font-size: 14px;
+      color: #212529;
+    }
+    
+    .trend-table tbody tr:hover {
+      background: #F8F9FA;
+    }
+    
+    .trend-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .trend-thumbnail {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    
+    .trend-rank-change {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+    
+    .trend-rank-change.up {
+      color: #DC3545;
+    }
+    
+    .trend-rank-change.down {
+      color: #0066CC;
+    }
+    
+    .trend-rank-change-icon {
+      font-size: 12px;
+    }
+    
+    .trend-loading {
+      text-align: center;
+      padding: 40px;
+      color: #868E96;
+    }
+    
+    .trend-error {
+      text-align: center;
+      padding: 40px;
+      color: #DC3545;
+    }
+    
+    .trend-empty {
+      text-align: center;
+      padding: 40px;
+      color: #868E96;
+    }
+    
+    /* 모바일 대응 */
+    @media (max-width: 768px) {
+      .trend-page-wrapper {
+        padding: 12px;
+      }
+      
+      .trend-table {
+        font-size: 12px;
+      }
+      
+      .trend-table th,
+      .trend-table td {
+        padding: 10px 8px;
+      }
+      
+      .trend-thumbnail {
+        width: 50px;
+        height: 50px;
+      }
+      
+      /* 모바일에서 일부 컬럼 숨김 */
+      .trend-table .hide-mobile {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- ✅ 햄버거 메뉴 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">최종 업데이트: -</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+        <a href="{{ url_for('trend_page') }}" class="{% if request.path == '/trend' %}active{% endif %}">TREND</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="trend-page-wrapper">
+  <!-- 페이지 헤더 -->
+  <div class="trend-page-header">
+    <h1 class="trend-page-title" id="trendPageTitle">29CM 트렌드</h1>
+  </div>
+  
+  <!-- 카테고리 탭 -->
+  <div class="trend-tabs-wrapper">
+    <div class="trend-tabs" id="trendTabs">
+      <!-- 동적으로 생성됨 -->
+    </div>
+  </div>
+  
+  <!-- 트렌드 섹션 -->
+  <div class="trend-section">
+    <h2 class="trend-section-title" id="trendSectionTitle">베스트 상품 분석</h2>
+    
+    <!-- 급상승 랭킹 -->
+    <div class="trend-table-container" style="margin-bottom: 32px;">
+      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
+        🔥 급상승 랭킹 (Rising Star)
+      </h3>
+      <div id="risingStarTable">
+        <div class="trend-loading">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+    
+    <!-- 신규 진입 -->
+    <div class="trend-table-container" style="margin-bottom: 32px;">
+      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
+        🚀 신규 진입 (New Entry)
+      </h3>
+      <div id="newEntryTable">
+        <div class="trend-loading">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+    
+    <!-- 순위 하락 -->
+    <div class="trend-table-container">
+      <h3 style="padding: 16px; margin: 0; font-size: 16px; font-weight: 600; color: #212529; border-bottom: 1px solid #E9ECEF;">
+        📉 순위 하락 (Rank Drop)
+      </h3>
+      <div id="rankDropTable">
+        <div class="trend-loading">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/trend_page.js') }}?v=1.0"></script>
+
+</body>
+</html>
+

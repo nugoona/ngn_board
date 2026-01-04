@@ -30,6 +30,13 @@ from ..services.platform_sales_summary import get_monthly_platform_sales
 from ..services.Fetch_Adset_Summary import get_meta_ads_adset_summary_by_type
 from ..services.viewitem_summary import get_viewitem_summary
 from ..services.monthly_net_sales_visitors import get_monthly_net_sales_visitors
+from ..services.trend_29cm_service import (
+    get_rising_star,
+    get_new_entry,
+    get_rank_drop,
+    get_current_week_info,
+    get_available_tabs
+)
 
 
 
@@ -1165,3 +1172,54 @@ def get_batch_dashboard_data_route():
     except Exception as e:
         print(f"[ERROR] Batch API 데이터 조회 중 오류 발생: {e}")
         return jsonify({"status": "error", "message": f"데이터 조회 중 오류 발생: {str(e)}"}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 29CM 트렌드 API
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/trend", methods=["POST"])
+def get_trend_data():
+    """29CM 트렌드 데이터 조회"""
+    try:
+        data = request.get_json() or {}
+        tab_name = data.get("tab_name", "전체")
+        trend_type = data.get("trend_type")  # "rising", "new_entry", "rank_drop", "all"
+        
+        result = {
+            "status": "success",
+            "tab_name": tab_name
+        }
+        
+        # 주차 정보 조회
+        current_week = get_current_week_info()
+        result["current_week"] = current_week or ""
+        
+        # 트렌드 타입별 데이터 조회
+        if trend_type == "rising" or trend_type == "all":
+            result["rising_star"] = get_rising_star(tab_name)
+        
+        if trend_type == "new_entry" or trend_type == "all":
+            result["new_entry"] = get_new_entry(tab_name)
+        
+        if trend_type == "rank_drop" or trend_type == "all":
+            result["rank_drop"] = get_rank_drop(tab_name)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"[ERROR] get_trend_data 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/trend/tabs", methods=["GET"])
+def get_trend_tabs():
+    """사용 가능한 탭 목록 조회"""
+    try:
+        tabs = get_available_tabs()
+        return jsonify({"status": "success", "tabs": tabs}), 200
+    except Exception as e:
+        print(f"[ERROR] get_trend_tabs 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

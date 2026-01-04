@@ -191,6 +191,14 @@ def ads_page():
     return render_template("ads_page.html",
                            company_names=session.get("company_names", []))
 
+@app.route("/trend")
+def trend_page():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    return render_template("trend_page.html",
+                           company_names=session.get("company_names", []))
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")

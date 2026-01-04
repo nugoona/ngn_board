@@ -52,3 +52,4 @@ WHEN NOT MATCHED THEN
         source.event_count, source.screen_page_views
     );
 
+

@@ -79,6 +79,21 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 # 핵심 카테고리 정의
 CORE_CATEGORIES = ["상의", "바지", "스커트", "원피스", "니트웨어", "셋업"]
 
+# System Instruction (거대 데이터로 인한 지시사항 손실 방지)
+SYSTEM_INSTRUCTION = """
+당신은 29CM 패션 트렌드 분석가입니다.
+사용자가 제공하는 JSON 데이터를 기반으로, 한국어(Korean)로 된 서술형 트렌드 리포트를 작성하십시오.
+
+[절대 규칙]
+1. 모든 답변은 반드시 '완벽한 한국어'로 작성해야 합니다.
+2. JSON 문법이나 특수문자 기호(*, :)를 남발하지 말고, 자연스러운 줄글(Paragraph) 형태로 쓰세요.
+3. 데이터(브랜드명, 상품명)를 문장 속에 자연스럽게 포함시키세요.
+4. 중간에 끊기거나 영문만 출력되지 않도록 주의하세요.
+5. 섹션 제목도 반드시 한글로 작성하세요 (예: "## 시장 개요", "## 세그먼트별 심층 분석").
+6. 빈칸 채우기나 개조식(~함, ~임)을 절대 금지합니다.
+7. 반드시 "~했습니다.", "~입니다." 체를 사용하여, 옆에서 말해주듯이 자연스럽게 문장을 이으세요.
+"""
+
 
 def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     """
@@ -149,30 +164,9 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
         print(f"⚠️ [WARN] ⚠️⚠️⚠️ 경고: 데이터에 유니코드 이스케이프(\\u...)가 포함되어 있습니다!", file=sys.stderr)
         print(f"   - 이는 ensure_ascii=False가 제대로 작동하지 않았음을 의미합니다.", file=sys.stderr)
     
-    prompt = f"""⚠️⚠️⚠️ 매우 중요 - 반드시 한국어(한글)로만 작성하세요 ⚠️⚠️⚠️
-
-이 리포트는 **반드시 한국어(한글)**로만 작성되어야 합니다. 
-- 영어나 다른 언어는 절대 사용하지 마세요.
-- 모든 문장은 한글로 작성하세요.
-- 브랜드명과 상품명이 영어여도 설명은 한글로 해야 합니다.
-
-당신은 패션 매거진의 에디터이자 데이터 분석가입니다.
-독자가 편하게 읽을 수 있도록, 딱딱한 보고서 말투가 아닌 **'매끄러운 줄글'**로 리포트를 작성하세요.
-
-[절대 규칙]
-1. **언어**: 반드시 한국어(한글)로만 작성하세요. 영어 문장은 절대 사용하지 마세요.
-2. **문체**: 빈칸 채우기나 개조식(~함, ~임)을 절대 금지합니다.
-3. **문장**: 반드시 **"~했습니다.", "~입니다."** 체를 사용하여, 옆에서 말해주듯이 자연스럽게 문장을 이으세요.
-4. **데이터 인용**: 데이터(순위, 브랜드명)는 문장 속에 자연스럽게 녹여내세요. (예: "'비터셀즈'가 1위를 차지했습니다.")
-5. **브랜드/상품명**: JSON 데이터의 브랜드명과 상품명은 그대로 사용하세요. 한글일 수도 있고 영어일 수도 있습니다. 절대 생략하거나 빈칸(** **)으로 두지 마세요.
-
-[작성 순서]
-1. Market Overview (소재, TPO, 가격 흐름을 문단으로 서술)
-2. Segment Deep Dive (급상승, 신규진입, 순위하락 이슈를 문단으로 서술)
-3. Category Deep Dive (각 카테고리별 트렌드를 문단으로 서술)
-   - 대상 카테고리: {', '.join(CORE_CATEGORIES)}
-
-[데이터]
+    # 프롬프트 단순화 (데이터만 포함, 지시사항은 system_instruction에 위임)
+    prompt = f"""
+[분석할 데이터]
 현재 주차: {current_week}
 
 데이터 요약:
@@ -183,7 +177,10 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 핵심 6대 카테고리 데이터 (각 세그먼트당 상위 20개):
 {data_json}
 
-위 데이터를 바탕으로 자연스럽고 읽기 좋은 리포트를 작성해주세요.
+위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요:
+1. 시장 개요: 소재, TPO, 가격 흐름을 문단으로 서술
+2. 세그먼트별 심층 분석: 급상승, 신규진입, 순위하락 이슈를 문단으로 서술
+3. 카테고리별 심층 분석: 각 카테고리별 트렌드를 문단으로 서술
 """
 
     return prompt
@@ -214,11 +211,11 @@ def generate_trend_analysis(
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
     
-    # Google Gen AI SDK Client 초기화
+    # Google Gen AI SDK 초기화 (API 키 설정)
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
     except Exception as e:
-        raise ImportError(f"google-genai 초기화 실패: {e}")
+        raise ImportError(f"google-genai API 키 설정 실패: {e}")
     
     try:
         print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작...", file=sys.stderr)
@@ -236,44 +233,29 @@ def generate_trend_analysis(
                 print(f"   - 브랜드명 (첫 번째 상품): '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
                 print(f"   - 상품명 (첫 번째 상품): '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
         
-        # 프롬프트 생성
+        # 프롬프트 생성 (데이터만 포함, 지시사항은 system_instruction에 위임)
         prompt = build_trend_analysis_prompt(snapshot_data)
         
         # 프롬프트 데이터 검증 (정밀 디버깅)
         prompt_length = len(prompt)
         print(f"🔍 [DEBUG] 프롬프트 총 길이: {prompt_length:,} 자", file=sys.stderr)
         
-        # 데이터 부분 추출 및 확인
-        if '[데이터]' in prompt:
-            data_section_start = prompt.find('[데이터]')
-            data_section = prompt[data_section_start:]
-            print(f"🔍 [DEBUG] 데이터 부분 미리보기 (끝부분 500자):\n{prompt[-500:]}", file=sys.stderr)
-            
-            # 데이터 부분에 한글과 유니코드 이스케이프 확인
-            has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in data_section)
-            has_unicode_in_data = '\\u' in data_section
-            print(f"🔍 [DEBUG] 프롬프트 데이터 부분 한글 포함 여부: {has_korean_in_data}", file=sys.stderr)
-            print(f"🔍 [DEBUG] 프롬프트 데이터 부분 유니코드 이스케이프 포함 여부: {has_unicode_in_data}", file=sys.stderr)
-            if has_unicode_in_data:
-                print(f"⚠️ [WARN] ⚠️⚠️⚠️ 프롬프트 데이터 부분에 유니코드 이스케이프(\\u...)가 발견되었습니다!", file=sys.stderr)
-                # 유니코드 이스케이프 예시 찾기
-                import re
-                unicode_matches = re.findall(r'\\u[0-9a-fA-F]{4}', data_section)
-                if unicode_matches:
-                    print(f"   - 발견된 유니코드 이스케이프 샘플 (처음 10개): {unicode_matches[:10]}", file=sys.stderr)
-        else:
-            print(f"⚠️ [WARN] 프롬프트에서 '[데이터]' 섹션을 찾을 수 없습니다.", file=sys.stderr)
+        # 데이터 부분에 한글과 유니코드 이스케이프 확인
+        has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in prompt)
+        has_unicode_in_data = '\\u' in prompt
+        print(f"🔍 [DEBUG] 프롬프트 한글 포함 여부: {has_korean_in_data}", file=sys.stderr)
+        print(f"🔍 [DEBUG] 프롬프트 유니코드 이스케이프 포함 여부: {has_unicode_in_data}", file=sys.stderr)
+        if has_unicode_in_data:
+            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 프롬프트에 유니코드 이스케이프(\\u...)가 발견되었습니다!", file=sys.stderr)
         
         # 프롬프트 크기 확인
         print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
         if prompt_length > 100000:  # 10만자 이상이면 경고
-            print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자). 데이터 요약이 필요할 수 있습니다.", file=sys.stderr)
+            print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자).", file=sys.stderr)
         
         # 프롬프트에 한글 포함 여부 확인 (디버깅)
-        if "어반드레스" in prompt or "비터셀즈" in prompt:
+        if "어반드레스" in prompt or "비터셀즈" in prompt or "썸웨어버터" in prompt:
             print(f"✅ [DEBUG] 프롬프트에 한글 브랜드명이 포함되어 있습니다.", file=sys.stderr)
-        else:
-            print(f"⚠️ [DEBUG] 프롬프트에 한글 브랜드명이 보이지 않습니다. JSON 데이터를 확인하세요.", file=sys.stderr)
         
         # Safety Settings 설정 (한글 필터링 방지)
         safety_settings = None
@@ -314,27 +296,36 @@ def generate_trend_analysis(
         else:
             print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
         
-        # AI 모델 호출
-        print(f"📤 [INFO] Gemini API 호출 중...", file=sys.stderr)
+        # AI 모델 초기화 (System Instruction 사용 - 지시사항 손실 방지)
+        print(f"📤 [INFO] Gemini API 호출 중... (System Instruction 사용)", file=sys.stderr)
         
-        # GenerateContentConfig 구성
-        config_kwargs = {
-            "temperature": 0.8,  # 수다쟁이 모드: 말을 많이 하게 유도
-            "top_p": 0.9,
-            "top_k": 40,
-            "max_output_tokens": max_tokens,  # 8192 유지
-            # response_mime_type 제거: 절대 JSON 모드로 두지 않음
-        }
+        # GenerativeModel 초기화 (system_instruction 포함)
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=SYSTEM_INSTRUCTION
+        )
+        
+        # GenerationConfig 구성
+        generation_config = types.GenerationConfig(
+            temperature=0.7,  # 월간 리포트와 동일
+            top_p=0.95,
+            top_k=40,
+            max_output_tokens=max_tokens,  # 8192 유지
+        )
         
         # Safety Settings 추가 (있는 경우)
         if safety_settings:
-            config_kwargs["safety_settings"] = safety_settings
-        
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(**config_kwargs)
-        )
+            # Safety Settings를 config에 포함
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config,
+                safety_settings=safety_settings
+            )
+        else:
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config
+            )
         
         # Finish Reason 및 Safety Ratings 확인 (정밀 디버깅)
         finish_reason = None
@@ -410,6 +401,17 @@ def generate_trend_analysis(
         
         if not analysis_text:
             analysis_text = str(response)
+        
+        # 한글 포함 여부 확인 (디버깅)
+        if analysis_text:
+            korean_count = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
+            total_chars = len(analysis_text)
+            korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
+            print(f"🔍 [DEBUG] 생성된 리포트 한글 포함 여부:", file=sys.stderr)
+            print(f"   - 한글 문자 개수: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+            if korean_ratio < 10:
+                print(f"⚠️ [WARN] ⚠️⚠️⚠️ 생성된 리포트에 한글이 거의 없습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
+                print(f"   - 응답 미리보기 (처음 500자): {analysis_text[:500]}", file=sys.stderr)
             
         # Finish Reason이 문제가 있는 경우 경고
         if finish_reason and finish_reason in ['SAFETY', 'RECITATION']:

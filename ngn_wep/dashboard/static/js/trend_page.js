@@ -488,7 +488,7 @@ function createTableWithPagination(data, showRankChange, tableId) {
             } else {
                 showMoreBtn.style.display = 'inline-block';
                 collapseBtn.style.display = 'none';
-                showMoreBtn.textContent = `더보기 (${sortedData.length - INITIAL_ITEMS}개 더)`;
+                showMoreBtn.textContent = '더보기';
             }
         }
     }

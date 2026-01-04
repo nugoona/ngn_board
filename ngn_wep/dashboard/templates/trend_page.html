@@ -343,19 +343,31 @@
       padding: 0;
     }
     
-    /* 상품명 줄바꿈 허용, 너비 줄임 */
+    /* 상품명 말줄임표 처리 */
     .trend-table tbody td:nth-child(4) {
-      word-wrap: break-word;
-      word-break: break-word;
-      max-width: 180px; /* 200px → 180px로 더 줄임 */
+      max-width: 250px;
       min-width: 150px;
       line-height: 1.4;
-      padding: 12px 8px; /* 좌우 패딩 줄임 */
+      padding: 12px 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
-    /* 숫자 컬럼 크게 */
+    /* 상품명 호버 시 전체 텍스트 보기 (선택사항) */
+    .trend-table tbody td:nth-child(4):hover {
+      overflow: visible;
+      white-space: normal;
+      word-break: break-word;
+      position: relative;
+      z-index: 5;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* 숫자 컬럼 크게 (순위변화, 이번주 순위, 지난주 순위 모두 동일 크기) */
     .trend-rank-number {
-      font-size: 22px; /* 18px → 22px로 증가 */
+      font-size: 22px;
       font-weight: 700;
       text-align: center;
     }
@@ -366,7 +378,13 @@
       justify-content: center;
       gap: 4px;
       font-weight: 700;
-      font-size: 22px; /* 18px → 22px로 증가 */
+      font-size: 22px;
+    }
+    
+    /* 순위변화 내부 숫자도 동일 크기 */
+    .trend-rank-change span:not(.trend-rank-change-icon) {
+      font-size: 22px;
+      font-weight: 700;
     }
     
     .trend-rank-change.up {

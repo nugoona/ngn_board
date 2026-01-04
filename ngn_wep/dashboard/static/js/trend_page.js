@@ -15,8 +15,36 @@ $(document).ready(function() {
         loadAllTabsData();
     });
     setupTrendTypeTabs();
+    setupTrendAnalysisToggle();
     // 햄버거 메뉴는 common.js가 처리함
 });
+
+// 트렌드 데이터 분석 토글 설정
+function setupTrendAnalysisToggle() {
+    const toggleBtn = document.getElementById('trendAnalysisToggleBtn');
+    const content = document.getElementById('trendAnalysisContent');
+    
+    if (toggleBtn && content) {
+        toggleBtn.addEventListener('click', function() {
+            const isExpanded = content.style.display !== 'none';
+            
+            if (isExpanded) {
+                // 접기
+                content.style.display = 'none';
+                toggleBtn.classList.remove('active');
+            } else {
+                // 펼치기
+                content.style.display = 'block';
+                toggleBtn.classList.add('active');
+                
+                // 부드럽게 스크롤 (선택사항)
+                setTimeout(() => {
+                    toggleBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
+        });
+    }
+}
 
 // 트렌드 타입 탭 설정 (급상승, 신규진입, 순위하락)
 function setupTrendTypeTabs() {

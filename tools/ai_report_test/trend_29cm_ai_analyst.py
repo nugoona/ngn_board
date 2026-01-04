@@ -119,6 +119,8 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     
     prompt = f"""당신은 여성 의류 쇼핑몰 MD 또는 마케팅 대행사의 수석 데이터 분석가입니다.
 
+⚠️ **중요: 반드시 한국어 자연어 문장으로 완벽하게 서술하세요.**
+
 ## 📋 [지침서] 29CM 트렌드 분석 AI 리포트 생성 규칙
 
 ### 1. 역할 및 목표 (Role & Goal)
@@ -323,9 +325,11 @@ def generate_trend_analysis(
             model=GEMINI_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.7,
+                temperature=0.7,  # 한국어 조사 깨짐 방지
+                top_p=0.9,  # Gemini 제안값 (월간 리포트는 0.95이지만, 한글 처리를 위해 0.9로 조정)
+                top_k=40,  # 월간 리포트와 동일하게 추가
                 max_output_tokens=max_tokens,  # 월간 리포트와 동일하게 8192 사용
-                top_p=0.95,
+                response_mime_type="text/plain",  # Gemini 제안: 한국어 자연어 문장 생성 보장
             )
         )
         

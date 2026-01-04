@@ -189,7 +189,7 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 def generate_trend_analysis(
     snapshot_data: Dict,
     api_key: Optional[str] = None,
-    max_tokens: int = 8192
+    max_tokens: int = 16384  # 월간 리포트 섹션 5와 동일 (긴 리포트를 위해 증가)
 ) -> Optional[str]:
     """
     29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성
@@ -355,6 +355,10 @@ def generate_trend_analysis(
             print(f"   - SAFETY: 안전 설정에 의해 차단됨 (한글 필터링 가능성)", file=sys.stderr)
             print(f"   - RECITATION: 저작권 보호에 의해 차단됨", file=sys.stderr)
             print(f"   - OTHER: 기타 이유로 차단됨", file=sys.stderr)
+        elif finish_reason and 'MAX_TOKENS' in str(finish_reason):
+            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 응답이 토큰 제한에 걸려서 잘렸습니다 (MAX_TOKENS)!", file=sys.stderr)
+            print(f"   - 현재 max_output_tokens: {max_tokens}", file=sys.stderr)
+            print(f"   - 생성된 리포트가 불완전할 수 있습니다. 토큰 제한을 늘려야 할 수 있습니다.", file=sys.stderr)
         
         print(f"🔍 [DEBUG] 안전 등급(Safety Ratings): {safety_ratings}", file=sys.stderr)
         print(f"🔍 [DEBUG] 프롬프트 피드백(Prompt Feedback): {prompt_feedback}", file=sys.stderr)

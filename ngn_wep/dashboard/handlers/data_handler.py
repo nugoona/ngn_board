@@ -1195,12 +1195,12 @@ def get_trend_data():
         if not current_week:
             return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
         
-        # 스냅샷에서 로드 시도
+        # 스냅샷에서 로드 시도 (우선순위 1: GCS 버킷)
         snapshot_data = load_trend_snapshot_from_gcs(current_week)
         
         if snapshot_data:
-            # 스냅샷 데이터 사용
-            print(f"[INFO] 스냅샷에서 트렌드 데이터 로드: {current_week}")
+            # 스냅샷 데이터 사용 (GCS 버킷에서 로드 성공)
+            print(f"[INFO] ✅ GCS 스냅샷에서 트렌드 데이터 로드 성공: {current_week}")
             
             if tab_names and isinstance(tab_names, list):
                 # 여러 탭 처리
@@ -1251,7 +1251,7 @@ def get_trend_data():
                 return jsonify(result), 200
         else:
             # 스냅샷이 없으면 BigQuery에서 조회 (Fallback)
-            print(f"[INFO] 스냅샷 없음, BigQuery에서 조회: {current_week}")
+            print(f"[WARN] ⚠️ GCS 스냅샷 없음, BigQuery에서 직접 조회 (비용 발생): {current_week}")
             
             if tab_names and isinstance(tab_names, list):
                 # 여러 탭 데이터를 한 번에 반환

@@ -22,9 +22,9 @@
       top: 0;
       background: #f8fafc;
       z-index: 100;
-      padding: 20px 0;
-      margin-bottom: 32px;
-      box-shadow: none;
+      padding: 20px 24px 0 24px;
+      margin-bottom: 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .trend-page-header {
@@ -94,15 +94,16 @@
       margin-bottom: 32px;
     }
     
-    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 */
+    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 헤더 내부 */
     .trend-type-tabs-wrapper {
-      position: sticky;
-      top: 160px; /* 상단 헤더 + 트렌드 페이지 헤더 높이 고려 (대략적인 값) */
-      z-index: 99;
       background: #ffffff;
       border-bottom: 2px solid #d0d7e2;
       padding: 0;
       margin: 0;
+      margin-left: -24px;
+      margin-right: -24px;
+      padding-left: 24px;
+      padding-right: 24px;
     }
     
     .trend-type-tabs {
@@ -216,6 +217,10 @@
       box-shadow: none;
     }
     
+    .trend-table thead th {
+      background: #6366f1 !important;
+    }
+    
     /* 테이블이 섹션 내부에 통합되도록 스타일 조정 */
     .trend-table-section .trend-table-wrapper {
       margin: 0;
@@ -232,8 +237,24 @@
       background: #ffffff;
     }
     
-    .trend-table-section .trend-table-container > div {
-      overflow-x: auto;
+    /* 테이블 스크롤 컨테이너 */
+    .trend-table-scroll-container {
+      position: relative;
+      background: #ffffff;
+    }
+    
+    /* 스크롤 활성화 시 테이블 헤더 고정 */
+    .trend-table-scroll-container.scroll-enabled .trend-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .trend-table-scroll-container.scroll-enabled .trend-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #6366f1 !important;
     }
     
     .trend-table th {
@@ -466,7 +487,7 @@
 </div>
 
 <div class="trend-page-wrapper">
-  <!-- 고정 헤더 및 탭 -->
+  <!-- 고정 헤더 및 탭 (통으로 고정) -->
   <div class="trend-sticky-header">
     <!-- 페이지 헤더 -->
     <div class="trend-page-header">
@@ -479,11 +500,8 @@
         <!-- 동적으로 생성됨 -->
       </div>
     </div>
-  </div>
-  
-  <!-- 트렌드 테이블 섹션 (탭과 테이블을 하나의 박스로) -->
-  <div class="trend-table-section">
-    <!-- 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 -->
+    
+    <!-- 트렌드 타입 탭 (급상승, 신규진입, 순위하락) -->
     <div class="trend-type-tabs-wrapper">
       <div class="trend-type-tabs" id="trendTypeTabs">
         <button class="trend-type-tab-btn active" data-type="risingStar">
@@ -497,7 +515,10 @@
         </button>
       </div>
     </div>
-    
+  </div>
+  
+  <!-- 트렌드 테이블 섹션 -->
+  <div class="trend-table-section">
     <!-- 테이블 컨테이너 -->
     <div class="trend-table-container">
       <div id="trendTableContent">

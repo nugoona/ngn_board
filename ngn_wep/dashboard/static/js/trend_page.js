@@ -398,9 +398,12 @@ function createTableWithPagination(data, showRankChange, tableId) {
     tbody.id = `${tableId}Tbody`;
     table.appendChild(tbody);
     
-    // 일반 테이블 컨테이너 (스크롤 없음)
+    // 일반 테이블 컨테이너 (더보기 클릭 시 스크롤 활성화)
     const tableContainer = document.createElement('div');
+    tableContainer.className = 'trend-table-scroll-container';
     tableContainer.style.overflowX = 'auto';
+    tableContainer.style.overflowY = 'visible';
+    tableContainer.style.maxHeight = 'none';
     tableContainer.appendChild(table);
     wrapper.appendChild(tableContainer);
     
@@ -449,11 +452,24 @@ function createTableWithPagination(data, showRankChange, tableId) {
         
         showMoreBtn.addEventListener('click', function() {
             isExpanded = true;
+            
+            // 스크롤 컨테이너 활성화 (테이블 헤더 고정)
+            tableContainer.style.overflowY = 'auto';
+            tableContainer.style.maxHeight = '600px';
+            tableContainer.classList.add('scroll-enabled');
+            
             reRenderTable();
         });
         
         collapseBtn.addEventListener('click', function() {
             isExpanded = false;
+            
+            // 스크롤 컨테이너 비활성화
+            tableContainer.style.overflowY = 'visible';
+            tableContainer.style.maxHeight = 'none';
+            tableContainer.classList.remove('scroll-enabled');
+            tableContainer.scrollTop = 0;
+            
             reRenderTable();
             
             // 테이블 맨 위로 스크롤

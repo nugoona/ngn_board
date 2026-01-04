@@ -323,8 +323,9 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
             print(f"[WARN] 스냅샷 파일이 존재하지 않음: {blob_path}")
             # 디버깅: 해당 폴더의 다른 파일들 확인
             try:
-                prefix = f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/"
-                blobs = list(bucket.list_blobs(prefix=prefix))
+                # blob_path에서 디렉토리 부분만 추출
+                dir_path = "/".join(blob_path.split("/")[:-1]) + "/"
+                blobs = list(bucket.list_blobs(prefix=dir_path))
                 if blobs:
                     print(f"[DEBUG] 해당 폴더에 있는 파일들: {[b.name for b in blobs[:5]]}")
                 else:

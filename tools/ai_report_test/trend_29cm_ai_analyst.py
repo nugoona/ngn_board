@@ -192,11 +192,25 @@ AI는 문장을 작성할 때 반드시 아래 **[데이터 근거]**를 포함�
 위 지침을 정확히 따르며, 제공된 데이터를 기반으로 분석 리포트를 작성해주세요.
 특히 **구체적인 수치, 브랜드명, 상품명**을 반드시 포함하여 근거 기반 분석을 해주세요.
 
-⚠️ **중요 - 한글 데이터 처리**:
-- JSON 데이터의 **브랜드명(Brand)**과 **상품명(Product)**은 한글이 포함될 수 있습니다.
-- 브랜드명과 상품명을 그대로 인용할 때는 반드시 원문을 정확히 사용하세요.
-- 한글 브랜드명/상품명을 영어로 번역하거나 생략하지 마세요.
-- 예: `{{"Brand":"어반드레스","Product":"스트라이프 럭비 니트"}}` → **'어반드레스'**의 **'스트라이프 럭비 니트'**
+⚠️ **중요 - 한글 데이터 처리 (반드시 확인)**:
+- JSON 데이터의 **브랜드명(Brand)**과 **상품명(Product)** 필드는 **한글이 포함될 수 있습니다**.
+- 브랜드명과 상품명을 그대로 인용할 때는 **반드시 원문을 정확히, 완전히** 사용하세요.
+- **절대로** 한글 브랜드명/상품명을 영어로 번역하거나, 생략하거나, `** **`처럼 비워두지 마세요.
+- **절대로** `** **: '' "Rosen Garden Sweat Shirt-Grey"`처럼 브랜드명을 비워두지 마세요.
+
+**올바른 예시**:
+- JSON: `{{"Brand":"어반드레스","Product":"스트라이프 럭비 니트","Rank_Change":74,"Price":74000}}`
+- 올바른 인용: **'어반드레스'**의 **'스트라이프 럭비 니트'**가 74계단 상승했다.
+
+**잘못된 예시 (금지)**:
+- ❌ `** **: '' "스트라이프 럭비 니트"` (브랜드명 생략)
+- ❌ `**Unknown**: "스트라이프 럭비 니트"` (브랜드명 번역/생략)
+- ❌ `어반드레스의 "Stripe Rugby Knit"` (상품명 번역)
+
+**반드시 지켜야 할 규칙**:
+1. JSON의 `Brand` 필드 값을 **그대로** 인용하세요 (한글이면 한글, 영어면 영어).
+2. JSON의 `Product` 필드 값을 **그대로** 인용하세요 (한글이면 한글, 영어면 영어).
+3. 브랜드명이 비어있거나 null인 경우에만 생략하세요. 그 외에는 반드시 표시하세요.
 """
 
     return prompt
@@ -236,6 +250,19 @@ def generate_trend_analysis(
     try:
         print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작...", file=sys.stderr)
         
+        # 데이터 확인 (디버깅)
+        tabs_data = snapshot_data.get("tabs_data", {})
+        if tabs_data:
+            first_tab = list(tabs_data.keys())[0]
+            first_tab_data = tabs_data[first_tab]
+            if first_tab_data.get("rising_star"):
+                first_item = first_tab_data["rising_star"][0]
+                brand_name = first_item.get("Brand_Name", "")
+                product_name = first_item.get("Product_Name", "")
+                print(f"🔍 [DEBUG] 샘플 데이터 확인:", file=sys.stderr)
+                print(f"   - 브랜드명 (첫 번째 상품): '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
+                print(f"   - 상품명 (첫 번째 상품): '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
+        
         # 프롬프트 생성
         prompt = build_trend_analysis_prompt(snapshot_data)
         
@@ -244,6 +271,12 @@ def generate_trend_analysis(
         print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
         if prompt_length > 100000:  # 10만자 이상이면 경고
             print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자). 데이터 요약이 필요할 수 있습니다.", file=sys.stderr)
+        
+        # 프롬프트에 한글 포함 여부 확인 (디버깅)
+        if "어반드레스" in prompt or "비터셀즈" in prompt:
+            print(f"✅ [DEBUG] 프롬프트에 한글 브랜드명이 포함되어 있습니다.", file=sys.stderr)
+        else:
+            print(f"⚠️ [DEBUG] 프롬프트에 한글 브랜드명이 보이지 않습니다. JSON 데이터를 확인하세요.", file=sys.stderr)
         
         # AI 모델 호출
         print(f"📤 [INFO] Gemini API 호출 중...", file=sys.stderr)

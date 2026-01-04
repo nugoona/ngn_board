@@ -142,10 +142,13 @@ def optimize_data_for_flash(json_data: Dict) -> str:
     return "\n".join(report_lines)
 
 
-def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
+def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) -> str:
     """
-    29CM 트렌드 분석 프롬프트 생성
-    지침서 기반 프롬프트 구성
+    29CM 트렌드 분석 프롬프트 생성 (섹션별)
+    
+    Args:
+        snapshot_data: 트렌드 스냅샷 데이터
+        section_num: 섹션 번호 (1=시장개요, 2=세그먼트분석, 3=카테고리분석), None이면 전체
     """
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
@@ -160,7 +163,6 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
                 "Product": item.get("Product_Name"),  # 필수: 상품명
                 "Rank_Change": item.get("Rank_Change"),  # 필수: 순위 변화
                 "Price": item.get("price")  # 필수: 가격
-                # Ranking, This_Week_Rank, Last_Week_Rank, item_url, thumbnail_url 제외
             })
         return essential
     
@@ -174,7 +176,7 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     if not core_tabs:
         core_tabs = ["전체"] if "전체" in tabs_data else []
     
-    # 데이터 준비 (핵심 6대 카테고리만, 각 세그먼트당 상위 10개)
+    # 데이터 준비 (핵심 6대 카테고리만, 각 세그먼트당 상위 15개)
     all_categories_data = {}
     
     for tab_name in core_tabs:
@@ -182,9 +184,9 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
             continue
         tab_data = tabs_data[tab_name]
         all_categories_data[tab_name] = {
-            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=20),
-            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=20),
-            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=20)
+            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=15),
+            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=15),
+            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=15)
         }
     
     # 데이터 요약 통계 (전체 탭 기준)
@@ -192,31 +194,70 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     total_new_entry = sum(len(tab_data.get("new_entry", [])) for tab_data in tabs_data.values())
     total_rank_drop = sum(len(tab_data.get("rank_drop", [])) for tab_data in tabs_data.values())
     
-    # 전체 카테고리 목록 (참고용)
-    all_tab_names = list(tabs_data.keys())
-    
     # 데이터를 텍스트 형태로 압축 (Flash 모델 최적화)
     optimized_data = optimize_data_for_flash(all_categories_data)
     
-    # 디버깅: 압축된 데이터에 한글이 제대로 포함되었는지 확인
-    print(f"🔍 [DEBUG] 압축된 데이터 길이: {len(optimized_data):,} 자", file=sys.stderr)
-    print(f"🔍 [DEBUG] 압축된 데이터 일부 (처음 300자):\n{optimized_data[:300]}", file=sys.stderr)
+    # 섹션별 프롬프트 구성
+    section_prompts = {
+        1: f"""
+[섹션 1: 시장 개요]
+⚠️ **중요: 이 섹션 1만 분석하고 답변하세요.**
+
+현재 주차: {current_week}
+
+데이터 요약:
+- 급상승 상품: {total_rising}개
+- 신규 진입 상품: {total_new_entry}개
+- 순위 하락 상품: {total_rank_drop}개
+
+핵심 6대 카테고리 데이터:
+{optimized_data}
+
+위 데이터를 바탕으로 **시장 개요**를 작성하세요:
+- 소재(Material) 흐름 분석
+- TPO(Time, Place, Occasion) 분석
+- 가격(Price) 흐름 분석
+
+각 항목을 자연스러운 문단으로 서술하세요.
+""",
+        2: f"""
+[섹션 2: 세그먼트별 심층 분석]
+⚠️ **중요: 이 섹션 2만 분석하고 답변하세요.**
+
+현재 주차: {current_week}
+
+핵심 6대 카테고리 데이터:
+{optimized_data}
+
+위 데이터를 바탕으로 **세그먼트별 심층 분석**을 작성하세요:
+- 급상승(Rising Star) 이슈 분석
+- 신규진입(New Entry) 이슈 분석
+- 순위하락(Rank Drop) 이슈 분석
+
+각 세그먼트를 자연스러운 문단으로 서술하세요.
+""",
+        3: f"""
+[섹션 3: 카테고리별 심층 분석]
+⚠️ **중요: 이 섹션 3만 분석하고 답변하세요.**
+
+현재 주차: {current_week}
+
+핵심 6대 카테고리 데이터:
+{optimized_data}
+
+위 데이터를 바탕으로 **카테고리별 심층 분석**을 작성하세요:
+- 각 카테고리(상의, 바지, 스커트, 원피스, 니트웨어, 셋업)별 트렌드 분석
+- 카테고리별 주요 브랜드 및 상품 패턴 분석
+
+각 카테고리를 자연스러운 문단으로 서술하세요.
+"""
+    }
     
-    # 한글 포함 여부 확인
-    has_korean = any('\uac00' <= char <= '\ud7a3' for char in optimized_data)
-    has_unicode_escape = '\\u' in optimized_data
-    print(f"🔍 [DEBUG] 압축된 데이터 한글 포함 여부: {has_korean}", file=sys.stderr)
-    print(f"🔍 [DEBUG] 압축된 데이터 유니코드 이스케이프 포함 여부: {has_unicode_escape}", file=sys.stderr)
-    if has_unicode_escape:
-        print(f"⚠️ [WARN] ⚠️⚠️⚠️ 경고: 압축된 데이터에 유니코드 이스케이프(\\u...)가 포함되어 있습니다!", file=sys.stderr)
-    
-    # 압축 효과 확인
-    original_size = len(json.dumps(all_categories_data, ensure_ascii=False, indent=2))
-    compression_ratio = (1 - len(optimized_data) / original_size) * 100 if original_size > 0 else 0
-    print(f"📊 [INFO] 데이터 압축 효과: {original_size:,}자 → {len(optimized_data):,}자 ({compression_ratio:.1f}% 감소)", file=sys.stderr)
-    
-    # 프롬프트 단순화 (압축된 텍스트 데이터만 포함, 지시사항은 system_instruction에 위임)
-    prompt = f"""
+    if section_num and section_num in section_prompts:
+        return section_prompts[section_num]
+    else:
+        # 전체 프롬프트 (하위 호환성)
+        return f"""
 [분석할 데이터]
 현재 주차: {current_week}
 
@@ -234,24 +275,23 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 3. 카테고리별 심층 분석: 각 카테고리별 트렌드를 문단으로 서술
 """
 
-    return prompt
-
 
 def generate_trend_analysis(
     snapshot_data: Dict,
     api_key: Optional[str] = None,
-    max_tokens: int = 16384  # 월간 리포트 섹션 5와 동일 (긴 리포트를 위해 증가)
+    max_tokens: int = 8192  # 각 섹션별로 8192 사용
 ) -> Optional[str]:
     """
-    29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성
+    29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성 (섹션별 분리 생성)
+    월간 리포트와 동일하게 섹션별로 나눠서 생성하여 한글 생성 안정성 확보
     
     Args:
         snapshot_data: 트렌드 스냅샷 데이터 (tabs_data, current_week 포함)
         api_key: Gemini API 키 (None이면 환경변수에서 로드)
-        max_tokens: 최대 토큰 수 (기본값 8192, 월간 리포트와 동일, 한글 기준 약 12,000자 이상 지원)
+        max_tokens: 최대 토큰 수 (각 섹션별 기본값 8192)
     
     Returns:
-        AI 분석 리포트 텍스트 (마크다운 형식)
+        AI 분석 리포트 텍스트 (마크다운 형식, 섹션별 결과 합침)
     """
     # google-genai 패키지 확인
     if not GENAI_AVAILABLE or genai is None or types is None:
@@ -269,7 +309,7 @@ def generate_trend_analysis(
         raise ImportError(f"google-genai 초기화 실패: {e}")
     
     try:
-        print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작...", file=sys.stderr)
+        print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작... (섹션별 분리 생성)", file=sys.stderr)
         
         # 데이터 확인 (디버깅)
         tabs_data = snapshot_data.get("tabs_data", {})
@@ -283,34 +323,6 @@ def generate_trend_analysis(
                 print(f"🔍 [DEBUG] 샘플 데이터 확인:", file=sys.stderr)
                 print(f"   - 브랜드명 (첫 번째 상품): '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
                 print(f"   - 상품명 (첫 번째 상품): '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
-        
-        # 프롬프트 생성 (데이터만 포함, 지시사항은 system_instruction에 위임)
-        data_prompt = build_trend_analysis_prompt(snapshot_data)
-        
-        # System Instruction과 데이터 프롬프트 결합
-        # (거대 데이터로 인한 지시사항 손실 방지를 위해 system_instruction을 프롬프트 앞부분에 명시적으로 포함)
-        full_prompt = f"{SYSTEM_INSTRUCTION}\n\n{data_prompt}"
-        
-        # 프롬프트 데이터 검증 (정밀 디버깅)
-        prompt_length = len(full_prompt)
-        print(f"🔍 [DEBUG] 프롬프트 총 길이: {prompt_length:,} 자", file=sys.stderr)
-        
-        # 데이터 부분에 한글과 유니코드 이스케이프 확인
-        has_korean_in_data = any('\uac00' <= char <= '\ud7a3' for char in data_prompt)
-        has_unicode_in_data = '\\u' in data_prompt
-        print(f"🔍 [DEBUG] 프롬프트 한글 포함 여부: {has_korean_in_data}", file=sys.stderr)
-        print(f"🔍 [DEBUG] 프롬프트 유니코드 이스케이프 포함 여부: {has_unicode_in_data}", file=sys.stderr)
-        if has_unicode_in_data:
-            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 프롬프트에 유니코드 이스케이프(\\u...)가 발견되었습니다!", file=sys.stderr)
-        
-        # 프롬프트 크기 확인
-        print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
-        if prompt_length > 100000:  # 10만자 이상이면 경고
-            print(f"⚠️ [WARN] 프롬프트가 매우 큽니다 ({prompt_length:,}자).", file=sys.stderr)
-        
-        # 프롬프트에 한글 포함 여부 확인 (디버깅)
-        if "어반드레스" in data_prompt or "비터셀즈" in data_prompt or "썸웨어버터" in data_prompt:
-            print(f"✅ [DEBUG] 프롬프트에 한글 브랜드명이 포함되어 있습니다.", file=sys.stderr)
         
         # Safety Settings 설정 (한글 필터링 방지)
         safety_settings = None
@@ -351,141 +363,127 @@ def generate_trend_analysis(
         else:
             print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
         
-        # AI 모델 호출 (System Instruction을 프롬프트 앞부분에 포함)
-        print(f"📤 [INFO] Gemini API 호출 중... (System Instruction 포함)", file=sys.stderr)
+        # 섹션별로 개별 API 호출 (월간 리포트와 동일한 방식)
+        sections = [1, 2, 3]  # 1=시장개요, 2=세그먼트분석, 3=카테고리분석
+        section_results = {}
         
-        # GenerateContentConfig 구성
-        config_kwargs = {
-            "temperature": 0.7,  # 월간 리포트와 동일
-            "top_p": 0.95,
-            "top_k": 40,
-            "max_output_tokens": max_tokens,  # 8192 유지
-        }
-        
-        # Safety Settings 추가 (있는 경우)
-        if safety_settings:
-            config_kwargs["safety_settings"] = safety_settings
-        
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=full_prompt,
-            config=types.GenerateContentConfig(**config_kwargs)
-        )
-        
-        # Finish Reason 및 Safety Ratings 확인 (정밀 디버깅)
-        finish_reason = None
-        safety_ratings = None
-        prompt_feedback = None
-        
-        if hasattr(response, 'candidates') and response.candidates:
-            candidate = response.candidates[0]
-            # Finish Reason 확인
-            if hasattr(candidate, 'finish_reason'):
-                finish_reason = candidate.finish_reason
-            elif hasattr(candidate, 'finishReason'):
-                finish_reason = candidate.finishReason
-            elif hasattr(candidate, 'finishMessage'):
-                finish_reason = candidate.finishMessage
+        for section_num in sections:
+            section_names = {1: "시장 개요", 2: "세그먼트별 심층 분석", 3: "카테고리별 심층 분석"}
             
-            # Safety Ratings 확인
-            if hasattr(candidate, 'safety_ratings'):
-                safety_ratings = candidate.safety_ratings
-            elif hasattr(candidate, 'safetyRatings'):
-                safety_ratings = candidate.safetyRatings
+            try:
+                print(f"🤖 [INFO] 섹션 {section_num} ({section_names[section_num]}) AI 분석 시작...", file=sys.stderr)
+                
+                # 섹션별 프롬프트 생성
+                section_prompt = build_trend_analysis_prompt(snapshot_data, section_num=section_num)
+                
+                # System Instruction과 섹션 프롬프트 결합
+                full_prompt = f"{SYSTEM_INSTRUCTION}\n\n{section_prompt}"
+                
+                # 프롬프트 크기 확인
+                prompt_length = len(full_prompt)
+                print(f"📊 [INFO] 섹션 {section_num} 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
+                
+                # AI 모델 호출
+                print(f"📤 [INFO] 섹션 {section_num} Gemini API 호출 중...", file=sys.stderr)
+                
+                # GenerateContentConfig 구성
+                config_kwargs = {
+                    "temperature": 0.7,  # 월간 리포트와 동일
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": max_tokens,  # 8192
+                }
+                
+                # Safety Settings 추가 (있는 경우)
+                if safety_settings:
+                    config_kwargs["safety_settings"] = safety_settings
+                
+                response = client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(**config_kwargs)
+                )
+                
+                # 응답 파싱
+                section_text = None
+                if hasattr(response, 'text'):
+                    section_text = response.text
+                elif hasattr(response, 'candidates') and response.candidates:
+                    candidate = response.candidates[0]
+                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts') and candidate.content.parts:
+                        section_text = candidate.content.parts[0].text
+                    elif hasattr(candidate, 'content'):
+                        section_text = str(candidate.content)
+                    else:
+                        section_text = str(candidate)
+                
+                if not section_text:
+                    section_text = str(response)
+                
+                # 섹션 제목 제거 (AI가 섹션 제목을 포함할 수 있음)
+                section_text = section_text.strip()
+                # 섹션 제목 패턴 제거
+                section_text = re.sub(r'^##\s*[섹션\s]*\d+\s*[:\-]?\s*.*$', '', section_text, flags=re.MULTILINE)
+                section_text = section_text.strip()
+                
+                # 한글 포함 여부 확인 (디버깅)
+                if section_text:
+                    korean_count = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
+                    total_chars = len(section_text)
+                    korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
+                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+                    if korean_ratio < 30:
+                        print(f"⚠️ [WARN] 섹션 {section_num}에 한글이 적습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
+                        print(f"   - 응답 미리보기 (처음 300자): {section_text[:300]}", file=sys.stderr)
+                
+                # 아이콘/이모지 제거 (안전장치)
+                section_text = remove_icons_and_emojis(section_text)
+                
+                # 섹션 응답의 첫 줄 추출 및 로그 출력 (실패 여부 즉시 판단)
+                first_line = section_text.split('\n')[0].strip() if section_text else ""
+                if first_line:
+                    print(f"📄 [RESPONSE] 섹션 {section_num} 첫 줄: {first_line[:200]}", file=sys.stderr)
+                else:
+                    print(f"⚠️ [WARN] 섹션 {section_num} 첫 줄이 비어있습니다!", file=sys.stderr)
+                
+                section_results[section_num] = section_text
+                print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(section_text)}자)", file=sys.stderr)
+                
+            except Exception as e:
+                error_msg = f"섹션 {section_num} AI 분석 실패: {str(e)}"
+                print(f"❌ [ERROR] {error_msg}", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+                section_results[section_num] = f"[AI 분석 오류: {error_msg}]"
         
-        # Prompt Feedback 확인
-        if hasattr(response, 'prompt_feedback'):
-            prompt_feedback = response.prompt_feedback
-        elif hasattr(response, 'promptFeedback'):
-            prompt_feedback = response.promptFeedback
+        # 섹션별 결과 합치기
+        if not section_results:
+            print(f"⚠️ [WARN] 모든 섹션 분석 실패", file=sys.stderr)
+            return None
         
-        # 디버깅 정보 출력
-        print(f"🔍 [DEBUG] 종료 원인(Finish Reason): {finish_reason}", file=sys.stderr)
-        if finish_reason and finish_reason in ['SAFETY', 'RECITATION', 'OTHER']:
-            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 중대한 문제 발견: Finish Reason이 '{finish_reason}'입니다!", file=sys.stderr)
-            print(f"   - SAFETY: 안전 설정에 의해 차단됨 (한글 필터링 가능성)", file=sys.stderr)
-            print(f"   - RECITATION: 저작권 보호에 의해 차단됨", file=sys.stderr)
-            print(f"   - OTHER: 기타 이유로 차단됨", file=sys.stderr)
-        elif finish_reason and 'MAX_TOKENS' in str(finish_reason):
-            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 응답이 토큰 제한에 걸려서 잘렸습니다 (MAX_TOKENS)!", file=sys.stderr)
-            print(f"   - 현재 max_output_tokens: {max_tokens}", file=sys.stderr)
-            print(f"   - 생성된 리포트가 불완전할 수 있습니다. 토큰 제한을 늘려야 할 수 있습니다.", file=sys.stderr)
+        # 리포트 구성 (섹션 제목 포함)
+        analysis_parts = []
         
-        print(f"🔍 [DEBUG] 안전 등급(Safety Ratings): {safety_ratings}", file=sys.stderr)
-        print(f"🔍 [DEBUG] 프롬프트 피드백(Prompt Feedback): {prompt_feedback}", file=sys.stderr)
+        if 1 in section_results:
+            analysis_parts.append(f"## 시장 개요\n\n{section_results[1]}")
         
-        # Safety Ratings 상세 출력
-        if safety_ratings:
-            print(f"🔍 [DEBUG] Safety Ratings 상세:", file=sys.stderr)
-            if isinstance(safety_ratings, list):
-                for rating in safety_ratings:
-                    category = getattr(rating, 'category', getattr(rating, 'categoryName', 'UNKNOWN'))
-                    probability = getattr(rating, 'probability', getattr(rating, 'severity', 'UNKNOWN'))
-                    threshold = getattr(rating, 'threshold', 'UNKNOWN')
-                    print(f"   - {category}: probability={probability}, threshold={threshold}", file=sys.stderr)
-            elif isinstance(safety_ratings, dict):
-                for key, value in safety_ratings.items():
-                    print(f"   - {key}: {value}", file=sys.stderr)
+        if 2 in section_results:
+            analysis_parts.append(f"\n\n## 세그먼트별 심층 분석\n\n{section_results[2]}")
         
-        # Prompt Feedback 상세 출력
-        if prompt_feedback:
-            print(f"🔍 [DEBUG] Prompt Feedback 상세:", file=sys.stderr)
-            if hasattr(prompt_feedback, 'block_reason'):
-                print(f"   - Block Reason: {prompt_feedback.block_reason}", file=sys.stderr)
-            if hasattr(prompt_feedback, 'safety_ratings'):
-                print(f"   - Safety Ratings: {prompt_feedback.safety_ratings}", file=sys.stderr)
+        if 3 in section_results:
+            analysis_parts.append(f"\n\n## 카테고리별 심층 분석\n\n{section_results[3]}")
         
-        # 응답 파싱
-        analysis_text = None
-        if hasattr(response, 'text'):
-            analysis_text = response.text
-        elif hasattr(response, 'candidates') and response.candidates:
-            candidate = response.candidates[0]
-            if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts') and candidate.content.parts:
-                analysis_text = candidate.content.parts[0].text
-            elif hasattr(candidate, 'content'):
-                analysis_text = str(candidate.content)
-            else:
-                analysis_text = str(candidate)
+        analysis_text = "\n".join(analysis_parts)
         
-        if not analysis_text:
-            analysis_text = str(response)
-        
-        # 한글 포함 여부 확인 (디버깅)
+        # 최종 한글 포함 여부 확인
         if analysis_text:
             korean_count = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
             total_chars = len(analysis_text)
             korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-            print(f"🔍 [DEBUG] 생성된 리포트 한글 포함 여부:", file=sys.stderr)
+            print(f"🔍 [DEBUG] 최종 리포트 한글 포함 여부:", file=sys.stderr)
             print(f"   - 한글 문자 개수: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
-            if korean_ratio < 10:
-                print(f"⚠️ [WARN] ⚠️⚠️⚠️ 생성된 리포트에 한글이 거의 없습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
-                print(f"   - 응답 미리보기 (처음 500자): {analysis_text[:500]}", file=sys.stderr)
             
-        # Finish Reason이 문제가 있는 경우 경고
-        if finish_reason and finish_reason in ['SAFETY', 'RECITATION']:
-            print(f"⚠️ [WARN] ⚠️⚠️⚠️ 응답이 '{finish_reason}'로 인해 차단되었습니다!", file=sys.stderr)
-            print(f"   - analysis_text 길이: {len(analysis_text) if analysis_text else 0}자", file=sys.stderr)
-            if analysis_text:
-                print(f"   - analysis_text 미리보기 (처음 200자): {analysis_text[:200]}", file=sys.stderr)
-        
-        if not analysis_text or len(analysis_text.strip()) < 100:
-            print(f"⚠️ [WARN] AI 응답이 너무 짧습니다 ({len(analysis_text) if analysis_text else 0}자).", file=sys.stderr)
-            print(f"[DEBUG] 원본 응답 타입: {type(response)}", file=sys.stderr)
-            if hasattr(response, '__dict__'):
-                print(f"[DEBUG] 응답 속성: {list(response.__dict__.keys())[:10]}", file=sys.stderr)
-        
-        # 아이콘/이모지 제거 (안전장치)
-        analysis_text = remove_icons_and_emojis(analysis_text)
-        
-        # 토큰 수 체크 (경고만)
         char_count = len(analysis_text)
-        if char_count < 500:
-            print(f"⚠️ [WARN] 분석 리포트가 너무 짧습니다 ({char_count}자). 데이터가 제대로 전달되었는지 확인하세요.", file=sys.stderr)
-        elif char_count > max_tokens * 2:  # 한글 기준으로 대략 계산
-            print(f"⚠️ [WARN] 분석 리포트가 길 수 있습니다 ({char_count}자). 토큰 제한: 약 {max_tokens}", file=sys.stderr)
-        else:
-            print(f"✅ [INFO] 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
+        print(f"✅ [INFO] 전체 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
         
         return analysis_text.strip() if analysis_text else None
         

@@ -28,6 +28,8 @@ function setupTrendAnalysisToggle() {
     if (toggleBtn && sidebar) {
         // 사이드바 열기
         toggleBtn.addEventListener('click', function() {
+            // 사이드바를 열 때 현재 주차 정보가 있으면 업데이트
+            refreshTrendAnalysisTitle();
             sidebar.classList.remove('hidden');
             sidebar.classList.add('active');
         });
@@ -235,30 +237,62 @@ function displayCurrentTabData() {
 }
 
 // 페이지 제목 업데이트
+// 주차에서 연/월/주 추출 헬퍼 함수
+function parseWeekInfo(currentWeek) {
+    if (!currentWeek) return null;
+    
+    const weekMatch = currentWeek.match(/(\d{4})W(\d{2})/);
+    if (!weekMatch) return null;
+    
+    const year = parseInt(weekMatch[1]);
+    const week = parseInt(weekMatch[2]);
+    
+    // ISO 주차를 사용하여 월 계산
+    // 첫 번째 주 목요일을 기준으로 주차 시작일 계산
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = jan4.getDay() || 7; // 일요일을 7로 변환
+    const daysToThursday = 4 - jan4Day;
+    const firstThursday = new Date(year, 0, 4 + daysToThursday);
+    
+    // 주차 시작일 (목요일 기준 월요일)
+    const weekStartDate = new Date(firstThursday);
+    weekStartDate.setDate(firstThursday.getDate() - 3 + (week - 1) * 7);
+    const month = weekStartDate.getMonth() + 1;
+    
+    return { year, month, week };
+}
+
 function updatePageTitle(currentWeek) {
     const titleElement = document.getElementById('trendPageTitle');
     if (titleElement && currentWeek) {
-        const weekMatch = currentWeek.match(/(\d{4})W(\d{2})/);
-        if (weekMatch) {
-            const year = parseInt(weekMatch[1]);
-            const week = parseInt(weekMatch[2]);
-            
-            // ISO 주차를 사용하여 월 계산
-            // 첫 번째 주 목요일을 기준으로 주차 시작일 계산
-            const jan4 = new Date(year, 0, 4);
-            const jan4Day = jan4.getDay() || 7; // 일요일을 7로 변환
-            const daysToThursday = 4 - jan4Day;
-            const firstThursday = new Date(year, 0, 4 + daysToThursday);
-            
-            // 주차 시작일 (목요일 기준 월요일)
-            const weekStartDate = new Date(firstThursday);
-            weekStartDate.setDate(firstThursday.getDate() - 3 + (week - 1) * 7);
-            const month = weekStartDate.getMonth() + 1;
-            
-            titleElement.textContent = `29CM ${year}년 ${month}월 ${week}주차 트렌드`;
+        const weekInfo = parseWeekInfo(currentWeek);
+        if (weekInfo) {
+            titleElement.textContent = `29CM ${weekInfo.year}년 ${weekInfo.month}월 ${weekInfo.week}주차 트렌드`;
         } else {
             titleElement.textContent = `29CM ${currentWeek} 트렌드`;
         }
+    }
+    
+    // 사이드바 제목도 함께 업데이트
+    updateTrendAnalysisTitle(currentWeek);
+}
+
+function updateTrendAnalysisTitle(currentWeek) {
+    const analysisTitleElement = document.getElementById('trendAnalysisTitle');
+    if (analysisTitleElement && currentWeek) {
+        const weekInfo = parseWeekInfo(currentWeek);
+        if (weekInfo) {
+            analysisTitleElement.textContent = `29CM ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 분석`;
+        } else {
+            analysisTitleElement.textContent = `29CM ${currentWeek} 트렌드 분석`;
+        }
+    }
+}
+
+// 사이드바가 열릴 때 현재 주차 정보 업데이트 (데이터가 이미 로드된 경우)
+function refreshTrendAnalysisTitle() {
+    if (currentWeek) {
+        updateTrendAnalysisTitle(currentWeek);
     }
 }
 

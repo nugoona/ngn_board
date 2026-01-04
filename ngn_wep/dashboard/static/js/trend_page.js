@@ -19,28 +19,41 @@ $(document).ready(function() {
     // 햄버거 메뉴는 common.js가 처리함
 });
 
-// 트렌드 데이터 분석 토글 설정
+// 트렌드 데이터 분석 모달 설정
 function setupTrendAnalysisToggle() {
-    const toggleBtn = document.getElementById('trendAnalysisToggleBtn');
-    const content = document.getElementById('trendAnalysisContent');
+    const openBtn = document.getElementById('trendAnalysisBtn');
+    const modal = document.getElementById('trendAnalysisModal');
+    const closeBtn = document.getElementById('trendAnalysisModalClose');
+    const overlay = document.getElementById('trendAnalysisModalOverlay');
     
-    if (toggleBtn && content) {
-        toggleBtn.addEventListener('click', function() {
-            const isExpanded = content.style.display !== 'none';
-            
-            if (isExpanded) {
-                // 접기
-                content.style.display = 'none';
-                toggleBtn.classList.remove('active');
-            } else {
-                // 펼치기
-                content.style.display = 'block';
-                toggleBtn.classList.add('active');
-                
-                // 부드럽게 스크롤 (선택사항)
-                setTimeout(() => {
-                    toggleBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
+    if (openBtn && modal) {
+        // 모달 열기
+        openBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+        });
+        
+        // 모달 닫기 (X 버튼)
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // 배경 스크롤 복구
+            });
+        }
+        
+        // 모달 닫기 (오버레이 클릭)
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // 배경 스크롤 복구
+            });
+        }
+        
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // 배경 스크롤 복구
             }
         });
     }

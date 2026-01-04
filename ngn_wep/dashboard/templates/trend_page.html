@@ -490,71 +490,123 @@
       color: #868E96;
     }
     
-    /* 트렌드 데이터 분석 섹션 (아코디언 스타일) */
-    .trend-analysis-section {
+    /* 트렌드 데이터 분석 버튼 */
+    .trend-analysis-button-wrapper {
       margin-top: 24px;
       margin-bottom: 32px;
-      background: #ffffff;
-      border: 1px solid #E9ECEF;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      display: flex;
+      justify-content: center;
     }
     
-    .trend-analysis-toggle-btn {
-      width: 100%;
-      padding: 16px 24px;
-      background: #ffffff;
+    .trend-analysis-btn {
+      padding: 14px 32px;
+      background: #6366f1;
+      color: #ffffff;
       border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+    }
+    
+    .trend-analysis-btn:hover {
+      background: #5b5ff0;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+    }
+    
+    .trend-analysis-icon {
+      font-size: 18px;
+    }
+    
+    /* 트렌드 데이터 분석 모달 */
+    .trend-analysis-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .trend-analysis-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+    }
+    
+    .trend-analysis-modal-content {
+      position: relative;
+      width: 90%;
+      max-width: 900px;
+      max-height: 85vh;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 2001;
+      overflow: hidden;
+    }
+    
+    .trend-analysis-modal-header {
+      padding: 20px 24px;
       border-bottom: 1px solid #E9ECEF;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+    
+    .trend-analysis-modal-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #212529;
+      margin: 0;
+    }
+    
+    .trend-analysis-modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      color: #6C757D;
       cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 16px;
-      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      line-height: 1;
+    }
+    
+    .trend-analysis-modal-close:hover {
+      background: #F1F3F5;
       color: #212529;
     }
     
-    .trend-analysis-toggle-btn:hover {
-      background: #F8F9FA;
-    }
-    
-    .trend-analysis-toggle-btn.active {
-      background: #F8F9FA;
-      border-bottom-color: #DEE2E6;
-    }
-    
-    .trend-analysis-toggle-btn .trend-analysis-icon {
-      font-size: 20px;
-      margin-right: 12px;
-    }
-    
-    .trend-analysis-toggle-btn .trend-analysis-title {
+    .trend-analysis-modal-body {
+      padding: 24px;
+      overflow-y: auto;
       flex: 1;
-      text-align: left;
-    }
-    
-    .trend-analysis-toggle-btn .trend-analysis-arrow {
-      font-size: 14px;
-      color: #6C757D;
-      transition: transform 0.3s ease;
-    }
-    
-    .trend-analysis-toggle-btn.active .trend-analysis-arrow {
-      transform: rotate(180deg);
-    }
-    
-    .trend-analysis-content {
-      background: #ffffff;
-      border-top: 1px solid #E9ECEF;
     }
     
     .trend-analysis-wrapper {
-      padding: 24px;
-      max-height: 600px;
-      overflow-y: auto;
+      padding: 0;
     }
     
     .trend-analysis-header {
@@ -730,70 +782,78 @@
     </div>
   </div>
   
-  <!-- 트렌드 데이터 분석 섹션 (접을 수 있는 아코디언 스타일) -->
-  <div class="trend-analysis-section">
-    <button class="trend-analysis-toggle-btn" id="trendAnalysisToggleBtn">
+  <!-- 트렌드 데이터 분석 버튼 -->
+  <div class="trend-analysis-button-wrapper">
+    <button class="trend-analysis-btn" id="trendAnalysisBtn">
       <span class="trend-analysis-icon">📊</span>
-      <span class="trend-analysis-title">트렌드 데이터 분석</span>
-      <span class="trend-analysis-arrow">▼</span>
+      <span>트렌드 데이터 분석</span>
     </button>
+  </div>
+</div>
+
+<!-- 트렌드 데이터 분석 모달 -->
+<div class="trend-analysis-modal" id="trendAnalysisModal" style="display: none;">
+  <div class="trend-analysis-modal-overlay" id="trendAnalysisModalOverlay"></div>
+  <div class="trend-analysis-modal-content">
+    <div class="trend-analysis-modal-header">
+      <h2>트렌드 데이터 분석</h2>
+      <button class="trend-analysis-modal-close" id="trendAnalysisModalClose">×</button>
+    </div>
     
-    <div class="trend-analysis-content" id="trendAnalysisContent" style="display: none;">
-      <div class="trend-analysis-wrapper">
-        <!-- 분석 리포트 내용 -->
-        <div class="trend-analysis-header">
-          <h3>2026년 12월 1주차 트렌드 분석 리포트</h3>
-          <div class="trend-analysis-meta">
-            <span>생성일: 2026-01-04 18:11</span>
-          </div>
+    <div class="trend-analysis-modal-body">
+      <div class="trend-analysis-header">
+        <h3>2026년 12월 1주차 트렌드 분석 리포트</h3>
+        <div class="trend-analysis-meta">
+          <span>생성일: 2026-01-04 18:11</span>
+        </div>
+      </div>
+      
+      <div class="trend-analysis-body">
+        <div class="analysis-section">
+          <h4>📈 전체 트렌드 요약</h4>
+          <p>
+            이번 주 29CM 플랫폼에서는 패딩 및 아우터 카테고리에서 큰 변화가 있었습니다. 
+            특히 겨울 시즌을 맞아 보온성과 스타일을 모두 갖춘 제품들의 순위가 크게 상승했습니다.
+          </p>
         </div>
         
-        <div class="trend-analysis-body">
-          <div class="analysis-section">
-            <h4>📈 전체 트렌드 요약</h4>
-            <p>
-              이번 주 29CM 플랫폼에서는 패딩 및 아우터 카테고리에서 큰 변화가 있었습니다. 
-              특히 겨울 시즌을 맞아 보온성과 스타일을 모두 갖춘 제품들의 순위가 크게 상승했습니다.
-            </p>
-          </div>
-          
-          <div class="analysis-section">
-            <h4>🔥 급상승 랭킹 주요 인사이트</h4>
-            <ul>
-              <li><strong>수아레 우먼</strong>의 라이트 시어쉘 패딩 점퍼가 55위 상승하며 12위에 진입했습니다.</li>
-              <li><strong>비터셀즈</strong>의 Poddy Fleece Half Zip Up이 44위 상승하며 주목받고 있습니다.</li>
-              <li>패딩 및 플리스 제품들이 겨울 시즌을 앞두고 큰 관심을 받고 있습니다.</li>
-            </ul>
-          </div>
-          
-          <div class="analysis-section">
-            <h4>🚀 신규 진입 분석</h4>
-            <p>
-              이번 주 신규 진입 상품들은 주로 기본 아이템과 세련된 디자인의 조합으로 이루어져 있습니다. 
-              특히 다양한 컬러 옵션을 제공하는 제품들이 초기 순위에서 좋은 반응을 보이고 있습니다.
-            </p>
-          </div>
-          
-          <div class="analysis-section">
-            <h4>📉 순위 하락 주요 패턴</h4>
-            <p>
-              순위 하락을 보인 상품들은 주로 시즌 오프 제품들이거나 신제품 출시로 인한 관심 분산 효과가 있었습니다.
-              기존 인기 제품들의 하락폭은 크지 않아 안정적인 매출을 유지하고 있습니다.
-            </p>
-          </div>
-          
-          <div class="analysis-section">
-            <h4>💡 권장 사항</h4>
-            <ul>
-              <li>패딩 및 아우터 카테고리의 경우, 다양한 컬러 옵션 제공이 순위 상승에 긍정적인 영향을 미칩니다.</li>
-              <li>기본 아이템은 디자인보다는 착용감과 가격 경쟁력을 강조하는 것이 효과적입니다.</li>
-              <li>신규 진입 제품들은 초기 마케팅 강화가 중요합니다.</li>
-            </ul>
-          </div>
+        <div class="analysis-section">
+          <h4>🔥 급상승 랭킹 주요 인사이트</h4>
+          <ul>
+            <li><strong>수아레 우먼</strong>의 라이트 시어쉘 패딩 점퍼가 55위 상승하며 12위에 진입했습니다.</li>
+            <li><strong>비터셀즈</strong>의 Poddy Fleece Half Zip Up이 44위 상승하며 주목받고 있습니다.</li>
+            <li>패딩 및 플리스 제품들이 겨울 시즌을 앞두고 큰 관심을 받고 있습니다.</li>
+          </ul>
+        </div>
+        
+        <div class="analysis-section">
+          <h4>🚀 신규 진입 분석</h4>
+          <p>
+            이번 주 신규 진입 상품들은 주로 기본 아이템과 세련된 디자인의 조합으로 이루어져 있습니다. 
+            특히 다양한 컬러 옵션을 제공하는 제품들이 초기 순위에서 좋은 반응을 보이고 있습니다.
+          </p>
+        </div>
+        
+        <div class="analysis-section">
+          <h4>📉 순위 하락 주요 패턴</h4>
+          <p>
+            순위 하락을 보인 상품들은 주로 시즌 오프 제품들이거나 신제품 출시로 인한 관심 분산 효과가 있었습니다.
+            기존 인기 제품들의 하락폭은 크지 않아 안정적인 매출을 유지하고 있습니다.
+          </p>
+        </div>
+        
+        <div class="analysis-section">
+          <h4>💡 권장 사항</h4>
+          <ul>
+            <li>패딩 및 아우터 카테고리의 경우, 다양한 컬러 옵션 제공이 순위 상승에 긍정적인 영향을 미칩니다.</li>
+            <li>기본 아이템은 디자인보다는 착용감과 가격 경쟁력을 강조하는 것이 효과적입니다.</li>
+            <li>신규 진입 제품들은 초기 마케팅 강화가 중요합니다.</li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>

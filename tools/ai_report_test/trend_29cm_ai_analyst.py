@@ -72,38 +72,50 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
     
-    # 데이터 요약 및 필수 필드만 추출 (썸네일 URL 등 불필요한 데이터 제거)
-    def extract_essential_fields(items: list, max_items: int = 30) -> list:
+    # 데이터 요약 및 필수 필드만 추출 (프롬프트 크기 최소화)
+    def extract_essential_fields(items: list, max_items: int = 10) -> list:
         """필수 필드만 추출하여 AI 프롬프트 크기 최적화"""
         essential = []
         for item in items[:max_items]:  # 상위 N개만 사용
             essential.append({
-                "Ranking": item.get("Ranking"),
-                "Brand_Name": item.get("Brand_Name"),
-                "Product_Name": item.get("Product_Name"),
-                "Rank_Change": item.get("Rank_Change"),
-                "This_Week_Rank": item.get("This_Week_Rank"),
-                "Last_Week_Rank": item.get("Last_Week_Rank"),
-                "price": item.get("price"),
-                "item_url": item.get("item_url")
-                # thumbnail_url 제외 (이미지 URL은 AI 분석에 불필요)
+                "Brand": item.get("Brand_Name"),  # 필수: 브랜드명
+                "Product": item.get("Product_Name"),  # 필수: 상품명
+                "Rank_Change": item.get("Rank_Change"),  # 필수: 순위 변화
+                "Price": item.get("price")  # 필수: 가격
+                # Ranking, This_Week_Rank, Last_Week_Rank, item_url, thumbnail_url 제외
             })
         return essential
     
-    # 전체 데이터 준비 (필수 필드만 추출, 상위 30개만)
+    # 핵심 6대 카테고리만 선택 (전체 제외)
+    core_tabs = []
+    for core_cat in CORE_CATEGORIES:
+        if core_cat in tabs_data:
+            core_tabs.append(core_cat)
+    
+    # 핵심 카테고리가 없으면 전체 데이터 사용
+    if not core_tabs:
+        core_tabs = ["전체"] if "전체" in tabs_data else []
+    
+    # 데이터 준비 (핵심 6대 카테고리만, 각 세그먼트당 상위 10개)
     all_categories_data = {}
     
-    for tab_name, tab_data in tabs_data.items():
+    for tab_name in core_tabs:
+        if tab_name not in tabs_data:
+            continue
+        tab_data = tabs_data[tab_name]
         all_categories_data[tab_name] = {
-            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=30),
-            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=30),
-            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=30)
+            "rising_star": extract_essential_fields(tab_data.get("rising_star", []), max_items=10),
+            "new_entry": extract_essential_fields(tab_data.get("new_entry", []), max_items=10),
+            "rank_drop": extract_essential_fields(tab_data.get("rank_drop", []), max_items=10)
         }
     
-    # 데이터 요약 통계
-    total_rising = sum(len(data.get("rising_star", [])) for data in all_categories_data.values())
-    total_new_entry = sum(len(data.get("new_entry", [])) for data in all_categories_data.values())
-    total_rank_drop = sum(len(data.get("rank_drop", [])) for data in all_categories_data.values())
+    # 데이터 요약 통계 (전체 탭 기준)
+    total_rising = sum(len(tab_data.get("rising_star", [])) for tab_data in tabs_data.values())
+    total_new_entry = sum(len(tab_data.get("new_entry", [])) for tab_data in tabs_data.values())
+    total_rank_drop = sum(len(tab_data.get("rank_drop", [])) for tab_data in tabs_data.values())
+    
+    # 전체 카테고리 목록 (참고용)
+    all_tab_names = list(tabs_data.keys())
     
     prompt = f"""당신은 여성 의류 쇼핑몰 MD 또는 마케팅 대행사의 수석 데이터 분석가입니다.
 
@@ -116,10 +128,9 @@ def build_trend_analysis_prompt(snapshot_data: Dict) -> str:
 - **핵심 원칙**: "왜 떴는가?", "무엇이 지고 있는가?", "그래서 무엇을 팔아야 하는가?"에 대한 답을 제시
 
 ### 2. 분석 범위 및 제약사항
-- **대상 데이터**: 제공된 29CM 랭킹 JSON 데이터 (순위, 변동폭, 브랜드, 상품명, 가격, 이미지 등)
-- **카테고리 집중**:
-  - 전체 시장 흐름: 모든 카테고리(홈웨어, 언더웨어 포함)를 포괄하여 거시적 트렌드 파악
-  - 상세 분석: 핵심 6대 카테고리({', '.join(CORE_CATEGORIES)})에 집중
+- **대상 데이터**: 제공된 29CM 랭킹 JSON 데이터 (브랜드, 상품명, 순위 변화, 가격)
+- **카테고리 집중**: 핵심 6대 카테고리({', '.join(CORE_CATEGORIES)})만 상세 분석
+- **데이터 규모**: 각 카테고리당 각 세그먼트(급상승/신규진입/순위하락)별 상위 10개 상품
 - **금지 사항**:
   - 사용자의 자사몰 데이터에 대한 추측성 발언 금지
   - 근거 없는 뇌피셜 금지 (반드시 데이터에 기반한 팩트만 서술)
@@ -173,8 +184,8 @@ AI는 문장을 작성할 때 반드시 아래 **[데이터 근거]**를 포함�
 - 신규 진입 상품: {total_new_entry}개
 - 순위 하락 상품: {total_rank_drop}개
 
-**전체 카테고리 데이터**:
-{json.dumps(all_categories_data, ensure_ascii=False, indent=2)}
+**핵심 6대 카테고리 데이터** (각 세그먼트당 상위 10개):
+{json.dumps(all_categories_data, ensure_ascii=False, separators=(',', ':'))}
 
 ---
 

@@ -132,6 +132,7 @@ async function loadAllTabsData() {
         
         if (data.status === 'success') {
             currentWeek = data.current_week || "";
+            console.log("[DEBUG] 받은 current_week:", currentWeek);
             updatePageTitle(currentWeek);
             
             // 모든 탭 데이터를 메모리에 저장
@@ -258,6 +259,14 @@ function parseWeekInfo(currentWeek) {
     const weekStartDate = new Date(firstThursday);
     weekStartDate.setDate(firstThursday.getDate() - 3 + (week - 1) * 7);
     const month = weekStartDate.getMonth() + 1;
+    
+    console.log("[DEBUG] 주차 계산:", { 
+        currentWeek, 
+        year, 
+        week, 
+        month, 
+        weekStartDate: weekStartDate.toISOString().split('T')[0] 
+    });
     
     return { year, month, week };
 }

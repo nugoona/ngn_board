@@ -15,13 +15,33 @@ from datetime import datetime
 # .env 파일에서 환경 변수 로드
 try:
     from dotenv import load_dotenv
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))
-    env_path = os.path.join(project_root, ".env")
-    if os.path.exists(env_path):
-        load_dotenv(env_path, override=True)
+    # 여러 경로에서 .env 파일 찾기 시도
+    env_loaded = False
+    
+    # 1. 현재 작업 디렉토리에서 찾기
+    cwd_env = os.path.join(os.getcwd(), ".env")
+    if os.path.exists(cwd_env):
+        load_dotenv(cwd_env, override=True)
+        env_loaded = True
+        print(f"✅ [INFO] .env 파일 로드됨: {cwd_env}", file=sys.stderr)
+    
+    # 2. 스크립트 위치 기준으로 프로젝트 루트 찾기
+    if not env_loaded:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_dir)))  # tools/ai_report_test/ -> 프로젝트 루트
+        env_path = os.path.join(project_root, ".env")
+        if os.path.exists(env_path):
+            load_dotenv(env_path, override=True)
+            env_loaded = True
+            print(f"✅ [INFO] .env 파일 로드됨: {env_path}", file=sys.stderr)
+    
+    # 3. 기본 load_dotenv() 시도 (현재 디렉토리 및 상위 디렉토리 자동 탐색)
+    if not env_loaded:
+        load_dotenv(override=True)  # .env 파일이 없어도 에러 없이 진행
+        
 except ImportError:
-    pass
+    print("⚠️ [WARN] python-dotenv 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install python-dotenv", file=sys.stderr)
 
 # Google Gen AI SDK
 try:

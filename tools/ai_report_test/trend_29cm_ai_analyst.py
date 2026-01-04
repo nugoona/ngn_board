@@ -455,8 +455,20 @@ def generate_trend_analysis(
                 else:
                     print(f"⚠️ [WARN] 섹션 {section_num} 전체 응답이 비어있습니다!", file=sys.stderr)
                 
-                # 아이콘/이모지 제거 (안전장치)
+                # 아이콘/이모지 제거 (안전장치) - 디버깅
+                section_text_before_cleanup = section_text
+                korean_count_before = sum(1 for char in section_text_before_cleanup if '\uac00' <= char <= '\ud7a3')
+                
                 section_text = remove_icons_and_emojis(section_text)
+                
+                korean_count_after = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
+                if korean_count_before > 0 and korean_count_after == 0:
+                    print(f"⚠️ [WARN] ⚠️⚠️⚠️ remove_icons_and_emojis가 한글을 제거했습니다! (이전: {korean_count_before}자, 이후: {korean_count_after}자)", file=sys.stderr)
+                    print(f"   - cleanup 전 텍스트 (처음 200자): {section_text_before_cleanup[:200]}", file=sys.stderr)
+                    print(f"   - cleanup 후 텍스트 (처음 200자): {section_text[:200]}", file=sys.stderr)
+                    # cleanup 함수가 한글을 제거하면 원본을 사용
+                    section_text = section_text_before_cleanup
+                    print(f"   - 원본 복구 완료", file=sys.stderr)
                 
                 section_results[section_num] = section_text
                 print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(section_text)}자)", file=sys.stderr)

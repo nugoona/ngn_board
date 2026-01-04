@@ -19,41 +19,36 @@ $(document).ready(function() {
     // 햄버거 메뉴는 common.js가 처리함
 });
 
-// 트렌드 데이터 분석 모달 설정
+// 트렌드 데이터 분석 사이드바 설정
 function setupTrendAnalysisToggle() {
-    const openBtn = document.getElementById('trendAnalysisBtn');
-    const modal = document.getElementById('trendAnalysisModal');
-    const closeBtn = document.getElementById('trendAnalysisModalClose');
-    const overlay = document.getElementById('trendAnalysisModalOverlay');
+    const toggleBtn = document.getElementById('trendAnalysisToggleBtn');
+    const sidebar = document.getElementById('trendAnalysisSidebar');
+    const closeBtn = document.getElementById('closeTrendAnalysisSidebarBtn');
     
-    if (openBtn && modal) {
-        // 모달 열기
-        openBtn.addEventListener('click', function() {
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+    if (toggleBtn && sidebar) {
+        // 사이드바 열기
+        toggleBtn.addEventListener('click', function() {
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('active');
         });
         
-        // 모달 닫기 (X 버튼)
+        // 사이드바 닫기 (X 버튼)
         if (closeBtn) {
             closeBtn.addEventListener('click', function() {
-                modal.style.display = 'none';
-                document.body.style.overflow = ''; // 배경 스크롤 복구
+                sidebar.classList.remove('active');
+                setTimeout(() => {
+                    sidebar.classList.add('hidden');
+                }, 300); // transition 시간과 동일
             });
         }
         
-        // 모달 닫기 (오버레이 클릭)
-        if (overlay) {
-            overlay.addEventListener('click', function() {
-                modal.style.display = 'none';
-                document.body.style.overflow = ''; // 배경 스크롤 복구
-            });
-        }
-        
-        // ESC 키로 모달 닫기
+        // ESC 키로 사이드바 닫기
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modal.style.display === 'flex') {
-                modal.style.display = 'none';
-                document.body.style.overflow = ''; // 배경 스크롤 복구
+            if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                setTimeout(() => {
+                    sidebar.classList.add('hidden');
+                }, 300);
             }
         });
     }

@@ -41,27 +41,32 @@ function setupTrendTypeTabs() {
 
 // 햄버거 메뉴 설정 (common.js와 충돌 방지)
 function setupHamburgerMenu() {
-    // jQuery를 사용하여 common.js와 동일한 방식으로 처리
-    $(document).ready(function() {
-        $('#hamburgerIcon').off('click'); // 기존 이벤트 제거
-        $('#hamburgerIcon').on('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            const $dropdown = $('#hamburgerDropdown');
-            $dropdown.toggle();
-        });
-        
-        // 외부 클릭 시 닫기
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
-                $('#hamburgerDropdown').hide();
-            }
-        });
-        
-        // 드롭다운 내부 클릭 시 이벤트 전파 중지
-        $('#hamburgerDropdown').on('click', function(e) {
-            e.stopPropagation();
-        });
+    // 기존 이벤트 완전히 제거
+    $('#hamburgerIcon').off('click');
+    $(document).off('click', '#hamburgerIcon');
+    
+    // 새로운 이벤트 등록
+    $('#hamburgerIcon').on('click', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        const $dropdown = $('#hamburgerDropdown');
+        if ($dropdown.is(':visible')) {
+            $dropdown.hide();
+        } else {
+            $dropdown.css('display', 'flex').show();
+        }
+    });
+    
+    // 외부 클릭 시 닫기 (이벤트 네임스페이스 사용)
+    $(document).off('click.hamburger').on('click.hamburger', function(e) {
+        if (!$(e.target).closest('.hamburger-menu-wrapper').length) {
+            $('#hamburgerDropdown').hide();
+        }
+    });
+    
+    // 드롭다운 내부 링크 클릭 시 닫기
+    $('.hamburger-dropdown a').off('click').on('click', function() {
+        $('#hamburgerDropdown').hide();
     });
 }
 
@@ -453,9 +458,10 @@ function createTableWithPagination(data, showRankChange, tableId) {
         showMoreBtn.addEventListener('click', function() {
             isExpanded = true;
             
-            // 스크롤 컨테이너 활성화 (헤더 고정 없이 단순 스크롤)
+            // 스크롤 컨테이너 활성화 (테이블 헤더 고정)
             tableContainer.style.overflowY = 'auto';
             tableContainer.style.maxHeight = '600px';
+            tableContainer.classList.add('scroll-enabled');
             
             reRenderTable();
         });
@@ -466,6 +472,7 @@ function createTableWithPagination(data, showRankChange, tableId) {
             // 스크롤 컨테이너 비활성화
             tableContainer.style.overflowY = 'visible';
             tableContainer.style.maxHeight = 'none';
+            tableContainer.classList.remove('scroll-enabled');
             tableContainer.scrollTop = 0;
             
             reRenderTable();

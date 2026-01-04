@@ -84,45 +84,65 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     
-    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) */
+    /* 트렌드 테이블 섹션 (탭과 테이블을 하나의 박스로) */
+    .trend-table-section {
+      background: #ffffff;
+      border: 1px solid #E9ECEF;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    
+    /* 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 */
     .trend-type-tabs-wrapper {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 2px solid #E9ECEF;
+      position: sticky;
+      top: 160px; /* 상단 헤더 + 트렌드 페이지 헤더 높이 고려 (대략적인 값) */
+      z-index: 99;
+      background: #ffffff;
+      border-bottom: 2px solid #d0d7e2;
+      padding: 0;
+      margin: 0;
     }
     
     .trend-type-tabs {
       display: flex;
-      gap: 12px;
-      padding-bottom: 4px;
+      gap: 0;
+      margin: 0;
+      padding: 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
     
     .trend-type-tab-btn {
-      padding: 12px 24px;
-      border: 2px solid #CED4DA;
-      background: #ffffff;
-      color: #495057;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 32px;
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: #6c757d;
       font-size: 15px;
-      font-weight: 500;
-      border-radius: 8px;
+      font-weight: 600;
+      border-radius: 0;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s ease;
-      position: relative;
+      transition: all 0.3s ease;
+      min-width: 140px;
     }
     
     .trend-type-tab-btn:hover {
-      background: #F8F9FA;
-      border-color: #ADB5BD;
-      transform: translateY(-1px);
+      background: #f8f9fa;
+      color: #495057;
     }
     
     .trend-type-tab-btn.active {
-      background: #6366f1;
-      color: #ffffff;
-      font-weight: 600;
-      border-color: #6366f1;
-      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+      background: #ffffff;
+      color: #6366f1;
+      border-bottom-color: #6366f1;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .trend-section {
@@ -161,24 +181,11 @@
     }
     
     .trend-table-container {
-      background: transparent;
-      border-radius: 0;
-      box-shadow: none;
+      background: #ffffff;
       overflow: visible;
-      margin-bottom: 32px;
+      padding: 0;
       display: flex;
       flex-direction: column;
-    }
-    
-    .trend-table-container h3 {
-      padding: 20px;
-      margin: 0;
-      font-size: 20px;
-      font-weight: 600;
-      color: #212529;
-      border-bottom: 1px solid #E9ECEF;
-      background: transparent;
-      flex-shrink: 0;
     }
     
     
@@ -192,16 +199,41 @@
     .trend-table {
       width: 100%;
       border-collapse: collapse;
-      background: transparent;
+      background: #ffffff;
+      margin: 0;
     }
     
     .trend-table tbody {
-      background: transparent;
+      background: #ffffff;
+    }
+    
+    .trend-table tbody tr:hover {
+      background: rgba(248, 249, 250, 0.8);
     }
     
     .trend-table thead {
       background: #6366f1 !important;
       box-shadow: none;
+    }
+    
+    /* 테이블이 섹션 내부에 통합되도록 스타일 조정 */
+    .trend-table-section .trend-table-wrapper {
+      margin: 0;
+      padding: 0;
+    }
+    
+    .trend-table-section .trend-table {
+      margin: 0;
+      border: none;
+    }
+    
+    .trend-table-section .trend-table-container > div {
+      overflow-x: auto;
+      background: #ffffff;
+    }
+    
+    .trend-table-section .trend-table-container > div {
+      overflow-x: auto;
     }
     
     .trend-table th {
@@ -447,34 +479,33 @@
         <!-- 동적으로 생성됨 -->
       </div>
     </div>
-    
-    <!-- 트렌드 타입 탭 (급상승, 신규진입, 순위하락) -->
+  </div>
+  
+  <!-- 트렌드 테이블 섹션 (탭과 테이블을 하나의 박스로) -->
+  <div class="trend-table-section">
+    <!-- 트렌드 타입 탭 (급상승, 신규진입, 순위하락) - 고정 -->
     <div class="trend-type-tabs-wrapper">
       <div class="trend-type-tabs" id="trendTypeTabs">
         <button class="trend-type-tab-btn active" data-type="risingStar">
-          🔥 급상승 랭킹
+          급상승 랭킹
         </button>
         <button class="trend-type-tab-btn" data-type="newEntry">
-          🚀 신규 진입
+          신규 진입
         </button>
         <button class="trend-type-tab-btn" data-type="rankDrop">
-          📉 순위 하락
+          순위 하락
         </button>
       </div>
     </div>
-  </div>
-  
-  <!-- 트렌드 섹션 -->
-  <div class="trend-section">
-    <h2 class="trend-section-title" id="trendSectionTitle">베스트 상품 분석</h2>
     
-    <!-- 단일 테이블 컨테이너 (탭 전환 시 내용 변경) -->
+    <!-- 테이블 컨테이너 -->
     <div class="trend-table-container">
       <div id="trendTableContent">
         <div class="trend-loading">데이터를 불러오는 중...</div>
       </div>
     </div>
   </div>
+  
 </div>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>

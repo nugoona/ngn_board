@@ -525,6 +525,8 @@ function renderTableRows(items, tbody, showRankChange, tableId) {
                 
                 const value = document.createElement('span');
                 value.textContent = Math.abs(changeValue);
+                value.style.fontSize = '22px';
+                value.style.fontWeight = '700';
                 
                 changeDiv.appendChild(icon);
                 changeDiv.appendChild(value);
@@ -538,12 +540,16 @@ function renderTableRows(items, tbody, showRankChange, tableId) {
         // Current Rank (숫자 크게)
         const tdCurrentRank = document.createElement('td');
         tdCurrentRank.className = 'trend-rank-number';
+        tdCurrentRank.style.fontSize = '22px';
+        tdCurrentRank.style.fontWeight = '700';
         tdCurrentRank.textContent = item.This_Week_Rank !== null && item.This_Week_Rank !== undefined ? item.This_Week_Rank : '-';
         row.appendChild(tdCurrentRank);
         
         // Previous Rank (숫자 크게, 신규진입은 항상 '순위없음')
         const tdPreviousRank = document.createElement('td');
         tdPreviousRank.className = 'trend-rank-number hide-mobile';
+        tdPreviousRank.style.fontSize = '22px';
+        tdPreviousRank.style.fontWeight = '700';
         if (isNewEntry || item.Last_Week_Rank === null || item.Last_Week_Rank === undefined) {
             tdPreviousRank.textContent = '순위없음';
         } else {

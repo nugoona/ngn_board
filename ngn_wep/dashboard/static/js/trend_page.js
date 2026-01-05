@@ -464,6 +464,19 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     
     // Section 1, 2, 3으로 분리
     const sections = parseAnalysisReportSections(analysisText);
+    console.log('[renderTrendAnalysisReport] Section 분리 결과:', {
+        section1Length: sections.section1.length,
+        section2Length: sections.section2.length,
+        section3Length: sections.section3.length
+    });
+    
+    // Section 3 세그먼트별로 파싱
+    const section3Data = parseSection3BySegment(sections.section3);
+    console.log('[renderTrendAnalysisReport] Section 3 세그먼트 파싱 결과:', {
+        rising_star: section3Data.rising_star.length,
+        new_entry: section3Data.new_entry.length,
+        rank_drop: section3Data.rank_drop.length
+    });
     
     // Section 1, 2 렌더링
     let section1And2Html = '';
@@ -1448,6 +1461,7 @@ function parseAnalysisReportSections(analysisText) {
 // Section 3 텍스트를 세그먼트별로 파싱
 function parseSection3BySegment(section3Text) {
     if (!section3Text || !section3Text.trim()) {
+        console.warn('[parseSection3BySegment] Section 3 텍스트가 비어있음');
         return {
             rising_star: '',
             new_entry: '',
@@ -1455,26 +1469,38 @@ function parseSection3BySegment(section3Text) {
         };
     }
     
+    console.log('[parseSection3BySegment] Section 3 텍스트 길이:', section3Text.length);
+    console.log('[parseSection3BySegment] Section 3 텍스트 첫 200자:', section3Text.substring(0, 200));
+    
     const segments = {
         rising_star: { patterns: ['급상승', 'Rising Star', '🔥'], text: '' },
         new_entry: { patterns: ['신규 진입', 'New Entry', '🚀'], text: '' },
         rank_drop: { patterns: ['순위 하락', 'Rank Drop', '📉'], text: '' }
     };
     
-    // 세그먼트 헤더 찾기
+    // 세그먼트 헤더 찾기 (더 유연한 패턴 매칭)
     const segmentHeaders = [];
     const lines = section3Text.split('\n');
     
     lines.forEach((line, index) => {
-        const lineLower = line.toLowerCase();
-        if (lineLower.includes('급상승') || lineLower.includes('rising star') || line.includes('🔥')) {
-            segmentHeaders.push({ index, type: 'rising_star', line });
-        } else if (lineLower.includes('신규 진입') || lineLower.includes('new entry') || line.includes('🚀')) {
-            segmentHeaders.push({ index, type: 'new_entry', line });
-        } else if (lineLower.includes('순위 하락') || lineLower.includes('rank drop') || line.includes('📉')) {
-            segmentHeaders.push({ index, type: 'rank_drop', line });
+        const lineText = line.trim();
+        const lineLower = lineText.toLowerCase();
+        
+        // 급상승 패턴
+        if (lineLower.includes('급상승') || lineLower.includes('rising star') || lineText.includes('🔥')) {
+            segmentHeaders.push({ index, type: 'rising_star', line: lineText });
+        }
+        // 신규 진입 패턴
+        else if (lineLower.includes('신규 진입') || lineLower.includes('new entry') || lineText.includes('🚀')) {
+            segmentHeaders.push({ index, type: 'new_entry', line: lineText });
+        }
+        // 순위 하락 패턴
+        else if (lineLower.includes('순위 하락') || lineLower.includes('rank drop') || lineText.includes('📉')) {
+            segmentHeaders.push({ index, type: 'rank_drop', line: lineText });
         }
     });
+    
+    console.log('[parseSection3BySegment] 찾은 세그먼트 헤더:', segmentHeaders);
     
     // 각 세그먼트 텍스트 추출
     segmentHeaders.forEach((header, headerIndex) => {
@@ -1483,8 +1509,12 @@ function parseSection3BySegment(section3Text) {
             ? segmentHeaders[headerIndex + 1].index 
             : lines.length;
         
-        const segmentLines = lines.slice(startIndex + 1, endIndex);
-        segments[header.type].text = segmentLines.join('\n').trim();
+        const segmentLines = lines.slice(startIndex, endIndex); // 헤더 라인 포함
+        const segmentText = segmentLines.join('\n').trim();
+        
+        segments[header.type].text = segmentText;
+        console.log(`[parseSection3BySegment] ${header.type} 텍스트 길이:`, segmentText.length);
+        console.log(`[parseSection3BySegment] ${header.type} 텍스트 첫 100자:`, segmentText.substring(0, 100));
     });
     
     return {

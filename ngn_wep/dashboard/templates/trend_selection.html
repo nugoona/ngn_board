@@ -12,26 +12,57 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.5">
   <script>
     // 전역 함수로 정의 (스크립트 로드 전에 사용 가능하도록 head에 배치)
-    function navigateTo29cm() {
-      alert('29CM 클릭됨!'); // 디버깅용
-      // sessionStorage에서 업체 선택 정보 가져오기
-      let url = '/trend/29cm';
-      const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
-      const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
-      
-      // 사이트 성과 페이지의 업체 선택을 우선 사용
-      const selectedCompany = siteSelectedCompany || adsSelectedCompany;
-      
-      if (selectedCompany && selectedCompany !== "all") {
-        url += '?company_name=' + encodeURIComponent(selectedCompany);
+    function navigateTo29cm(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
       }
       
-      // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
-      window.location.href = url;
+      try {
+        console.log('[Trend Selection] 29CM 카드 클릭됨');
+        
+        // sessionStorage에서 업체 선택 정보 가져오기
+        let url = '/trend/29cm';
+        const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+        const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+        
+        console.log('[Trend Selection] siteSelectedCompany:', siteSelectedCompany);
+        console.log('[Trend Selection] adsSelectedCompany:', adsSelectedCompany);
+        
+        // 사이트 성과 페이지의 업체 선택을 우선 사용
+        const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        
+        if (selectedCompany && selectedCompany !== "all") {
+          url += '?company_name=' + encodeURIComponent(selectedCompany);
+        }
+        
+        console.log('[Trend Selection] 최종 이동 URL:', url);
+        
+        // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
+        window.location.href = url;
+        
+        // 혹시 모를 상황을 대비해 강제 이동
+        setTimeout(function() {
+          if (window.location.pathname !== '/trend/29cm') {
+            console.warn('[Trend Selection] 이동 실패, 강제 이동 시도');
+            window.location.replace(url);
+          }
+        }, 100);
+      } catch (error) {
+        console.error('[Trend Selection] 에러 발생:', error);
+        alert('페이지 이동 중 오류가 발생했습니다: ' + error.message);
+      }
+      
+      return false;
     }
 
-    function navigateToAbly() {
+    function navigateToAbly(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       alert("Ably 트렌드 페이지는 준비 중입니다.");
+      return false;
     }
   </script>
   <style>
@@ -199,12 +230,12 @@
   <div class="trend-selection-wrapper">
     <div class="trend-selection-cards">
       <!-- 29CM 카드 -->
-      <div class="trend-card trend-card-29cm" id="card29cm" onclick="navigateTo29cm()">
+      <div class="trend-card trend-card-29cm" id="card29cm" onclick="return navigateTo29cm(event)">
         <span class="card-text">29CM</span>
       </div>
 
       <!-- ABLY 카드 -->
-      <div class="trend-card trend-card-ably" id="cardAbly" onclick="navigateToAbly()">
+      <div class="trend-card trend-card-ably" id="cardAbly" onclick="return navigateToAbly(event)">
         <span class="card-text">ABLY</span>
       </div>
     </div>

@@ -2338,7 +2338,7 @@ th.sortable.desc::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #4A90E2;
+  background-color: #1e293b !important;
   color: white;
   padding: 10px 16px;
   border-top-left-radius: 8px;

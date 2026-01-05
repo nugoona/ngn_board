@@ -197,22 +197,37 @@
     </div>
   </div>
 
+  <script>
+    // Flask 세션에서 업체 목록 가져오기
+    var userCompanyList = {{ company_names | tojson }};
+  </script>
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script>
     // 페이지 로드 시 29CM 링크에 company_name 파라미터 추가 및 클릭 이벤트 처리
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[Trend Selection] DOMContentLoaded 실행');
+      console.log('[Trend Selection] userCompanyList:', userCompanyList);
       
       const card29cmLink = document.getElementById('card29cmLink');
       if (card29cmLink) {
         // sessionStorage에서 선택된 업체 정보 가져오기
-        const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
-        const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
-        const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        let siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+        let adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+        let selectedCompany = siteSelectedCompany || adsSelectedCompany;
         
         console.log('[Trend Selection] siteSelectedCompany:', siteSelectedCompany);
         console.log('[Trend Selection] adsSelectedCompany:', adsSelectedCompany);
-        console.log('[Trend Selection] selectedCompany:', selectedCompany);
+        console.log('[Trend Selection] selectedCompany (sessionStorage):', selectedCompany);
+        
+        // sessionStorage에 업체 정보가 없으면, Flask 세션의 첫 번째 업체 사용
+        if (!selectedCompany || selectedCompany === "all") {
+          if (userCompanyList && userCompanyList.length > 0) {
+            selectedCompany = userCompanyList[0];
+            console.log('[Trend Selection] sessionStorage에 업체 정보 없음, 첫 번째 업체 사용:', selectedCompany);
+          } else {
+            console.error('[Trend Selection] 사용 가능한 업체가 없습니다!');
+          }
+        }
         
         // 기본 URL
         let url = '/trend/29cm';
@@ -227,39 +242,15 @@
         // href 설정
         card29cmLink.href = url;
         
-        // 클릭 이벤트 리스너 추가 (강제 이동 보장)
-        // capture phase와 bubble phase 모두에서 처리
+        // 클릭 이벤트 리스너 추가 (단순화)
         card29cmLink.addEventListener('click', function(e) {
-          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생 (capture)');
+          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생');
           e.preventDefault();
           e.stopPropagation();
-          e.stopImmediatePropagation();
           console.log('[Trend Selection] 페이지 이동 시작:', url);
-          console.log('[Trend Selection] 현재 location:', window.location.href);
-          
-          // 즉시 이동 (동기적으로)
-          window.location.href = url;
-          
-          // 추가 보장 (비동기)
-          setTimeout(function() {
-            console.log('[Trend Selection] setTimeout 체크 - 현재 location:', window.location.href);
-            if (!window.location.href.includes('/trend/29cm')) {
-              console.log('[Trend Selection] 이동 실패 감지, 재시도');
-              window.location.replace(url);
-            }
-          }, 50);
-          
-          return false;
-        }, true); // capture phase
-        
-        card29cmLink.addEventListener('click', function(e) {
-          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생 (bubble)');
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
           window.location.href = url;
           return false;
-        }, false); // bubble phase
+        }, false);
         
         console.log('[Trend Selection] card29cmLink href 및 클릭 이벤트 설정 완료');
       } else {

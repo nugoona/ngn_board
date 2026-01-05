@@ -1748,6 +1748,9 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         headerSection.appendChild(categoryBadge);
         headerSection.appendChild(analysisSection);
         
+        // Card에 헤더 먼저 추가
+        cardContainer.appendChild(headerSection);
+        
         // 썸네일 그리드 컨테이너 미리 생성 (레이아웃 시프트 방지)
         const gridContainer = document.createElement('div');
         gridContainer.className = 'trend-category-thumbnails';
@@ -1773,9 +1776,6 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 }
             }
         };
-        
-        // Card에 헤더 추가
-        cardContainer.appendChild(headerSection);
         
         // 썸네일 추가 시도
         setTimeout(addThumbnails, 100);

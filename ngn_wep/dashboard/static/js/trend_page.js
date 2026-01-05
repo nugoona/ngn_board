@@ -1701,7 +1701,6 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         
         categoryData[categoryName] = categoryText;
     });
-    });
     
     // 디버깅: 파싱된 카테고리 데이터 확인
     console.log('[renderSection3SegmentContent] 파싱된 카테고리 데이터:', Object.keys(categoryData));

@@ -177,3 +177,4 @@ SELECT
     '원인: monthly_rollup_job은 전월 데이터만 집계하므로, 12월 28일 실행 시 11월만 집계됨. 12월 데이터는 1월 1일 이후에 집계됨.' AS root_cause;
 
 
+

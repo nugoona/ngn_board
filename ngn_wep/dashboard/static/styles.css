@@ -2071,7 +2071,7 @@ th.sortable.desc::after {
 
 /* ✅ 테이블 제목 */
 .catalog-table-title {
-  background-color: #003366;
+  background-color: #4A90E2;
   color: #fff;
   font-weight: bold;
   padding: 10px;
@@ -2119,7 +2119,8 @@ th.sortable.desc::after {
 
 /* ✅ 테이블 헤더 고정 */
 .catalog-table th {
-  background-color: #f1f1f1;
+  background-color: #4A90E2;
+  color: #fff;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -2337,7 +2338,7 @@ th.sortable.desc::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #003366;
+  background-color: #4A90E2;
   color: white;
   padding: 10px 16px;
   border-top-left-radius: 8px;

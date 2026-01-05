@@ -1678,6 +1678,10 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         }
     });
     
+    // 디버깅: 파싱된 카테고리 데이터 확인
+    console.log('[renderSection3SegmentContent] 파싱된 카테고리 데이터:', Object.keys(categoryData));
+    console.log('[renderSection3SegmentContent] 카테고리 데이터 상세:', categoryData);
+    
     // 컨테이너 초기화
     container.innerHTML = '';
     
@@ -1685,8 +1689,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     categories.forEach(categoryName => {
         const categoryText = categoryData[categoryName];
         
+        console.log(`[renderSection3SegmentContent] ${categoryName} 카테고리 렌더링 시작, categoryText 존재:`, !!categoryText);
+        
         // 카테고리 데이터가 없으면 스킵
         if (!categoryText) {
+            console.log(`[renderSection3SegmentContent] ${categoryName} 카테고리 데이터 없음, 스킵`);
             return;
         }
         

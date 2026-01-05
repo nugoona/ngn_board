@@ -383,12 +383,15 @@ function updatePageTitle(currentWeek) {
     const titleElement = document.getElementById('trendPageTitle');
     if (titleElement && currentWeek) {
         const weekInfo = parseWeekInfo(currentWeek);
+        const updateInfo = titleElement.querySelector('.trend-page-update-info');
+        const updateInfoText = updateInfo ? updateInfo.outerHTML : '<span class="trend-page-update-info">매주 월요일 오전 7시5분 업데이트</span>';
+        
         if (weekInfo) {
             const platformName = IS_ABLY ? 'Ably' : '29CM';
-            titleElement.textContent = `${platformName} ${weekInfo.year}년 ${weekInfo.month}월 ${weekInfo.week}주차 트렌드`;
+            titleElement.innerHTML = `${platformName} ${weekInfo.year}년 ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 ${updateInfoText}`;
         } else {
             const platformName = IS_ABLY ? 'Ably' : '29CM';
-            titleElement.textContent = `${platformName} ${currentWeek} 트렌드`;
+            titleElement.innerHTML = `${platformName} ${currentWeek} 트렌드 ${updateInfoText}`;
         }
     }
     
@@ -401,10 +404,13 @@ function updateTrendAnalysisTitle(currentWeek) {
     if (analysisTitleElement && currentWeek) {
         const weekInfo = parseWeekInfo(currentWeek);
         const platformName = IS_ABLY ? 'Ably' : '29CM';
+        const updateInfo = analysisTitleElement.querySelector('.trend-analysis-update-info');
+        const updateInfoText = updateInfo ? updateInfo.outerHTML : '<span class="trend-analysis-update-info">매주 월요일 오전 7시5분 업데이트</span>';
+        
         if (weekInfo) {
-            analysisTitleElement.textContent = `${platformName} ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 분석`;
+            analysisTitleElement.innerHTML = `${platformName} ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 데이터 분석 ${updateInfoText}`;
         } else {
-            analysisTitleElement.textContent = `${platformName} ${currentWeek} 트렌드 분석`;
+            analysisTitleElement.innerHTML = `${platformName} ${currentWeek} 트렌드 데이터 분석 ${updateInfoText}`;
         }
     }
 }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% if page_type == 'ably' %}Ably 트렌드{% else %}29CM 트렌드{% endif %}</title>
+  <title>NGN 대시보드</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- 마크다운 변환 라이브러리 -->
@@ -49,6 +49,16 @@
       color: #212529;
       margin-bottom: 6px;
       line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .trend-page-update-info {
+      font-size: 12px;
+      font-weight: 400;
+      color: #6B7280;
+      margin-left: auto;
     }
     
     .trend-tabs-wrapper {
@@ -806,6 +816,16 @@
       font-weight: 700;
       color: #212529;
       margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .trend-analysis-update-info {
+      font-size: 12px;
+      font-weight: 400;
+      color: #6B7280;
+      margin-left: auto;
     }
     
     .trend-analysis-meta {
@@ -1390,7 +1410,10 @@
   <!-- ───────── 본문 ───────── -->
   <div class="trend-analysis-sidebar-content">
     <div class="trend-analysis-header">
-      <h3 id="trendAnalysisTitle">{% if page_type == 'ably' %}Ably 트렌드 분석{% else %}29CM 트렌드 분석{% endif %}</h3>
+      <h3 id="trendAnalysisTitle">
+        {% if page_type == 'ably' %}Ably 트렌드 데이터 분석{% else %}29CM 트렌드 데이터 분석{% endif %}
+        <span class="trend-analysis-update-info">매주 월요일 오전 7시5분 업데이트</span>
+      </h3>
       <div class="trend-analysis-meta">
         <span id="trendAnalysisCreatedAt">생성일: -</span>
       </div>

@@ -1470,43 +1470,63 @@ function parseSection3BySegment(section3Text) {
         rank_drop: { patterns: ['순위 하락', 'Rank Drop', '📉'], text: '' }
     };
     
-    // 세그먼트 헤더 찾기 (더 유연한 패턴 매칭)
-    const segmentHeaders = [];
+    // 세그먼트 헤더 찾기 (더 엄격한 패턴 매칭 - 각 세그먼트당 하나만 찾기)
     const lines = section3Text.split('\n');
+    
+    // 각 세그먼트의 시작 인덱스 찾기
+    let risingStarIndex = -1;
+    let newEntryIndex = -1;
+    let rankDropIndex = -1;
     
     lines.forEach((line, index) => {
         const lineText = line.trim();
         const lineLower = lineText.toLowerCase();
         
-        // 급상승 패턴
-        if (lineLower.includes('급상승') || lineLower.includes('rising star') || lineText.includes('🔥')) {
-            segmentHeaders.push({ index, type: 'rising_star', line: lineText });
+        // 급상승 패턴 (이모지와 함께 시작하는 라인만)
+        if (risingStarIndex === -1 && (lineText.startsWith('🔥') || lineText.includes('🔥 급상승') || 
+            (lineText.includes('급상승') && lineText.includes('Rising Star')) || 
+            (lineLower.includes('**🔥') && lineLower.includes('급상승')))) {
+            risingStarIndex = index;
         }
         // 신규 진입 패턴
-        else if (lineLower.includes('신규 진입') || lineLower.includes('new entry') || lineText.includes('🚀')) {
-            segmentHeaders.push({ index, type: 'new_entry', line: lineText });
+        else if (newEntryIndex === -1 && (lineText.startsWith('🚀') || lineText.includes('🚀 신규 진입') ||
+            (lineText.includes('신규 진입') && lineText.includes('New Entry')) ||
+            (lineLower.includes('**🚀') && lineLower.includes('신규 진입')))) {
+            newEntryIndex = index;
         }
         // 순위 하락 패턴
-        else if (lineLower.includes('순위 하락') || lineLower.includes('rank drop') || lineText.includes('📉')) {
-            segmentHeaders.push({ index, type: 'rank_drop', line: lineText });
+        else if (rankDropIndex === -1 && (lineText.startsWith('📉') || lineText.includes('📉 순위 하락') ||
+            (lineText.includes('순위 하락') && lineText.includes('Rank Drop')) ||
+            (lineLower.includes('**📉') && lineLower.includes('순위 하락')))) {
+            rankDropIndex = index;
         }
     });
     
-    console.log('[parseSection3BySegment] 찾은 세그먼트 헤더:', segmentHeaders);
+    console.log('[parseSection3BySegment] 찾은 세그먼트 헤더 인덱스:', {
+        risingStarIndex,
+        newEntryIndex,
+        rankDropIndex
+    });
     
-    // 각 세그먼트 텍스트 추출
-    segmentHeaders.forEach((header, headerIndex) => {
-        const startIndex = header.index;
-        const endIndex = headerIndex < segmentHeaders.length - 1 
-            ? segmentHeaders[headerIndex + 1].index 
+    // 각 세그먼트 텍스트 추출 (가장 먼저 나오는 헤더만 사용)
+    const segmentIndices = [
+        { type: 'rising_star', index: risingStarIndex },
+        { type: 'new_entry', index: newEntryIndex },
+        { type: 'rank_drop', index: rankDropIndex }
+    ].filter(seg => seg.index >= 0).sort((a, b) => a.index - b.index); // 인덱스 순서대로 정렬
+    
+    segmentIndices.forEach((segment, segIndex) => {
+        const startIndex = segment.index;
+        const endIndex = segIndex < segmentIndices.length - 1 
+            ? segmentIndices[segIndex + 1].index 
             : lines.length;
         
         const segmentLines = lines.slice(startIndex, endIndex); // 헤더 라인 포함
         const segmentText = segmentLines.join('\n').trim();
         
-        segments[header.type].text = segmentText;
-        console.log(`[parseSection3BySegment] ${header.type} 텍스트 길이:`, segmentText.length);
-        console.log(`[parseSection3BySegment] ${header.type} 텍스트 첫 100자:`, segmentText.substring(0, 100));
+        segments[segment.type].text = segmentText;
+        console.log(`[parseSection3BySegment] ${segment.type} 텍스트 길이:`, segmentText.length);
+        console.log(`[parseSection3BySegment] ${segment.type} 텍스트 첫 200자:`, segmentText.substring(0, 200));
     });
     
     return {

@@ -470,11 +470,10 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
         section3Length: sections.section3.length
     });
     
-    // Section 1, 2 렌더링
-    let section1And2Html = '';
-    if (sections.section1 || sections.section2) {
-        const section1And2Text = (sections.section1 ? '## Section 1. 자사몰 성과 분석\n\n' + sections.section1 + '\n\n' : '') +
-                                  (sections.section2 ? '## Section 2. Market Overview (시장 핵심 키워드)\n\n' + sections.section2 : '');
+    // Section 1 렌더링
+    let section1Html = '';
+    if (sections.section1) {
+        const section1Text = '## Section 1. 자사몰 성과 분석\n\n' + sections.section1;
         
         if (typeof marked !== 'undefined') {
             try {
@@ -483,24 +482,27 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
                     gfm: false
                 });
                 
-                const markdownHtml = marked.parse(section1And2Text);
+                const markdownHtml = marked.parse(section1Text);
                 
                 if (typeof DOMPurify !== 'undefined') {
-                    section1And2Html = DOMPurify.sanitize(markdownHtml, {
+                    section1Html = DOMPurify.sanitize(markdownHtml, {
                         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
                         ALLOWED_ATTR: []
                     });
                 } else {
-                    section1And2Html = markdownHtml;
+                    section1Html = markdownHtml;
                 }
             } catch (e) {
-                console.warn("[트렌드 분석] Section 1, 2 마크다운 변환 실패:", e);
-                section1And2Html = section1And2Text.replace(/\n/g, '<br>');
+                console.warn("[트렌드 분석] Section 1 마크다운 변환 실패:", e);
+                section1Html = section1Text.replace(/\n/g, '<br>');
             }
         } else {
-            section1And2Html = section1And2Text.replace(/\n/g, '<br>');
+            section1Html = section1Text.replace(/\n/g, '<br>');
         }
     }
+    
+    // Section 2 파싱 (Material과 TPO 추출)
+    const section2Data = parseSection2IntoMaterialAndTPO(sections.section2);
     
     // Section 3 세그먼트별로 파싱
     const section3Data = parseSection3BySegment(sections.section3);
@@ -509,12 +511,18 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     const container = document.createElement('div');
     container.className = 'trend-analysis-report-container';
     
-    // Section 1, 2 추가
-    if (section1And2Html) {
-        const section1And2Div = document.createElement('div');
-        section1And2Div.className = 'trend-analysis-text markdown-content';
-        section1And2Div.innerHTML = section1And2Html;
-        container.appendChild(section1And2Div);
+    // Section 1 추가
+    if (section1Html) {
+        const section1Div = document.createElement('div');
+        section1Div.className = 'trend-analysis-text markdown-content';
+        section1Div.innerHTML = section1Html;
+        container.appendChild(section1Div);
+    }
+    
+    // Section 2 카드 레이아웃 추가
+    if (sections.section2) {
+        const section2Container = renderSection2AsCards(section2Data);
+        container.appendChild(section2Container);
     }
     
     // Section 3 탭 기반 UI 추가
@@ -1448,6 +1456,134 @@ function parseAnalysisReportSections(analysisText) {
     }
     
     return { section1, section2, section3 };
+}
+
+// Section 2 텍스트를 Material과 TPO로 파싱
+function parseSection2IntoMaterialAndTPO(section2Text) {
+    if (!section2Text || !section2Text.trim()) {
+        return { material: '', tpo: '' };
+    }
+    
+    // Material과 Occasion (TPO) 헤더 찾기
+    const materialPattern = /\*\*Material\s*\(소재\):\*\*|\*\*Material:\*\*/i;
+    const tpoPattern = /\*\*Occasion\s*\(TPO\):\*\*|\*\*TPO:\*\*|\*\*Occasion:\*\*/i;
+    const pricePattern = /\*\*Price\s*\(가격\):\*\*/i;
+    
+    const materialMatch = section2Text.search(materialPattern);
+    const tpoMatch = section2Text.search(tpoPattern);
+    const priceMatch = section2Text.search(pricePattern);
+    
+    let material = '';
+    let tpo = '';
+    
+    // Material 추출
+    if (materialMatch >= 0) {
+        const endIndex = tpoMatch >= 0 ? tpoMatch : (priceMatch >= 0 ? priceMatch : section2Text.length);
+        material = section2Text.substring(materialMatch, endIndex)
+            .replace(/^\*\*Material\s*\(소재\):\*\*/i, '')
+            .replace(/^\*\*Material:\*\*/i, '')
+            .trim();
+    }
+    
+    // TPO 추출
+    if (tpoMatch >= 0) {
+        const endIndex = priceMatch >= 0 ? priceMatch : section2Text.length;
+        tpo = section2Text.substring(tpoMatch, endIndex)
+            .replace(/^\*\*Occasion\s*\(TPO\):\*\*/i, '')
+            .replace(/^\*\*TPO:\*\*/i, '')
+            .replace(/^\*\*Occasion:\*\*/i, '')
+            .trim();
+    }
+    
+    return { material, tpo };
+}
+
+// Section 2를 2열 카드 레이아웃으로 렌더링
+function renderSection2AsCards(section2Data) {
+    const container = document.createElement('div');
+    container.className = 'trend-section2-container';
+    
+    // Section 2 헤더
+    const header = document.createElement('h2');
+    header.className = 'trend-section2-header';
+    header.textContent = 'Section 2. Market Overview (시장 핵심 트렌드)';
+    container.appendChild(header);
+    
+    // 2열 그리드 컨테이너
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'trend-section2-grid';
+    
+    // Material 카드
+    const materialCard = createSection2Card('🧶', 'Material Trend', '소재 트렌드', section2Data.material);
+    gridContainer.appendChild(materialCard);
+    
+    // TPO 카드
+    const tpoCard = createSection2Card('📅', 'TPO & Occasion', '착용 시나리오', section2Data.tpo);
+    gridContainer.appendChild(tpoCard);
+    
+    container.appendChild(gridContainer);
+    
+    return container;
+}
+
+// Section 2 카드 생성
+function createSection2Card(icon, titleEn, titleKo, content) {
+    const card = document.createElement('div');
+    card.className = 'trend-section2-card';
+    
+    // 아이콘 + 제목 헤더
+    const header = document.createElement('div');
+    header.className = 'trend-section2-card-header';
+    
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'trend-section2-card-icon';
+    iconSpan.textContent = icon;
+    
+    const title = document.createElement('h3');
+    title.className = 'trend-section2-card-title';
+    title.innerHTML = `<span class="title-en">${titleEn}</span> <span class="title-ko">${titleKo}</span>`;
+    
+    header.appendChild(iconSpan);
+    header.appendChild(title);
+    card.appendChild(header);
+    
+    // 내용 영역
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'trend-section2-card-content';
+    
+    if (content && content.trim()) {
+        // 마크다운을 HTML로 변환
+        if (typeof marked !== 'undefined') {
+            try {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: false
+                });
+                
+                const markdownHtml = marked.parse(content);
+                
+                if (typeof DOMPurify !== 'undefined') {
+                    contentDiv.innerHTML = DOMPurify.sanitize(markdownHtml, {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li'],
+                        ALLOWED_ATTR: []
+                    });
+                } else {
+                    contentDiv.innerHTML = markdownHtml;
+                }
+            } catch (e) {
+                console.warn("[Section 2] 마크다운 변환 실패:", e);
+                contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            }
+        } else {
+            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+        }
+    } else {
+        contentDiv.textContent = '분석 데이터가 없습니다.';
+    }
+    
+    card.appendChild(contentDiv);
+    
+    return card;
 }
 
 // Section 3 텍스트를 세그먼트별로 파싱

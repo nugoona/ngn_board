@@ -1658,8 +1658,8 @@ def create_ably_trend_snapshot():
         print(f"[INFO] Ably 스냅샷 생성 시작: {current_week}")
         tabs_data = get_ably_all_tabs_data_from_bigquery(tab_names)
         
-        # GCS에 저장
-        success = save_ably_trend_snapshot_to_gcs(current_week, tabs_data, current_week)
+        # GCS에 저장 (AI 분석 리포트 포함)
+        success = save_ably_trend_snapshot_to_gcs(current_week, tabs_data, current_week, enable_ai_analysis=True)
         
         if success:
             return jsonify({

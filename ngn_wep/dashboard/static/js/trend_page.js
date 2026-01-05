@@ -1617,6 +1617,9 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     cleanedText = cleanedText.replace(/^\*\*?(Rising Star|New Entry|Rank Drop)\*\*?\s*\n*/m, '');
     cleanedText = cleanedText.trim();
     
+    console.log('[renderSection3SegmentContent] cleanedText 길이:', cleanedText.length);
+    console.log('[renderSection3SegmentContent] cleanedText 첫 500자:', cleanedText.substring(0, 500));
+    
     // 카테고리별로 텍스트 파싱
     const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
     const categoryData = {};
@@ -1627,6 +1630,8 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const categoryPattern = new RegExp(`\\*\\*${escapedCategory}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|$)`, 'm');
         const match = cleanedText.match(categoryPattern);
+        
+        console.log(`[renderSection3SegmentContent] ${categoryName} 패턴 매칭 시도, match:`, match ? '성공' : '실패');
         
         if (!match || !match[1]) {
             console.warn(`[Section 3] ${categoryName} 카테고리 텍스트를 찾을 수 없습니다.`);

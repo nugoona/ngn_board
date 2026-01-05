@@ -1620,9 +1620,22 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     
     // 각 카테고리별로 텍스트 추출
     categories.forEach(categoryName => {
-        // **카테고리명:** 패턴으로 시작하는 텍스트 추출
-        const categoryPattern = new RegExp(`\\*\\*${categoryName}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|$)`, 'm');
+        // **카테고리명:** 패턴으로 시작하는 텍스트 추출 (더 유연한 패턴)
+        const categoryPattern = new RegExp(`\\*\\*${categoryName}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|\\n\\*\\*[^:]+:|$)`, 'm');
         const match = cleanedText.match(categoryPattern);
+        
+        // 디버깅
+        if (!match) {
+            // 대체 패턴 시도 (공백 허용)
+            const altPattern = new RegExp(`\\*\\*\\s*${categoryName}\\s*:\\s*\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:|$)`, 'm');
+            const altMatch = cleanedText.match(altPattern);
+            if (altMatch) {
+                categoryData[categoryName] = altMatch[1].trim();
+            } else {
+                console.warn(`[Section 3] ${categoryName} 카테고리 텍스트를 찾을 수 없습니다.`);
+            }
+            return;
+        }
         
         if (match && match[1]) {
             let categoryText = match[1].trim();
@@ -1686,69 +1699,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         const analysisSection = document.createElement('div');
         analysisSection.className = 'trend-category-analysis';
         
-        // 임시 div로 HTML 파싱
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = categoryText;
-        
-        // 첫 번째 불렛 포인트나 문단을 헤드라인으로, 나머지를 인사이트로
-        const firstLi = tempDiv.querySelector('li:first-child');
-        const firstP = tempDiv.querySelector('p:first-child');
-        const firstElement = firstLi || firstP;
-        
-        if (firstElement) {
-            // 헤드라인 추출 (불렛 포인트 기호 제거)
-            const headline = document.createElement('h3');
-            headline.className = 'trend-category-headline';
-            let headlineText = firstElement.textContent || firstElement.innerText || '';
-            headlineText = headlineText.replace(/^[-•*]\s*/, '').trim();
-            headlineText = headlineText.replace(/^\*\*([^*]+)\*\*.*/, '$1'); // **굵게** 제거
-            headline.textContent = headlineText;
-            analysisSection.appendChild(headline);
-            
-            // 나머지 내용을 인사이트로
-            const insight = document.createElement('div');
-            insight.className = 'trend-category-insight';
-            
-            // 첫 번째 항목을 제외한 나머지 복사
-            if (firstLi && firstLi.parentElement && firstLi.parentElement.tagName === 'UL') {
-                // ul 내부의 첫 번째 li 제외
-                const ul = firstLi.parentElement;
-                const remainingLis = Array.from(ul.children).slice(1);
-                if (remainingLis.length > 0) {
-                    const newUl = document.createElement('ul');
-                    remainingLis.forEach(li => {
-                        newUl.appendChild(li.cloneNode(true));
-                    });
-                    insight.appendChild(newUl);
-                }
-            } else {
-                // 첫 번째 요소를 제외한 나머지 복사
-                Array.from(tempDiv.children).forEach((child, index) => {
-                    if (child !== firstElement && !(firstLi && child.contains && child.contains(firstLi))) {
-                        insight.appendChild(child.cloneNode(true));
-                    }
-                });
-            }
-            
-            if (insight.children.length > 0) {
-                analysisSection.appendChild(insight);
-            } else if (firstElement.textContent && firstElement.textContent.trim().length > headlineText.length) {
-                // 첫 번째 요소에 추가 내용이 있으면 인사이트로 추가
-                const remainingText = firstElement.textContent.replace(headlineText, '').trim();
-                if (remainingText) {
-                    const insightP = document.createElement('p');
-                    insightP.textContent = remainingText;
-                    insight.appendChild(insightP);
-                    analysisSection.appendChild(insight);
-                }
-            }
-        } else {
-            // 불렛 포인트나 문단이 없으면 전체를 인사이트로
-            const insight = document.createElement('div');
-            insight.className = 'trend-category-insight';
-            insight.innerHTML = categoryText;
-            analysisSection.appendChild(insight);
-        }
+        // categoryText가 HTML로 변환된 상태이므로 그대로 삽입
+        const insight = document.createElement('div');
+        insight.className = 'trend-category-insight';
+        insight.innerHTML = categoryText;
+        analysisSection.appendChild(insight);
         
         // 헤더 섹션 구성
         headerSection.appendChild(categoryBadge);

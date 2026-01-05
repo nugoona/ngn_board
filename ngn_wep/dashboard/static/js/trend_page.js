@@ -1620,19 +1620,19 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     
     // 각 카테고리별로 텍스트 추출
     categories.forEach(categoryName => {
-        // **카테고리명:** 패턴으로 시작하는 텍스트 추출 (더 유연한 패턴)
-        const categoryPattern = new RegExp(`\\*\\*${categoryName}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|\\n\\*\\*[^:]+:|$)`, 'm');
+        // **카테고리명:** 패턴으로 시작하는 텍스트 추출
+        const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const categoryPattern = new RegExp(`\\*\\*${escapedCategory}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|$)`, 'm');
         const match = cleanedText.match(categoryPattern);
         
-        // 디버깅
-        if (!match) {
-            // 대체 패턴 시도 (공백 허용)
-            const altPattern = new RegExp(`\\*\\*\\s*${categoryName}\\s*:\\s*\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:|$)`, 'm');
-            const altMatch = cleanedText.match(altPattern);
-            if (altMatch) {
-                categoryData[categoryName] = altMatch[1].trim();
-            } else {
-                console.warn(`[Section 3] ${categoryName} 카테고리 텍스트를 찾을 수 없습니다.`);
+        if (!match || !match[1]) {
+            console.warn(`[Section 3] ${categoryName} 카테고리 텍스트를 찾을 수 없습니다.`);
+            // 디버깅: cleanedText에서 해당 카테고리명이 포함된 부분 확인
+            if (cleanedText.includes(categoryName)) {
+                const categoryIndex = cleanedText.indexOf(`**${categoryName}:`);
+                if (categoryIndex >= 0) {
+                    console.log(`[Section 3 디버그] ${categoryName} 발견 위치: ${categoryIndex}, 주변 텍스트:`, cleanedText.substring(categoryIndex, categoryIndex + 100));
+                }
             }
             return;
         }

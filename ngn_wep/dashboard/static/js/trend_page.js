@@ -316,11 +316,17 @@ function displayCurrentTabData() {
             return changeB - changeA;
         });
     } else if (showRankChange && currentTrendType === 'rankDrop') {
-        // 순위하락: 순위변화 오름차순 (음수, 작은 수 먼저)
+        // 순위하락: Ably는 양수값이므로 내림차순 (큰 수 먼저), 29CM는 음수값이므로 오름차순 (작은 수 먼저)
         data = [...data].sort((a, b) => {
             const changeA = a.Rank_Change !== null ? a.Rank_Change : 0;
             const changeB = b.Rank_Change !== null ? b.Rank_Change : 0;
-            return changeA - changeB;
+            if (IS_ABLY) {
+                // Ably: 양수값이므로 내림차순 (큰 수 = 더 많이 하락)
+                return changeB - changeA;
+            } else {
+                // 29CM: 음수값이므로 오름차순 (작은 수 = 더 많이 하락)
+                return changeA - changeB;
+            }
         });
     } else {
         // 신규진입: 이번주 순위 오름차순
@@ -1346,7 +1352,20 @@ function renderTableRows(items, tbody, showRankChange, tableId) {
             tdRankChange.className = 'trend-rank-number';
             if (item.Rank_Change !== null && item.Rank_Change !== undefined) {
                 const changeValue = item.Rank_Change;
-                const isRising = changeValue > 0;
+                // 29CM: Rank_Change > 0 = 순위 상승, Rank_Change < 0 = 순위 하락
+                // Ably: Rank_Change > 0 = 순위 하락 (양수값), Rank_Change < 0 = 순위 상승 (음수값)
+                // 하지만 Ably의 경우 rankDrop 탭에서는 항상 양수값이므로 하락으로 표시
+                let isRising;
+                if (tableId === 'rankDrop') {
+                    // 순위 하락 탭: 항상 하락으로 표시
+                    isRising = false;
+                } else if (tableId === 'risingStar') {
+                    // 급상승 탭: 항상 상승으로 표시
+                    isRising = true;
+                } else {
+                    // 기타: 29CM 방식 (양수=상승, 음수=하락)
+                    isRising = changeValue > 0;
+                }
                 const changeDiv = document.createElement('div');
                 changeDiv.className = `trend-rank-change ${isRising ? 'up' : 'down'}`;
                 

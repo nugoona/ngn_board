@@ -1,20 +1,14 @@
-<!-- ✅ 월간 리포트 모달 -->
-<div id="monthlyReportModal" class="monthly-report-modal hidden">
-  <div class="monthly-report-backdrop" id="monthlyReportBackdrop"></div>
-  <div class="monthly-report-container">
-    
-    <!-- 헤더 -->
-    <div class="monthly-report-header">
-      <div class="monthly-report-title">
-        <span id="monthlyReportTitle">월간 NGN 리포트</span>
-      </div>
-      <div class="monthly-report-header-actions">
-        <button id="closeMonthlyReportBtn" class="monthly-report-close-btn" aria-label="닫기">×</button>
-      </div>
+<!-- ✅ 월간 리포트 사이드바 -->
+<div id="monthlyReportModal" class="monthly-report-sidebar-wrapper hidden">
+  <div class="monthly-report-header-bar">
+    <div class="monthly-report-header-title">
+      <span id="monthlyReportTitle">월간 NGN 리포트</span>
     </div>
-    
-    <!-- 본문 -->
-    <div class="monthly-report-content" id="monthlyReportContent">
+    <button id="closeMonthlyReportBtn" class="monthly-report-close-btn" aria-label="닫기">×</button>
+  </div>
+  
+  <div class="monthly-report-sidebar-content">
+    <div id="monthlyReportContent">
       
       <!-- 로딩 상태 -->
       <div id="monthlyReportLoading" class="monthly-report-loading">

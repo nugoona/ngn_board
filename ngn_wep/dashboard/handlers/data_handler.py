@@ -65,55 +65,91 @@ data_blueprint = Blueprint("data", __name__, url_prefix="/dashboard")
 
 def filter_ai_report_by_company(analysis_report: str, company_name: str) -> str:
     """
-    AI 리포트에서 현재 업체에 해당하는 자사몰 섹션만 포함하도록 필터링
+    AI 리포트에서 현재 업체에 맞게 Section 1의 자사몰 브랜드명을 동적으로 변경
     
     Args:
         analysis_report: 원본 AI 리포트 (마크다운 형식)
         company_name: 현재 로그인한 업체명 (예: "piscess")
     
     Returns:
-        필터링된 AI 리포트 (현재 업체의 자사몰 섹션만 포함)
+        필터링된 AI 리포트 (Section 1의 자사몰 브랜드명이 현재 업체에 맞게 변경됨)
     """
     if not analysis_report or not company_name or not COMPANY_MAPPING_AVAILABLE:
         return analysis_report
     
     company_ko = get_company_korean_name(company_name)
     if not company_ko:
-        # 매핑되지 않은 업체인 경우, 자사몰 섹션 전체 제거
-        # Section 4가 있으면 제거
-        pattern = r'##\s*Section\s*4[^#]*'
-        filtered_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
-        return filtered_report.strip()
+        # 매핑되지 않은 업체인 경우, Section 1에서 자사몰 섹션 제거 또는 기본 메시지로 변경
+        # Section 1의 자사몰 부분을 "자사몰 상품이 포함되지 않았습니다"로 변경
+        section1_pattern = r'##\s*Section\s*1[^#]*?(?=##|$)'
+        section1_match = re.search(section1_pattern, analysis_report, flags=re.IGNORECASE | re.DOTALL)
+        if section1_match:
+            section1_text = section1_match.group(0)
+            # 자사몰 관련 내용을 제거하고 기본 메시지로 교체
+            updated_section1 = re.sub(
+                r'자사몰\([^)]+\)[^#]*',
+                '자사몰 성과 분석\n\n금주 랭킹 데이터에 자사몰 상품이 포함되지 않았습니다.',
+                section1_text,
+                flags=re.DOTALL
+            )
+            analysis_report = analysis_report.replace(section1_text, updated_section1)
+        return analysis_report.strip()
     
-    # 현재 업체의 한글명으로 자사몰 섹션 찾기
-    # Section 4 패턴 매칭
-    section4_pattern = r'(##\s*Section\s*4[^#]*?(?=##|$))'
-    matches = re.finditer(section4_pattern, analysis_report, flags=re.IGNORECASE | re.DOTALL)
+    # Section 1의 자사몰 브랜드명을 현재 업체의 한글명으로 변경
+    # 패턴: "## Section 1. 자사몰({브랜드명}) 성과 분석"
+    section1_pattern = r'(##\s*Section\s*1[^#]*?(?=##|$))'
+    section1_match = re.search(section1_pattern, analysis_report, flags=re.IGNORECASE | re.DOTALL)
     
-    # 현재 업체에 해당하는 섹션만 유지
-    filtered_sections = []
-    for match in matches:
-        section_text = match.group(1)
-        # 현재 업체의 한글명이 포함된 섹션만 유지
-        if company_ko in section_text or company_name.lower() in section_text.lower():
-            filtered_sections.append(section_text)
-    
-    if filtered_sections:
-        # 기존 Section 4를 모두 제거하고, 필터링된 섹션만 추가
-        pattern = r'##\s*Section\s*4[^#]*'
-        base_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
+    if section1_match:
+        section1_text = section1_match.group(1)
         
-        # 필터링된 섹션 추가
-        if filtered_sections:
-            section4_text = '\n\n' + '\n\n'.join(filtered_sections)
-            return (base_report + section4_text).strip()
-    else:
-        # 현재 업체에 해당하는 섹션이 없으면 Section 4 전체 제거
-        pattern = r'##\s*Section\s*4[^#]*'
-        filtered_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
-        return filtered_report.strip()
+        # 기존 브랜드명 패턴 찾기 및 교체
+        # 패턴 1: "자사몰({브랜드명})" 또는 "자사몰 ({브랜드명})"
+        updated_section1 = re.sub(
+            r'자사몰\s*\([^)]+\)',
+            f'자사몰({company_ko})',
+            section1_text,
+            flags=re.IGNORECASE
+        )
+        
+        # 패턴 2: Section 1 텍스트 내의 모든 브랜드명 인스턴스 교체
+        # 일반적인 브랜드명 패턴 교체 (따옴표 안의 브랜드명 포함)
+        brand_patterns = [
+            r"'썸웨어버터'",
+            r'"썸웨어버터"',
+            r'썸웨어버터',
+            r"'파이시스'",
+            r'"파이시스"',
+            r'파이시스',
+            r"'Somewhere Butter'",
+            r'"Somewhere Butter"',
+            r'Somewhere Butter',
+            r"'somewhere butter'",
+            r"'PISCESS'",
+            r'"PISCESS"',
+            r'PISCESS',
+            r"'piscess'",
+        ]
+        
+        for pattern in brand_patterns:
+            updated_section1 = re.sub(
+                pattern,
+                company_ko,
+                updated_section1,
+                flags=re.IGNORECASE
+            )
+        
+        # 패턴 3: "{target_brand}" 또는 다른 변수명 교체
+        updated_section1 = re.sub(
+            r"\{target_brand\}|\{TARGET_BRAND\}|\{brand\}|\{BRAND\}",
+            company_ko,
+            updated_section1,
+            flags=re.IGNORECASE
+        )
+        
+        analysis_report = analysis_report.replace(section1_text, updated_section1)
     
-    return analysis_report
+    return analysis_report.strip()
 
 # ─────────────────────────────────────────────────────────────
 # 📌 캐시 관리 엔드포인트

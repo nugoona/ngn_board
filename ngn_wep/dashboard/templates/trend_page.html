@@ -1006,6 +1006,112 @@
       font-weight: 600;
     }
     
+    /* Section 2 카드 레이아웃 스타일 */
+    .trend-section2-container {
+      margin-top: 32px;
+      margin-bottom: 32px;
+    }
+    
+    .trend-section2-header {
+      font-size: 20px;
+      font-weight: 600;
+      color: #212529;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #E9ECEF;
+    }
+    
+    .trend-section2-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    
+    @media (max-width: 768px) {
+      .trend-section2-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+    
+    .trend-section2-card {
+      background: #ffffff;
+      border: 1px solid #E9ECEF;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .trend-section2-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+    
+    .trend-section2-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #F1F3F5;
+    }
+    
+    .trend-section2-card-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    
+    .trend-section2-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #212529;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .trend-section2-card-title .title-en {
+      color: #212529;
+    }
+    
+    .trend-section2-card-title .title-ko {
+      color: #6C757D;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .trend-section2-card-content {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #495057;
+    }
+    
+    .trend-section2-card-content p {
+      margin: 0 0 12px 0;
+    }
+    
+    .trend-section2-card-content p:last-child {
+      margin-bottom: 0;
+    }
+    
+    .trend-section2-card-content ul,
+    .trend-section2-card-content ol {
+      margin: 12px 0;
+      padding-left: 24px;
+    }
+    
+    .trend-section2-card-content li {
+      margin-bottom: 8px;
+    }
+    
+    .trend-section2-card-content strong {
+      color: #212529;
+      font-weight: 600;
+    }
+    
     /* 모바일 대응 */
     @media (max-width: 768px) {
       .trend-page-wrapper {

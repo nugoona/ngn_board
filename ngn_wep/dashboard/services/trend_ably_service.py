@@ -398,17 +398,26 @@ def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[
             "tabs_data": tabs_data
         }
         
-        # AI 분석 리포트 생성 (옵션) - 29CM와 동일한 로직 사용 (추후 구현)
+        # AI 분석 리포트 생성 (옵션) - 29CM와 동일한 로직 사용
         if enable_ai_analysis:
             try:
                 print(f"[INFO] AI 분석 리포트 생성 시작...")
-                # TODO: Ably AI 분석 리포트 생성 로직 추가 (29CM와 동일한 구조)
-                # 현재는 스킵
-                print(f"[INFO] ⚠️ Ably AI 분석 리포트 생성은 아직 구현되지 않았습니다")
+                # 프로젝트 루트 경로 계산
+                current_dir = os.path.dirname(os.path.abspath(__file__))  # services/
+                project_root = os.path.dirname(os.path.dirname(current_dir))  # ngn_wep/
+                tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+                if tools_path not in sys.path:
+                    sys.path.insert(0, tools_path)
+                
+                from trend_29cm_ai_analyst import generate_trend_analysis_from_snapshot
+                
+                snapshot_data = generate_trend_analysis_from_snapshot(snapshot_data)
+                print(f"[INFO] ✅ AI 분석 리포트 생성 완료")
             except Exception as e:
                 print(f"[WARN] ⚠️ AI 분석 리포트 생성 실패, 스냅샷은 저장됩니다: {e}")
                 import traceback
                 traceback.print_exc()
+                # AI 분석 실패해도 스냅샷은 저장
         
         # JSON 직렬화 및 Gzip 압축
         json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)

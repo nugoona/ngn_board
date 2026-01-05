@@ -42,10 +42,10 @@ function showToast(message) {
 }
 
 /**
- * 모달 열기
+ * 사이드바 열기
  */
 function openMonthlyReportModal() {
-  console.log("[월간 리포트] ===== 모달 열기 함수 호출 ===== ");
+  console.log("[월간 리포트] ===== 사이드바 열기 함수 호출 ===== ");
   
   try {
     const companyName = getSelectedCompany();
@@ -68,36 +68,24 @@ function openMonthlyReportModal() {
       console.warn("[월간 리포트] NEW 배지 제거 실패:", e);
     }
     
-    const modal = document.getElementById("monthlyReportModal");
-    console.log("[월간 리포트] 모달 요소:", modal);
+    const sidebar = document.getElementById("monthlyReportModal");
+    console.log("[월간 리포트] 사이드바 요소:", sidebar);
     
-    if (!modal) {
-      console.error("[월간 리포트] 모달 요소를 찾을 수 없습니다!");
-      alert("월간 리포트 모달을 찾을 수 없습니다. 페이지를 새로고침해주세요.");
+    if (!sidebar) {
+      console.error("[월간 리포트] 사이드바 요소를 찾을 수 없습니다!");
+      alert("월간 리포트 사이드바를 찾을 수 없습니다. 페이지를 새로고침해주세요.");
       return;
     }
     
-    console.log("[월간 리포트] 모달 클래스 (열기 전):", modal.className);
+    console.log("[월간 리포트] 사이드바 클래스 (열기 전):", sidebar.className);
     
     // hidden 클래스 제거
-    modal.classList.remove("hidden");
-    console.log("[월간 리포트] hidden 클래스 제거 후:", modal.className);
+    sidebar.classList.remove("hidden");
+    console.log("[월간 리포트] hidden 클래스 제거 후:", sidebar.className);
     
-    // display를 먼저 flex로 설정
-    modal.style.display = "flex";
-    modal.style.opacity = "0";
-    modal.style.pointerEvents = "all";
-    
-    // requestAnimationFrame을 사용하여 브라우저가 스타일을 계산할 시간을 줌
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        modal.classList.add("active");
-        modal.style.opacity = "1";
-        console.log("[월간 리포트] active 클래스 추가 후:", modal.className);
-        console.log("[월간 리포트] 모달 computed style display:", window.getComputedStyle(modal).display);
-        console.log("[월간 리포트] 모달 computed style opacity:", window.getComputedStyle(modal).opacity);
-      });
-    });
+    // active 클래스 추가
+    sidebar.classList.add("active");
+    console.log("[월간 리포트] active 클래스 추가 후:", sidebar.className);
     
     // 전월 리포트를 보기 위해 1개월 전으로 계산
     const now = new Date();
@@ -222,19 +210,15 @@ function hideMonthlyReportNewBadge() {
 }
 
 /**
- * 모달 닫기
+ * 사이드바 닫기
  */
 function closeMonthlyReportModal() {
-  const modal = document.getElementById("monthlyReportModal");
-  if (!modal) return;
+  const sidebar = document.getElementById("monthlyReportModal");
+  if (!sidebar) return;
   
-  modal.classList.remove("active");
-  // 인라인 스타일도 제거
-  modal.style.opacity = "";
-  modal.style.pointerEvents = "";
+  sidebar.classList.remove("active");
   setTimeout(() => {
-    modal.classList.add("hidden");
-    modal.style.display = "";
+    sidebar.classList.add("hidden");
     // 데이터 초기화
     currentReportData = null;
   }, 300);
@@ -2494,16 +2478,10 @@ document.addEventListener("DOMContentLoaded", function() {
     closeBtn.addEventListener("click", closeMonthlyReportModal);
   }
   
-  const backdrop = document.getElementById("monthlyReportBackdrop");
-  if (backdrop) {
-    backdrop.addEventListener("click", closeMonthlyReportModal);
-  }
-  
-  
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") {
-      const modal = document.getElementById("monthlyReportModal");
-      if (modal && !modal.classList.contains("hidden")) {
+      const sidebar = document.getElementById("monthlyReportModal");
+      if (sidebar && sidebar.classList.contains("active")) {
         closeMonthlyReportModal();
       }
     }

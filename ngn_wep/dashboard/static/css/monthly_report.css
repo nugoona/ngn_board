@@ -2,41 +2,34 @@
    월간 프리미엄 전략 리포트 스타일
    ============================================ */
 
-/* ✅ 월간 리포트 버튼 (최종 업데이트 오른쪽) */
+/* ✅ 월간 리포트 사이드바 토글 버튼 (오른쪽 하단 고정) */
 .monthly-report-toggle-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 0;
   background-color: #d94538;
   color: #ffffff;
-  font-weight: bold;
-  font-size: 14px;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer !important;
-  z-index: 1200 !important;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  padding: 36px 14px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  text-transform: uppercase;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  cursor: pointer;
+  z-index: 1500;
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
-  pointer-events: auto !important;
-  position: relative;
-  box-sizing: border-box;
+  border: none;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 
 .monthly-report-toggle-btn:hover {
   background-color: #b8382d;
   color: #ffffff;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-  transform: translateY(-2px);
-}
-
-.monthly-report-toggle-btn svg {
-  width: 18px;
-  height: 18px;
+  box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* ✅ NEW 표시 배지 */
@@ -64,153 +57,125 @@
   }
 }
 
-/* ✅ 모달 백드롭 */
-.monthly-report-modal {
+/* ✅ 월간 리포트 사이드바 */
+.monthly-report-sidebar-wrapper {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.monthly-report-modal.active {
-  opacity: 1;
-  pointer-events: all;
-}
-
-.monthly-report-modal.hidden {
-  display: none !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.monthly-report-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  cursor: pointer;
-}
-
-/* ✅ 모달 컨테이너 */
-.monthly-report-container {
-  position: relative;
-  width: 90%;
-  max-width: 1400px;
-  max-height: 90vh;
+  top: 20px;
+  right: 0;
+  width: 1600px;
+  max-width: 95vw;
+  min-width: 1600px;
+  max-height: calc(100vh - 40px);
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  visibility: hidden;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
-  /* overflow: hidden 제거 - sticky가 작동하려면 필요 */
-  /* 대신 헤더는 flex-shrink: 0으로 고정, 본문은 overflow-y: auto로 스크롤 */
-  z-index: 2001;
-  transform: scale(0.95);
-  transition: transform 0.3s ease;
+  padding: 0;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  overflow: hidden;
+  contain: layout style;
 }
 
-.monthly-report-modal.active .monthly-report-container {
-  transform: scale(1);
+.monthly-report-sidebar-wrapper.active {
+  transform: translateX(0%);
+  visibility: visible;
+  pointer-events: auto;
 }
 
-/* ✅ 헤더 */
-.monthly-report-header {
+.monthly-report-sidebar-wrapper.hidden {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ✅ 사이드바 헤더 */
+.monthly-report-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background-color: #000000;
+  padding: 12px 16px;
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 32px;
-  border-bottom: 1px solid #E9ECEF;
-  background: #ffffff;
-  flex-shrink: 0;
+  height: 60px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.monthly-report-title {
-  font-size: 24px;
+.monthly-report-header-title {
+  font-size: 20px;
   font-weight: 700;
-  color: #212529;
-  font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #ffffff;
 }
 
-.monthly-report-header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.monthly-report-download-btn,
 .monthly-report-close-btn {
-  width: 40px;
-  height: 40px;
+  background: none;
   border: none;
-  background: transparent;
-  color: #495057;
-  font-size: 28px;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1;
   cursor: pointer;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
 }
 
-.monthly-report-download-btn:hover,
 .monthly-report-close-btn:hover {
-  background-color: #F8F9FA;
-  color: #212529;
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.monthly-report-close-btn {
-  font-size: 32px;
-  line-height: 1;
+/* ✅ 사이드바 본문 컨텐츠 */
+.monthly-report-sidebar-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ✅ 본문 컨텐츠 */
-.monthly-report-content {
-  padding: 32px;
-  overflow-y: auto; /* 스크롤 활성화 */
-  flex: 1;
-  /* sticky는 overflow가 있는 부모 내에서도 작동하지만,
-     스크롤 컨테이너가 content이므로 sticky는 content 기준으로 계산됨 */
+#monthlyReportContent {
+  padding: 24px;
+  overflow-y: visible;
 }
 
 /* 커스텀 스크롤바 디자인 */
-.monthly-report-content::-webkit-scrollbar,
+.monthly-report-sidebar-content::-webkit-scrollbar,
 .section-ai-analysis::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.monthly-report-content::-webkit-scrollbar-track,
+.monthly-report-sidebar-content::-webkit-scrollbar-track,
 .section-ai-analysis::-webkit-scrollbar-track {
   background: #F8F9FA;
   border-radius: 4px;
 }
 
-.monthly-report-content::-webkit-scrollbar-thumb,
+.monthly-report-sidebar-content::-webkit-scrollbar-thumb,
 .section-ai-analysis::-webkit-scrollbar-thumb {
   background: #D1D5DB;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
-.monthly-report-content::-webkit-scrollbar-thumb:hover,
+.monthly-report-sidebar-content::-webkit-scrollbar-thumb:hover,
 .section-ai-analysis::-webkit-scrollbar-thumb:hover {
   background: #9CA3AF;
 }
 
 /* Firefox 스크롤바 */
-.monthly-report-content,
+.monthly-report-sidebar-content,
 .section-ai-analysis {
   scrollbar-width: thin;
   scrollbar-color: #D1D5DB #F8F9FA;

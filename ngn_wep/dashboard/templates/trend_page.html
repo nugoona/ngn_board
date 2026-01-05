@@ -498,6 +498,110 @@
       color: #868E96;
     }
     
+    /* Section 3 썸네일 카드 그리드 */
+    .trend-category-thumbnails {
+      margin: 20px 0;
+      padding: 20px 0;
+    }
+    
+    .trend-thumbnails-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    
+    .trend-thumbnail-card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .trend-thumbnail-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    }
+    
+    .trend-thumbnail-link {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .trend-thumbnail-image-wrapper {
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #F8F9FA;
+      position: relative;
+    }
+    
+    .trend-thumbnail-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .trend-thumbnail-rank {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #003366;
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 10;
+    }
+    
+    .trend-thumbnail-info {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    
+    .trend-thumbnail-brand {
+      font-size: 11px;
+      color: #868E96;
+      margin-bottom: 4px;
+    }
+    
+    .trend-thumbnail-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #212529;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    
+    .trend-thumbnail-price {
+      font-size: 14px;
+      font-weight: 600;
+      color: #003366;
+      margin-top: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .trend-thumbnails-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+      }
+    }
+    
     /* ✅ 트렌드 데이터 분석 사이드바 전체 팝업 구조 */
     .trend-analysis-sidebar-wrapper {
       position: fixed;

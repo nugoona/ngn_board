@@ -312,9 +312,6 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 
 위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요.
 """
-"""
-
-    return ""
 
 
 # ============================================

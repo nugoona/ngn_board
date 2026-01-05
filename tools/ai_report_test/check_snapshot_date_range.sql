@@ -44,3 +44,4 @@ ORDER BY month_date DESC;
 -- gsutil ls -l gs://winged-precept-443218-v8.appspot.com/ai-reports/monthly/piscess/2025-12/snapshot.json.gz
 
 
+

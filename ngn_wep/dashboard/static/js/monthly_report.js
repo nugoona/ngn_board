@@ -827,7 +827,7 @@ function renderSection3(data) {
   });
   
   const funnelData = [
-    { label: "유입수 (GA)", value: visitors, color: "#6366f1" },
+    { label: "유입수 (GA)", value: visitors, color: "#1e293b" },
     { label: "장바구니 건수 (GA)", value: cartUsers, color: "#8b5cf6" },
     { label: "주문 건수", value: purchases, color: "#ec4899" }
   ];
@@ -2189,14 +2189,14 @@ function renderCompetitorsTable(competitorsList) {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = "바로가기";
-      link.style.color = "#2563eb";
+      link.style.color = "#1e293b";
       link.style.textDecoration = "none";
       link.style.padding = "6px 12px";
-      link.style.border = "1px solid #2563eb";
+      link.style.border = "1px solid #1e293b";
       link.style.borderRadius = "4px";
       link.style.display = "inline-block";
-      link.onmouseover = function() { this.style.backgroundColor = "#2563eb"; this.style.color = "#fff"; };
-      link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#2563eb"; };
+      link.onmouseover = function() { this.style.backgroundColor = "#1e293b"; this.style.color = "#fff"; };
+      link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#1e293b"; };
       urlCell.appendChild(link);
     } else {
       urlCell.textContent = "-";

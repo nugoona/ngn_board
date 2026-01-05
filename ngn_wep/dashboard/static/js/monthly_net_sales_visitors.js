@@ -60,7 +60,7 @@ function renderMonthlyNetSalesVisitorsChart(rawData) {
         name: '매출',
         type: 'column',
         data: netSales,
-        color: '#6366f1'
+        color: '#1e293b'
       },
       {
         name: '유입',
@@ -138,7 +138,7 @@ function renderMonthlyNetSalesVisitorsChart(rawData) {
         title: {
           text: '매출 (원)',
           style: {
-            color: '#6366f1',
+            color: '#1e293b',
             fontSize: '14px',
             fontWeight: 600
           }
@@ -148,7 +148,7 @@ function renderMonthlyNetSalesVisitorsChart(rawData) {
             return val.toLocaleString();
           },
           style: {
-            colors: '#6366f1',
+            colors: '#1e293b',
             fontSize: '12px'
           }
         }

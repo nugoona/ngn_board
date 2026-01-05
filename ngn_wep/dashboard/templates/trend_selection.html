@@ -27,11 +27,12 @@
       align-items: center;
       overflow: hidden;
       padding-top: 60px; /* 헤더 높이만큼 패딩 */
+      background: #f3f4f6; /* bg-gray-100/50 */
     }
 
     .trend-selection-cards {
       display: flex;
-      gap: 48px;
+      gap: 64px; /* gap-16 */
       align-items: center;
       justify-content: center;
       flex-wrap: wrap;
@@ -44,57 +45,95 @@
       display: inline-block;
     }
 
-    /* ✅ 카드 스타일 - Brand Tiles */
+    /* ✅ 카드 스타일 - Ultimate Button Feel */
     .trend-card {
       position: relative;
       width: 288px; /* w-72 */
       height: 288px; /* h-72 */
-      border: 2px solid #000000; /* border-black */
-      box-shadow: 8px 8px 0px 0px #000000; /* Hard Shadow, 진하고 선명 */
+      border-radius: 2rem; /* rounded-[2rem] */
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s ease-out;
       user-select: none;
-    }
-
-    .trend-card-link:hover .trend-card {
-      transform: translate(2px, 2px); /* translate-x-[2px] translate-y-[2px] */
-      box-shadow: 4px 4px 0px 0px #000000; /* 누르는 느낌 */
-    }
-
-    .trend-card-link:active .trend-card {
-      transform: translate(4px, 4px);
-      box-shadow: 2px 2px 0px 0px #000000;
+      overflow: hidden;
     }
 
     /* ✅ 29CM 카드 - 검정 배경, 흰색 텍스트 */
     .trend-card-29cm {
-      background: #000000; /* bg-black */
-      color: #ffffff; /* text-white */
+      background: #111827; /* gray-900 */
+      border: 2px solid #111827; /* border-gray-900 */
+      box-shadow: 8px 8px 0px 0px #1a1a1a; /* 깊은 하드 그림자 */
+      color: #ffffff;
+    }
+
+    .trend-card-link:hover .trend-card-29cm {
+      transform: translateY(-4px); /* hover: 살짝 떠오름 */
+      box-shadow: 10px 10px 0px 0px #1a1a1a; /* 그림자 약간 증가 */
+    }
+
+    .trend-card-link:active .trend-card-29cm {
+      transform: translateY(8px); /* active: 꾹 눌림 */
+      box-shadow: 2px 2px 0px 0px #1a1a1a; /* 그림자 거의 사라짐 - 핵심 타건감! */
+    }
+
+    /* 29CM 배경 그라데이션 (은은한 질감) */
+    .trend-card-29cm::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, #1f2937, #030712);
+      opacity: 0.5;
+      z-index: 0;
     }
 
     .trend-card-29cm .card-text {
-      font-size: 72px;
-      font-weight: 800; /* font-bold */
+      position: relative;
+      z-index: 10;
+      font-size: 3rem; /* text-5xl */
+      font-weight: 500; /* font-medium - 얇게 */
       font-family: 'Inter', sans-serif;
       letter-spacing: -0.05em; /* tracking-tighter - 자간 좁게 */
-      color: #ffffff;
+      color: rgba(255, 255, 255, 0.9); /* text-white/90 */
     }
 
     /* ✅ ABLY 카드 - 흰색 배경, 검정 텍스트 */
     .trend-card-ably {
       background: #ffffff; /* bg-white */
-      color: #000000; /* text-black */
+      border: 2px solid #e5e7eb; /* border-gray-200 */
+      box-shadow: 8px 8px 0px 0px #e5e7eb; /* 깊은 하드 그림자 */
+      color: #000000;
+    }
+
+    .trend-card-link:hover .trend-card-ably {
+      transform: translateY(-4px); /* hover: 살짝 떠오름 */
+      box-shadow: 10px 10px 0px 0px #d1d5db; /* 그림자 약간 증가 */
+    }
+
+    .trend-card-link:active .trend-card-ably {
+      transform: translateY(8px); /* active: 꾹 눌림 */
+      box-shadow: 2px 2px 0px 0px #e5e7eb; /* 그림자 거의 사라짐 - 핵심 타건감! */
+    }
+
+    /* ABLY 배경 그라데이션 (은은한 질감) */
+    .trend-card-ably::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at bottom right, #ffffff, rgba(249, 250, 251, 0.8));
+      opacity: 1;
+      z-index: 0;
     }
 
     .trend-card-ably .card-text {
-      font-size: 72px;
+      position: relative;
+      z-index: 10;
+      font-size: 3rem; /* text-5xl */
       font-weight: 900; /* font-black - 매우 굵게 */
       font-family: 'Inter', sans-serif;
       letter-spacing: 0.15em; /* tracking-widest - 자간 넓게 */
-      color: #000000;
+      color: #111827; /* text-gray-900 */
       text-transform: uppercase;
     }
 
@@ -133,11 +172,12 @@
       .trend-card {
         width: 240px;
         height: 240px;
+        border-radius: 1.5rem;
       }
 
       .trend-card-29cm .card-text,
       .trend-card-ably .card-text {
-        font-size: 56px;
+        font-size: 2.5rem; /* 모바일에서 약간 작게 */
       }
     }
 
@@ -150,11 +190,12 @@
       .trend-card {
         width: 220px;
         height: 220px;
+        border-radius: 1.5rem;
       }
 
       .trend-card-29cm .card-text,
       .trend-card-ably .card-text {
-        font-size: 48px;
+        font-size: 2rem; /* 작은 모바일에서 더 작게 */
       }
     }
   </style>
@@ -257,13 +298,54 @@
         console.error('[Trend Selection] card29cmLink 요소를 찾을 수 없습니다!');
       }
       
-      // Ably 카드 클릭 이벤트 처리
+      // Ably 카드도 29CM와 동일한 로직 적용
       const cardAblyLink = document.getElementById('cardAblyLink');
       if (cardAblyLink) {
+        // sessionStorage에서 선택된 업체 정보 가져오기
+        let siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+        let adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+        let selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        
+        console.log('[Trend Selection] Ably - siteSelectedCompany:', siteSelectedCompany);
+        console.log('[Trend Selection] Ably - adsSelectedCompany:', adsSelectedCompany);
+        console.log('[Trend Selection] Ably - selectedCompany (sessionStorage):', selectedCompany);
+        
+        // sessionStorage에 업체 정보가 없으면, Flask 세션의 첫 번째 업체 사용
+        if (!selectedCompany || selectedCompany === "all") {
+          if (userCompanyList && userCompanyList.length > 0) {
+            selectedCompany = userCompanyList[0];
+            console.log('[Trend Selection] Ably - sessionStorage에 업체 정보 없음, 첫 번째 업체 사용:', selectedCompany);
+          } else {
+            console.error('[Trend Selection] Ably - 사용 가능한 업체가 없습니다!');
+          }
+        }
+        
+        // 기본 URL
+        let url = '/trend/ably';
+        
+        // 업체가 선택되어 있고 "all"이 아니면 쿼리 파라미터 추가
+        if (selectedCompany && selectedCompany !== "all") {
+          url += '?company_name=' + encodeURIComponent(selectedCompany);
+        }
+        
+        console.log('[Trend Selection] Ably - 최종 URL:', url);
+        
+        // href 설정
+        cardAblyLink.href = url;
+        
+        // 클릭 이벤트 리스너 추가 (29CM와 동일)
         cardAblyLink.addEventListener('click', function(e) {
+          console.log('[Trend Selection] Ably 카드 클릭 이벤트 발생');
           e.preventDefault();
-          alert('Ably 트렌드 페이지는 준비 중입니다.');
-        });
+          e.stopPropagation();
+          console.log('[Trend Selection] Ably - 페이지 이동 시작:', url);
+          window.location.href = url;
+          return false;
+        }, false);
+        
+        console.log('[Trend Selection] cardAblyLink href 및 클릭 이벤트 설정 완료');
+      } else {
+        console.error('[Trend Selection] cardAblyLink 요소를 찾을 수 없습니다!');
       }
     });
     

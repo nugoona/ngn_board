@@ -820,10 +820,12 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                 
                 // 썸네일 카드 그리드 생성
                 const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, activeTrendType);
+                console.log(`[Section 3 썸네일 디버그] ${categoryName} thumbnailGrid:`, thumbnailGrid ? `생성됨 (${thumbnailGrid.length}자)` : 'null');
                 
                 if (thumbnailGrid) {
                     // 헤드라인을 포함하는 문단(p 또는 li) 찾기
                     const parent = element.closest('p, li') || element.parentElement;
+                    console.log(`[Section 3 썸네일 디버그] ${categoryName} parent:`, parent ? `찾음 (태그: ${parent.tagName})` : '없음');
                     
                     if (parent) {
                         // 이미 썸네일이 삽입되지 않았는지 확인
@@ -839,6 +841,8 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                             checkCount++;
                         }
                         
+                        console.log(`[Section 3 썸네일 디버그] ${categoryName} hasThumbnail:`, hasThumbnail);
+                        
                         if (!hasThumbnail) {
                             const gridContainer = document.createElement('div');
                             gridContainer.className = 'trend-category-thumbnails';
@@ -853,10 +857,16 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                             
                             processedCategories.add(categoryName);
                             console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
+                        } else {
+                            console.log(`[Section 3 썸네일 디버그] ${categoryName} 이미 썸네일이 존재하여 삽입하지 않음`);
                         }
+                    } else {
+                        console.warn(`[Section 3 썸네일 디버그] ${categoryName} parent 요소를 찾을 수 없음`);
                     }
                     
                     break; // 한 카테고리는 한 번만 처리
+                } else {
+                    console.warn(`[Section 3 썸네일 디버그] ${categoryName} thumbnailGrid가 null입니다 (categoryProducts: ${categoryProducts.length}개)`);
                 }
             }
         }

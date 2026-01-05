@@ -2130,35 +2130,28 @@ th.sortable.desc::after {
   position: fixed;
   bottom: 20px;
   right: 0;
-  background-color: #003366;
+  background-color: #4A90E2;
   color: #ffffff;
-  font-weight: bold;
-  font-size: 22px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.15em;
   padding: 36px 14px;
   writing-mode: vertical-rl;
-  text-orientation: upright;
-  border-top-left-radius: 14px;
-  border-bottom-left-radius: 14px;
+  text-orientation: mixed;
+  text-transform: uppercase;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
   cursor: pointer;
   z-index: 1500;
-
-  /* ✅ 입체감 강조 */
   box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
-
-  /* ✅ 부드러운 전환 효과 */
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease,
-    border 0.3s ease,
-    box-shadow 0.3s ease;
+  transition: all 0.3s ease;
+  border: none;
+  user-select: none;
 }
 
 .catalog-toggle-btn:hover {
-  background-color: #ffffff;
-  color: #d2455a;
-  border: 1px solid #d2455a;
-
-  /* ✅ hover 시 그림자 강화로 더 깊은 입체감 */
+  background-color: #357ABD;
+  color: #ffffff;
   box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
 }
 

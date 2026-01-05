@@ -784,6 +784,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
             const element = segmentElements[i];
             const textContent = (element.textContent || '').trim();
             const innerHTML = (element.innerHTML || '').trim();
+            const tagName = element.tagName;
             
             // 카테고리 헤드라인 패턴 확인 (강화된 패턴 매칭)
             const isCategoryHeader = 
@@ -808,8 +809,14 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                     innerHTML.includes(`<strong>${categoryName}:</strong>`)
                 ));
             
+            // 디버깅: 매칭 시도 로그 (처음 100자만)
+            if (i < 10 && textContent.includes(categoryName)) {
+                console.log(`[Section 3 썸네일 디버그] ${categoryName} 검색 중 - 태그: ${tagName}, 텍스트: "${textContent.substring(0, 50)}", 매칭: ${isCategoryHeader}`);
+            }
+            
             if (isCategoryHeader) {
                 foundHeader = true;
+                console.log(`[Section 3 썸네일] ${categoryName} 카테고리 헤드라인 찾음 (태그: ${tagName}, 텍스트: "${textContent.substring(0, 50)}")`);
                 
                 // 썸네일 카드 그리드 생성
                 const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, activeTrendType);

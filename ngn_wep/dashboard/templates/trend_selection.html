@@ -16,6 +16,7 @@
       if (event) {
         event.preventDefault();
         event.stopPropagation();
+        event.stopImmediatePropagation();
       }
       
       try {
@@ -38,19 +39,12 @@
         
         console.log('[Trend Selection] 최종 이동 URL:', url);
         
-        // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
-        window.location.href = url;
-        
-        // 혹시 모를 상황을 대비해 강제 이동
-        setTimeout(function() {
-          if (window.location.pathname !== '/trend/29cm') {
-            console.warn('[Trend Selection] 이동 실패, 강제 이동 시도');
-            window.location.replace(url);
-          }
-        }, 100);
+        // window.location.replace를 사용하여 강제 이동 (history에 남지 않음)
+        window.location.replace(url);
       } catch (error) {
         console.error('[Trend Selection] 에러 발생:', error);
-        alert('페이지 이동 중 오류가 발생했습니다: ' + error.message);
+        // 에러 발생 시에도 이동 시도
+        window.location.href = '/trend/29cm';
       }
       
       return false;

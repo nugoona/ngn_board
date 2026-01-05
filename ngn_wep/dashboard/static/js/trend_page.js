@@ -1494,7 +1494,7 @@ function renderSection1AsCard(section1Text) {
     // Section 1 헤더
     const header = document.createElement('h2');
     header.className = 'trend-section1-header';
-    header.textContent = 'Section 1. 자사몰 성과 분석';
+    header.textContent = 'MY BRAND';
     container.appendChild(header);
     
     // 카드 컨테이너
@@ -1656,7 +1656,7 @@ function renderSection2AsCards(section2Data) {
     // Section 2 헤더
     const header = document.createElement('h2');
     header.className = 'trend-section2-header';
-    header.textContent = 'Section 2. Market Overview (시장 핵심 트렌드)';
+    header.textContent = 'KEYWORD';
     container.appendChild(header);
     
     // 2열 그리드 컨테이너
@@ -1831,7 +1831,7 @@ function renderSection3WithTabs(section3Data) {
     // Section 3 헤더 추가
     const sectionHeader = document.createElement('h2');
     sectionHeader.className = 'trend-section3-header';
-    sectionHeader.textContent = 'Section 3. Segment Deep Dive (세그먼트별 트렌드 분석)';
+    sectionHeader.textContent = 'TRENDS';
     section3Container.appendChild(sectionHeader);
     
     // 탭 UI 생성 (월간 리포트 Section 5 스타일)

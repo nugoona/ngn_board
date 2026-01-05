@@ -653,7 +653,7 @@ function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Section 3 썸네일 카드 그리드 렌더링 (데이터 중심 접근)
+// Section 3 썸네일 카드 그리드 렌더링 (데이터 중심 접근, 세그먼트별 처리)
 function renderSection3Thumbnails(containerElement, analysisText) {
     // window.allTabsData가 없으면 종료
     if (!window.allTabsData || Object.keys(window.allTabsData).length === 0) {
@@ -673,7 +673,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     let section3Start = null;
     for (const header of section3Headers) {
         const headerText = header.textContent || '';
-        if (headerText.includes('Section 3') || headerText.includes('Section3') || headerText.includes('세그먼트') || headerText.includes('Category Deep Dive')) {
+        if (headerText.includes('Section 3') || headerText.includes('Section3') || headerText.includes('세그먼트') || headerText.includes('Segment Deep Dive') || headerText.includes('Category Deep Dive')) {
             section3Start = header;
             break;
         }
@@ -687,14 +687,21 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     // 현재 선택된 트렌드 타입 확인
     const activeTrendType = getActiveTrendType(); // 'rising_star', 'new_entry', 'rank_drop'
     
-    // 카테고리 목록 (Section 3에서 찾을 카테고리들)
-    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    // 세그먼트 헤더 매핑 (트렌드 타입 -> 세그먼트 헤더 텍스트 패턴)
+    const segmentPatterns = {
+        'rising_star': ['급상승', 'Rising Star', '🔥'],
+        'new_entry': ['신규 진입', 'New Entry', '🚀'],
+        'rank_drop': ['순위 하락', 'Rank Drop', '📉']
+    };
     
-    // Section 3 내의 모든 요소를 순회하여 카테고리 헤드라인 찾기
+    const activeSegmentPatterns = segmentPatterns[activeTrendType] || [];
+    if (activeSegmentPatterns.length === 0) {
+        console.warn('[Section 3 썸네일] 알 수 없는 트렌드 타입:', activeTrendType);
+        return;
+    }
+    
+    // Section 3 내의 모든 요소를 배열로 변환
     let currentElement = section3Start.nextElementSibling;
-    const processedCategories = new Set(); // 이미 처리한 카테고리 추적
-    
-    // Section 3 내의 모든 요소를 배열로 변환 (더 안전한 순회)
     const allElements = [];
     while (currentElement) {
         // 다음 Section으로 넘어가면 중단
@@ -708,26 +715,90 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         currentElement = currentElement.nextElementSibling;
     }
     
+    // 활성화된 세그먼트 헤더 찾기
+    let segmentStartIndex = -1;
+    for (let i = 0; i < allElements.length; i++) {
+        const element = allElements[i];
+        const textContent = (element.textContent || '').trim();
+        const innerHTML = (element.innerHTML || '').trim();
+        
+        // 세그먼트 헤더 확인 (strong 태그 또는 h3/h4 헤더)
+        const isSegmentHeader = 
+            (element.tagName === 'STRONG' || element.tagName === 'H3' || element.tagName === 'H4' || 
+             (element.tagName === 'P' && element.querySelector('strong'))) &&
+            activeSegmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern));
+        
+        if (isSegmentHeader) {
+            segmentStartIndex = i;
+            break;
+        }
+    }
+    
+    if (segmentStartIndex === -1) {
+        console.warn('[Section 3 썸네일] 활성화된 세그먼트 헤더를 찾을 수 없습니다:', activeTrendType);
+        return;
+    }
+    
+    // 세그먼트 종료 지점 찾기 (다음 세그먼트 헤더 또는 Section 종료)
+    let segmentEndIndex = allElements.length;
+    for (let i = segmentStartIndex + 1; i < allElements.length; i++) {
+        const element = allElements[i];
+        const textContent = (element.textContent || '').trim();
+        const innerHTML = (element.innerHTML || '').trim();
+        
+        // 다른 세그먼트 헤더 발견 시 종료
+        const isOtherSegmentHeader = 
+            (element.tagName === 'STRONG' || element.tagName === 'H3' || element.tagName === 'H4' || 
+             (element.tagName === 'P' && element.querySelector('strong'))) &&
+            (textContent.includes('급상승') || textContent.includes('신규 진입') || textContent.includes('순위 하락') ||
+             textContent.includes('Rising Star') || textContent.includes('New Entry') || textContent.includes('Rank Drop') ||
+             innerHTML.includes('🔥') || innerHTML.includes('🚀') || innerHTML.includes('📉'));
+        
+        if (isOtherSegmentHeader && !activeSegmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern))) {
+            segmentEndIndex = i;
+            break;
+        }
+    }
+    
+    // 활성화된 세그먼트 내의 요소만 추출
+    const segmentElements = allElements.slice(segmentStartIndex + 1, segmentEndIndex);
+    
+    // 카테고리 목록
+    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    const processedCategories = new Set(); // 이미 처리한 카테고리 추적
+    
     // 각 카테고리를 역순으로 처리 (뒤에서부터 삽입하면 인덱스가 안 꼬임)
     categories.reverse().forEach(categoryName => {
         if (processedCategories.has(categoryName)) return;
         
-        // 카테고리 헤드라인 찾기
-        for (let i = 0; i < allElements.length; i++) {
-            const element = allElements[i];
+        // 카테고리 헤드라인 찾기 (세그먼트 내에서만)
+        for (let i = 0; i < segmentElements.length; i++) {
+            const element = segmentElements[i];
             const textContent = (element.textContent || '').trim();
-            const innerHTML = element.innerHTML || '';
+            const innerHTML = (element.innerHTML || '').trim();
             
-            // 카테고리 헤드라인 패턴 확인 (다양한 패턴 지원)
+            // 카테고리 헤드라인 패턴 확인 (강화된 패턴 매칭)
             const isCategoryHeader = 
                 // <strong>상의:</strong> 또는 **상의:**
                 (textContent === `${categoryName}:` || textContent.startsWith(`${categoryName}:`)) ||
                 (innerHTML.includes(`<strong>${categoryName}:</strong>`) || innerHTML.includes(`**${categoryName}:**`)) ||
-                // <p>**상의:**</p> 또는 <p>상의:</p>
-                (element.tagName === 'P' && (textContent === `${categoryName}:` || textContent.startsWith(`${categoryName}:`))) ||
+                // <p> 내부의 **상의:**
+                (element.tagName === 'P' && (
+                    textContent.startsWith(`${categoryName}:`) ||
+                    innerHTML.includes(`<strong>${categoryName}:</strong>`) ||
+                    innerHTML.includes(`**${categoryName}:**`)
+                )) ||
+                // <strong> 태그 자체
+                (element.tagName === 'STRONG' && (
+                    textContent === `${categoryName}:` || 
+                    textContent.endsWith(`${categoryName}:`) ||
+                    textContent.startsWith(`${categoryName}:`)
+                )) ||
                 // <li> 내부의 강조 텍스트
-                (element.tagName === 'STRONG' && textContent.endsWith(`${categoryName}:`)) ||
-                (element.tagName === 'LI' && textContent.includes(`${categoryName}:`));
+                (element.tagName === 'LI' && (
+                    textContent.includes(`${categoryName}:`) ||
+                    innerHTML.includes(`<strong>${categoryName}:</strong>`)
+                ));
             
             if (isCategoryHeader) {
                 // 해당 카테고리의 상품 데이터 추출 (데이터 중심)
@@ -746,7 +817,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                             let hasThumbnail = false;
                             let nextSibling = parent.nextElementSibling;
                             let checkCount = 0;
-                            while (nextSibling && checkCount < 3) {
+                            while (nextSibling && checkCount < 5) {
                                 if (nextSibling.classList && nextSibling.classList.contains('trend-category-thumbnails')) {
                                     hasThumbnail = true;
                                     break;
@@ -768,7 +839,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                                 }
                                 
                                 processedCategories.add(categoryName);
-                                console.log(`[Section 3 썸네일] ${categoryName} 카테고리에 ${categoryProducts.length}개 썸네일 삽입 완료`);
+                                console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
                             }
                         }
                         

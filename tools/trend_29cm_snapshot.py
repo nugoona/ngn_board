@@ -434,8 +434,7 @@ def main():
     parser.add_argument('--run-id', type=str, help='특정 run_id로 스냅샷 생성 (기본값: 최신 주차)')
     parser.add_argument('--force', action='store_true', help='기존 스냅샷이 있어도 재생성')
     parser.add_argument('--target-brand', type=str, help='분석 타겟 브랜드명 (한글명, 예: "썸웨어버터", "파이시스")')
-    parser.add_argument('--company-name', type=str, help='업체명 (영문, 예: "piscess") - target-brand로 자동 변환')
-    parser.add_argument('--all-companies', action='store_true', help='모든 업체에 대해 AI 리포트 생성 (자동 스케줄용)')
+    parser.add_argument('--company-name', type=str, help='업체명 (영문, 예: "piscess") - target-brand로 자동 변환 (자동 스케줄에서는 첫 번째 업체 사용)')
     
     args = parser.parse_args()
     
@@ -488,88 +487,9 @@ def main():
     print(f"   경로: {snapshot_path}")
     
     # AI 분석 자동 추가
-    # --all-companies 옵션이 있으면 모든 업체에 대해 리포트 생성 (자동 스케줄용)
-    # 그렇지 않으면 --company-name 또는 --target-brand로 지정된 업체에 대해서만 생성
-    if args.all_companies:
-        print(f"\n🤖 모든 업체에 대한 AI 분석 리포트 생성 중...")
-        try:
-            # 모든 업체 목록 조회
-            companies = get_all_companies_from_bq()
-            if not companies:
-                print(f"⚠️ [WARN] 업체 목록을 찾을 수 없습니다.", file=sys.stderr)
-                return
-            
-            print(f"   찾은 업체: {', '.join(companies)} ({len(companies)}개)")
-            
-            # 프로젝트 루트를 Python 경로에 추가
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(script_dir)
-            tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
-            if tools_path not in sys.path:
-                sys.path.insert(0, tools_path)
-            
-            from trend_29cm_ai_analyst import generate_trend_analysis_from_snapshot
-            from google.cloud import storage
-            import gzip
-            import io
-            
-            # 스냅샷 데이터 다시 로드 (업체별 리포트를 추가하기 위해)
-            storage_client = storage.Client(project=PROJECT_ID)
-            bucket = storage_client.bucket(GCS_BUCKET)
-            blob = bucket.blob(get_snapshot_path(run_id))
-            snapshot_bytes = blob.download_as_bytes()
-            snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
-            snapshot_data = json.loads(snapshot_json_str)
-            
-            # insights 구조 초기화
-            if "insights" not in snapshot_data:
-                snapshot_data["insights"] = {}
-            if "companies" not in snapshot_data["insights"]:
-                snapshot_data["insights"]["companies"] = {}
-            
-            # 각 업체에 대해 AI 리포트 생성
-            from datetime import datetime
-            from trend_29cm_ai_analyst import generate_trend_analysis
-            
-            for company_name in companies:
-                print(f"\n   [{company_name}] AI 리포트 생성 중...")
-                try:
-                    target_brand = get_company_korean_name_from_bq(company_name.lower())
-                    if not target_brand:
-                        print(f"      ⚠️ 한글명을 찾을 수 없어 건너뜁니다.", file=sys.stderr)
-                        continue
-                    
-                    # AI 분석 생성 (generate_trend_analysis는 문자열을 반환)
-                    analysis_text = generate_trend_analysis(
-                        snapshot_data.copy(),  # 원본 데이터 복사 (재사용 가능)
-                        api_key=None,  # 환경변수에서 로드
-                        target_brand=target_brand
-                    )
-                    
-                    if analysis_text:
-                        snapshot_data["insights"]["companies"][company_name] = {
-                            "analysis_report": analysis_text,
-                            "generated_at": datetime.utcnow().isoformat() + "Z"
-                        }
-                        print(f"      ✅ 완료")
-                    else:
-                        print(f"      ⚠️ 생성 실패", file=sys.stderr)
-                except Exception as e:
-                    print(f"      ⚠️ 오류: {e}", file=sys.stderr)
-                    continue
-            
-            # 업데이트된 스냅샷 저장
-            json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
-            json_bytes = json_str.encode('utf-8')
-            compressed_bytes = gzip.compress(json_bytes)
-            blob.upload_from_string(compressed_bytes, content_type='application/gzip')
-            print(f"\n✅ 모든 업체 AI 분석 리포트 추가 완료! ({len(snapshot_data['insights']['companies'])}개)")
-            
-        except Exception as e:
-            print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-    elif args.company_name or args.target_brand:
+    # --company-name 또는 --target-brand가 지정되면 해당 업체로 리포트 생성
+    # 둘 다 없으면 첫 번째 업체로 생성 (자동 스케줄용)
+    if args.company_name or args.target_brand:
         # 단일 업체에 대한 리포트 생성 (기존 방식)
         print(f"\n🤖 AI 분석 리포트 생성 중...")
         try:
@@ -596,6 +516,39 @@ def main():
             )
             
             print(f"✅ AI 분석 리포트 추가 완료!")
+        except Exception as e:
+            print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+    else:
+        # --company-name과 --target-brand가 모두 없으면 첫 번째 업체로 생성 (자동 스케줄용)
+        print(f"\n🤖 AI 분석 리포트 생성 중 (첫 번째 업체 사용)...")
+        try:
+            companies = get_all_companies_from_bq()
+            if companies:
+                first_company = companies[0]
+                print(f"   첫 번째 업체 사용: {first_company}")
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(script_dir)
+                tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+                if tools_path not in sys.path:
+                    sys.path.insert(0, tools_path)
+                
+                from trend_29cm_ai_analyst import generate_ai_analysis_from_file
+                
+                target_brand = get_company_korean_name_from_bq(first_company.lower())
+                if target_brand:
+                    generate_ai_analysis_from_file(
+                        snapshot_file=snapshot_path,
+                        output_file=None,
+                        api_key=None,
+                        target_brand=target_brand
+                    )
+                    print(f"✅ AI 분석 리포트 추가 완료! (브랜드: {target_brand})")
+                else:
+                    print(f"⚠️ [WARN] 한글명을 찾을 수 없어 AI 리포트를 생성하지 않습니다.", file=sys.stderr)
+            else:
+                print(f"⚠️ [WARN] 업체 목록을 찾을 수 없어 AI 리포트를 생성하지 않습니다.", file=sys.stderr)
         except Exception as e:
             print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
             import traceback

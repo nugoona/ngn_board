@@ -869,18 +869,25 @@ function renderSection3Thumbnails(containerElement, analysisText) {
 
 // 카테고리별 상품 데이터 추출 (데이터 중심)
 function getProductsByCategory(categoryName, trendType) {
-    if (!window.allTabsData) return [];
+    if (!window.allTabsData) {
+        console.warn(`[getProductsByCategory] allTabsData 없음: ${categoryName}`);
+        return [];
+    }
     
     const products = [];
     
     // 해당 카테고리의 탭 데이터 찾기
     const tabData = window.allTabsData[categoryName];
-    if (!tabData) return [];
+    if (!tabData) {
+        console.warn(`[getProductsByCategory] ${categoryName} 카테고리 데이터 없음. 사용 가능한 카테고리:`, Object.keys(window.allTabsData));
+        return [];
+    }
     
     // 현재 트렌드 타입에 해당하는 상품 추출
     const items = tabData[trendType] || [];
+    console.log(`[getProductsByCategory] ${categoryName} (${trendType}): 원본 아이템 ${items.length}개`);
     
-    items.forEach(item => {
+    items.forEach((item, index) => {
         const brand = item.Brand_Name || item.Brand || '';
         const product = item.Product_Name || item.Product || '';
         const thumbnail = item.thumbnail_url || '';
@@ -900,8 +907,14 @@ function getProductsByCategory(categoryName, trendType) {
                 price: price,
                 trendType: trendType
             });
+        } else {
+            if (index < 3) { // 처음 3개만 로그
+                console.log(`[getProductsByCategory] ${categoryName} 아이템 ${index} 필터링됨 - brand: "${brand}", product: "${product}", thumbnail: "${thumbnail ? '있음' : '없음'}"`);
+            }
         }
     });
+    
+    console.log(`[getProductsByCategory] ${categoryName} (${trendType}): 필터링 후 ${products.length}개`);
     
     // 순위변화 기준으로 정렬 (급상승: 내림차순, 신규진입: 순위 오름차순, 순위하락: 오름차순)
     products.sort((a, b) => {
@@ -925,7 +938,9 @@ function getProductsByCategory(categoryName, trendType) {
     });
     
     // 상위 6개만 반환
-    return products.slice(0, 6);
+    const result = products.slice(0, 6);
+    console.log(`[getProductsByCategory] ${categoryName} (${trendType}): 최종 반환 ${result.length}개`);
+    return result;
 }
 
 // (parseProductNamesFromAnalysis, findProductsInCategory 함수는 더 이상 사용하지 않음 - 데이터 중심 접근으로 대체)

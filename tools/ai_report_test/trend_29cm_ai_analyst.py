@@ -48,87 +48,114 @@ except ImportError:
 
 # Google Gen AI SDK
 try:
-    from google import genai
+    import google.genai as genai
     from google.genai import types
-    # google-genai v1.0+에서 Safety Settings는 types 모듈에 포함됨
+    GENAI_AVAILABLE = True
+    
+    # Safety Settings
     try:
         from google.genai.types import HarmCategory, HarmBlockThreshold
         SAFETY_SETTINGS_AVAILABLE = True
-    except ImportError:
-        # fallback: google.generativeai에서 시도 (구버전 호환)
-        try:
-            from google.generativeai.types import HarmCategory, HarmBlockThreshold
-            SAFETY_SETTINGS_AVAILABLE = True
-        except ImportError:
-            SAFETY_SETTINGS_AVAILABLE = False
-            HarmCategory = None
-            HarmBlockThreshold = None
-    GENAI_AVAILABLE = True
+    except (ImportError, AttributeError):
+        HarmCategory = None
+        HarmBlockThreshold = None
+        SAFETY_SETTINGS_AVAILABLE = False
+        
 except ImportError:
-    GENAI_AVAILABLE = False
-    SAFETY_SETTINGS_AVAILABLE = False
     genai = None
     types = None
+    GENAI_AVAILABLE = False
     HarmCategory = None
     HarmBlockThreshold = None
+    SAFETY_SETTINGS_AVAILABLE = False
+    print("⚠️ [WARN] google-genai 패키지가 설치되지 않았습니다.", file=sys.stderr)
+    print("   설치: pip install google-genai", file=sys.stderr)
 
 # 환경 변수
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = "gemini-2.5-flash"
 
-# 핵심 카테고리 정의
+# 핵심 6대 카테고리
 CORE_CATEGORIES = ["상의", "바지", "스커트", "원피스", "니트웨어", "셋업"]
 
-# System Instruction (거대 데이터로 인한 지시사항 손실 방지)
-SYSTEM_INSTRUCTION = """
-당신은 데이터 분석가입니다.
-제공된 요약 데이터를 보고 한국어(Korean)로 서술형 리포트를 작성하세요.
 
-[절대 규칙]
-1. 모든 답변은 반드시 '완벽한 한국어'로 작성해야 합니다.
-2. 자연스러운 줄글(Paragraph) 형태로 쓰세요.
-3. 데이터(브랜드명, 상품명)를 문장 속에 자연스럽게 포함시키세요.
-4. 중간에 끊기거나 영문만 출력되지 않도록 주의하세요.
-5. 섹션 제목도 반드시 한글로 작성하세요 (예: "## 시장 개요", "## 세그먼트별 심층 분석").
-6. 빈칸 채우기나 개조식(~함, ~임)을 절대 금지합니다.
-7. 반드시 "~했습니다.", "~입니다." 체를 사용하여, 옆에서 말해주듯이 자연스럽게 문장을 이으세요.
+# ============================================
+# System Instruction (지침서)
+# ============================================
+
+SYSTEM_INSTRUCTION = """당신은 여성 의류 쇼핑몰 MD를 위한 수석 데이터 분석가입니다.
+제공된 29CM 랭킹 데이터를 분석하여, 소싱/마케팅/가격 전략에 적용 가능한 '액션 아이템'을 도출하세요.
+
+[리포트 구조 (반드시 준수)]
+리포트는 다음 3가지 섹션으로 구성되며, **반드시 글머리 기호(Bullet Points)**를 사용하여 구조화해야 합니다.
+
+## Section 1. Market Overview (시장 핵심 키워드 3가지)
+전체 시장을 관통하는 3가지 키워드를 아래 항목별로 요약하세요.
+* **Material (소재):** 유행하는 텍스처나 원단의 트렌드를 데이터 기반으로 분석하여 제시하세요. 실제 데이터에 나타난 소재들을 중심으로 작성하세요.
+* **Occasion (TPO):** 소비 목적과 착용 시나리오를 분석하세요. 데이터에 나타난 패턴을 바탕으로 소비자의 구매 목적을 파악하여 제시하세요.
+* **Price (가격):** 소비 패턴과 가격대별 트렌드를 분석하세요. 데이터에 나타난 가격 분포와 소비 행태를 바탕으로 패턴을 제시하세요.
+
+## Section 2. Segment Deep Dive (세그먼트별 심층 분석)
+3가지 세그먼트의 '속도와 방향성'을 분석하세요.
+* **🔥 급상승 (Rising Star):** 무엇이 트렌드를 주도하며 치고 올라오는가? 실제 데이터에 나타난 급상승 아이템의 특징과 패턴을 분석하세요.
+* **🚀 신규 진입 (New Entry):** 새로운 루키 브랜드나 고단가 아이템의 등장을 분석하세요. 데이터에 나타난 신규 진입 아이템의 특징을 제시하세요.
+* **📉 순위 하락 (Rank Drop):** 무엇이 시즌 아웃되거나 대체되었는가? 데이터에 나타난 순위 하락 아이템의 패턴을 분석하세요.
+
+## Section 3. Category Deep Dive (6대 핵심 카테고리 상세)
+각 카테고리별 트렌드와 Key Item을 분석하세요. (대상: 상의, 바지, 스커트, 원피스, 니트웨어, 셋업)
+각 카테고리마다 아래 형식으로 작성하세요:
+* **카테고리명:** (해당 카테고리의 트렌드를 1줄로 요약)
+  - Key Item: **'브랜드명'**의 **'상품명'** (구체적 순위 변동 수치 포함)
+
+[작성 원칙 (매우 중요)]
+1. **가독성 최우선:** 긴 줄글(Essay)을 금지합니다. 간결한 문장과 리스트 형식을 사용하세요.
+2. **근거 필수:** 추상적 표현을 피하고, 구체적인 수치나 데이터를 포함하세요. 예를 들어 "급상승했다"가 아닌 "XX계단 상승하여 X위를 기록했다"와 같이 구체적 근거를 제시하세요.
+3. **정확한 명칭:** 브랜드/상품명은 제공된 데이터의 원문 그대로 **'작은따옴표'**와 **굵게(Bold)** 처리하여 표기하세요.
+4. **데이터 기반 분석:** 모든 주장은 제공된 데이터에 기반해야 합니다. 데이터에 없는 내용은 추측하지 마세요.
+5. **톤앤매너:** 전문적이고 드라이한 분석가 어조를 사용하세요 (해요체 사용). 서론이나 결론은 생략하고 핵심 분석에 집중하세요.
+6. **시즌 독립성:** 특정 시즌이나 기간에 종속되지 않는 일반적이고 재현 가능한 분석을 작성하세요. 매주 다른 데이터에도 적용 가능한 프레임워크를 유지하세요.
 """
 
+
+# ============================================
+# 데이터 최적화 함수
+# ============================================
 
 def optimize_data_for_flash(json_data: Dict) -> str:
     """
     JSON 데이터를 텍스트 형태로 압축하여 Flash 모델이 처리하기 쉽게 변환
-    JSON 기호를 제거하고 깔끔한 텍스트 형태로 변환
-    
-    Before (JSON): {"Brand": "비터셀즈", "Product": "니트", "Rank": 1} (5만자, 특수문자 밭)
-    After (텍스트): - 비터셀즈 | 니트 | 1위 변동 | 50000원 (1.5만자, 깔끔한 텍스트)
+    상품명 길이를 파격적으로 줄여 토큰 절약 및 가독성 확보
     """
-    report_lines = []
+    lines = []
     
     # JSON 구조 순회
     for category, cat_data in json_data.items():
         if category == 'insights':
             continue  # 불필요한 메타데이터 제외
         
-        report_lines.append(f"\n== {category} ==")
+        lines.append(f"\n== {category} ==")
         
         for segment, items in cat_data.items():  # rising_star, new_entry, rank_drop
             if not items:  # 빈 리스트는 건너뛰기
                 continue
                 
             segment_name = segment.upper()
-            report_lines.append(f"[{segment_name}]")
+            lines.append(f"[{segment_name}]")
             
             # 상위 15개 아이템만 처리 (데이터 줄이기)
             for item in items[:15]:
-                brand = item.get('Brand', 'Brand') or 'Brand'
-                product = item.get('Product', 'Product') or 'Product'
+                brand = item.get('Brand', '') or ''
+                product = item.get('Product', '') or ''
+                
+                # 상품명 단축 로직 (20자 초과 시 18자 + ..)
+                if len(product) > 20:
+                    product = product[:18] + ".."
+                
                 # 한글 깨짐 방지를 위해 변수 직접 사용
                 change = item.get('Rank_Change', 0) or 0
                 price = item.get('Price', 0) or 0
                 
-                # 한 줄 요약 포맷 (한글 깨짐 방지)
-                # 순위 변화가 None이거나 0이면 표시하지 않음
+                # 순위 변화 포맷팅
                 if change is None or change == 0:
                     change_str = "변동없음"
                 elif change > 0:
@@ -136,11 +163,16 @@ def optimize_data_for_flash(json_data: Dict) -> str:
                 else:
                     change_str = f"{change}위 하락"
                 
+                # 한 줄 요약 포맷
                 line = f"- {brand} | {product} | {change_str} | {price}원"
-                report_lines.append(line)
+                lines.append(line)
     
-    return "\n".join(report_lines)
+    return "\n".join(lines)
 
+
+# ============================================
+# 프롬프트 생성 함수
+# ============================================
 
 def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) -> str:
     """
@@ -153,8 +185,8 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
     
-    # 데이터 요약 및 필수 필드만 추출 (프롬프트 크기 최소화)
-    def extract_essential_fields(items: list, max_items: int = 20) -> list:
+    # 데이터 요약 및 필수 필드만 추출
+    def extract_essential_fields(items: list, max_items: int = 15) -> list:
         """필수 필드만 추출하여 AI 프롬프트 크기 최적화"""
         essential = []
         for item in items[:max_items]:  # 상위 N개만 사용
@@ -194,13 +226,21 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
     total_new_entry = sum(len(tab_data.get("new_entry", [])) for tab_data in tabs_data.values())
     total_rank_drop = sum(len(tab_data.get("rank_drop", [])) for tab_data in tabs_data.values())
     
-    # 데이터를 텍스트 형태로 압축 (Flash 모델 최적화)
+    # 데이터를 텍스트 형태로 압축 (Flash 모델 최적화 + 상품명 단축)
     optimized_data = optimize_data_for_flash(all_categories_data)
+    
+    # 디버깅: 압축된 데이터 확인
+    print(f"🔍 [DEBUG] 압축된 데이터 길이: {len(optimized_data):,} 자", file=sys.stderr)
+    print(f"🔍 [DEBUG] 압축된 데이터 일부 (처음 300자):\n{optimized_data[:300]}", file=sys.stderr)
+    
+    # 한글 포함 여부 확인
+    has_korean = any('\uac00' <= char <= '\ud7a3' for char in optimized_data)
+    print(f"🔍 [DEBUG] 압축된 데이터 한글 포함 여부: {has_korean}", file=sys.stderr)
     
     # 섹션별 프롬프트 구성
     section_prompts = {
         1: f"""
-[섹션 1: 시장 개요]
+[섹션 1: Market Overview (시장 핵심 키워드 3가지)]
 ⚠️ **중요: 이 섹션 1만 분석하고 답변하세요.**
 
 현재 주차: {current_week}
@@ -214,14 +254,14 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 {optimized_data}
 
 위 데이터를 바탕으로 **시장 개요**를 작성하세요:
-- 소재(Material) 흐름 분석
-- TPO(Time, Place, Occasion) 분석
-- 가격(Price) 흐름 분석
+* **Material (소재):** 유행하는 텍스처나 원단
+* **Occasion (TPO):** 소비 목적
+* **Price (가격):** 소비 패턴
 
-각 항목을 자연스러운 문단으로 서술하세요.
+각 항목을 글머리 기호로 간결하게 작성하세요.
 """,
         2: f"""
-[섹션 2: 세그먼트별 심층 분석]
+[섹션 2: Segment Deep Dive (세그먼트별 심층 분석)]
 ⚠️ **중요: 이 섹션 2만 분석하고 답변하세요.**
 
 현재 주차: {current_week}
@@ -230,14 +270,14 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 {optimized_data}
 
 위 데이터를 바탕으로 **세그먼트별 심층 분석**을 작성하세요:
-- 급상승(Rising Star) 이슈 분석
-- 신규진입(New Entry) 이슈 분석
-- 순위하락(Rank Drop) 이슈 분석
+* **🔥 급상승 (Rising Star):** 무엇이 트렌드를 주도하며 치고 올라오는가?
+* **🚀 신규 진입 (New Entry):** 새로운 루키 브랜드나 고단가 아이템의 등장
+* **📉 순위 하락 (Rank Drop):** 무엇이 시즌 아웃되거나 대체되었는가?
 
-각 세그먼트를 자연스러운 문단으로 서술하세요.
+각 세그먼트를 글머리 기호로 간결하게 작성하세요. 근거(구체적 순위 변동)를 반드시 포함하세요.
 """,
         3: f"""
-[섹션 3: 카테고리별 심층 분석]
+[섹션 3: Category Deep Dive (6대 핵심 카테고리 상세)]
 ⚠️ **중요: 이 섹션 3만 분석하고 답변하세요.**
 
 현재 주차: {current_week}
@@ -246,10 +286,11 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 {optimized_data}
 
 위 데이터를 바탕으로 **카테고리별 심층 분석**을 작성하세요:
-- 각 카테고리(상의, 바지, 스커트, 원피스, 니트웨어, 셋업)별 트렌드 분석
-- 카테고리별 주요 브랜드 및 상품 패턴 분석
+각 카테고리(상의, 바지, 스커트, 원피스, 니트웨어, 셋업)별로:
+* **카테고리명:** (트렌드 1줄 요약)
+  - Key Item: **'브랜드'**의 **'상품명'** (구체적 순위 변동 포함)
 
-각 카테고리를 자연스러운 문단으로 서술하세요.
+각 카테고리를 글머리 기호로 간결하게 작성하세요.
 """
     }
     
@@ -269,21 +310,24 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 핵심 6대 카테고리 데이터 (각 세그먼트당 상위 15개):
 {optimized_data}
 
-위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요:
-1. 시장 개요: 소재, TPO, 가격 흐름을 문단으로 서술
-2. 세그먼트별 심층 분석: 급상승, 신규진입, 순위하락 이슈를 문단으로 서술
-3. 카테고리별 심층 분석: 각 카테고리별 트렌드를 문단으로 서술
+위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요.
+"""
 """
 
+    return ""
+
+
+# ============================================
+# AI 분석 생성 함수
+# ============================================
 
 def generate_trend_analysis(
     snapshot_data: Dict,
     api_key: Optional[str] = None,
-    max_tokens: int = 8192  # 각 섹션별로 8192 사용
+    max_tokens: int = 8192
 ) -> Optional[str]:
     """
     29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성 (섹션별 분리 생성)
-    월간 리포트와 동일하게 섹션별로 나눠서 생성하여 한글 생성 안정성 확보
     
     Args:
         snapshot_data: 트렌드 스냅샷 데이터 (tabs_data, current_week 포함)
@@ -311,24 +355,10 @@ def generate_trend_analysis(
     try:
         print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작... (섹션별 분리 생성)", file=sys.stderr)
         
-        # 데이터 확인 (디버깅)
-        tabs_data = snapshot_data.get("tabs_data", {})
-        if tabs_data:
-            first_tab = list(tabs_data.keys())[0]
-            first_tab_data = tabs_data[first_tab]
-            if first_tab_data.get("rising_star"):
-                first_item = first_tab_data["rising_star"][0]
-                brand_name = first_item.get("Brand_Name", "")
-                product_name = first_item.get("Product_Name", "")
-                print(f"🔍 [DEBUG] 샘플 데이터 확인:", file=sys.stderr)
-                print(f"   - 브랜드명 (첫 번째 상품): '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
-                print(f"   - 상품명 (첫 번째 상품): '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
-        
-        # Safety Settings 설정 (한글 필터링 방지)
+        # Safety Settings 설정 (한글 필터링 방지 - 필수)
         safety_settings = None
         if SAFETY_SETTINGS_AVAILABLE and HarmCategory is not None and HarmBlockThreshold is not None:
             try:
-                # google-genai v1.0+ 방식 시도
                 safety_settings = [
                     types.SafetySetting(
                         category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -349,27 +379,16 @@ def generate_trend_analysis(
                 ]
                 print(f"✅ [DEBUG] Safety Settings 설정 완료 (모든 카테고리 BLOCK_NONE)", file=sys.stderr)
             except (AttributeError, TypeError) as e:
-                # types.SafetySetting이 없으면 dict 형태로 시도
-                try:
-                    safety_settings = {
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-                    }
-                    print(f"✅ [DEBUG] Safety Settings 설정 완료 (dict 형태, 모든 카테고리 BLOCK_NONE)", file=sys.stderr)
-                except Exception as e2:
-                    print(f"⚠️ [WARN] Safety Settings 설정 실패: {e2}, 기본 설정 사용", file=sys.stderr)
+                print(f"⚠️ [WARN] Safety Settings 설정 실패: {e}, 기본 설정 사용", file=sys.stderr)
         else:
             print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
         
-        # 섹션별로 개별 API 호출 (월간 리포트와 동일한 방식)
+        # 섹션별로 개별 API 호출
         sections = [1, 2, 3]  # 1=시장개요, 2=세그먼트분석, 3=카테고리분석
         section_results = {}
+        section_names = {1: "Market Overview", 2: "Segment Deep Dive", 3: "Category Deep Dive"}
         
         for section_num in sections:
-            section_names = {1: "시장 개요", 2: "세그먼트별 심층 분석", 3: "카테고리별 심층 분석"}
-            
             try:
                 print(f"🤖 [INFO] 섹션 {section_num} ({section_names[section_num]}) AI 분석 시작...", file=sys.stderr)
                 
@@ -388,10 +407,10 @@ def generate_trend_analysis(
                 
                 # GenerateContentConfig 구성
                 config_kwargs = {
-                    "temperature": 0.7,  # 월간 리포트와 동일
+                    "temperature": 0.7,
                     "top_p": 0.95,
                     "top_k": 40,
-                    "max_output_tokens": max_tokens,  # 8192
+                    "max_output_tokens": max_tokens,
                 }
                 
                 # Safety Settings 추가 (있는 경우)
@@ -423,53 +442,32 @@ def generate_trend_analysis(
                 # 섹션 제목 제거 (AI가 섹션 제목을 포함할 수 있음) - 보수적으로 처리
                 section_text = section_text.strip()
                 
-                # 원본 첫 줄 로그 출력 (제목 제거 전)
+                # 원본 첫 줄 로그 출력
                 first_line_raw = section_text.split('\n')[0].strip() if section_text else ""
                 print(f"📄 [RESPONSE] 섹션 {section_num} 원본 첫 줄: {first_line_raw[:200]}", file=sys.stderr)
                 
-                # 섹션 제목 패턴 제거 (더 보수적으로 - 첫 줄만 제거)
+                # 섹션 제목 패턴 제거 (첫 줄만 확인)
                 lines = section_text.split('\n')
                 if lines and (lines[0].strip().startswith('##') or lines[0].strip().startswith('# 섹션')):
-                    # 첫 줄이 섹션 제목이면 제거
                     if len(lines) > 1:
                         section_text = '\n'.join(lines[1:]).strip()
                     else:
                         section_text = section_text.strip()
                 
-                # 한글 포함 여부 확인 (디버깅) - 제목 제거 후
+                # 제목 제거 후 첫 줄 로그 출력
+                first_line_after = section_text.split('\n')[0].strip() if section_text else ""
+                print(f"📄 [RESPONSE] 섹션 {section_num} 제목 제거 후 첫 줄: {first_line_after[:200]}", file=sys.stderr)
+                
+                # 한글 포함 여부 확인 (디버깅)
                 if section_text:
                     korean_count = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
                     total_chars = len(section_text)
                     korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부 (제목 제거 후): {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
                     if korean_ratio < 30:
                         print(f"⚠️ [WARN] 섹션 {section_num}에 한글이 적습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
-                        print(f"   - 응답 미리보기 (처음 500자): {section_text[:500]}", file=sys.stderr)
-                    
-                    # 섹션 제목 제거 후 첫 줄 로그 출력
-                    first_line_after = section_text.split('\n')[0].strip() if section_text else ""
-                    if first_line_after:
-                        print(f"📄 [RESPONSE] 섹션 {section_num} 제목 제거 후 첫 줄: {first_line_after[:200]}", file=sys.stderr)
-                    else:
-                        print(f"⚠️ [WARN] 섹션 {section_num} 제목 제거 후 첫 줄이 비어있습니다!", file=sys.stderr)
-                else:
-                    print(f"⚠️ [WARN] 섹션 {section_num} 전체 응답이 비어있습니다!", file=sys.stderr)
                 
-                # 아이콘/이모지 제거 (안전장치) - 디버깅
-                section_text_before_cleanup = section_text
-                korean_count_before = sum(1 for char in section_text_before_cleanup if '\uac00' <= char <= '\ud7a3')
-                
-                section_text = remove_icons_and_emojis(section_text)
-                
-                korean_count_after = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
-                if korean_count_before > 0 and korean_count_after == 0:
-                    print(f"⚠️ [WARN] ⚠️⚠️⚠️ remove_icons_and_emojis가 한글을 제거했습니다! (이전: {korean_count_before}자, 이후: {korean_count_after}자)", file=sys.stderr)
-                    print(f"   - cleanup 전 텍스트 (처음 200자): {section_text_before_cleanup[:200]}", file=sys.stderr)
-                    print(f"   - cleanup 후 텍스트 (처음 200자): {section_text[:200]}", file=sys.stderr)
-                    # cleanup 함수가 한글을 제거하면 원본을 사용
-                    section_text = section_text_before_cleanup
-                    print(f"   - 원본 복구 완료", file=sys.stderr)
-                
+                # 후처리 없이 원본 그대로 저장 (remove_icons_and_emojis 호출 금지)
                 section_results[section_num] = section_text
                 print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(section_text)}자)", file=sys.stderr)
                 
@@ -484,49 +482,26 @@ def generate_trend_analysis(
             print(f"⚠️ [WARN] 모든 섹션 분석 실패", file=sys.stderr)
             return None
         
-        # 섹션별 결과 검증 (디버깅)
-        for section_num in [1, 2, 3]:
-            if section_num in section_results:
-                section_content = section_results[section_num]
-                korean_count = sum(1 for char in section_content if '\uac00' <= char <= '\ud7a3')
-                total_chars = len(section_content)
-                korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-                first_line = section_content.split('\n')[0].strip()[:100] if section_content else ""
-                print(f"🔍 [DEBUG] 섹션 {section_num} 최종 저장 내용 검증:", file=sys.stderr)
-                print(f"   - 길이: {total_chars}자", file=sys.stderr)
-                print(f"   - 한글 포함: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
-                print(f"   - 첫 줄 (100자): {first_line}", file=sys.stderr)
-        
         # 리포트 구성 (섹션 제목 포함)
         analysis_parts = []
         
         if 1 in section_results:
-            analysis_parts.append(f"## 시장 개요\n\n{section_results[1]}")
+            analysis_parts.append(f"## Section 1. Market Overview (시장 핵심 키워드 3가지)\n\n{section_results[1]}")
         
         if 2 in section_results:
-            analysis_parts.append(f"\n\n## 세그먼트별 심층 분석\n\n{section_results[2]}")
+            analysis_parts.append(f"\n\n## Section 2. Segment Deep Dive (세그먼트별 심층 분석)\n\n{section_results[2]}")
         
         if 3 in section_results:
-            analysis_parts.append(f"\n\n## 카테고리별 심층 분석\n\n{section_results[3]}")
+            analysis_parts.append(f"\n\n## Section 3. Category Deep Dive (6대 핵심 카테고리 상세)\n\n{section_results[3]}")
         
         analysis_text = "\n".join(analysis_parts)
-        
-        # 합친 직후 검증 (디버깅)
-        if analysis_text:
-            korean_count_temp = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
-            total_chars_temp = len(analysis_text)
-            korean_ratio_temp = (korean_count_temp / total_chars_temp * 100) if total_chars_temp > 0 else 0
-            print(f"🔍 [DEBUG] 합친 직후 리포트 검증:", file=sys.stderr)
-            print(f"   - 길이: {total_chars_temp}자", file=sys.stderr)
-            print(f"   - 한글 포함: {korean_count_temp}/{total_chars_temp} ({korean_ratio_temp:.1f}%)", file=sys.stderr)
         
         # 최종 한글 포함 여부 확인
         if analysis_text:
             korean_count = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
             total_chars = len(analysis_text)
             korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-            print(f"🔍 [DEBUG] 최종 리포트 한글 포함 여부:", file=sys.stderr)
-            print(f"   - 한글 문자 개수: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+            print(f"🔍 [DEBUG] 최종 리포트 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
             
         char_count = len(analysis_text)
         print(f"✅ [INFO] 전체 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
@@ -539,32 +514,9 @@ def generate_trend_analysis(
         return None
 
 
-def remove_icons_and_emojis(text: str) -> str:
-    """
-    텍스트에서 아이콘 이모지 제거 (안전장치)
-    마크다운 형식이나 특수 문자는 유지
-    """
-    # 이모지 제거 (유니코드 이모지 범위)
-    emoji_pattern = re.compile(
-        "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F1E0-\U0001F1FF"  # flags
-        "\U00002702-\U000027B0"
-        "\U000024C2-\U0001F251"
-        "]+",
-        flags=re.UNICODE
-    )
-    
-    text = emoji_pattern.sub('', text)
-    
-    # 불필요한 이모지 문자 제거 (단, 마크다운 문법은 유지)
-    # 화살표, 불릿 포인트 등은 유지
-    text = re.sub(r'[🔥🚀📉📊💡📋✅❌⚠️]', '', text)
-    
-    return text.strip()
-
+# ============================================
+# 스냅샷 처리 함수
+# ============================================
 
 def generate_trend_analysis_from_snapshot(
     snapshot_data: Dict,
@@ -612,7 +564,6 @@ def generate_ai_analysis_from_file(
 ) -> Dict:
     """
     스냅샷 파일(GCS 또는 로컬)에서 읽어서 AI 분석 후 저장
-    월간 리포트와 동일한 방식
     
     Args:
         snapshot_file: 입력 스냅샷 파일 경로 (로컬 파일 또는 gs:// 경로)
@@ -625,7 +576,6 @@ def generate_ai_analysis_from_file(
     try:
         from google.cloud import storage
         import gzip
-        import io
     except ImportError:
         print("❌ [ERROR] google-cloud-storage 패키지가 필요합니다.", file=sys.stderr)
         raise
@@ -648,36 +598,16 @@ def generate_ai_analysis_from_file(
         if not blob.exists():
             raise FileNotFoundError(f"GCS 파일이 존재하지 않습니다: {snapshot_file}")
         
-        # Gzip 압축 해제 (월간 리포트와 동일한 방식)
+        # Gzip 압축 해제
         snapshot_bytes = blob.download_as_bytes(raw_download=True)
         try:
-            # 월간 리포트와 동일한 방식: gzip.decompress() 사용
             snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
             print(f"✅ [DEBUG] Gzip 압축 해제 성공", file=sys.stderr)
         except (gzip.BadGzipFile, OSError) as e:
-            # Gzip 압축 해제 실패 → 압축되지 않은 JSON 파일로 처리
             snapshot_json_str = snapshot_bytes.decode('utf-8')
             print(f"⚠️ [WARN] Gzip 압축 해제 실패, 일반 텍스트로 처리: {e}", file=sys.stderr)
         
         snapshot_data = json.loads(snapshot_json_str)
-        
-        # 데이터 확인 (디버깅)
-        print(f"✅ [DEBUG] 스냅샷 데이터 로드 완료", file=sys.stderr)
-        if "tabs_data" in snapshot_data:
-            tabs_count = len(snapshot_data["tabs_data"])
-            print(f"   - 탭 개수: {tabs_count}", file=sys.stderr)
-            # 첫 번째 탭의 첫 번째 상품 확인
-            first_tab = list(snapshot_data["tabs_data"].keys())[0] if snapshot_data["tabs_data"] else None
-            if first_tab:
-                first_tab_data = snapshot_data["tabs_data"][first_tab]
-                if first_tab_data.get("rising_star"):
-                    first_item = first_tab_data["rising_star"][0]
-                    brand_name = first_item.get("Brand_Name", "")
-                    product_name = first_item.get("Product_Name", "")
-                    print(f"   - 샘플 데이터 확인:", file=sys.stderr)
-                    print(f"     * 탭: {first_tab}", file=sys.stderr)
-                    print(f"     * 브랜드명: '{brand_name}' ({len(brand_name)}자)", file=sys.stderr)
-                    print(f"     * 상품명: '{product_name[:50]}...' ({len(product_name)}자)", file=sys.stderr)
     else:
         print(f"📥 [INFO] 로컬 파일 로드 중: {snapshot_file}", file=sys.stderr)
         with open(snapshot_file, 'r', encoding='utf-8') as f:
@@ -695,16 +625,12 @@ def generate_ai_analysis_from_file(
         print(f"✅ [DEBUG] AI 분석 리포트가 스냅샷 데이터에 포함되어 있습니다 ({analysis_report_len}자).", file=sys.stderr)
     else:
         print(f"⚠️ [DEBUG] AI 분석 리포트가 스냅샷 데이터에 포함되지 않았습니다.", file=sys.stderr)
-        print(f"   - insights 필드 존재: {'insights' in snapshot_data}", file=sys.stderr)
-        if "insights" in snapshot_data:
-            print(f"   - analysis_report 존재: {'analysis_report' in snapshot_data['insights']}", file=sys.stderr)
     
     # 결과 저장 (출력 경로 미지정 시 입력 파일 경로에 덮어쓰기)
     output_path = output_file or snapshot_file
     
     if output_path.startswith("gs://"):
         print(f"📤 [INFO] GCS에 파일 업로드 중: {output_path}", file=sys.stderr)
-        # GCS에 업로드
         parts = output_path.replace("gs://", "").split("/", 1)
         if len(parts) != 2:
             raise ValueError(f"GCS 경로 파싱 실패: {output_path}")
@@ -721,15 +647,7 @@ def generate_ai_analysis_from_file(
         json_bytes = json_str.encode('utf-8')
         compressed_bytes = gzip.compress(json_bytes)
         
-        # 저장 전 insights 필드 확인 (디버깅)
-        if "insights" in snapshot_data and snapshot_data["insights"].get("analysis_report"):
-            print(f"✅ [DEBUG] GCS 업로드 전 insights 필드 확인 완료.", file=sys.stderr)
-        else:
-            print(f"⚠️ [DEBUG] GCS 업로드 전 insights 필드가 없습니다.", file=sys.stderr)
-        
         blob.upload_from_string(compressed_bytes, content_type='application/gzip')
-        
-        # 저장 후 확인 (디버깅)
         print(f"✅ [DEBUG] GCS 업로드 완료. 파일 크기: {len(compressed_bytes):,} bytes", file=sys.stderr)
     else:
         print(f"📤 [INFO] 로컬 파일 저장 중: {output_path}", file=sys.stderr)
@@ -741,8 +659,11 @@ def generate_ai_analysis_from_file(
     return snapshot_data
 
 
+# ============================================
+# CLI 진입점
+# ============================================
+
 if __name__ == "__main__":
-    # CLI 사용 예시
     import argparse
     
     parser = argparse.ArgumentParser(description="29CM 트렌드 분석 AI 리포트 생성")
@@ -758,4 +679,3 @@ if __name__ == "__main__":
         output_file=args.output,
         api_key=args.api_key
     )
-

@@ -1628,7 +1628,8 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     categories.forEach(categoryName => {
         // **카테고리명:** 패턴으로 시작하는 텍스트 추출
         const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const categoryPattern = new RegExp(`\\*\\*${escapedCategory}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|$)`, 'm');
+        // 카테고리 헤더 다음의 내용을 다음 카테고리 헤더나 텍스트 끝까지 추출
+        const categoryPattern = new RegExp(`\\*\\*${escapedCategory}:\\*\\*\\s*\\n\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\*[^:]+:\\*\\*|$)`, 'm');
         const match = cleanedText.match(categoryPattern);
         
         console.log(`[renderSection3SegmentContent] ${categoryName} 패턴 매칭 시도, match:`, match ? '성공' : '실패');
@@ -1639,7 +1640,7 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             if (cleanedText.includes(categoryName)) {
                 const categoryIndex = cleanedText.indexOf(`**${categoryName}:`);
                 if (categoryIndex >= 0) {
-                    console.log(`[Section 3 디버그] ${categoryName} 발견 위치: ${categoryIndex}, 주변 텍스트:`, cleanedText.substring(categoryIndex, categoryIndex + 100));
+                    console.log(`[Section 3 디버그] ${categoryName} 발견 위치: ${categoryIndex}, 주변 텍스트:`, cleanedText.substring(categoryIndex, categoryIndex + 200));
                 }
             }
             return;
@@ -1647,6 +1648,15 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         
         if (match && match[1]) {
             let categoryText = match[1].trim();
+            
+            console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 길이:`, categoryText.length);
+            console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 첫 200자:`, categoryText.substring(0, 200));
+            
+            // 빈 텍스트 체크
+            if (!categoryText || categoryText.length === 0) {
+                console.warn(`[Section 3] ${categoryName} 카테고리 텍스트가 비어있습니다.`);
+                return;
+            }
             
             // 마크다운을 HTML로 변환
             if (typeof marked !== 'undefined') {
@@ -1666,6 +1676,8 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     } else {
                         categoryText = markdownHtml;
                     }
+                    
+                    console.log(`[renderSection3SegmentContent] ${categoryName} 마크다운 변환 후 길이:`, categoryText.length);
                 } catch (e) {
                     console.warn(`[Section 3] ${categoryName} 마크다운 변환 실패:`, e);
                     categoryText = categoryText.replace(/\n/g, '<br>');

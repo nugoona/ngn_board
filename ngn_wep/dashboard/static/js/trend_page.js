@@ -470,14 +470,6 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
         section3Length: sections.section3.length
     });
     
-    // Section 3 세그먼트별로 파싱
-    const section3Data = parseSection3BySegment(sections.section3);
-    console.log('[renderTrendAnalysisReport] Section 3 세그먼트 파싱 결과:', {
-        rising_star: section3Data.rising_star.length,
-        new_entry: section3Data.new_entry.length,
-        rank_drop: section3Data.rank_drop.length
-    });
-    
     // Section 1, 2 렌더링
     let section1And2Html = '';
     if (sections.section1 || sections.section2) {

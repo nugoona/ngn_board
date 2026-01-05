@@ -11,34 +11,69 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.5">
   <script>
-    // 페이지 로드 시 링크 URL 동적으로 설정
-    document.addEventListener('DOMContentLoaded', function() {
-      const card29cmLink = document.getElementById('card29cmLink');
-      const cardAblyLink = document.getElementById('cardAblyLink');
-      
-      if (card29cmLink) {
-        // sessionStorage에서 업체 선택 정보 가져오기
-        let url = '/trend/29cm';
-        const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
-        const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+    // 즉시 실행 (DOM 로드 전에도 실행 가능)
+    (function() {
+      function setupTrendCards() {
+        console.log('[Trend Selection] setupTrendCards 실행');
         
-        // 사이트 성과 페이지의 업체 선택을 우선 사용
-        const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        const card29cmLink = document.getElementById('card29cmLink');
+        const cardAblyLink = document.getElementById('cardAblyLink');
         
-        if (selectedCompany && selectedCompany !== "all") {
-          url += '?company_name=' + encodeURIComponent(selectedCompany);
+        console.log('[Trend Selection] card29cmLink:', card29cmLink);
+        console.log('[Trend Selection] cardAblyLink:', cardAblyLink);
+        
+        if (card29cmLink) {
+          // 클릭 이벤트 추가 (capture phase에서 먼저 실행하여 common.js보다 우선)
+          card29cmLink.addEventListener('click', function(e) {
+            console.log('[Trend Selection] 29CM 링크 클릭 이벤트 발생');
+            
+            // sessionStorage에서 업체 선택 정보 가져오기
+            let url = '/trend/29cm';
+            const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+            const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+            
+            console.log('[Trend Selection] siteSelectedCompany:', siteSelectedCompany);
+            console.log('[Trend Selection] adsSelectedCompany:', adsSelectedCompany);
+            
+            // 사이트 성과 페이지의 업체 선택을 우선 사용
+            const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+            
+            if (selectedCompany && selectedCompany !== "all") {
+              url += '?company_name=' + encodeURIComponent(selectedCompany);
+            }
+            
+            console.log('[Trend Selection] 최종 이동 URL:', url);
+            
+            // href 업데이트
+            this.href = url;
+            
+            // 기본 동작으로 이동 (preventDefault 하지 않음)
+            console.log('[Trend Selection] 기본 링크 동작으로 이동');
+          }, true); // capture phase
         }
         
-        card29cmLink.href = url;
+        if (cardAblyLink) {
+          cardAblyLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            alert("Ably 트렌드 페이지는 준비 중입니다.");
+            return false;
+          }, true);
+        }
       }
       
-      if (cardAblyLink) {
-        cardAblyLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          alert("Ably 트렌드 페이지는 준비 중입니다.");
-        });
+      // DOM이 이미 로드된 경우
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupTrendCards);
+      } else {
+        // DOM이 이미 로드된 경우
+        setupTrendCards();
       }
-    });
+      
+      // 추가 보장: 약간의 지연 후에도 실행
+      setTimeout(setupTrendCards, 100);
+    })();
   </script>
   <style>
     body {

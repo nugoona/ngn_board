@@ -272,7 +272,7 @@ function renderMetaAdsAdsetSummaryChart(data, totalSpendSum) {
       radius: '55%',
       center: ['50%', '40%'],
       data: chartData,
-      color: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
+      color: ['#1e293b', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'],
       label: {
         show: true,
         position: 'outside',

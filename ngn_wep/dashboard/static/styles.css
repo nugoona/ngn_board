@@ -1196,9 +1196,9 @@ scrollbar-width: thin;
 
 /* ✅ 탭 활성화 스타일 */
 .tab-btn.active {
-  background-color: #6366f1;
+  background-color: #1e293b;
   color: white;
-  border-color: #6366f1;
+  border-color: #1e293b;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2); /* ✅ 그림자 조금 강하게 */
 }
 
@@ -3859,8 +3859,8 @@ h2::before {
 }
 
 .radio-item input[type="radio"]:checked {
-  border-color: #6366f1;
-  background: #6366f1;
+  border-color: #1e293b;
+  background: #1e293b;
 }
 
 .radio-item input[type="radio"]:checked::after {
@@ -3876,13 +3876,13 @@ h2::before {
 }
 
 .radio-item input[type="radio"]:hover {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
 }
 
 .radio-item input[type="radio"]:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.2);
 }
 
 /* 기존 라디오 버튼 스타일 오버라이드 */
@@ -3903,8 +3903,8 @@ input[type="radio"] {
 }
 
 input[type="radio"]:checked {
-  border-color: #6366f1;
-  background: #6366f1;
+  border-color: #1e293b;
+  background: #1e293b;
 }
 
 input[type="radio"]:checked::after {
@@ -3920,13 +3920,13 @@ input[type="radio"]:checked::after {
 }
 
 input[type="radio"]:hover {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
 }
 
 input[type="radio"]:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.2);
 }
 
 /* 라디오 버튼 라벨 스타일 */
@@ -3968,8 +3968,8 @@ select:hover {
 
 select:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
   background-color: #ffffff;
 }
 

@@ -778,6 +778,7 @@
 <script>
   var userCompanyList = {{ session['company_names'] | tojson }};
   var currentUserId = "{{ session['user_id'] }}";
+  var selectedCompany = {{ selected_company | tojson | default('null') }};
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 

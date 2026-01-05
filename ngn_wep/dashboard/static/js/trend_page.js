@@ -114,11 +114,77 @@ function renderTabs() {
     });
 }
 
+/**
+ * 업체 선택 확인 (월간 리포트와 동일한 방식)
+ */
+function getSelectedCompany() {
+  const companySelect = document.getElementById("accountFilter");
+  if (!companySelect) return null;
+  const value = companySelect.value;
+  return value && value !== "all" ? value : null;
+}
+
+/**
+ * 토스트 메시지 표시 (월간 리포트와 동일한 방식)
+ */
+function showToast(message) {
+  const existingToast = document.querySelector(".toast-message");
+  if (existingToast) existingToast.remove();
+  
+  const toast = document.createElement("div");
+  toast.className = "toast-message";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.classList.add("show"), 10);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // 모든 탭 데이터를 한 번에 로드 (비용 효율화)
 async function loadAllTabsData() {
     showLoading();
     
     try {
+        // 업체 선택 확인 (쿼리 파라미터 또는 템플릿에서 전달된 값 사용)
+        let companyName = null;
+        
+        // 1순위: URL 쿼리 파라미터에서 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const companyFromUrl = urlParams.get('company_name');
+        if (companyFromUrl) {
+            companyName = companyFromUrl.toLowerCase();
+        }
+        
+        // 2순위: 템플릿에서 전달된 selectedCompany 사용
+        if (!companyName && typeof window.selectedCompany !== 'undefined' && window.selectedCompany) {
+            companyName = window.selectedCompany.toLowerCase();
+        }
+        
+        // 3순위: accountFilter에서 가져오기 (하위 호환성, 트렌드 페이지에는 필터 UI 없음)
+        if (!companyName) {
+            const companyFromFilter = getSelectedCompany();
+            if (companyFromFilter) {
+                companyName = companyFromFilter.toLowerCase();
+            }
+        }
+        
+        // 업체가 선택되지 않았으면 에러 표시 및 리다이렉트
+        if (!companyName) {
+            console.warn("[트렌드 페이지] 업체가 선택되지 않았습니다.");
+            showError("업체를 먼저 선택해주세요. 사이트 성과 페이지에서 업체를 선택한 후 다시 시도해주세요.");
+            
+            // 3초 후 사이트 성과 페이지로 리다이렉트
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
+            return;
+        }
+        
+        console.log("[DEBUG] 선택된 업체:", companyName);
+        
         const response = await fetch('/dashboard/trend', {
             method: 'POST',
             headers: {
@@ -126,7 +192,8 @@ async function loadAllTabsData() {
             },
             body: JSON.stringify({
                 tab_names: availableTabs, // 모든 탭을 한 번에 요청
-                trend_type: 'all'
+                trend_type: 'all',
+                company_name: companyName // 선택된 업체 전달 (소문자로 변환됨)
             })
         });
         

@@ -81,8 +81,13 @@ function setupTrendTypeTabs() {
             if (sidebar && !sidebar.classList.contains('hidden') && sidebar.classList.contains('active')) {
                 const contentElement = document.getElementById('trendAnalysisContent');
                 if (contentElement && window.trendInsights && window.trendInsights.analysis_report) {
+                    console.log(`[Section 3 썸네일] 탭 변경 감지 (${trendType}), 썸네일 재렌더링 시작`);
                     renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
+                } else {
+                    console.warn('[Section 3 썸네일] 탭 변경 시 썸네일 재렌더링 실패 - contentElement 또는 trendInsights 없음');
                 }
+            } else {
+                console.log('[Section 3 썸네일] 탭 변경 감지되었으나 사이드바가 닫혀있어 썸네일 재렌더링 스킵');
             }
         });
     });
@@ -676,6 +681,11 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         console.warn('[Section 3 썸네일] markdown-content를 찾을 수 없습니다.');
         return;
     }
+    
+    // 기존 썸네일 제거 (탭 변경 시 기존 썸네일을 제거하기 위해)
+    const existingThumbnails = markdownContent.querySelectorAll('.trend-category-thumbnails');
+    existingThumbnails.forEach(thumb => thumb.remove());
+    console.log(`[Section 3 썸네일] 기존 썸네일 ${existingThumbnails.length}개 제거 완료`);
     
     // Section 3 섹션 찾기
     const section3Headers = markdownContent.querySelectorAll('h2, h3');

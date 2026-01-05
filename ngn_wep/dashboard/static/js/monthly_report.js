@@ -1800,6 +1800,9 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
         }
         
         if (brand && name) {
+          // 썸네일 URL 추출
+          const thumbnailUrl = item.img || item.thumbnail_url || "";
+          
           competitorsFromData.push({
             brand: brand,
             productName: name,
@@ -1807,6 +1810,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             rankNumber: rank,
             tabName: tab,
             url: url,
+            thumbnailUrl: thumbnailUrl,
             source: "data" // 데이터에서 직접 추출
           });
         }
@@ -1868,9 +1872,13 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
           const foundItem = items.find(item => item.tab === tabName && item.rank === rank);
           
           let url = "";
+          let thumbnailUrl = "";
           if (foundItem) {
             // URL 추출 (여러 필드 확인)
             url = foundItem.url || foundItem.item_url || foundItem.itemUrl || "";
+            
+            // 썸네일 URL 추출
+            thumbnailUrl = foundItem.img || foundItem.thumbnail_url || "";
             
             // URL이 없으면 item_id로 생성
             if (!url) {
@@ -1903,7 +1911,8 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             rank: rankInfo,
             rankNumber: rankNumber,
             tabName: tabName,
-            url: url
+            url: url,
+            thumbnailUrl: thumbnailUrl
           });
         }
       } else {
@@ -1926,6 +1935,7 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
             let brand = "";
             let productName = "";
             let url = "";
+            let thumbnailUrl = "";
             let foundItem = null;
             
             if (candidateItems.length > 0) {
@@ -1970,9 +1980,10 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
                 }
               }
               
-              // URL 추출
+              // URL 및 썸네일 추출
               if (foundItem) {
                 url = foundItem.url || foundItem.item_url || foundItem.itemUrl || "";
+                thumbnailUrl = foundItem.img || foundItem.thumbnail_url || "";
                 // URL이 없으면 item_id로 생성
                 if (!url) {
                   const itemId = foundItem.item_id || foundItem.itemId;
@@ -2010,7 +2021,8 @@ function renderSection5AnalysisWithCompetitors(analysisText, items) {
               rank: rankInfo,
               rankNumber: rankNumber,
               tabName: tabName2,
-              url: url
+              url: url,
+              thumbnailUrl: thumbnailUrl
             });
           }
         }
@@ -2132,8 +2144,8 @@ function renderCompetitorsTable(competitorsList) {
     }
   }
   
-  const showAll = competitorsListGlobal.length <= 5;
-  const displayCount = showAll ? competitorsListGlobal.length : 5;
+  const showAll = competitorsListGlobal.length <= 3;
+  const displayCount = showAll ? competitorsListGlobal.length : 3;
   
   tableBody.innerHTML = "";
   
@@ -2158,9 +2170,29 @@ function renderCompetitorsTable(competitorsList) {
     rankCell.textContent = competitor.rank;
     
     const urlCell = document.createElement("td");
-    urlCell.style.padding = "12px";
+    urlCell.style.padding = "8px";
     urlCell.style.textAlign = "center";
-    if (competitor.url) {
+    urlCell.style.verticalAlign = "middle";
+    if (competitor.thumbnailUrl && competitor.url) {
+      const link = document.createElement("a");
+      link.href = competitor.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "inline-block";
+      link.style.textDecoration = "none";
+      
+      const img = document.createElement("img");
+      img.src = competitor.thumbnailUrl;
+      img.alt = competitor.productName || "";
+      img.style.width = "120px";
+      img.style.height = "120px";
+      img.style.objectFit = "cover";
+      img.style.display = "block";
+      img.style.borderRadius = "4px";
+      
+      link.appendChild(img);
+      urlCell.appendChild(link);
+    } else if (competitor.url) {
       const link = document.createElement("a");
       link.href = competitor.url;
       link.target = "_blank";
@@ -2212,9 +2244,29 @@ function renderCompetitorsTable(competitorsList) {
         rankCell.textContent = competitor.rank;
         
         const urlCell = document.createElement("td");
-        urlCell.style.padding = "12px";
+        urlCell.style.padding = "8px";
         urlCell.style.textAlign = "center";
-        if (competitor.url) {
+        urlCell.style.verticalAlign = "middle";
+        if (competitor.thumbnailUrl && competitor.url) {
+          const link = document.createElement("a");
+          link.href = competitor.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.style.display = "inline-block";
+          link.style.textDecoration = "none";
+          
+          const img = document.createElement("img");
+          img.src = competitor.thumbnailUrl;
+          img.alt = competitor.productName || "";
+          img.style.width = "120px";
+          img.style.height = "120px";
+          img.style.objectFit = "cover";
+          img.style.display = "block";
+          img.style.borderRadius = "4px";
+          
+          link.appendChild(img);
+          urlCell.appendChild(link);
+        } else if (competitor.url) {
           const link = document.createElement("a");
           link.href = competitor.url;
           link.target = "_blank";

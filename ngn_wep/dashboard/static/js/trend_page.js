@@ -212,6 +212,7 @@ async function loadAllTabsData() {
             // 모든 탭 데이터를 메모리에 저장
             if (data.tabs_data) {
                 allTabsData = data.tabs_data;
+                window.allTabsData = allTabsData; // 전역으로 설정 (Section 3 썸네일용)
             } else {
                 // 단일 탭 응답인 경우 (하위 호환)
                 allTabsData[currentTab] = {
@@ -219,10 +220,23 @@ async function loadAllTabsData() {
                     new_entry: data.new_entry || [],
                     rank_drop: data.rank_drop || []
                 };
+                window.allTabsData = allTabsData; // 전역으로 설정
             }
             
             // 현재 탭 데이터 표시
             displayCurrentTabData();
+            
+            // 이미 AI 리포트가 렌더링되어 있으면 썸네일 업데이트 (방법 3)
+            if (window.trendInsights && window.trendInsights.analysis_report) {
+                const contentElement = document.getElementById('trendAnalysisContent');
+                if (contentElement) {
+                    const markdownContent = contentElement.querySelector('.trend-analysis-text');
+                    if (markdownContent) {
+                        // 이미 마크다운이 렌더링된 상태이므로 썸네일만 추가
+                        renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
+                    }
+                }
+            }
         } else {
             showError(data.message || '데이터를 불러오는데 실패했습니다.');
         }
@@ -483,12 +497,23 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     
     contentElement.innerHTML = `<div class="trend-analysis-text markdown-content">${htmlContent}</div>`;
     
-    // Section 3 썸네일 카드 그리드 추가
-    setTimeout(() => {
-        renderSection3Thumbnails(contentElement, analysisText);
-        // removeProductNamesAndReplaceWithThumbnails는 일단 비활성화 (필요시 재활성화)
-        // removeProductNamesAndReplaceWithThumbnails(contentElement);
-    }, 100); // DOM 렌더링 후 실행
+    // Section 3 썸네일 카드 그리드 추가 (방법 2: allTabsData 준비될 때까지 대기)
+    const renderThumbnails = () => {
+        if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+            renderSection3Thumbnails(contentElement, analysisText);
+        } else {
+            // allTabsData가 아직 준비되지 않았으면 재시도
+            const retryCount = (renderThumbnails.retryCount || 0) + 1;
+            renderThumbnails.retryCount = retryCount;
+            
+            if (retryCount < 50) { // 최대 5초 대기 (50 * 100ms)
+                setTimeout(renderThumbnails, 100);
+            } else {
+                console.warn('[Section 3 썸네일] allTabsData 대기 시간 초과');
+            }
+        }
+    };
+    setTimeout(renderThumbnails, 100); // DOM 렌더링 후 실행
 }
 
 // AI 리포트에서 상품명 제거하고 썸네일로 교체

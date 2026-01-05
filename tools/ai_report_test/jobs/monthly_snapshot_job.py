@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-월간 스냅샷 생성 Cloud Run Job
-매월 1일 실행되어 전월 데이터의 스냅샷을 생성합니다.
+월간 스냅샷 생성 및 AI 분석 Cloud Run Job
+매월 1일 실행되어 전월 데이터의 스냅샷을 생성하고 AI 분석을 추가합니다.
 """
 
 import os
@@ -12,9 +12,10 @@ from datetime import datetime, timezone, timedelta
 sys.path.insert(0, '/app')
 
 from tools.ai_report_test.bq_monthly_snapshot import run
+from tools.ai_report_test.ai_analyst import generate_ai_analysis_from_file
 
 def main():
-    """전월 데이터로 스냅샷 생성"""
+    """전월 데이터로 스냅샷 생성 및 AI 분석"""
     # 현재 시간 (UTC)
     now = datetime.now(timezone.utc)
     
@@ -25,6 +26,9 @@ def main():
     else:
         target_year = now.year
         target_month = now.month - 1
+    
+    # GCS 버킷 정보
+    gcs_bucket = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
     
     # 회사명 목록 (환경 변수에서 가져오거나 기본값)
     company_names = os.environ.get("COMPANY_NAMES", "piscess").split(",")
@@ -55,8 +59,30 @@ def main():
                 use_current_month_events=True  # 동월 이벤트 조회 (리포트 대상 월의 이벤트)
             )
             
-            success_count += 1
             print(f"✅ [SUCCESS] {company_name} 스냅샷 생성 완료", file=sys.stderr)
+            
+            # AI 분석 자동 추가
+            print(f"\n🤖 [INFO] {company_name} AI 분석 생성 중...", file=sys.stderr)
+            try:
+                snapshot_path = f"gs://{gcs_bucket}/ai-reports/monthly/{company_name}/{target_year}-{target_month:02d}/snapshot.json.gz"
+                
+                # AI 분석 생성 (같은 파일에 덮어쓰기)
+                generate_ai_analysis_from_file(
+                    snapshot_file=snapshot_path,
+                    output_file=None,  # 입력 파일에 덮어쓰기
+                    system_prompt_file=None  # 자동으로 system_prompt_v44.txt 찾기
+                )
+                
+                print(f"✅ [SUCCESS] {company_name} AI 분석 완료", file=sys.stderr)
+                success_count += 1
+                
+            except Exception as ai_error:
+                # AI 분석 실패해도 스냅샷은 성공했으므로 경고만 출력
+                print(f"⚠️ [WARN] {company_name} AI 분석 실패 (스냅샷은 정상 저장됨): {ai_error}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+                # 스냅샷은 성공했으므로 success_count 증가
+                success_count += 1
             
         except Exception as e:
             error_count += 1

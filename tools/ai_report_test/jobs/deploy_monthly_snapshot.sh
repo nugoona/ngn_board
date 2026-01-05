@@ -2,14 +2,29 @@
 
 set -euo pipefail
 
-# 월간 스냅샷 생성 Cloud Run Job 배포 스크립트
+# 월간 스냅샷 생성 및 AI 분석 Cloud Run Job 배포 스크립트
 
-cd ~/ngn_board
+cd ~/ngn_board || {
+  echo "❌ [ERROR] ~/ngn_board 디렉토리로 이동할 수 없습니다."
+  echo "   현재 디렉토리: $(pwd)"
+  exit 1
+}
 
-# .env 파일에서 환경 변수 로드 (있는 경우)
+# .env 파일에서 GEMINI_API_KEY 로드 (안전한 방식)
 if [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  # .env 파일에서 GEMINI_API_KEY만 추출 (주석 제외, = 기준으로 분리)
+  GEMINI_API_KEY=$(grep -v '^#' .env | grep "^GEMINI_API_KEY=" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+  export GEMINI_API_KEY
 fi
+
+# GEMINI_API_KEY 확인
+if [ -z "${GEMINI_API_KEY:-}" ]; then
+  echo "❌ [ERROR] GEMINI_API_KEY가 설정되지 않았습니다."
+  echo "   .env 파일에 GEMINI_API_KEY=your-key 형식으로 추가해주세요."
+  exit 1
+fi
+
+echo "✅ GEMINI_API_KEY 로드 완료 (길이: ${#GEMINI_API_KEY}자)"
 
 PROJECT="winged-precept-443218-v8"
 REGION_AR="asia-northeast1"
@@ -43,7 +58,7 @@ if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess" \
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 else
   echo "새 Job 생성 중..."
@@ -55,7 +70,7 @@ else
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess" \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 fi
 
@@ -108,4 +123,6 @@ echo "  - Cloud Scheduler: monthly-snapshot-scheduler (매월 1일 오전 6시 �
 echo ""
 echo "📝 수동 실행:"
 echo "  gcloud run jobs execute ${JOB} --region=${REGION_RUN} --project=${PROJECT}"
+echo ""
+echo "✅ GEMINI_API_KEY가 .env 파일에서 자동으로 로드되었습니다."
 

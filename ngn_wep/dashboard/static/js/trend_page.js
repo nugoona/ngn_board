@@ -771,7 +771,15 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     categories.reverse().forEach(categoryName => {
         if (processedCategories.has(categoryName)) return;
         
+        // 먼저 데이터가 있는지 확인
+        const categoryProducts = getProductsByCategory(categoryName, activeTrendType);
+        if (categoryProducts.length === 0) {
+            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType}) 데이터 없음 - 건너뜀`);
+            return;
+        }
+        
         // 카테고리 헤드라인 찾기 (세그먼트 내에서만)
+        let foundHeader = false;
         for (let i = 0; i < segmentElements.length; i++) {
             const element = segmentElements[i];
             const textContent = (element.textContent || '').trim();
@@ -801,52 +809,53 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                 ));
             
             if (isCategoryHeader) {
-                // 해당 카테고리의 상품 데이터 추출 (데이터 중심)
-                const categoryProducts = getProductsByCategory(categoryName, activeTrendType);
+                foundHeader = true;
                 
-                if (categoryProducts.length > 0) {
-                    // 썸네일 카드 그리드 생성
-                    const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, activeTrendType);
+                // 썸네일 카드 그리드 생성
+                const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, activeTrendType);
+                
+                if (thumbnailGrid) {
+                    // 헤드라인을 포함하는 문단(p 또는 li) 찾기
+                    const parent = element.closest('p, li') || element.parentElement;
                     
-                    if (thumbnailGrid) {
-                        // 헤드라인을 포함하는 문단(p 또는 li) 찾기
-                        const parent = element.closest('p, li') || element.parentElement;
-                        
-                        if (parent) {
-                            // 이미 썸네일이 삽입되지 않았는지 확인
-                            let hasThumbnail = false;
-                            let nextSibling = parent.nextElementSibling;
-                            let checkCount = 0;
-                            while (nextSibling && checkCount < 5) {
-                                if (nextSibling.classList && nextSibling.classList.contains('trend-category-thumbnails')) {
-                                    hasThumbnail = true;
-                                    break;
-                                }
-                                nextSibling = nextSibling.nextElementSibling;
-                                checkCount++;
+                    if (parent) {
+                        // 이미 썸네일이 삽입되지 않았는지 확인
+                        let hasThumbnail = false;
+                        let nextSibling = parent.nextElementSibling;
+                        let checkCount = 0;
+                        while (nextSibling && checkCount < 5) {
+                            if (nextSibling.classList && nextSibling.classList.contains('trend-category-thumbnails')) {
+                                hasThumbnail = true;
+                                break;
                             }
-                            
-                            if (!hasThumbnail) {
-                                const gridContainer = document.createElement('div');
-                                gridContainer.className = 'trend-category-thumbnails';
-                                gridContainer.innerHTML = thumbnailGrid;
-                                
-                                // parent 다음에 삽입
-                                if (parent.nextSibling) {
-                                    parent.parentNode.insertBefore(gridContainer, parent.nextSibling);
-                                } else {
-                                    parent.parentNode.appendChild(gridContainer);
-                                }
-                                
-                                processedCategories.add(categoryName);
-                                console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
-                            }
+                            nextSibling = nextSibling.nextElementSibling;
+                            checkCount++;
                         }
                         
-                        break; // 한 카테고리는 한 번만 처리
+                        if (!hasThumbnail) {
+                            const gridContainer = document.createElement('div');
+                            gridContainer.className = 'trend-category-thumbnails';
+                            gridContainer.innerHTML = thumbnailGrid;
+                            
+                            // parent 다음에 삽입
+                            if (parent.nextSibling) {
+                                parent.parentNode.insertBefore(gridContainer, parent.nextSibling);
+                            } else {
+                                parent.parentNode.appendChild(gridContainer);
+                            }
+                            
+                            processedCategories.add(categoryName);
+                            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
+                        }
                     }
+                    
+                    break; // 한 카테고리는 한 번만 처리
                 }
             }
+        }
+        
+        if (!foundHeader) {
+            console.warn(`[Section 3 썸네일] ${categoryName} 카테고리 헤드라인을 찾을 수 없음 (데이터는 ${categoryProducts.length}개 존재)`);
         }
     });
 }

@@ -483,8 +483,148 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     
     contentElement.innerHTML = `<div class="trend-analysis-text markdown-content">${htmlContent}</div>`;
     
-    // Section 3 썸네일 카드 그리드 추가
-    renderSection3Thumbnails(contentElement, analysisText);
+    // Section 3 썸네일 카드 그리드 추가 및 상품명 제거
+    setTimeout(() => {
+        renderSection3Thumbnails(contentElement, analysisText);
+        removeProductNamesAndReplaceWithThumbnails(contentElement);
+    }, 100); // DOM 렌더링 후 실행
+}
+
+// AI 리포트에서 상품명 제거하고 썸네일로 교체
+function removeProductNamesAndReplaceWithThumbnails(containerElement) {
+    if (!window.allTabsData) return;
+    
+    const markdownContent = containerElement.querySelector('.trend-analysis-text');
+    if (!markdownContent) return;
+    
+    // 모든 상품 데이터 수집
+    const allProducts = [];
+    Object.keys(window.allTabsData).forEach(tabName => {
+        const tabData = window.allTabsData[tabName];
+        ['rising_star', 'new_entry', 'rank_drop'].forEach(segment => {
+            const items = tabData[segment] || [];
+            items.forEach(item => {
+                const brand = item.Brand_Name || item.Brand || '';
+                const product = item.Product_Name || item.Product || '';
+                const thumbnail = item.thumbnail_url || '';
+                const itemUrl = item.item_url || item.item_url || '';
+                const rank = item.This_Week_Rank || item.Ranking || '';
+                const price = item.price || item.Price || 0;
+                
+                if (brand && product && thumbnail) {
+                    allProducts.push({
+                        brand: brand.trim(),
+                        product: product.trim(),
+                        thumbnail: thumbnail,
+                        itemUrl: itemUrl,
+                        rank: rank,
+                        price: price
+                    });
+                }
+            });
+        });
+    });
+    
+    // Section 3 내에서 상품명 찾아서 썸네일로 교체
+    const section3Headers = markdownContent.querySelectorAll('h2, h3');
+    let section3Start = null;
+    for (const header of section3Headers) {
+        if (header.textContent && header.textContent.includes('Section 3')) {
+            section3Start = header;
+            break;
+        }
+    }
+    
+    if (!section3Start) return;
+    
+    // Section 3의 모든 텍스트 요소 순회
+    const walker = document.createTreeWalker(
+        markdownContent,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    const textNodes = [];
+    let node;
+    let inSection3 = false;
+    let currentElement = section3Start;
+    
+    // Section 3 내의 모든 텍스트 노드 수집
+    while (currentElement) {
+        if (currentElement === section3Start) {
+            inSection3 = true;
+        }
+        
+        if (inSection3) {
+            // Section 3 내의 모든 텍스트 노드에서 상품명 찾기
+            const tempWalker = document.createTreeWalker(
+                currentElement,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            let tempNode;
+            while (tempNode = tempWalker.nextNode()) {
+                if (tempNode.textContent.trim()) {
+                    textNodes.push(tempNode);
+                }
+            }
+        }
+        
+        // 다음 섹션으로 넘어가면 중단
+        if (currentElement.tagName && (currentElement.tagName === 'H2' || currentElement.tagName === 'H3')) {
+            if (currentElement !== section3Start && inSection3) {
+                break;
+            }
+        }
+        
+        currentElement = currentElement.nextElementSibling;
+    }
+    
+    // 각 텍스트 노드에서 상품명 찾아서 제거
+    textNodes.forEach(textNode => {
+        let text = textNode.textContent;
+        let modified = false;
+        
+        // 각 상품에 대해 브랜드명+상품명 패턴 찾기
+        allProducts.forEach(product => {
+            // 다양한 패턴 매칭
+            const patterns = [
+                new RegExp(`\\*?\\*?${escapeRegex(product.brand)}\\s+${escapeRegex(product.product)}\\*?\\*?`, 'gi'),
+                new RegExp(`\\*?\\*?${escapeRegex(product.product)}\\*?\\*?`, 'gi'),
+                new RegExp(`'${escapeRegex(product.brand)}'의\\s+'${escapeRegex(product.product)}'`, 'gi'),
+                new RegExp(`"${escapeRegex(product.brand)}"\\s+"${escapeRegex(product.product)}"`, 'gi'),
+            ];
+            
+            patterns.forEach(pattern => {
+                if (pattern.test(text)) {
+                    // 상품명 제거 (썸네일은 이미 추가되어 있으므로 텍스트만 제거)
+                    text = text.replace(pattern, '').trim();
+                    modified = true;
+                }
+            });
+        });
+        
+        if (modified && text.trim()) {
+            textNode.textContent = text;
+        } else if (modified) {
+            // 텍스트가 모두 제거되면 부모 요소 제거 고려
+            const parent = textNode.parentElement;
+            if (parent && (parent.tagName === 'P' || parent.tagName === 'LI')) {
+                const remainingText = parent.textContent.replace(textNode.textContent, '').trim();
+                if (!remainingText) {
+                    parent.style.display = 'none';
+                }
+            }
+        }
+    });
+}
+
+// 정규식 이스케이프
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Section 3 썸네일 카드 그리드 렌더링
@@ -532,32 +672,61 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     // 카테고리 헤드라인 패턴: **상의:** 또는 <strong>상의:</strong>
     const categoryNames = Object.keys(categoryMapping);
     
+    // AI 리포트 텍스트에서 상품명 파싱 및 썸네일 매칭
+    const productThumbnails = parseProductNamesFromAnalysis(analysisText);
+    
     // 카테고리를 역순으로 처리 (뒤에서부터 삽입하면 인덱스가 안 꼬임)
     categoryNames.reverse().forEach(categoryName => {
         // DOM에서 해당 카테고리 헤드라인 찾기
         for (const element of section3Elements) {
             const textContent = element.textContent || '';
+            const innerHTML = element.innerHTML || '';
             
             // 카테고리 헤드라인 패턴 확인 (예: "상의:" 또는 "* **상의:**")
-            if (textContent.trim().startsWith(`${categoryName}:`) || 
-                textContent.includes(`**${categoryName}:**`) ||
-                (element.tagName === 'STRONG' && textContent.includes(`${categoryName}:`))) {
+            const isCategoryHeader = 
+                (element.tagName === 'STRONG' && textContent.trim().endsWith(`${categoryName}:`)) ||
+                (element.tagName === 'P' && (textContent.includes(`**${categoryName}:**`) || textContent.trim().startsWith(`${categoryName}:`))) ||
+                (innerHTML.includes(`**${categoryName}:**`) || innerHTML.includes(`<strong>${categoryName}:</strong>`));
+            
+            if (isCategoryHeader) {
+                // 해당 카테고리의 상품명 파싱 (카테고리 헤드라인 다음 문단에서)
+                const categoryProducts = findProductsInCategory(element, categoryName, productThumbnails);
                 
                 // 헤드라인 다음에 썸네일 카드 그리드 삽입
-                const thumbnailGrid = createThumbnailGrid(categoryMapping[categoryName], activeTrendType);
-                if (thumbnailGrid) {
-                    // 헤드라인의 부모 요소(보통 <p> 또는 <li>) 다음에 삽입
-                    const parent = element.closest('p, li');
-                    if (parent) {
-                        // 이미 썸네일이 삽입되지 않았는지 확인
-                        if (!parent.nextElementSibling || 
-                            !parent.nextElementSibling.classList.contains('trend-category-thumbnails')) {
+                if (categoryProducts.length > 0) {
+                    const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts);
+                    if (thumbnailGrid) {
+                        // 헤드라인의 부모 요소(보통 <p> 또는 <li>) 다음에 삽입
+                        const parent = element.closest('p, li');
+                        if (parent) {
+                            // 이미 썸네일이 삽입되지 않았는지 확인
+                            let nextSibling = parent.nextElementSibling;
+                            if (!nextSibling || !nextSibling.classList.contains('trend-category-thumbnails')) {
+                                const gridContainer = document.createElement('div');
+                                gridContainer.className = 'trend-category-thumbnails';
+                                gridContainer.innerHTML = thumbnailGrid;
+                                
+                                // parent 다음에 삽입
+                                if (parent.nextSibling) {
+                                    parent.parentNode.insertBefore(gridContainer, parent.nextSibling);
+                                } else {
+                                    parent.parentNode.appendChild(gridContainer);
+                                }
+                            }
+                            break; // 한 카테고리는 한 번만 삽입
+                        } else {
+                            // parent를 찾지 못한 경우, element 다음에 직접 삽입
                             const gridContainer = document.createElement('div');
                             gridContainer.className = 'trend-category-thumbnails';
                             gridContainer.innerHTML = thumbnailGrid;
-                            parent.parentNode.insertBefore(gridContainer, parent.nextSibling);
+                            
+                            if (element.nextSibling) {
+                                element.parentNode.insertBefore(gridContainer, element.nextSibling);
+                            } else {
+                                element.parentNode.appendChild(gridContainer);
+                            }
+                            break;
                         }
-                        break; // 한 카테고리는 한 번만 삽입
                     }
                 }
             }
@@ -565,49 +734,113 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     });
 }
 
-// 현재 활성화된 트렌드 타입 확인
-function getActiveTrendType() {
-    // 탭 버튼에서 활성화된 버튼 확인
-    const activeTab = document.querySelector('.trend-type-tab.active');
-    if (activeTab) {
-        const tabText = activeTab.textContent.trim();
-        if (tabText.includes('급상승')) return 'rising_star';
-        if (tabText.includes('신규 진입')) return 'new_entry';
-        if (tabText.includes('순위 하락')) return 'rank_drop';
-    }
-    return 'rising_star'; // 기본값
+// AI 리포트 텍스트에서 상품명 파싱
+function parseProductNamesFromAnalysis(analysisText) {
+    const products = [];
+    
+    // 모든 탭 데이터에서 상품 정보 추출
+    if (!window.allTabsData) return products;
+    
+    // 각 탭별로 순회
+    Object.keys(window.allTabsData).forEach(tabName => {
+        const tabData = window.allTabsData[tabName];
+        
+        // 각 세그먼트 (rising_star, new_entry, rank_drop) 순회
+        ['rising_star', 'new_entry', 'rank_drop'].forEach(segment => {
+            const items = tabData[segment] || [];
+            items.forEach(item => {
+                const brand = item.Brand_Name || item.Brand || '';
+                const product = item.Product_Name || item.Product || '';
+                const thumbnail = item.thumbnail_url || '';
+                const itemUrl = item.item_url || item.item_url || '';
+                const rank = item.This_Week_Rank || item.Ranking || '';
+                const price = item.price || item.Price || 0;
+                
+                if (brand && product) {
+                    products.push({
+                        brand: brand,
+                        product: product,
+                        thumbnail: thumbnail,
+                        itemUrl: itemUrl,
+                        rank: rank,
+                        price: price,
+                        tab: tabName,
+                        segment: segment
+                    });
+                }
+            });
+        });
+    });
+    
+    return products;
 }
 
-// 썸네일 카드 그리드 생성
-function createThumbnailGrid(tabName, trendType) {
-    if (!window.allTabsData || !window.allTabsData[tabName]) {
+// 카테고리 내에서 상품명 찾기 (AI 리포트 텍스트와 실제 데이터 매칭)
+function findProductsInCategory(element, categoryName, productThumbnails) {
+    const matchedProducts = [];
+    
+    // 카테고리 헤드라인 다음 몇 개의 문단에서 상품명 찾기
+    let currentElement = element.nextElementSibling || element.parentElement?.nextElementSibling;
+    if (!currentElement && element.parentElement) {
+        // li나 p 내부에 있는 경우
+        currentElement = element.parentElement.nextElementSibling;
+    }
+    
+    let checkCount = 0;
+    const maxCheck = 10; // 최대 10개 문단까지만 확인 (줄바꿈 포함)
+    
+    while (currentElement && checkCount < maxCheck) {
+        const text = currentElement.textContent || '';
+        
+        // 해당 카테고리의 상품 찾기
+        productThumbnails.forEach(product => {
+            // 카테고리명과 브랜드명/상품명이 텍스트에 포함되어 있는지 확인
+            if ((product.tab === categoryName || categoryName === '전체') && 
+                (text.includes(product.brand) || text.includes(product.product))) {
+                // 중복 제거
+                const exists = matchedProducts.some(p => 
+                    p.brand === product.brand && p.product === product.product
+                );
+                if (!exists) {
+                    matchedProducts.push(product);
+                }
+            }
+        });
+        
+        currentElement = currentElement.nextElementSibling;
+        checkCount++;
+        
+        // 다음 카테고리 헤드라인이 나오면 중단
+        if (currentElement) {
+            const tagName = currentElement.tagName;
+            const textContent = currentElement.textContent || '';
+            if ((tagName === 'STRONG' || tagName === 'P') && 
+                (textContent.trim().endsWith(':') || textContent.match(/^\*\*\s*[가-힣]+:\s*\*\*/))) {
+                break;
+            }
+        }
+    }
+    
+    // 현재 선택된 트렌드 타입에 맞는 상품만 필터링
+    const activeTrendType = getActiveTrendType();
+    const filtered = matchedProducts.filter(p => p.segment === activeTrendType);
+    
+    return (filtered.length > 0 ? filtered : matchedProducts).slice(0, 6); // 최대 6개만
+}
+
+// 상품 목록으로부터 썸네일 그리드 생성
+function createThumbnailGridFromProducts(products) {
+    if (!products || products.length === 0) {
         return null;
     }
     
-    const tabData = window.allTabsData[tabName];
-    let items = [];
-    
-    // 트렌드 타입에 따라 데이터 선택
-    if (trendType === 'rising_star' && tabData.rising_star) {
-        items = tabData.rising_star.slice(0, 6); // 상위 6개만
-    } else if (trendType === 'new_entry' && tabData.new_entry) {
-        items = tabData.new_entry.slice(0, 6);
-    } else if (trendType === 'rank_drop' && tabData.rank_drop) {
-        items = tabData.rank_drop.slice(0, 6);
-    }
-    
-    if (items.length === 0) {
-        return null;
-    }
-    
-    // 썸네일 카드 HTML 생성
-    const cardsHtml = items.map(item => {
-        const thumbnailUrl = item.thumbnail_url || '';
-        const productName = item.Product_Name || item.Product || '';
-        const brandName = item.Brand_Name || item.Brand || '';
-        const itemUrl = item.item_url || item.item_url || '#';
-        const rank = item.This_Week_Rank || item.Ranking || '';
-        const price = item.price || item.Price || 0;
+    const cardsHtml = products.map(product => {
+        const thumbnailUrl = product.thumbnail || '';
+        const productName = product.product || '';
+        const brandName = product.brand || '';
+        const itemUrl = product.itemUrl || '#';
+        const rank = product.rank || '';
+        const price = product.price || 0;
         const formattedPrice = price > 0 ? `${Math.round(price).toLocaleString()}원` : '';
         
         return `
@@ -638,6 +871,25 @@ function createThumbnailGrid(tabName, trendType) {
             ${cardsHtml}
         </div>
     `;
+}
+
+// 현재 활성화된 트렌드 타입 확인
+function getActiveTrendType() {
+    // 탭 버튼에서 활성화된 버튼 확인
+    const activeTab = document.querySelector('.trend-type-tab.active');
+    if (activeTab) {
+        const tabText = activeTab.textContent.trim();
+        if (tabText.includes('급상승')) return 'rising_star';
+        if (tabText.includes('신규 진입')) return 'new_entry';
+        if (tabText.includes('순위 하락')) return 'rank_drop';
+    }
+    return 'rising_star'; // 기본값
+}
+
+// 썸네일 카드 그리드 생성 (사용되지 않음 - createThumbnailGridFromProducts 사용)
+function createThumbnailGrid(tabName, trendType) {
+    // 이 함수는 더 이상 사용되지 않지만 호환성을 위해 유지
+    return null;
 }
 
 // 급상승 랭킹 테이블 렌더링

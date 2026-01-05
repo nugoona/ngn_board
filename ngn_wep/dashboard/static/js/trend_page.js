@@ -1,12 +1,20 @@
 /**
- * 29CM 트렌드 페이지 JavaScript
+ * 트렌드 페이지 JavaScript (29CM / Ably 공통)
  */
 
-let currentTab = "전체";
-let availableTabs = ["전체"];
+// 페이지 타입 확인 (기본값: 29cm)
+const PAGE_TYPE = (typeof pageType !== 'undefined' ? pageType : '29cm').toLowerCase();
+const IS_ABLY = PAGE_TYPE === 'ably';
+
+let currentTab = IS_ABLY ? "상의" : "전체";
+let availableTabs = IS_ABLY ? ["상의"] : ["전체"];
 let allTabsData = {}; // 모든 탭 데이터를 메모리에 저장 (비용 효율화)
 let currentWeek = "";
 let currentTrendType = "risingStar"; // 현재 선택된 트렌드 타입 (risingStar, newEntry, rankDrop)
+
+// API 엔드포인트 설정
+const API_ENDPOINT = IS_ABLY ? '/dashboard/trend/ably' : '/dashboard/trend';
+const TABS_ENDPOINT = IS_ABLY ? '/dashboard/trend/ably/tabs' : '/dashboard/trend/tabs';
 
 // 페이지 로드 시 초기화
 $(document).ready(function() {
@@ -91,11 +99,15 @@ function setupTrendTypeTabs() {
 // 사용 가능한 탭 목록 로드
 async function loadTabs() {
     try {
-        const response = await fetch('/dashboard/trend/tabs');
+        const response = await fetch(TABS_ENDPOINT);
         const data = await response.json();
         
         if (data.status === 'success' && data.tabs) {
             availableTabs = data.tabs;
+            // Ably의 경우 첫 번째 탭이 기본값이 되도록 설정
+            if (IS_ABLY && availableTabs.length > 0) {
+                currentTab = availableTabs[0];
+            }
             renderTabs();
             return Promise.resolve();
         }
@@ -193,8 +205,9 @@ async function loadAllTabsData() {
         }
         
         console.log("[DEBUG] 선택된 업체:", companyName);
+        console.log("[DEBUG] 페이지 타입:", PAGE_TYPE, "API 엔드포인트:", API_ENDPOINT);
         
-        const response = await fetch('/dashboard/trend', {
+        const response = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -365,9 +378,11 @@ function updatePageTitle(currentWeek) {
     if (titleElement && currentWeek) {
         const weekInfo = parseWeekInfo(currentWeek);
         if (weekInfo) {
-            titleElement.textContent = `29CM ${weekInfo.year}년 ${weekInfo.month}월 ${weekInfo.week}주차 트렌드`;
+            const platformName = IS_ABLY ? 'Ably' : '29CM';
+            titleElement.textContent = `${platformName} ${weekInfo.year}년 ${weekInfo.month}월 ${weekInfo.week}주차 트렌드`;
         } else {
-            titleElement.textContent = `29CM ${currentWeek} 트렌드`;
+            const platformName = IS_ABLY ? 'Ably' : '29CM';
+            titleElement.textContent = `${platformName} ${currentWeek} 트렌드`;
         }
     }
     
@@ -379,10 +394,11 @@ function updateTrendAnalysisTitle(currentWeek) {
     const analysisTitleElement = document.getElementById('trendAnalysisTitle');
     if (analysisTitleElement && currentWeek) {
         const weekInfo = parseWeekInfo(currentWeek);
+        const platformName = IS_ABLY ? 'Ably' : '29CM';
         if (weekInfo) {
-            analysisTitleElement.textContent = `29CM ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 분석`;
+            analysisTitleElement.textContent = `${platformName} ${weekInfo.month}월 ${weekInfo.week}주차 트렌드 분석`;
         } else {
-            analysisTitleElement.textContent = `29CM ${currentWeek} 트렌드 분석`;
+            analysisTitleElement.textContent = `${platformName} ${currentWeek} 트렌드 분석`;
         }
     }
 }
@@ -411,7 +427,7 @@ function loadTrendAnalysisReport() {
     contentElement.innerHTML = '<div class="trend-analysis-loading">분석 리포트를 불러오는 중...</div>';
     
     // API 호출로 분석 리포트 가져오기
-    fetch('/dashboard/trend', {
+    fetch(API_ENDPOINT, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -1310,7 +1326,18 @@ function renderTableRows(items, tbody, showRankChange, tableId) {
         
         // Product (줄바꿈 허용)
         const tdProduct = document.createElement('td');
-        tdProduct.textContent = item.Product_Name || '-';
+        let productName = item.Product_Name || '-';
+        // Ably의 경우 상품명이 길면 일정 길이로 제한하고 "..." 추가
+        if (IS_ABLY && productName !== '-') {
+            const MAX_PRODUCT_NAME_LENGTH = 50; // 최대 길이
+            if (productName.length > MAX_PRODUCT_NAME_LENGTH) {
+                productName = productName.substring(0, MAX_PRODUCT_NAME_LENGTH) + '...';
+            }
+        }
+        tdProduct.textContent = productName;
+        if (item.Product_Name && item.Product_Name.length > 50) {
+            tdProduct.setAttribute('title', item.Product_Name); // 전체 상품명을 툴팁으로 표시
+        }
         row.appendChild(tdProduct);
         
         // Rank Change (조건부)

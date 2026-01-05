@@ -954,10 +954,16 @@ function getProductsByCategory(categoryName, trendType) {
             const rankB = b.rank !== null && b.rank !== undefined ? parseInt(b.rank) : 999;
             return rankA - rankB;
         } else if (trendType === 'rank_drop') {
-            // 순위하락: 순위변화 작은 것부터 (음수, -50, -30, -10...)
+            // 순위하락: 가장 많이 떨어진 것부터
             const changeA = a.rankChange !== null && a.rankChange !== undefined ? a.rankChange : 0;
             const changeB = b.rankChange !== null && b.rankChange !== undefined ? b.rankChange : 0;
-            return changeA - changeB; // 오름차순 (더 작은 음수부터)
+            if (IS_ABLY) {
+                // Ably: Rank_Change가 양수이므로 내림차순 (큰 수 = 가장 많이 하락)
+                return changeB - changeA;
+            } else {
+                // 29CM: Rank_Change가 음수이므로 오름차순 (작은 수 = 가장 많이 하락, -50, -30, -10...)
+                return changeA - changeB;
+            }
         }
         return 0;
     });

@@ -255,7 +255,8 @@ $(document).ready(function() {
     const href = $(this).attr('href');
     
     // 트렌드 페이지 링크인 경우, 업체 선택 확인 (월간 리포트와 동일)
-    if (href && (href.includes('/trend') || href.includes('trend_page'))) {
+    // 단, /trend/selection은 업체 선택이 필요 없음
+    if (href && (href.includes('/trend') || href.includes('trend_page')) && !href.includes('/trend/selection')) {
       const companySelect = document.getElementById("accountFilter");
       if (companySelect) {
         const selectedCompany = companySelect.value;

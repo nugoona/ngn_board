@@ -191,8 +191,19 @@ def ads_page():
     return render_template("ads_page.html",
                            company_names=session.get("company_names", []))
 
-@app.route("/trend")
-def trend_page():
+@app.route("/trend/selection")
+def trend_selection_page():
+    """트렌드 선택 브릿지 페이지"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    company_names = session.get("company_names", [])
+    return render_template("trend_selection.html",
+                           company_names=company_names)
+
+@app.route("/trend/29cm")
+def trend_29cm_page():
+    """29CM 트렌드 페이지"""
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
     
@@ -201,20 +212,35 @@ def trend_page():
     company_name = request.args.get("company_name")
     
     if not company_name or company_name == "all":
-        # 업체가 선택되지 않았으면 사이트 성과 페이지로 리다이렉트
+        # 업체가 선택되지 않았으면 트렌드 선택 페이지로 리다이렉트
         flash("트렌드 페이지를 보려면 먼저 사이트 성과 페이지에서 업체를 선택해주세요.", "warning")
-        return redirect(url_for("index"))
+        return redirect(url_for("trend_selection_page"))
     
     # 업체가 세션의 company_names에 포함되어 있는지 확인 (보안)
     company_names = session.get("company_names", [])
     if company_name.lower() not in [name.lower() for name in company_names]:
-        # 권한이 없는 업체인 경우 사이트 성과 페이지로 리다이렉트
+        # 권한이 없는 업체인 경우 트렌드 선택 페이지로 리다이렉트
         flash("접근 권한이 없는 업체입니다.", "error")
-        return redirect(url_for("index"))
+        return redirect(url_for("trend_selection_page"))
     
     return render_template("trend_page.html",
                            company_names=company_names,
                            selected_company=company_name)
+
+@app.route("/trend/ably")
+def trend_ably_page():
+    """Ably 트렌드 페이지 (준비 중)"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    # 준비 중 페이지이므로 트렌드 선택 페이지로 리다이렉트
+    flash("Ably 트렌드 페이지는 준비 중입니다.", "info")
+    return redirect(url_for("trend_selection_page"))
+
+# 기존 /trend 라우트는 /trend/selection으로 리다이렉트 (하위 호환성)
+@app.route("/trend")
+def trend_page():
+    return redirect(url_for("trend_selection_page"))
 
 @app.route("/privacy")
 def privacy():

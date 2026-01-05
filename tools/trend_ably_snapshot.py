@@ -194,7 +194,8 @@ def main():
                 snapshot_file=snapshot_path,
                 output_file=None,
                 api_key=None,
-                target_brand=target_brand
+                target_brand=target_brand,
+                platform="Ably"
             )
             
             print(f"✅ AI 분석 리포트 추가 완료!")
@@ -224,7 +225,8 @@ def main():
                         snapshot_file=snapshot_path,
                         output_file=None,
                         api_key=None,
-                        target_brand=target_brand
+                        target_brand=target_brand,
+                        platform="Ably"
                     )
                     print(f"✅ AI 분석 리포트 추가 완료! (브랜드: {target_brand})")
                 else:

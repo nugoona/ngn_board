@@ -1,16 +1,15 @@
 """
 29CM 트렌드 분석 AI 리포트 생성 모듈
 - Google Gemini API를 사용하여 29CM 트렌드 스냅샷 데이터를 분석
-- 소싱/마케팅/가격 전략에 즉시 적용 가능한 액션 아이템 도출
+- 텍스트 리포트(AI)와 데이터 시각화(UI)의 역할 분리
+- 트렌드 인사이트(Why) 중심의 리포트 생성
 """
 
 import os
 import sys
 import json
-import re
 import traceback
 from typing import Dict, Optional, Any
-from datetime import datetime
 
 # .env 파일에서 환경 변수 로드
 try:
@@ -78,42 +77,124 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # 핵심 6대 카테고리
 CORE_CATEGORIES = ["상의", "바지", "스커트", "원피스", "니트웨어", "셋업"]
 
+# 자사몰 매핑 설정 로드
+try:
+    # 프로젝트 루트 기준으로 config 모듈 경로 추가
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # tools/ai_report_test/ -> tools/ -> 프로젝트 루트
+    project_root = os.path.dirname(os.path.dirname(script_dir))
+    config_path = os.path.join(project_root, "tools", "config")
+    if config_path not in sys.path:
+        sys.path.insert(0, os.path.join(project_root, "tools"))
+    
+    from config.company_mapping import (
+        COMPANY_MAPPING,
+        OWN_COMPANY_NAMES,
+        get_company_korean_name,
+        get_company_brands,
+        is_own_company_brand
+    )
+    COMPANY_MAPPING_AVAILABLE = True
+except (ImportError, ModuleNotFoundError) as e:
+    print(f"⚠️ [WARN] 자사몰 매핑 설정을 로드할 수 없습니다: {e}", file=sys.stderr)
+    COMPANY_MAPPING_AVAILABLE = False
+    COMPANY_MAPPING = {}
+    OWN_COMPANY_NAMES = []
+    def get_company_korean_name(name): return None
+    def get_company_brands(name): return []
+    def is_own_company_brand(brand, company=None): return False, None
+
+
+# ============================================
+# 설정 변수 (분석 타겟 브랜드)
+# ============================================
+
+# 기본 타겟 브랜드 (함수 파라미터로 오버라이드 가능)
+DEFAULT_TARGET_BRAND = "썸웨어버터"
+
 
 # ============================================
 # System Instruction (지침서)
 # ============================================
 
-SYSTEM_INSTRUCTION = """당신은 여성 의류 쇼핑몰 MD를 위한 수석 데이터 분석가입니다.
-제공된 29CM 랭킹 데이터를 분석하여, 소싱/마케팅/가격 전략에 적용 가능한 '액션 아이템'을 도출하세요.
+def build_system_instruction(target_brand: str = DEFAULT_TARGET_BRAND) -> str:
+    """
+    System Instruction 생성
+    
+    Args:
+        target_brand: 분석 타겟 브랜드명 (한글명, 예: "썸웨어버터", "파이시스")
+    
+    Returns:
+        System Instruction 문자열
+    """
+    return f"""당신은 패션 브랜드 MD를 위한 수석 데이터 분석가입니다.
+제공된 29CM 랭킹 데이터를 분석하여 전략 리포트를 작성하세요.
+**분석 타겟 브랜드: '{target_brand}'**
 
-[리포트 구조 (반드시 준수)]
-리포트는 다음 3가지 섹션으로 구성되며, **반드시 글머리 기호(Bullet Points)**를 사용하여 구조화해야 합니다.
+[작성 대원칙]
+1. **List Forbidden:** 리포트 하단에 '상품 썸네일 카드'가 별도로 배치됩니다. 따라서 텍스트 본문에서는 **개별 상품명이나 순위를 나열하지 마십시오.**
+2. **Analysis Only:** 당신은 오직 **"이 스타일이 왜 떴는지"**에 대한 트렌드 배경과 디자인적 특징을 설명하는 '헤드라인 멘트'만 작성하세요.
+3. **Data-Driven:** 제공된 데이터에만 기반하여 분석하세요. 데이터에 없는 내용은 추측하지 마세요.
+4. **Weekly Uniqueness:** 매주 다른 데이터가 제공되므로, 매주 완전히 다른 내용을 작성해야 합니다. 이전 주 리포트나 템플릿을 복사하지 마세요.
 
-## Section 1. Market Overview (시장 핵심 키워드 3가지)
-전체 시장을 관통하는 3가지 키워드를 아래 항목별로 요약하세요.
-* **Material (소재):** 유행하는 텍스처나 원단의 트렌드를 데이터 기반으로 분석하여 제시하세요. 실제 데이터에 나타난 소재들을 중심으로 작성하세요.
-* **Occasion (TPO):** 소비 목적과 착용 시나리오를 분석하세요. 데이터에 나타난 패턴을 바탕으로 소비자의 구매 목적을 파악하여 제시하세요.
-* **Price (가격):** 소비 패턴과 가격대별 트렌드를 분석하세요. 데이터에 나타난 가격 분포와 소비 행태를 바탕으로 패턴을 제시하세요.
+[절대 금지 사항]
+- **예시나 템플릿 문구를 그대로 복사하지 마세요.** "(예: ...)" 형태의 문구를 출력하지 마세요.
+- **고정된 형식이나 패턴을 반복하지 마세요.** 데이터에 따라 구조와 내용이 달라져야 합니다.
+- **"트렌드 분석 멘트" 같은 플레이스홀더를 출력하지 마세요.** 실제 데이터 기반 분석만 작성하세요.
+- **카테고리별로 항상 같은 형식("**상의:**", "**바지:**" 등)을 강제하지 마세요.** 데이터가 있는 카테고리만 분석하고, 없는 카테고리는 생략하세요.
 
-## Section 2. Segment Deep Dive (세그먼트별 심층 분석)
-3가지 세그먼트의 '속도와 방향성'을 분석하세요.
-* **🔥 급상승 (Rising Star):** 무엇이 트렌드를 주도하며 치고 올라오는가? 실제 데이터에 나타난 급상승 아이템의 특징과 패턴을 분석하세요.
-* **🚀 신규 진입 (New Entry):** 새로운 루키 브랜드나 고단가 아이템의 등장을 분석하세요. 데이터에 나타난 신규 진입 아이템의 특징을 제시하세요.
-* **📉 순위 하락 (Rank Drop):** 무엇이 시즌 아웃되거나 대체되었는가? 데이터에 나타난 순위 하락 아이템의 패턴을 분석하세요.
+---
 
-## Section 3. Category Deep Dive (6대 핵심 카테고리 상세)
-각 카테고리별 트렌드와 Key Item을 분석하세요. (대상: 상의, 바지, 스커트, 원피스, 니트웨어, 셋업)
-각 카테고리마다 아래 형식으로 작성하세요:
-* **카테고리명:** (해당 카테고리의 트렌드를 1줄로 요약)
-  - Key Item: **'브랜드명'**의 **'상품명'** (구체적 순위 변동 수치 포함)
+[리포트 출력 구조]
 
-[작성 원칙 (매우 중요)]
-1. **가독성 최우선:** 긴 줄글(Essay)을 금지합니다. 간결한 문장과 리스트 형식을 사용하세요.
-2. **근거 필수:** 추상적 표현을 피하고, 구체적인 수치나 데이터를 포함하세요. 예를 들어 "급상승했다"가 아닌 "XX계단 상승하여 X위를 기록했다"와 같이 구체적 근거를 제시하세요.
-3. **정확한 명칭:** 브랜드/상품명은 제공된 데이터의 원문 그대로 **'작은따옴표'**와 **굵게(Bold)** 처리하여 표기하세요.
-4. **데이터 기반 분석:** 모든 주장은 제공된 데이터에 기반해야 합니다. 데이터에 없는 내용은 추측하지 마세요.
-5. **톤앤매너:** 전문적이고 드라이한 분석가 어조를 사용하세요 (해요체 사용). 서론이나 결론은 생략하고 핵심 분석에 집중하세요.
-6. **시즌 독립성:** 특정 시즌이나 기간에 종속되지 않는 일반적이고 재현 가능한 분석을 작성하세요. 매주 다른 데이터에도 적용 가능한 프레임워크를 유지하세요.
+## Section 1. 자사몰({target_brand}) 성과 분석
+제공된 데이터 전체를 스캔하여 '{target_brand}' 브랜드의 상품이 실제로 데이터에 포함되어 있는지 확인하세요.
+
+* **데이터에 자사몰 상품이 있는 경우:**
+  - 실제 데이터에 나타난 자사몰 상품들의 구체적인 순위 변동과 인기 요인(소재, 디자인, 가격대 등)을 데이터 기반으로 분석하세요.
+  - 추상적 표현을 피하고, 실제 데이터에서 확인한 수치나 패턴을 언급하세요.
+
+* **데이터에 자사몰 상품이 없는 경우:**
+  - "금주 랭킹 데이터에 자사몰 상품이 포함되지 않았습니다."라고 간단히 명시하세요.
+  - 추가 설명이나 추측을 하지 마세요.
+
+## Section 2. Market Overview (시장 핵심 키워드)
+제공된 데이터를 기반으로 전체 시장 흐름을 요약하세요. **데이터에 실제로 나타난 패턴만 분석하세요.**
+
+* **Material (소재):** 데이터에서 확인된 소재 트렌드를 분석하세요. 데이터에 없는 소재는 언급하지 마세요.
+* **Occasion (TPO):** 데이터에서 확인된 착용 시나리오나 소비 목적을 분석하세요.
+* **Price (가격):** 데이터에서 확인된 가격대별 소비 패턴을 분석하세요.
+
+⚠️ **중요:** 이 섹션은 **반드시 제공된 데이터를 기반으로** 작성해야 합니다. 예시 문구나 템플릿을 사용하지 마세요.
+
+## Section 3. Segment Deep Dive (세그먼트별 트렌드 분석)
+**(주의: 상품 리스트 작성을 금지합니다. 각 카테고리의 트렌드 변화 양상을 데이터 기반 '줄글'로 분석하세요.)**
+
+⚠️ **매우 중요:** 
+- 데이터에 실제로 나타난 세그먼트와 카테고리만 분석하세요.
+- 모든 카테고리를 강제로 나열하지 마세요. 데이터가 없는 카테고리는 생략하세요.
+- **고정된 형식("**상의:**", "**바지:**" 등)을 반복하지 마세요.** 데이터에 따라 구조를 유연하게 변경하세요.
+
+**🔥 급상승 (Rising Star)**
+제공된 급상승 데이터를 기반으로 분석하세요. 급상승 데이터가 없는 카테고리는 생략하세요.
+- 데이터에 나타난 급상승 아이템들의 공통적인 특징(소재, 디자인, 가격대 등)을 찾아서 분석하세요.
+- **왜 이 스타일이 떴는지** 트렌드 배경을 설명하세요.
+- 개별 상품명을 나열하지 마세요.
+
+**🚀 신규 진입 (New Entry)**
+제공된 신규 진입 데이터를 기반으로 분석하세요. 신규 진입 데이터가 없으면 이 섹션을 생략하세요.
+- 신규 진입 브랜드나 아이템들의 공통점이나 무드를 데이터 기반으로 분석하세요.
+- 주목할 만한 신규 스타일이나 가격대 패턴을 데이터에서 확인한 내용만 언급하세요.
+
+**📉 순위 하락 (Rank Drop)**
+제공된 순위 하락 데이터를 기반으로 분석하세요. 순위 하락 데이터가 없으면 이 섹션을 생략하세요.
+- 순위권 밖으로 밀려나는 아이템들의 특징을 데이터에서 확인한 패턴만 분석하세요.
+- 유행이 지나고 있는 소재나 디자인을 데이터 기반으로 제시하세요.
+
+[작성 스타일]
+- 자연스러운 문장으로 작성하세요. 형식적 리스트보다는 흐름 있는 분석 글이 좋습니다.
+- 데이터에 나타난 구체적인 패턴(예: "플리스 소재가 50% 이상 점유", "20만 원 이상 고가 제품 증가")을 언급하세요.
+- 매주 다른 데이터가 제공되므로, 매주 완전히 다른 관점과 내용으로 작성해야 합니다.
 """
 
 
@@ -125,6 +206,13 @@ def optimize_data_for_flash(json_data: Dict) -> str:
     """
     JSON 데이터를 텍스트 형태로 압축하여 Flash 모델이 처리하기 쉽게 변환
     상품명 길이를 파격적으로 줄여 토큰 절약 및 가독성 확보
+    **이 데이터는 AI가 "읽기용"이지, "쓰기용"이 아님을 명심.**
+    
+    Args:
+        json_data: 카테고리별 트렌드 데이터
+    
+    Returns:
+        압축된 전체 데이터 텍스트
     """
     lines = []
     
@@ -174,13 +262,19 @@ def optimize_data_for_flash(json_data: Dict) -> str:
 # 프롬프트 생성 함수
 # ============================================
 
-def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) -> str:
+def build_trend_analysis_prompt(
+    snapshot_data: Dict,
+    target_brand: str = DEFAULT_TARGET_BRAND
+) -> str:
     """
-    29CM 트렌드 분석 프롬프트 생성 (섹션별)
+    29CM 트렌드 분석 프롬프트 생성
     
     Args:
         snapshot_data: 트렌드 스냅샷 데이터
-        section_num: 섹션 번호 (1=시장개요, 2=세그먼트분석, 3=카테고리분석), None이면 전체
+        target_brand: 분석 타겟 브랜드명 (한글명)
+    
+    Returns:
+        프롬프트 문자열
     """
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
@@ -237,68 +331,8 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
     has_korean = any('\uac00' <= char <= '\ud7a3' for char in optimized_data)
     print(f"🔍 [DEBUG] 압축된 데이터 한글 포함 여부: {has_korean}", file=sys.stderr)
     
-    # 섹션별 프롬프트 구성
-    section_prompts = {
-        1: f"""
-[섹션 1: Market Overview (시장 핵심 키워드 3가지)]
-⚠️ **중요: 이 섹션 1만 분석하고 답변하세요.**
-
-현재 주차: {current_week}
-
-데이터 요약:
-- 급상승 상품: {total_rising}개
-- 신규 진입 상품: {total_new_entry}개
-- 순위 하락 상품: {total_rank_drop}개
-
-핵심 6대 카테고리 데이터:
-{optimized_data}
-
-위 데이터를 바탕으로 **시장 개요**를 작성하세요:
-* **Material (소재):** 유행하는 텍스처나 원단
-* **Occasion (TPO):** 소비 목적
-* **Price (가격):** 소비 패턴
-
-각 항목을 글머리 기호로 간결하게 작성하세요.
-""",
-        2: f"""
-[섹션 2: Segment Deep Dive (세그먼트별 심층 분석)]
-⚠️ **중요: 이 섹션 2만 분석하고 답변하세요.**
-
-현재 주차: {current_week}
-
-핵심 6대 카테고리 데이터:
-{optimized_data}
-
-위 데이터를 바탕으로 **세그먼트별 심층 분석**을 작성하세요:
-* **🔥 급상승 (Rising Star):** 무엇이 트렌드를 주도하며 치고 올라오는가?
-* **🚀 신규 진입 (New Entry):** 새로운 루키 브랜드나 고단가 아이템의 등장
-* **📉 순위 하락 (Rank Drop):** 무엇이 시즌 아웃되거나 대체되었는가?
-
-각 세그먼트를 글머리 기호로 간결하게 작성하세요. 근거(구체적 순위 변동)를 반드시 포함하세요.
-""",
-        3: f"""
-[섹션 3: Category Deep Dive (6대 핵심 카테고리 상세)]
-⚠️ **중요: 이 섹션 3만 분석하고 답변하세요.**
-
-현재 주차: {current_week}
-
-핵심 6대 카테고리 데이터:
-{optimized_data}
-
-위 데이터를 바탕으로 **카테고리별 심층 분석**을 작성하세요:
-각 카테고리(상의, 바지, 스커트, 원피스, 니트웨어, 셋업)별로:
-* **카테고리명:** (트렌드 1줄 요약)
-  - Key Item: **'브랜드'**의 **'상품명'** (구체적 순위 변동 포함)
-
-각 카테고리를 글머리 기호로 간결하게 작성하세요.
-"""
-    }
-    
-    if section_num and section_num in section_prompts:
-        return section_prompts[section_num]
-    else:
-        # 전체 프롬프트 (하위 호환성)
-        return f"""
+    # 프롬프트 구성
+    prompt = f"""
 [분석할 데이터]
 현재 주차: {current_week}
 
@@ -310,8 +344,17 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 핵심 6대 카테고리 데이터 (각 세그먼트당 상위 15개):
 {optimized_data}
 
+⚠️ [중요 지침]
+1. **데이터 기반 분석 필수:** 위에 제공된 실제 데이터만을 기반으로 분석하세요. 데이터에 없는 내용은 추측하지 마세요.
+2. **예시나 템플릿 금지:** "(예: ...)" 같은 예시 문구나 고정된 템플릿을 사용하지 마세요. 실제 데이터 패턴만 분석하세요.
+3. **매주 다른 내용:** 이번 주 데이터는 이전 주와 다를 수 있으므로, 이번 주 데이터에만 기반하여 완전히 새로운 내용을 작성하세요.
+4. **유연한 구조:** 데이터가 없는 카테고리나 세그먼트는 생략하세요. 모든 항목을 강제로 채울 필요가 없습니다.
+5. **구체적 패턴 분석:** "보온성 중심", "소비 양극화" 같은 추상적 표현보다는, 데이터에서 확인된 구체적 패턴(예: "플리스 소재 비중 증가", "20만 원 이상 제품 비중 상승")을 제시하세요.
+
 위 데이터를 바탕으로 다음 3가지 섹션으로 구성된 트렌드 리포트를 작성해주세요.
 """
+    
+    return prompt
 
 
 # ============================================
@@ -321,18 +364,20 @@ def build_trend_analysis_prompt(snapshot_data: Dict, section_num: int = None) ->
 def generate_trend_analysis(
     snapshot_data: Dict,
     api_key: Optional[str] = None,
-    max_tokens: int = 8192
+    target_brand: Optional[str] = None,
+    max_tokens: int = 16384
 ) -> Optional[str]:
     """
-    29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성 (섹션별 분리 생성)
+    29CM 트렌드 스냅샷 데이터를 AI로 분석하여 리포트 생성
     
     Args:
         snapshot_data: 트렌드 스냅샷 데이터 (tabs_data, current_week 포함)
         api_key: Gemini API 키 (None이면 환경변수에서 로드)
-        max_tokens: 최대 토큰 수 (각 섹션별 기본값 8192)
+        target_brand: 분석 타겟 브랜드명 (한글명, None이면 DEFAULT_TARGET_BRAND 사용)
+        max_tokens: 최대 토큰 수 (기본값 16384)
     
     Returns:
-        AI 분석 리포트 텍스트 (마크다운 형식, 섹션별 결과 합침)
+        AI 분석 리포트 텍스트 (마크다운 형식)
     """
     # google-genai 패키지 확인
     if not GENAI_AVAILABLE or genai is None or types is None:
@@ -343,6 +388,18 @@ def generate_trend_analysis(
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
     
+    # 타겟 브랜드 확인
+    if target_brand is None:
+        # snapshot_data에서 company_name 추출 시도 (있으면)
+        company_name_en = snapshot_data.get("company_name")
+        if company_name_en and COMPANY_MAPPING_AVAILABLE:
+            target_brand = get_company_korean_name(company_name_en)
+        
+        if not target_brand:
+            target_brand = DEFAULT_TARGET_BRAND
+    
+    print(f"🎯 [INFO] 분석 타겟 브랜드: {target_brand}", file=sys.stderr)
+    
     # Google Gen AI SDK Client 초기화
     try:
         client = genai.Client(api_key=api_key)
@@ -350,7 +407,10 @@ def generate_trend_analysis(
         raise ImportError(f"google-genai 초기화 실패: {e}")
     
     try:
-        print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작... (섹션별 분리 생성)", file=sys.stderr)
+        print(f"🤖 [INFO] 29CM 트렌드 분석 AI 리포트 생성 시작...", file=sys.stderr)
+        
+        # System Instruction 생성
+        system_instruction = build_system_instruction(target_brand)
         
         # Safety Settings 설정 (한글 필터링 방지 - 필수)
         safety_settings = None
@@ -380,130 +440,70 @@ def generate_trend_analysis(
         else:
             print(f"⚠️ [WARN] Safety Settings 사용 불가 (import 실패), 기본 설정 사용", file=sys.stderr)
         
-        # 섹션별로 개별 API 호출
-        sections = [1, 2, 3]  # 1=시장개요, 2=세그먼트분석, 3=카테고리분석
-        section_results = {}
-        section_names = {1: "Market Overview", 2: "Segment Deep Dive", 3: "Category Deep Dive"}
+        # 프롬프트 생성
+        prompt = build_trend_analysis_prompt(snapshot_data, target_brand=target_brand)
         
-        for section_num in sections:
-            try:
-                print(f"🤖 [INFO] 섹션 {section_num} ({section_names[section_num]}) AI 분석 시작...", file=sys.stderr)
-                
-                # 섹션별 프롬프트 생성
-                section_prompt = build_trend_analysis_prompt(snapshot_data, section_num=section_num)
-                
-                # System Instruction과 섹션 프롬프트 결합
-                full_prompt = f"{SYSTEM_INSTRUCTION}\n\n{section_prompt}"
-                
-                # 프롬프트 크기 확인
-                prompt_length = len(full_prompt)
-                print(f"📊 [INFO] 섹션 {section_num} 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
-                
-                # AI 모델 호출
-                print(f"📤 [INFO] 섹션 {section_num} Gemini API 호출 중...", file=sys.stderr)
-                
-                # GenerateContentConfig 구성
-                config_kwargs = {
-                    "temperature": 0.7,
-                    "top_p": 0.95,
-                    "top_k": 40,
-                    "max_output_tokens": max_tokens,
-                }
-                
-                # Safety Settings 추가 (있는 경우)
-                if safety_settings:
-                    config_kwargs["safety_settings"] = safety_settings
-                
-                response = client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=full_prompt,
-                    config=types.GenerateContentConfig(**config_kwargs)
-                )
-                
-                # 응답 파싱
-                section_text = None
-                if hasattr(response, 'text'):
-                    section_text = response.text
-                elif hasattr(response, 'candidates') and response.candidates:
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts') and candidate.content.parts:
-                        section_text = candidate.content.parts[0].text
-                    elif hasattr(candidate, 'content'):
-                        section_text = str(candidate.content)
-                    else:
-                        section_text = str(candidate)
-                
-                if not section_text:
-                    section_text = str(response)
-                
-                # 섹션 제목 제거 (AI가 섹션 제목을 포함할 수 있음) - 보수적으로 처리
-                section_text = section_text.strip()
-                
-                # 원본 첫 줄 로그 출력
-                first_line_raw = section_text.split('\n')[0].strip() if section_text else ""
-                print(f"📄 [RESPONSE] 섹션 {section_num} 원본 첫 줄: {first_line_raw[:200]}", file=sys.stderr)
-                
-                # 섹션 제목 패턴 제거 (첫 줄만 확인)
-                lines = section_text.split('\n')
-                if lines and (lines[0].strip().startswith('##') or lines[0].strip().startswith('# 섹션')):
-                    if len(lines) > 1:
-                        section_text = '\n'.join(lines[1:]).strip()
-                    else:
-                        section_text = section_text.strip()
-                
-                # 제목 제거 후 첫 줄 로그 출력
-                first_line_after = section_text.split('\n')[0].strip() if section_text else ""
-                print(f"📄 [RESPONSE] 섹션 {section_num} 제목 제거 후 첫 줄: {first_line_after[:200]}", file=sys.stderr)
-                
-                # 한글 포함 여부 확인 (디버깅)
-                if section_text:
-                    korean_count = sum(1 for char in section_text if '\uac00' <= char <= '\ud7a3')
-                    total_chars = len(section_text)
-                    korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-                    print(f"🔍 [DEBUG] 섹션 {section_num} 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
-                    if korean_ratio < 30:
-                        print(f"⚠️ [WARN] 섹션 {section_num}에 한글이 적습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
-                
-                # 후처리 없이 원본 그대로 저장 (remove_icons_and_emojis 호출 금지)
-                section_results[section_num] = section_text
-                print(f"✅ [SUCCESS] 섹션 {section_num} AI 분석 완료 ({len(section_text)}자)", file=sys.stderr)
-                
-            except Exception as e:
-                error_msg = f"섹션 {section_num} AI 분석 실패: {str(e)}"
-                print(f"❌ [ERROR] {error_msg}", file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
-                section_results[section_num] = f"[AI 분석 오류: {error_msg}]"
+        # System Instruction과 프롬프트 결합
+        full_prompt = f"{system_instruction}\n\n{prompt}"
         
-        # 섹션별 결과 합치기
-        if not section_results:
-            print(f"⚠️ [WARN] 모든 섹션 분석 실패", file=sys.stderr)
-            return None
+        # 프롬프트 크기 확인
+        prompt_length = len(full_prompt)
+        print(f"📊 [INFO] 프롬프트 크기: {prompt_length:,}자", file=sys.stderr)
         
-        # 리포트 구성 (섹션 제목 포함)
-        analysis_parts = []
+        # AI 모델 호출
+        print(f"📤 [INFO] Gemini API 호출 중...", file=sys.stderr)
         
-        if 1 in section_results:
-            analysis_parts.append(f"## Section 1. Market Overview (시장 핵심 키워드 3가지)\n\n{section_results[1]}")
+        # GenerateContentConfig 구성
+        config_kwargs = {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": max_tokens,
+        }
         
-        if 2 in section_results:
-            analysis_parts.append(f"\n\n## Section 2. Segment Deep Dive (세그먼트별 심층 분석)\n\n{section_results[2]}")
+        # Safety Settings 추가 (있는 경우)
+        if safety_settings:
+            config_kwargs["safety_settings"] = safety_settings
         
-        if 3 in section_results:
-            analysis_parts.append(f"\n\n## Section 3. Category Deep Dive (6대 핵심 카테고리 상세)\n\n{section_results[3]}")
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(**config_kwargs)
+        )
         
-        analysis_text = "\n".join(analysis_parts)
+        # 응답 파싱
+        analysis_text = None
+        if hasattr(response, 'text'):
+            analysis_text = response.text
+        elif hasattr(response, 'candidates') and response.candidates:
+            candidate = response.candidates[0]
+            if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts') and candidate.content.parts:
+                analysis_text = candidate.content.parts[0].text
+            elif hasattr(candidate, 'content'):
+                analysis_text = str(candidate.content)
+            else:
+                analysis_text = str(candidate)
         
-        # 최종 한글 포함 여부 확인
+        if not analysis_text:
+            analysis_text = str(response)
+        
+        # 마크다운 보존: 후처리 없이 원본 그대로 저장
+        # ⚠️ remove_icons_and_emojis 함수 호출 금지 (마크다운 깨짐 방지)
+        analysis_text = analysis_text.strip()
+        
+        # 한글 포함 여부 확인 (디버깅)
         if analysis_text:
             korean_count = sum(1 for char in analysis_text if '\uac00' <= char <= '\ud7a3')
             total_chars = len(analysis_text)
             korean_ratio = (korean_count / total_chars * 100) if total_chars > 0 else 0
-            print(f"🔍 [DEBUG] 최종 리포트 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
-            
-        char_count = len(analysis_text)
-        print(f"✅ [INFO] 전체 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
+            print(f"🔍 [DEBUG] 리포트 한글 포함 여부: {korean_count}/{total_chars} ({korean_ratio:.1f}%)", file=sys.stderr)
+            if korean_ratio < 30:
+                print(f"⚠️ [WARN] 리포트에 한글이 적습니다 ({korean_ratio:.1f}%)!", file=sys.stderr)
         
-        return analysis_text.strip() if analysis_text else None
+        char_count = len(analysis_text)
+        print(f"✅ [INFO] 분석 리포트 생성 완료 ({char_count}자)", file=sys.stderr)
+        
+        return analysis_text if analysis_text else None
         
     except Exception as e:
         print(f"❌ [ERROR] AI 분석 생성 실패: {e}", file=sys.stderr)
@@ -517,7 +517,8 @@ def generate_trend_analysis(
 
 def generate_trend_analysis_from_snapshot(
     snapshot_data: Dict,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    target_brand: Optional[str] = None
 ) -> Dict:
     """
     스냅샷 데이터에 AI 분석 리포트를 추가하여 반환
@@ -525,19 +526,25 @@ def generate_trend_analysis_from_snapshot(
     Args:
         snapshot_data: 트렌드 스냅샷 데이터
         api_key: Gemini API 키
+        target_brand: 분석 타겟 브랜드명 (한글명, None이면 자동 감지)
     
     Returns:
         AI 분석 리포트가 추가된 snapshot_data
     """
     try:
         # AI 분석 생성
-        analysis_text = generate_trend_analysis(snapshot_data, api_key=api_key)
+        analysis_text = generate_trend_analysis(
+            snapshot_data,
+            api_key=api_key,
+            target_brand=target_brand
+        )
         
         if analysis_text:
             # snapshot_data에 분석 리포트 추가
             if "insights" not in snapshot_data:
                 snapshot_data["insights"] = {}
             
+            from datetime import datetime
             snapshot_data["insights"]["analysis_report"] = analysis_text
             snapshot_data["insights"]["generated_at"] = datetime.utcnow().isoformat() + "Z"
             
@@ -557,7 +564,8 @@ def generate_trend_analysis_from_snapshot(
 def generate_ai_analysis_from_file(
     snapshot_file: str,
     output_file: Optional[str] = None,
-    api_key: Optional[str] = None
+    api_key: Optional[str] = None,
+    target_brand: Optional[str] = None
 ) -> Dict:
     """
     스냅샷 파일(GCS 또는 로컬)에서 읽어서 AI 분석 후 저장
@@ -566,6 +574,7 @@ def generate_ai_analysis_from_file(
         snapshot_file: 입력 스냅샷 파일 경로 (로컬 파일 또는 gs:// 경로)
         output_file: 출력 파일 경로 (None이면 입력 파일에 덮어쓰기, 로컬 파일 또는 gs:// 경로)
         api_key: Gemini API 키
+        target_brand: 분석 타겟 브랜드명 (한글명, None이면 자동 감지)
     
     Returns:
         AI 분석 리포트가 추가된 snapshot_data
@@ -613,7 +622,8 @@ def generate_ai_analysis_from_file(
     # AI 분석 수행
     snapshot_data = generate_trend_analysis_from_snapshot(
         snapshot_data,
-        api_key=api_key
+        api_key=api_key,
+        target_brand=target_brand
     )
     
     # AI 분석 결과 확인 (디버깅)
@@ -667,6 +677,7 @@ if __name__ == "__main__":
     parser.add_argument("snapshot_file", help="스냅샷 파일 경로 (로컬 또는 gs:// 경로)")
     parser.add_argument("--output", "-o", help="출력 파일 경로 (기본값: 입력 파일에 덮어쓰기)")
     parser.add_argument("--api-key", help="Gemini API 키 (기본값: 환경변수에서 로드)")
+    parser.add_argument("--target-brand", help="분석 타겟 브랜드명 (한글명, 예: '썸웨어버터', '파이시스')")
     
     args = parser.parse_args()
     
@@ -674,5 +685,6 @@ if __name__ == "__main__":
     generate_ai_analysis_from_file(
         snapshot_file=args.snapshot_file,
         output_file=args.output,
-        api_key=args.api_key
+        api_key=args.api_key,
+        target_brand=args.target_brand
     )

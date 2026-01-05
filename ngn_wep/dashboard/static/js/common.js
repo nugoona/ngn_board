@@ -251,7 +251,46 @@ $(document).ready(function() {
   });
   
   // 햄버거 메뉴 링크 클릭 시 닫기
-  $('.hamburger-dropdown a').on('click', function() {
+  $('.hamburger-dropdown a').on('click', function(e) {
+    const href = $(this).attr('href');
+    
+    // 트렌드 페이지 링크인 경우, 업체 선택 확인 (월간 리포트와 동일)
+    if (href && (href.includes('/trend') || href.includes('trend_page'))) {
+      const companySelect = document.getElementById("accountFilter");
+      if (companySelect) {
+        const selectedCompany = companySelect.value;
+        
+        // 업체가 선택되지 않았거나 "all"인 경우 링크 차단
+        if (!selectedCompany || selectedCompany === "all") {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // 토스트 메시지 표시 (월간 리포트와 동일)
+          const existingToast = document.querySelector(".toast-message");
+          if (existingToast) existingToast.remove();
+          
+          const toast = document.createElement("div");
+          toast.className = "toast-message";
+          toast.textContent = "트렌드 페이지를 보려면 먼저 업체를 선택해주세요";
+          document.body.appendChild(toast);
+          
+          setTimeout(() => toast.classList.add("show"), 10);
+          setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.remove(), 300);
+          }, 3000);
+          
+          $('#hamburgerDropdown').hide();
+          return false;
+        }
+        
+        // 선택된 업체를 쿼리 파라미터로 추가
+        const url = new URL(href, window.location.origin);
+        url.searchParams.set('company_name', selectedCompany);
+        $(this).attr('href', url.pathname + url.search);
+      }
+    }
+    
     $('#hamburgerDropdown').hide();
   });
   

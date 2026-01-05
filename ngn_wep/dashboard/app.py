@@ -5,7 +5,7 @@ _boot = time.time()                               # ─────────�
 import os
 from pathlib import Path
 from datetime import timedelta
-from flask import Flask, render_template, session, redirect, url_for, request
+from flask import Flask, render_template, session, redirect, url_for, request, flash
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────────
@@ -196,8 +196,25 @@ def trend_page():
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
     
+    # 업체 선택 확인 (월간 리포트와 동일한 방식)
+    # 쿼리 파라미터에서 company_name 가져오기
+    company_name = request.args.get("company_name")
+    
+    if not company_name or company_name == "all":
+        # 업체가 선택되지 않았으면 사이트 성과 페이지로 리다이렉트
+        flash("트렌드 페이지를 보려면 먼저 사이트 성과 페이지에서 업체를 선택해주세요.", "warning")
+        return redirect(url_for("index"))
+    
+    # 업체가 세션의 company_names에 포함되어 있는지 확인 (보안)
+    company_names = session.get("company_names", [])
+    if company_name.lower() not in [name.lower() for name in company_names]:
+        # 권한이 없는 업체인 경우 사이트 성과 페이지로 리다이렉트
+        flash("접근 권한이 없는 업체입니다.", "error")
+        return redirect(url_for("index"))
+    
     return render_template("trend_page.html",
-                           company_names=session.get("company_names", []))
+                           company_names=company_names,
+                           selected_company=company_name)
 
 @app.route("/privacy")
 def privacy():

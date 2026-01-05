@@ -5,6 +5,7 @@ import datetime
 import json
 import gzip
 import io
+import re
 from flask import Blueprint, request, jsonify, session, Response
 from google.cloud import bigquery
 from google.cloud import storage
@@ -12,6 +13,22 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 import requests
 from urllib.parse import quote, unquote
+
+# 프로젝트 루트 경로 추가 (company_mapping 모듈 임포트용)
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+tools_path = os.path.join(project_root, "tools")
+if tools_path not in sys.path:
+    sys.path.insert(0, tools_path)
+
+# 자사몰 매핑 임포트
+try:
+    from config.company_mapping import get_company_korean_name, COMPANY_MAPPING
+    COMPANY_MAPPING_AVAILABLE = True
+except (ImportError, ModuleNotFoundError) as e:
+    print(f"[WARN] company_mapping 모듈 로드 실패: {e}")
+    COMPANY_MAPPING_AVAILABLE = False
+    def get_company_korean_name(name): return None
+    COMPANY_MAPPING = {}
 
 # 캐시 유틸리티 임포트
 from ..utils.cache_utils import get_cache_stats, invalidate_cache_by_pattern
@@ -44,6 +61,59 @@ from ..services.trend_29cm_service import (
 
 
 data_blueprint = Blueprint("data", __name__, url_prefix="/dashboard")
+
+
+def filter_ai_report_by_company(analysis_report: str, company_name: str) -> str:
+    """
+    AI 리포트에서 현재 업체에 해당하는 자사몰 섹션만 포함하도록 필터링
+    
+    Args:
+        analysis_report: 원본 AI 리포트 (마크다운 형식)
+        company_name: 현재 로그인한 업체명 (예: "piscess")
+    
+    Returns:
+        필터링된 AI 리포트 (현재 업체의 자사몰 섹션만 포함)
+    """
+    if not analysis_report or not company_name or not COMPANY_MAPPING_AVAILABLE:
+        return analysis_report
+    
+    company_ko = get_company_korean_name(company_name)
+    if not company_ko:
+        # 매핑되지 않은 업체인 경우, 자사몰 섹션 전체 제거
+        # Section 4가 있으면 제거
+        pattern = r'##\s*Section\s*4[^#]*'
+        filtered_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
+        return filtered_report.strip()
+    
+    # 현재 업체의 한글명으로 자사몰 섹션 찾기
+    # Section 4 패턴 매칭
+    section4_pattern = r'(##\s*Section\s*4[^#]*?(?=##|$))'
+    matches = re.finditer(section4_pattern, analysis_report, flags=re.IGNORECASE | re.DOTALL)
+    
+    # 현재 업체에 해당하는 섹션만 유지
+    filtered_sections = []
+    for match in matches:
+        section_text = match.group(1)
+        # 현재 업체의 한글명이 포함된 섹션만 유지
+        if company_ko in section_text or company_name.lower() in section_text.lower():
+            filtered_sections.append(section_text)
+    
+    if filtered_sections:
+        # 기존 Section 4를 모두 제거하고, 필터링된 섹션만 추가
+        pattern = r'##\s*Section\s*4[^#]*'
+        base_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
+        
+        # 필터링된 섹션 추가
+        if filtered_sections:
+            section4_text = '\n\n' + '\n\n'.join(filtered_sections)
+            return (base_report + section4_text).strip()
+    else:
+        # 현재 업체에 해당하는 섹션이 없으면 Section 4 전체 제거
+        pattern = r'##\s*Section\s*4[^#]*'
+        filtered_report = re.sub(pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
+        return filtered_report.strip()
+    
+    return analysis_report
 
 # ─────────────────────────────────────────────────────────────
 # 📌 캐시 관리 엔드포인트
@@ -1189,6 +1259,7 @@ def get_trend_data():
         tab_names = data.get("tab_names")  # 리스트로 받아서 여러 탭 한 번에 처리
         tab_name = data.get("tab_name")  # 단일 탭 (하위 호환)
         trend_type = data.get("trend_type", "all")  # "rising", "new_entry", "rank_drop", "all"
+        company_name = data.get("company_name")  # 현재 로그인한 업체명 (자사몰 필터링용)
         
         # 주차 정보 조회 (스냅샷 경로 생성을 위해)
         current_week = get_current_week_info()
@@ -1204,11 +1275,21 @@ def get_trend_data():
             
             if tab_names and isinstance(tab_names, list):
                 # 여러 탭 처리
+                # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
+                insights = snapshot_data.get("insights", {})
+                if company_name and insights.get("analysis_report"):
+                    filtered_report = filter_ai_report_by_company(
+                        insights["analysis_report"],
+                        company_name.lower() if isinstance(company_name, str) else company_name
+                    )
+                    insights = insights.copy()
+                    insights["analysis_report"] = filtered_report
+                
                 result = {
                     "status": "success",
                     "current_week": snapshot_data.get("current_week", current_week),
                     "tabs_data": {},
-                    "insights": snapshot_data.get("insights", {})  # AI 분석 리포트 포함
+                    "insights": insights  # 필터링된 AI 분석 리포트 포함
                 }
                 
                 for tab in tab_names:
@@ -1231,10 +1312,21 @@ def get_trend_data():
                 tab_name = tab_name or "전체"
                 tab_data = snapshot_data.get("tabs_data", {}).get(tab_name, {})
                 
+                # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
+                insights = snapshot_data.get("insights", {})
+                if company_name and insights.get("analysis_report"):
+                    filtered_report = filter_ai_report_by_company(
+                        insights["analysis_report"],
+                        company_name.lower() if isinstance(company_name, str) else company_name
+                    )
+                    insights = insights.copy()
+                    insights["analysis_report"] = filtered_report
+                
                 result = {
                     "status": "success",
                     "tab_name": tab_name,
-                    "current_week": snapshot_data.get("current_week", current_week)
+                    "current_week": snapshot_data.get("current_week", current_week),
+                    "insights": insights  # 필터링된 AI 분석 리포트 포함
                 }
                 
                 if trend_type == "all":

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>29CM 트렌드</title>
+  <title>{% if page_type == 'ably' %}Ably 트렌드{% else %}29CM 트렌드{% endif %}</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- 마크다운 변환 라이브러리 -->
@@ -1307,6 +1307,7 @@
   var userCompanyList = {{ session['company_names'] | tojson }};
   var currentUserId = "{{ session['user_id'] }}";
   var selectedCompany = {{ selected_company | tojson | default('null') }};
+  var pageType = {{ page_type | tojson | default('"29cm"') }};
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
@@ -1335,7 +1336,7 @@
   <div class="trend-sticky-header">
     <!-- 페이지 헤더 -->
     <div class="trend-page-header">
-      <h1 class="trend-page-title" id="trendPageTitle">29CM 트렌드</h1>
+      <h1 class="trend-page-title" id="trendPageTitle">{% if page_type == 'ably' %}Ably 트렌드{% else %}29CM 트렌드{% endif %}</h1>
     </div>
     
     <!-- 카테고리 탭 -->
@@ -1389,7 +1390,7 @@
   <!-- ───────── 본문 ───────── -->
   <div class="trend-analysis-sidebar-content">
     <div class="trend-analysis-header">
-      <h3 id="trendAnalysisTitle">29CM 트렌드 분석</h3>
+      <h3 id="trendAnalysisTitle">{% if page_type == 'ably' %}Ably 트렌드 분석{% else %}29CM 트렌드 분석{% endif %}</h3>
       <div class="trend-analysis-meta">
         <span id="trendAnalysisCreatedAt">생성일: -</span>
       </div>

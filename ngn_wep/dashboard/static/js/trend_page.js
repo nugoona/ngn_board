@@ -828,20 +828,14 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                     console.log(`[Section 3 썸네일 디버그] ${categoryName} parent:`, parent ? `찾음 (태그: ${parent.tagName})` : '없음');
                     
                     if (parent) {
-                        // 이미 썸네일이 삽입되지 않았는지 확인
+                        // 이미 썸네일이 삽입되지 않았는지 확인 (현재 parent의 바로 다음 형제만 체크)
                         let hasThumbnail = false;
-                        let nextSibling = parent.nextElementSibling;
-                        let checkCount = 0;
-                        while (nextSibling && checkCount < 5) {
-                            if (nextSibling.classList && nextSibling.classList.contains('trend-category-thumbnails')) {
-                                hasThumbnail = true;
-                                break;
-                            }
-                            nextSibling = nextSibling.nextElementSibling;
-                            checkCount++;
+                        const nextSibling = parent.nextElementSibling;
+                        if (nextSibling && nextSibling.classList && nextSibling.classList.contains('trend-category-thumbnails')) {
+                            hasThumbnail = true;
                         }
                         
-                        console.log(`[Section 3 썸네일 디버그] ${categoryName} hasThumbnail:`, hasThumbnail);
+                        console.log(`[Section 3 썸네일 디버그] ${categoryName} hasThumbnail:`, hasThumbnail, nextSibling ? `(nextSibling: ${nextSibling.tagName}, class: ${nextSibling.className})` : '(nextSibling 없음)');
                         
                         if (!hasThumbnail) {
                             const gridContainer = document.createElement('div');

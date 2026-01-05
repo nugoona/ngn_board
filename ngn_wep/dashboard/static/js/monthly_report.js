@@ -2170,7 +2170,9 @@ function renderCompetitorsTable(competitorsList) {
     rankCell.textContent = competitor.rank;
     
     const urlCell = document.createElement("td");
-    urlCell.style.padding = "8px";
+    urlCell.style.padding = "0";
+    urlCell.style.width = "120px";
+    urlCell.style.height = "120px";
     urlCell.style.textAlign = "center";
     urlCell.style.verticalAlign = "middle";
     if (competitor.thumbnailUrl && competitor.url) {
@@ -2178,8 +2180,12 @@ function renderCompetitorsTable(competitorsList) {
       link.href = competitor.url;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      link.style.display = "inline-block";
+      link.style.display = "block";
+      link.style.width = "100%";
+      link.style.height = "100%";
       link.style.textDecoration = "none";
+      link.style.padding = "0";
+      link.style.margin = "0";
       
       const img = document.createElement("img");
       img.src = competitor.thumbnailUrl;
@@ -2188,7 +2194,8 @@ function renderCompetitorsTable(competitorsList) {
       img.style.height = "120px";
       img.style.objectFit = "cover";
       img.style.display = "block";
-      img.style.borderRadius = "4px";
+      img.style.margin = "0";
+      img.style.padding = "0";
       
       link.appendChild(img);
       urlCell.appendChild(link);
@@ -2244,7 +2251,9 @@ function renderCompetitorsTable(competitorsList) {
         rankCell.textContent = competitor.rank;
         
         const urlCell = document.createElement("td");
-        urlCell.style.padding = "8px";
+        urlCell.style.padding = "0";
+        urlCell.style.width = "120px";
+        urlCell.style.height = "120px";
         urlCell.style.textAlign = "center";
         urlCell.style.verticalAlign = "middle";
         if (competitor.thumbnailUrl && competitor.url) {
@@ -2252,8 +2261,12 @@ function renderCompetitorsTable(competitorsList) {
           link.href = competitor.url;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
-          link.style.display = "inline-block";
+          link.style.display = "block";
+          link.style.width = "100%";
+          link.style.height = "100%";
           link.style.textDecoration = "none";
+          link.style.padding = "0";
+          link.style.margin = "0";
           
           const img = document.createElement("img");
           img.src = competitor.thumbnailUrl;
@@ -2262,7 +2275,8 @@ function renderCompetitorsTable(competitorsList) {
           img.style.height = "120px";
           img.style.objectFit = "cover";
           img.style.display = "block";
-          img.style.borderRadius = "4px";
+          img.style.margin = "0";
+          img.style.padding = "0";
           
           link.appendChild(img);
           urlCell.appendChild(link);

@@ -35,14 +35,7 @@ function setupTrendAnalysisToggle() {
             sidebar.classList.remove('hidden');
             sidebar.classList.add('active');
             
-            // 사이드바가 열릴 때 현재 선택된 탭에 맞는 썸네일 렌더링
-            setTimeout(() => {
-                const contentElement = document.getElementById('trendAnalysisContent');
-                if (contentElement && window.trendInsights && window.trendInsights.analysis_report) {
-                    console.log(`[Section 3 썸네일] 사이드바 열림, 현재 탭(${currentTrendType})에 맞는 썸네일 렌더링 시작`);
-                    renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
-                }
-            }, 300); // 사이드바 애니메이션 완료 후 실행
+            // Section 3는 이제 renderTrendAnalysisReport에서 탭 기반 UI로 렌더링됨
         });
         
         // 사이드바 닫기 (X 버튼)
@@ -242,17 +235,7 @@ async function loadAllTabsData() {
             // 현재 탭 데이터 표시
             displayCurrentTabData();
             
-            // 이미 AI 리포트가 렌더링되어 있으면 썸네일 업데이트 (방법 3)
-            if (window.trendInsights && window.trendInsights.analysis_report) {
-                const contentElement = document.getElementById('trendAnalysisContent');
-                if (contentElement) {
-                    const markdownContent = contentElement.querySelector('.trend-analysis-text');
-                    if (markdownContent) {
-                        // 이미 마크다운이 렌더링된 상태이므로 썸네일만 추가
-                        renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
-                    }
-                }
-            }
+            // Section 3는 이제 renderTrendAnalysisReport에서 탭 기반 UI로 렌더링됨
         } else {
             showError(data.message || '데이터를 불러오는데 실패했습니다.');
         }
@@ -457,7 +440,7 @@ function loadTrendAnalysisReport() {
     });
 }
 
-// 트렌드 분석 리포트 렌더링 (마크다운 지원 + Section 3 썸네일 카드)
+// 트렌드 분석 리포트 렌더링 (마크다운 지원 + Section 3 탭 기반 UI)
 function renderTrendAnalysisReport(insights, createdAtElement) {
     const contentElement = document.getElementById('trendAnalysisContent');
     if (!contentElement) return;
@@ -479,57 +462,64 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
         return;
     }
     
-    // 마크다운을 HTML로 변환 (월간 리포트와 동일한 방식)
-    let htmlContent = "";
+    // Section 1, 2, 3으로 분리
+    const sections = parseAnalysisReportSections(analysisText);
     
-    if (typeof marked !== 'undefined') {
-        try {
-            // 마크다운 설정
-            marked.setOptions({
-                breaks: true,  // 줄바꿈 지원
-                gfm: false     // GitHub Flavored Markdown 비활성화 (표 제외)
-            });
-            
-            // 마크다운을 HTML로 변환
-            const markdownHtml = marked.parse(analysisText);
-            
-            // XSS 방지를 위해 DOMPurify로 정제
-            if (typeof DOMPurify !== 'undefined') {
-                htmlContent = DOMPurify.sanitize(markdownHtml, {
-                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
-                    ALLOWED_ATTR: []
+    // Section 1, 2 렌더링
+    let section1And2Html = '';
+    if (sections.section1 || sections.section2) {
+        const section1And2Text = (sections.section1 ? '## Section 1. 자사몰 성과 분석\n\n' + sections.section1 + '\n\n' : '') +
+                                  (sections.section2 ? '## Section 2. Market Overview (시장 핵심 키워드)\n\n' + sections.section2 : '');
+        
+        if (typeof marked !== 'undefined') {
+            try {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: false
                 });
-            } else {
-                htmlContent = markdownHtml;
+                
+                const markdownHtml = marked.parse(section1And2Text);
+                
+                if (typeof DOMPurify !== 'undefined') {
+                    section1And2Html = DOMPurify.sanitize(markdownHtml, {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
+                        ALLOWED_ATTR: []
+                    });
+                } else {
+                    section1And2Html = markdownHtml;
+                }
+            } catch (e) {
+                console.warn("[트렌드 분석] Section 1, 2 마크다운 변환 실패:", e);
+                section1And2Html = section1And2Text.replace(/\n/g, '<br>');
             }
-        } catch (e) {
-            console.warn("[트렌드 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
-            htmlContent = analysisText.replace(/\n/g, '<br>');
+        } else {
+            section1And2Html = section1And2Text.replace(/\n/g, '<br>');
         }
-    } else {
-        // marked 라이브러리가 없는 경우 줄바꿈만 처리
-        htmlContent = analysisText.replace(/\n/g, '<br>');
     }
     
-    contentElement.innerHTML = `<div class="trend-analysis-text markdown-content">${htmlContent}</div>`;
+    // Section 3 세그먼트별로 파싱
+    const section3Data = parseSection3BySegment(sections.section3);
     
-    // Section 3 썸네일 카드 그리드 추가 (방법 2: allTabsData 준비될 때까지 대기)
-    const renderThumbnails = () => {
-        if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
-            renderSection3Thumbnails(contentElement, analysisText);
-        } else {
-            // allTabsData가 아직 준비되지 않았으면 재시도
-            const retryCount = (renderThumbnails.retryCount || 0) + 1;
-            renderThumbnails.retryCount = retryCount;
-            
-            if (retryCount < 50) { // 최대 5초 대기 (50 * 100ms)
-                setTimeout(renderThumbnails, 100);
-            } else {
-                console.warn('[Section 3 썸네일] allTabsData 대기 시간 초과');
-            }
-        }
-    };
-    setTimeout(renderThumbnails, 100); // DOM 렌더링 후 실행
+    // HTML 구조 생성
+    const container = document.createElement('div');
+    container.className = 'trend-analysis-report-container';
+    
+    // Section 1, 2 추가
+    if (section1And2Html) {
+        const section1And2Div = document.createElement('div');
+        section1And2Div.className = 'trend-analysis-text markdown-content';
+        section1And2Div.innerHTML = section1And2Html;
+        container.appendChild(section1And2Div);
+    }
+    
+    // Section 3 탭 기반 UI 추가
+    if (sections.section3) {
+        const section3Container = renderSection3WithTabs(section3Data);
+        container.appendChild(section3Container);
+    }
+    
+    contentElement.innerHTML = '';
+    contentElement.appendChild(container);
 }
 
 // AI 리포트에서 상품명 제거하고 썸네일로 교체
@@ -1409,6 +1399,288 @@ function showError(message) {
         const container = document.getElementById(id);
         if (container) {
             container.innerHTML = `<div class="trend-error">${message}</div>`;
+        }
+    });
+}
+
+// ============================================
+// Section 3 탭 기반 UI (옵션 2)
+// ============================================
+
+// AI 리포트 텍스트를 Section 1, 2, 3으로 분리
+function parseAnalysisReportSections(analysisText) {
+    if (!analysisText || !analysisText.trim()) {
+        return { section1: '', section2: '', section3: '' };
+    }
+    
+    // Section 헤더 패턴 찾기
+    const section1Pattern = /(?:^|\n)##\s*Section\s*1[\.\s]|(?:^|\n)##\s*섹션\s*1[\.\s]/i;
+    const section2Pattern = /(?:^|\n)##\s*Section\s*2[\.\s]|(?:^|\n)##\s*섹션\s*2[\.\s]/i;
+    const section3Pattern = /(?:^|\n)##\s*Section\s*3[\.\s]|(?:^|\n)##\s*섹션\s*3[\.\s]|(?:^|\n)##\s*Section\s*3[\.\s]*Segment/i;
+    
+    let section1 = '';
+    let section2 = '';
+    let section3 = '';
+    
+    const section1Match = analysisText.search(section1Pattern);
+    const section2Match = analysisText.search(section2Pattern);
+    const section3Match = analysisText.search(section3Pattern);
+    
+    if (section1Match >= 0 && section2Match >= 0) {
+        section1 = analysisText.substring(section1Match, section2Match).replace(/^[\s\S]*?##\s*Section\s*\d[\.\s]*/i, '').trim();
+    } else if (section1Match >= 0) {
+        section1 = analysisText.substring(section1Match).replace(/^[\s\S]*?##\s*Section\s*\d[\.\s]*/i, '').trim();
+    }
+    
+    if (section2Match >= 0 && section3Match >= 0) {
+        section2 = analysisText.substring(section2Match, section3Match).replace(/^[\s\S]*?##\s*Section\s*\d[\.\s]*/i, '').trim();
+    } else if (section2Match >= 0 && section1Match >= 0) {
+        section2 = analysisText.substring(section2Match).replace(/^[\s\S]*?##\s*Section\s*\d[\.\s]*/i, '').trim();
+    }
+    
+    if (section3Match >= 0) {
+        section3 = analysisText.substring(section3Match).replace(/^[\s\S]*?##\s*Section\s*\d[\.\s]*/i, '').trim();
+    }
+    
+    return { section1, section2, section3 };
+}
+
+// Section 3 텍스트를 세그먼트별로 파싱
+function parseSection3BySegment(section3Text) {
+    if (!section3Text || !section3Text.trim()) {
+        return {
+            rising_star: '',
+            new_entry: '',
+            rank_drop: ''
+        };
+    }
+    
+    const segments = {
+        rising_star: { patterns: ['급상승', 'Rising Star', '🔥'], text: '' },
+        new_entry: { patterns: ['신규 진입', 'New Entry', '🚀'], text: '' },
+        rank_drop: { patterns: ['순위 하락', 'Rank Drop', '📉'], text: '' }
+    };
+    
+    // 세그먼트 헤더 찾기
+    const segmentHeaders = [];
+    const lines = section3Text.split('\n');
+    
+    lines.forEach((line, index) => {
+        const lineLower = line.toLowerCase();
+        if (lineLower.includes('급상승') || lineLower.includes('rising star') || line.includes('🔥')) {
+            segmentHeaders.push({ index, type: 'rising_star', line });
+        } else if (lineLower.includes('신규 진입') || lineLower.includes('new entry') || line.includes('🚀')) {
+            segmentHeaders.push({ index, type: 'new_entry', line });
+        } else if (lineLower.includes('순위 하락') || lineLower.includes('rank drop') || line.includes('📉')) {
+            segmentHeaders.push({ index, type: 'rank_drop', line });
+        }
+    });
+    
+    // 각 세그먼트 텍스트 추출
+    segmentHeaders.forEach((header, headerIndex) => {
+        const startIndex = header.index;
+        const endIndex = headerIndex < segmentHeaders.length - 1 
+            ? segmentHeaders[headerIndex + 1].index 
+            : lines.length;
+        
+        const segmentLines = lines.slice(startIndex + 1, endIndex);
+        segments[header.type].text = segmentLines.join('\n').trim();
+    });
+    
+    return {
+        rising_star: segments.rising_star.text,
+        new_entry: segments.new_entry.text,
+        rank_drop: segments.rank_drop.text
+    };
+}
+
+// Section 3를 탭 기반 UI로 렌더링
+function renderSection3WithTabs(section3Data) {
+    // Section 3 컨테이너 생성
+    const section3Container = document.createElement('div');
+    section3Container.className = 'trend-section3-container';
+    
+    // Section 3 헤더 추가
+    const sectionHeader = document.createElement('h2');
+    sectionHeader.className = 'trend-section3-header';
+    sectionHeader.textContent = 'Section 3. Segment Deep Dive (세그먼트별 트렌드 분석)';
+    section3Container.appendChild(sectionHeader);
+    
+    // 탭 UI 생성 (월간 리포트 Section 5 스타일)
+    const tabsWrapper = document.createElement('div');
+    tabsWrapper.className = 'market-trend-tabs-wrapper';
+    
+    const tabs = document.createElement('div');
+    tabs.className = 'market-trend-tabs';
+    tabs.id = 'section3Tabs';
+    
+    const segmentTabs = [
+        { type: 'rising_star', label: '🔥 급상승', displayLabel: '급상승' },
+        { type: 'new_entry', label: '🚀 신규 진입', displayLabel: '신규 진입' },
+        { type: 'rank_drop', label: '📉 순위 하락', displayLabel: '순위 하락' }
+    ];
+    
+    segmentTabs.forEach((tab, index) => {
+        const button = document.createElement('button');
+        button.className = 'market-trend-tab-btn';
+        if (index === 0) button.classList.add('active');
+        button.setAttribute('data-segment', tab.type);
+        button.textContent = tab.displayLabel;
+        tabs.appendChild(button);
+    });
+    
+    tabsWrapper.appendChild(tabs);
+    section3Container.appendChild(tabsWrapper);
+    
+    // 콘텐츠 영역 생성
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'trend-section3-content-wrapper';
+    contentWrapper.id = 'section3Content';
+    
+    section3Container.appendChild(contentWrapper);
+    
+    // 첫 번째 탭(급상승) 콘텐츠 렌더링
+    renderSection3SegmentContent('rising_star', section3Data.rising_star, contentWrapper);
+    
+    // 탭 이벤트 핸들러 설정
+    tabs.querySelectorAll('.market-trend-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const segmentType = this.getAttribute('data-segment');
+            
+            // 활성화 상태 업데이트
+            tabs.querySelectorAll('.market-trend-tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // 콘텐츠 렌더링
+            renderSection3SegmentContent(segmentType, section3Data[segmentType], contentWrapper);
+        });
+    });
+    
+    return section3Container;
+}
+
+// Section 3 세그먼트 콘텐츠 렌더링 (텍스트 + 썸네일)
+function renderSection3SegmentContent(segmentType, segmentText, container) {
+    if (!segmentText || !segmentText.trim()) {
+        container.innerHTML = '<div class="trend-analysis-empty">분석 데이터가 없습니다.</div>';
+        return;
+    }
+    
+    // 마크다운을 HTML로 변환
+    let htmlContent = "";
+    
+    if (typeof marked !== 'undefined') {
+        try {
+            marked.setOptions({
+                breaks: true,
+                gfm: false
+            });
+            
+            const markdownHtml = marked.parse(segmentText);
+            
+            if (typeof DOMPurify !== 'undefined') {
+                htmlContent = DOMPurify.sanitize(markdownHtml, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
+                    ALLOWED_ATTR: []
+                });
+            } else {
+                htmlContent = markdownHtml;
+            }
+        } catch (e) {
+            console.warn("[Section 3] 마크다운 변환 실패:", e);
+            htmlContent = segmentText.replace(/\n/g, '<br>');
+        }
+    } else {
+        htmlContent = segmentText.replace(/\n/g, '<br>');
+    }
+    
+    // 텍스트 컨테이너 생성
+    const textContainer = document.createElement('div');
+    textContainer.className = 'trend-section3-text markdown-content';
+    textContainer.innerHTML = htmlContent;
+    
+    container.innerHTML = '';
+    container.appendChild(textContainer);
+    
+    // 썸네일 추가 (allTabsData 준비될 때까지 대기)
+    const renderThumbnails = () => {
+        if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+            renderSection3ThumbnailsForSegment(textContainer, segmentType);
+        } else {
+            const retryCount = (renderThumbnails.retryCount || 0) + 1;
+            renderThumbnails.retryCount = retryCount;
+            
+            if (retryCount < 50) {
+                setTimeout(renderThumbnails, 100);
+            } else {
+                console.warn('[Section 3 썸네일] allTabsData 대기 시간 초과');
+            }
+        }
+    };
+    setTimeout(renderThumbnails, 100);
+}
+
+// Section 3 세그먼트에 대한 썸네일 렌더링 (기존 함수 활용)
+function renderSection3ThumbnailsForSegment(textContainer, segmentType) {
+    if (!window.allTabsData || Object.keys(window.allTabsData).length === 0) {
+        console.warn('[Section 3 썸네일] allTabsData가 없습니다.');
+        return;
+    }
+    
+    // 기존 썸네일 제거
+    const existingThumbnails = textContainer.querySelectorAll('.trend-category-thumbnails');
+    existingThumbnails.forEach(thumb => thumb.remove());
+    
+    // 카테고리 목록
+    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    
+    categories.forEach(categoryName => {
+        const categoryProducts = getProductsByCategory(categoryName, segmentType);
+        if (categoryProducts.length === 0) {
+            return;
+        }
+        
+        // 카테고리 헤드라인 찾기
+        const categoryHeaders = textContainer.querySelectorAll('p, li, strong');
+        let categoryHeaderElement = null;
+        
+        for (const element of categoryHeaders) {
+            const textContent = (element.textContent || '').trim();
+            const innerHTML = (element.innerHTML || '').trim();
+            
+            const isCategoryHeader = 
+                textContent === `${categoryName}:` || 
+                textContent.startsWith(`${categoryName}:`) ||
+                innerHTML.includes(`<strong>${categoryName}:</strong>`) ||
+                innerHTML.includes(`**${categoryName}:**`);
+            
+            if (isCategoryHeader) {
+                categoryHeaderElement = element.closest('p, li') || element.parentElement || element;
+                break;
+            }
+        }
+        
+        if (categoryHeaderElement) {
+            // 썸네일 그리드 생성
+            const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
+            
+            if (thumbnailGrid) {
+                // 이미 썸네일이 있는지 확인
+                const nextSibling = categoryHeaderElement.nextElementSibling;
+                if (nextSibling && nextSibling.classList.contains('trend-category-thumbnails')) {
+                    return; // 이미 있으면 스킵
+                }
+                
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'trend-category-thumbnails';
+                gridContainer.innerHTML = thumbnailGrid;
+                
+                if (categoryHeaderElement.nextSibling) {
+                    categoryHeaderElement.parentNode.insertBefore(gridContainer, categoryHeaderElement.nextSibling);
+                } else {
+                    categoryHeaderElement.parentNode.appendChild(gridContainer);
+                }
+            }
         }
     });
 }

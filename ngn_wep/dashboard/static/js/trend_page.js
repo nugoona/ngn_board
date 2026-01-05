@@ -1624,70 +1624,83 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
     const categoryData = {};
     
-    // 각 카테고리별로 텍스트 추출
+    // 각 카테고리별로 텍스트 추출 (인덱스 기반으로 변경하여 모든 bullet point 포함)
+    const lines = cleanedText.split('\n');
+    const categoryIndices = {};
+    
+    // 각 카테고리 헤더 위치 찾기
     categories.forEach(categoryName => {
-        // **카테고리명:** 패턴으로 시작하는 텍스트 추출
-        const escapedCategory = categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // 카테고리 헤더 다음의 내용을 다음 카테고리 헤더나 텍스트 끝까지 추출
-        const categoryPattern = new RegExp(`\\*\\*${escapedCategory}:\\*\\*\\s*\\n\\s*([\\s\\S]*?)(?=\\n\\s*\\*\\*[^:]+:\\*\\*|$)`, 'm');
-        const match = cleanedText.match(categoryPattern);
+        const headerPattern = `**${categoryName}:**`;
+        const index = lines.findIndex(line => line.trim() === headerPattern || line.trim().includes(headerPattern));
+        if (index >= 0) {
+            categoryIndices[categoryName] = index;
+        }
+    });
+    
+    // 각 카테고리별로 텍스트 추출
+    categories.forEach((categoryName, catIndex) => {
+        const startIndex = categoryIndices[categoryName];
         
-        console.log(`[renderSection3SegmentContent] ${categoryName} 패턴 매칭 시도, match:`, match ? '성공' : '실패');
-        
-        if (!match || !match[1]) {
-            console.warn(`[Section 3] ${categoryName} 카테고리 텍스트를 찾을 수 없습니다.`);
-            // 디버깅: cleanedText에서 해당 카테고리명이 포함된 부분 확인
-            if (cleanedText.includes(categoryName)) {
-                const categoryIndex = cleanedText.indexOf(`**${categoryName}:`);
-                if (categoryIndex >= 0) {
-                    console.log(`[Section 3 디버그] ${categoryName} 발견 위치: ${categoryIndex}, 주변 텍스트:`, cleanedText.substring(categoryIndex, categoryIndex + 200));
-                }
-            }
+        if (startIndex === undefined || startIndex < 0) {
+            console.warn(`[Section 3] ${categoryName} 카테고리 헤더를 찾을 수 없습니다.`);
             return;
         }
         
-        if (match && match[1]) {
-            let categoryText = match[1].trim();
-            
-            console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 길이:`, categoryText.length);
-            console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 첫 200자:`, categoryText.substring(0, 200));
-            
-            // 빈 텍스트 체크
-            if (!categoryText || categoryText.length === 0) {
-                console.warn(`[Section 3] ${categoryName} 카테고리 텍스트가 비어있습니다.`);
-                return;
-            }
-            
-            // 마크다운을 HTML로 변환
-            if (typeof marked !== 'undefined') {
-                try {
-                    marked.setOptions({
-                        breaks: true,
-                        gfm: false
-                    });
-                    
-                    const markdownHtml = marked.parse(categoryText);
-                    
-                    if (typeof DOMPurify !== 'undefined') {
-                        categoryText = DOMPurify.sanitize(markdownHtml, {
-                            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'blockquote'],
-                            ALLOWED_ATTR: []
-                        });
-                    } else {
-                        categoryText = markdownHtml;
-                    }
-                    
-                    console.log(`[renderSection3SegmentContent] ${categoryName} 마크다운 변환 후 길이:`, categoryText.length);
-                } catch (e) {
-                    console.warn(`[Section 3] ${categoryName} 마크다운 변환 실패:`, e);
-                    categoryText = categoryText.replace(/\n/g, '<br>');
+        // 다음 카테고리 헤더의 위치 찾기 (또는 텍스트 끝)
+        let endIndex = lines.length;
+        if (catIndex < categories.length - 1) {
+            for (let i = catIndex + 1; i < categories.length; i++) {
+                const nextCategoryStart = categoryIndices[categories[i]];
+                if (nextCategoryStart !== undefined && nextCategoryStart >= 0) {
+                    endIndex = nextCategoryStart;
+                    break;
                 }
-            } else {
+            }
+        }
+        
+        // 카테고리 텍스트 추출 (헤더 다음 줄부터 다음 카테고리 헤더 전까지)
+        const categoryLines = lines.slice(startIndex + 1, endIndex);
+        let categoryText = categoryLines.join('\n').trim();
+        
+        console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 길이:`, categoryText.length);
+        console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 첫 200자:`, categoryText.substring(0, 200));
+        
+        // 빈 텍스트 체크
+        if (!categoryText || categoryText.length === 0) {
+            console.warn(`[Section 3] ${categoryName} 카테고리 텍스트가 비어있습니다.`);
+            return;
+        }
+        
+        // 마크다운을 HTML로 변환
+        if (typeof marked !== 'undefined') {
+            try {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: false
+                });
+                
+                const markdownHtml = marked.parse(categoryText);
+                
+                if (typeof DOMPurify !== 'undefined') {
+                    categoryText = DOMPurify.sanitize(markdownHtml, {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'blockquote'],
+                        ALLOWED_ATTR: []
+                    });
+                } else {
+                    categoryText = markdownHtml;
+                }
+                
+                console.log(`[renderSection3SegmentContent] ${categoryName} 마크다운 변환 후 길이:`, categoryText.length);
+            } catch (e) {
+                console.warn(`[Section 3] ${categoryName} 마크다운 변환 실패:`, e);
                 categoryText = categoryText.replace(/\n/g, '<br>');
             }
-            
-            categoryData[categoryName] = categoryText;
+        } else {
+            categoryText = categoryText.replace(/\n/g, '<br>');
         }
+        
+        categoryData[categoryName] = categoryText;
+    });
     });
     
     // 디버깅: 파싱된 카테고리 데이터 확인

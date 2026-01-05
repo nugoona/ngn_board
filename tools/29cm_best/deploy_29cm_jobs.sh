@@ -177,14 +177,14 @@ else
   --project="$PROJECT"
 fi
 
-# 월간 스케줄러 생성 (매월 1일 새벽 3시)
+# 월간 스케줄러 생성 (매월 1일 오전 6시)
 SCHEDULER_MONTHLY="29cm-best-monthly-scheduler"
-echo "월간 스케줄러 생성 중: 매월 1일 새벽 3시"
+echo "월간 스케줄러 생성 중: 매월 1일 오전 6시"
 if gcloud scheduler jobs describe "$SCHEDULER_MONTHLY" --location="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
   echo "월간 스케줄러 업데이트 중..."
   gcloud scheduler jobs update pubsub "$SCHEDULER_MONTHLY" \
   --location="$REGION_RUN" \
-  --schedule="0 3 1 * *" \
+  --schedule="0 6 1 * *" \
   --topic="$TOPIC_MONTHLY" \
   --message-body='{"trigger":"monthly"}' \
   --time-zone="Asia/Seoul" \
@@ -193,7 +193,7 @@ else
   echo "월간 스케줄러 생성 중..."
   gcloud scheduler jobs create pubsub "$SCHEDULER_MONTHLY" \
   --location="$REGION_RUN" \
-  --schedule="0 3 1 * *" \
+  --schedule="0 6 1 * *" \
   --topic="$TOPIC_MONTHLY" \
   --message-body='{"trigger":"monthly"}' \
   --time-zone="Asia/Seoul" \
@@ -211,7 +211,7 @@ echo "  - 월간 Pub/Sub Topic: ${TOPIC_MONTHLY}"
 echo "  - 주간 Pub/Sub Subscription: ${SUBSCRIPTION_WEEKLY}"
 echo "  - 월간 Pub/Sub Subscription: ${SUBSCRIPTION_MONTHLY}"
 echo "  - 주간 Cloud Scheduler: ${SCHEDULER_WEEKLY} (매주 월요일 새벽 3시)"
-echo "  - 월간 Cloud Scheduler: ${SCHEDULER_MONTHLY} (매월 1일 새벽 3시)"
+echo "  - 월간 Cloud Scheduler: ${SCHEDULER_MONTHLY} (매월 1일 오전 6시)"
 echo ""
 echo "📝 수동 실행:"
 echo "  주간: gcloud run jobs execute ${JOB_WEEKLY} --region=${REGION_RUN} --project=${PROJECT}"

@@ -1748,6 +1748,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         headerSection.appendChild(categoryBadge);
         headerSection.appendChild(analysisSection);
         
+        // 썸네일 그리드 컨테이너 미리 생성 (레이아웃 시프트 방지)
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'trend-category-thumbnails';
+        cardContainer.appendChild(gridContainer);
+        
         // 썸네일 그리드 생성 (allTabsData 준비될 때까지 대기)
         const addThumbnails = () => {
             if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
@@ -1755,10 +1760,7 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 if (categoryProducts.length > 0) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
                     if (thumbnailGrid) {
-                        const gridContainer = document.createElement('div');
-                        gridContainer.className = 'trend-category-thumbnails';
                         gridContainer.innerHTML = thumbnailGrid;
-                        cardContainer.appendChild(gridContainer);
                     }
                 }
             } else {

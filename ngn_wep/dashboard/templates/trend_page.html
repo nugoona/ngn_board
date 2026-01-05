@@ -502,6 +502,8 @@
     .trend-category-thumbnails {
       margin: 20px 0;
       padding: 20px 0;
+      min-height: 200px; /* 레이아웃 시프트 방지 */
+      contain: layout style; /* 레이아웃 격리 */
     }
     
     .trend-thumbnails-grid {
@@ -626,7 +628,7 @@
       position: fixed;
       top: 20px;
       right: 0;
-      width: auto;
+      width: 800px; /* 고정 너비로 변경 */
       max-width: 95vw;
       min-width: 800px;
       max-height: calc(100vh - 40px);
@@ -643,6 +645,7 @@
       border-top-left-radius: 12px;
       border-bottom-left-radius: 12px;
       overflow: hidden;
+      contain: layout style; /* 레이아웃 격리 */
     }
     
     .trend-analysis-sidebar-wrapper.active {

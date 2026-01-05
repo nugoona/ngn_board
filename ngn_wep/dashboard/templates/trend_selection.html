@@ -199,7 +199,7 @@
 
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script>
-    // 페이지 로드 시 29CM 링크에 company_name 파라미터 추가
+    // 페이지 로드 시 29CM 링크에 company_name 파라미터 추가 및 클릭 이벤트 처리
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[Trend Selection] DOMContentLoaded 실행');
       
@@ -223,9 +223,20 @@
         }
         
         console.log('[Trend Selection] 최종 URL:', url);
+        
+        // href 설정
         card29cmLink.href = url;
         
-        console.log('[Trend Selection] card29cmLink href 설정 완료:', card29cmLink.href);
+        // 클릭 이벤트 리스너 추가 (강제 이동 보장)
+        card29cmLink.addEventListener('click', function(e) {
+          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생!');
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[Trend Selection] 페이지 이동 시작:', url);
+          window.location.href = url;
+        }, true); // capture phase에서 실행
+        
+        console.log('[Trend Selection] card29cmLink href 및 클릭 이벤트 설정 완료');
       } else {
         console.error('[Trend Selection] card29cmLink 요소를 찾을 수 없습니다!');
       }

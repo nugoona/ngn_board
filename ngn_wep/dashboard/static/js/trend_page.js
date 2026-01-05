@@ -1464,38 +1464,38 @@ function parseSection2IntoMaterialAndTPO(section2Text) {
         return { material: '', tpo: '' };
     }
     
-    // Material과 Occasion (TPO) 헤더 찾기
+    // Material과 Mood (무드 & 스타일) 헤더 찾기
     const materialPattern = /\*\*Material\s*\(소재\):\*\*|\*\*Material:\*\*/i;
-    const tpoPattern = /\*\*Occasion\s*\(TPO\):\*\*|\*\*TPO:\*\*|\*\*Occasion:\*\*/i;
+    const moodPattern = /\*\*Mood\s*\(무드\s*&\s*스타일\):\*\*|\*\*Mood\s*\(무드\s*&amp;\s*스타일\):\*\*|\*\*Mood:\*\*/i;
     const pricePattern = /\*\*Price\s*\(가격\):\*\*/i;
     
     const materialMatch = section2Text.search(materialPattern);
-    const tpoMatch = section2Text.search(tpoPattern);
+    const moodMatch = section2Text.search(moodPattern);
     const priceMatch = section2Text.search(pricePattern);
     
     let material = '';
-    let tpo = '';
+    let mood = '';
     
     // Material 추출
     if (materialMatch >= 0) {
-        const endIndex = tpoMatch >= 0 ? tpoMatch : (priceMatch >= 0 ? priceMatch : section2Text.length);
+        const endIndex = moodMatch >= 0 ? moodMatch : (priceMatch >= 0 ? priceMatch : section2Text.length);
         material = section2Text.substring(materialMatch, endIndex)
             .replace(/^\*\*Material\s*\(소재\):\*\*/i, '')
             .replace(/^\*\*Material:\*\*/i, '')
             .trim();
     }
     
-    // TPO 추출
-    if (tpoMatch >= 0) {
+    // Mood 추출
+    if (moodMatch >= 0) {
         const endIndex = priceMatch >= 0 ? priceMatch : section2Text.length;
-        tpo = section2Text.substring(tpoMatch, endIndex)
-            .replace(/^\*\*Occasion\s*\(TPO\):\*\*/i, '')
-            .replace(/^\*\*TPO:\*\*/i, '')
-            .replace(/^\*\*Occasion:\*\*/i, '')
+        mood = section2Text.substring(moodMatch, endIndex)
+            .replace(/^\*\*Mood\s*\(무드\s*&\s*스타일\):\*\*/i, '')
+            .replace(/^\*\*Mood\s*\(무드\s*&amp;\s*스타일\):\*\*/i, '')
+            .replace(/^\*\*Mood:\*\*/i, '')
             .trim();
     }
     
-    return { material, tpo };
+    return { material, mood };
 }
 
 // Section 2를 2열 카드 레이아웃으로 렌더링
@@ -1517,9 +1517,9 @@ function renderSection2AsCards(section2Data) {
     const materialCard = createSection2Card('🧶', 'Material Trend', '소재 트렌드', section2Data.material);
     gridContainer.appendChild(materialCard);
     
-    // TPO 카드
-    const tpoCard = createSection2Card('📅', 'TPO & Occasion', '착용 시나리오', section2Data.tpo);
-    gridContainer.appendChild(tpoCard);
+    // Mood 카드
+    const moodCard = createSection2Card('✨', 'Mood & Style', '무드 & 스타일', section2Data.mood);
+    gridContainer.appendChild(moodCard);
     
     container.appendChild(gridContainer);
     

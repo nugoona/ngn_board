@@ -2276,8 +2276,8 @@ function renderCompetitorsTable(competitorsList) {
           link.style.border = "1px solid #2563eb";
           link.style.borderRadius = "4px";
           link.style.display = "inline-block";
-          link.onmouseover = function() { this.style.backgroundColor = "#2563eb"; this.style.color = "#fff"; };
-          link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#2563eb"; };
+          link.onmouseover = function() { this.style.backgroundColor = "#1e293b"; this.style.color = "#fff"; };
+          link.onmouseout = function() { this.style.backgroundColor = "transparent"; this.style.color = "#1e293b"; };
           urlCell.appendChild(link);
         } else {
           urlCell.textContent = "-";

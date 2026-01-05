@@ -405,20 +405,18 @@ def build_trend_analysis_prompt(
             })
         return essential
     
-    # 핵심 6대 카테고리만 선택 (전체 제외)
-    core_tabs = []
-    for core_cat in CORE_CATEGORIES:
-        if core_cat in tabs_data:
-            core_tabs.append(core_cat)
+    # 모든 카테고리 선택 (CORE_CATEGORIES 필터링 제거)
+    # tabs_data에 있는 모든 카테고리를 사용 (29CM와 Ably 모두 지원)
+    all_tabs = list(tabs_data.keys())
     
-    # 핵심 카테고리가 없으면 전체 데이터 사용
-    if not core_tabs:
-        core_tabs = ["전체"] if "전체" in tabs_data else []
+    # "전체" 탭이 있으면 제외 (세부 카테고리만 사용)
+    if "전체" in all_tabs:
+        all_tabs = [tab for tab in all_tabs if tab != "전체"]
     
-    # 데이터 준비 (핵심 6대 카테고리만, 각 세그먼트당 상위 15개)
+    # 데이터 준비 (모든 카테고리, 각 세그먼트당 상위 15개)
     all_categories_data = {}
     
-    for tab_name in core_tabs:
+    for tab_name in all_tabs:
         if tab_name not in tabs_data:
             continue
         tab_data = tabs_data[tab_name]
@@ -454,7 +452,7 @@ def build_trend_analysis_prompt(
 - 신규 진입 상품: {total_new_entry}개
 - 순위 하락 상품: {total_rank_drop}개
 
-핵심 6대 카테고리 데이터 (각 세그먼트당 상위 15개):
+전체 카테고리 데이터 (각 세그먼트당 상위 15개):
 {optimized_data}
 
 ⚠️ [중요 지침]

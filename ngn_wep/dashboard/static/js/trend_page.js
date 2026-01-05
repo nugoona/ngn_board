@@ -1603,7 +1603,10 @@ function renderSection3WithTabs(section3Data) {
 
 // Section 3 세그먼트 콘텐츠 렌더링 (카테고리별 Card UI + 통합 헤더)
 function renderSection3SegmentContent(segmentType, segmentText, container) {
+    console.log('[renderSection3SegmentContent] 호출됨:', segmentType, '텍스트 길이:', segmentText ? segmentText.length : 0);
+    
     if (!segmentText || !segmentText.trim()) {
+        console.warn('[renderSection3SegmentContent] 세그먼트 텍스트 없음');
         container.innerHTML = '<div class="trend-analysis-empty">분석 데이터가 없습니다.</div>';
         return;
     }

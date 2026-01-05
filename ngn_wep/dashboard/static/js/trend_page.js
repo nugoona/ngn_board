@@ -470,37 +470,6 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
         section3Length: sections.section3.length
     });
     
-    // Section 1 렌더링
-    let section1Html = '';
-    if (sections.section1) {
-        const section1Text = '## Section 1. 자사몰 성과 분석\n\n' + sections.section1;
-        
-        if (typeof marked !== 'undefined') {
-            try {
-                marked.setOptions({
-                    breaks: true,
-                    gfm: false
-                });
-                
-                const markdownHtml = marked.parse(section1Text);
-                
-                if (typeof DOMPurify !== 'undefined') {
-                    section1Html = DOMPurify.sanitize(markdownHtml, {
-                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
-                        ALLOWED_ATTR: []
-                    });
-                } else {
-                    section1Html = markdownHtml;
-                }
-            } catch (e) {
-                console.warn("[트렌드 분석] Section 1 마크다운 변환 실패:", e);
-                section1Html = section1Text.replace(/\n/g, '<br>');
-            }
-        } else {
-            section1Html = section1Text.replace(/\n/g, '<br>');
-        }
-    }
-    
     // Section 2 파싱 (Material과 TPO 추출)
     const section2Data = parseSection2IntoMaterialAndTPO(sections.section2);
     
@@ -511,12 +480,12 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     const container = document.createElement('div');
     container.className = 'trend-analysis-report-container';
     
-    // Section 1 추가
-    if (section1Html) {
-        const section1Div = document.createElement('div');
-        section1Div.className = 'trend-analysis-text markdown-content';
-        section1Div.innerHTML = section1Html;
-        container.appendChild(section1Div);
+    // Section 1 카드 레이아웃 추가
+    if (sections.section1) {
+        const section1Container = renderSection1AsCard(sections.section1);
+        if (section1Container) {
+            container.appendChild(section1Container);
+        }
     }
     
     // Section 2 카드 레이아웃 추가
@@ -1496,6 +1465,187 @@ function parseSection2IntoMaterialAndTPO(section2Text) {
     }
     
     return { material, mood };
+}
+
+// Section 1을 카드 레이아웃으로 렌더링 (Section 2 스타일 참고)
+function renderSection1AsCard(section1Text) {
+    if (!section1Text || !section1Text.trim()) {
+        return null;
+    }
+    
+    // 불필요한 텍스트 제거 (제목, 서두 등)
+    let cleanedText = section1Text
+        .replace(/^[\s\S]*?##\s*Section\s*1[^#]*/i, '')
+        .replace(/제공된 데이터 전체를 스캔하여[^가-힣]*브랜드의 상품이[^가-힣]*포함되어 있는지 확인하세요[.\s]*/gi, '')
+        .replace(/\*\*데이터에 자사몰 상품이 있는 경우:\*\*[\s\n]*/gi, '')
+        .replace(/\*\*데이터에 자사몰 상품이 없는 경우:\*\*[\s\n]*/gi, '')
+        .replace(/금주 랭킹 데이터에 자사몰 상품이 포함되지 않았습니다[.\s]*/gi, '')
+        .replace(/이번 주 데이터에 자사몰 상품이 포함되지 않았습니다[.\s]*/gi, '')
+        .trim();
+    
+    // 텍스트가 비어있으면 null 반환
+    if (!cleanedText || cleanedText.length === 0) {
+        return null;
+    }
+    
+    const container = document.createElement('div');
+    container.className = 'trend-section1-container';
+    
+    // Section 1 헤더
+    const header = document.createElement('h2');
+    header.className = 'trend-section1-header';
+    header.textContent = 'Section 1. 자사몰 성과 분석';
+    container.appendChild(header);
+    
+    // 카드 컨테이너
+    const cardContainer = document.createElement('div');
+    cardContainer.className = 'trend-section1-card';
+    
+    // 내용 영역
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'trend-section1-card-content';
+    
+    // 마크다운을 HTML로 변환
+    if (typeof marked !== 'undefined') {
+        try {
+            marked.setOptions({
+                breaks: true,
+                gfm: false
+            });
+            
+            const markdownHtml = marked.parse(cleanedText);
+            
+            if (typeof DOMPurify !== 'undefined') {
+                contentDiv.innerHTML = DOMPurify.sanitize(markdownHtml, {
+                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li'],
+                    ALLOWED_ATTR: []
+                });
+            } else {
+                contentDiv.innerHTML = markdownHtml;
+            }
+        } catch (e) {
+            console.warn("[Section 1] 마크다운 변환 실패:", e);
+            contentDiv.innerHTML = cleanedText.replace(/\n/g, '<br>');
+        }
+    } else {
+        contentDiv.innerHTML = cleanedText.replace(/\n/g, '<br>');
+    }
+    
+    // 썸네일 그리드 컨테이너 (자사몰 상품용)
+    const thumbnailContainer = document.createElement('div');
+    thumbnailContainer.className = 'trend-section1-thumbnails';
+    
+    // 자사몰 상품 찾아서 썸네일 추가
+    const addCompanyThumbnails = () => {
+        if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+            const companyProducts = getCompanyProducts();
+            if (companyProducts.length > 0) {
+                // 급상승 상품이 있으면 우선 표시, 없으면 첫 번째 상품
+                const risingProducts = companyProducts.filter(p => p.trendType === 'rising_star');
+                const productsToShow = risingProducts.length > 0 ? risingProducts : companyProducts.slice(0, 1);
+                
+                const thumbnailGrid = createThumbnailGridFromProducts(productsToShow, productsToShow[0]?.trendType || 'rising_star');
+                if (thumbnailGrid) {
+                    thumbnailContainer.innerHTML = thumbnailGrid;
+                }
+            }
+        } else {
+            // allTabsData가 없으면 재시도
+            const retryCount = (addCompanyThumbnails.retryCount || 0) + 1;
+            addCompanyThumbnails.retryCount = retryCount;
+            
+            if (retryCount < 50) {
+                setTimeout(addCompanyThumbnails, 100);
+            }
+        }
+    };
+    
+    // 썸네일 추가 시도
+    setTimeout(addCompanyThumbnails, 100);
+    
+    // 카드에 내용과 썸네일 추가
+    cardContainer.appendChild(contentDiv);
+    cardContainer.appendChild(thumbnailContainer);
+    container.appendChild(cardContainer);
+    
+    return container;
+}
+
+// 자사몰 상품 찾기 (allTabsData에서 브랜드명으로 필터링)
+function getCompanyProducts() {
+    if (!window.allTabsData || Object.keys(window.allTabsData).length === 0) {
+        return [];
+    }
+    
+    // company_name으로 한글명 추정 (간단한 매핑)
+    const urlParams = new URLSearchParams(window.location.search);
+    const companyName = urlParams.get('company_name') || (typeof window.selectedCompany !== 'undefined' ? window.selectedCompany : '');
+    
+    // 브랜드명 매핑 (일반적인 케이스)
+    const brandMapping = {
+        'piscess': ['파이시스', 'PISCESS'],
+        'somewherebutter': ['썸웨어버터', 'Somewhere Butter', 'SOMEWHERE BUTTER'],
+        'demo': []
+    };
+    
+    const targetBrands = brandMapping[companyName?.toLowerCase()] || [];
+    if (targetBrands.length === 0) {
+        console.warn('[getCompanyProducts] 브랜드 매핑 없음:', companyName);
+        return [];
+    }
+    
+    const products = [];
+    
+    // 모든 카테고리와 세그먼트를 순회
+    Object.keys(window.allTabsData).forEach(categoryName => {
+        const tabData = window.allTabsData[categoryName];
+        ['rising_star', 'new_entry', 'rank_drop'].forEach(trendType => {
+            const items = tabData[trendType] || [];
+            items.forEach(item => {
+                const brand = item.Brand_Name || item.Brand || '';
+                const product = item.Product_Name || item.Product || '';
+                const thumbnail = item.thumbnail_url || '';
+                const itemUrl = item.item_url || '';
+                const rank = item.This_Week_Rank || item.Ranking || '';
+                const rankChange = item.Rank_Change;
+                const price = item.price || item.Price || 0;
+                
+                // 브랜드명 매칭 (대소문자 무시, 공백 무시)
+                const brandMatch = targetBrands.some(targetBrand => 
+                    brand.trim().toLowerCase().includes(targetBrand.toLowerCase().trim()) ||
+                    targetBrand.toLowerCase().trim().includes(brand.trim().toLowerCase())
+                );
+                
+                if (brandMatch && brand && product && thumbnail) {
+                    products.push({
+                        brand: brand,
+                        product: product,
+                        thumbnail: thumbnail,
+                        itemUrl: itemUrl,
+                        rank: rank,
+                        rankChange: rankChange,
+                        price: price,
+                        trendType: trendType,
+                        category: categoryName
+                    });
+                }
+            });
+        });
+    });
+    
+    // 순위변화 기준으로 정렬 (급상승 우선)
+    products.sort((a, b) => {
+        if (a.trendType === 'rising_star' && b.trendType !== 'rising_star') return -1;
+        if (a.trendType !== 'rising_star' && b.trendType === 'rising_star') return 1;
+        
+        if (a.rankChange !== null && b.rankChange !== null) {
+            return Math.abs(b.rankChange) - Math.abs(a.rankChange);
+        }
+        
+        return 0;
+    });
+    
+    return products;
 }
 
 // Section 2를 2열 카드 레이아웃으로 렌더링

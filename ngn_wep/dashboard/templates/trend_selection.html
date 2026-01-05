@@ -175,12 +175,12 @@
   <div class="trend-selection-wrapper">
     <div class="trend-selection-cards">
       <!-- 29CM 카드 -->
-      <div class="trend-card trend-card-29cm" id="card29cm">
+      <div class="trend-card trend-card-29cm" id="card29cm" onclick="navigateTo29cm()">
         <span class="card-text">29CM</span>
       </div>
 
       <!-- ABLY 카드 -->
-      <div class="trend-card trend-card-ably" id="cardAbly">
+      <div class="trend-card trend-card-ably" id="cardAbly" onclick="navigateToAbly()">
         <span class="card-text">ABLY</span>
       </div>
     </div>
@@ -188,93 +188,51 @@
 
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script>
-    (function() {
-      'use strict';
+    // 전역 함수로 정의하여 HTML onclick에서 직접 호출 가능하도록
+    function navigateTo29cm() {
+      // sessionStorage에서 업체 선택 정보 가져오기
+      let url = '/trend/29cm';
+      const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+      const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
       
-      // 이벤트 핸들러 초기화 플래그
-      let handlersInitialized = false;
-
-      function initCardClickHandlers() {
-        if (handlersInitialized) return;
-        handlersInitialized = true;
-
-        // 29CM 카드 클릭 이벤트
-        const card29cm = document.getElementById('card29cm');
-        if (card29cm) {
-          card29cm.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            console.log('[Trend Selection] 29CM 카드 클릭됨');
-            
-            // sessionStorage에서 업체 선택 정보 가져오기
-            let url = '/trend/29cm';
-            const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
-            const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
-            
-            console.log('[Trend Selection] siteSelectedCompany:', siteSelectedCompany);
-            console.log('[Trend Selection] adsSelectedCompany:', adsSelectedCompany);
-            
-            // 사이트 성과 페이지의 업체 선택을 우선 사용
-            const selectedCompany = siteSelectedCompany || adsSelectedCompany;
-            
-            if (selectedCompany && selectedCompany !== "all") {
-              url += '?company_name=' + encodeURIComponent(selectedCompany);
-            }
-            
-            console.log('[Trend Selection] 이동 URL:', url);
-            
-            // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
-            // 백엔드에서 업체가 선택되지 않았으면 trend_selection_page로 리다이렉트됨
-            window.location.href = url;
-          });
-        }
-
-        // ABLY 카드 클릭 이벤트
-        const cardAbly = document.getElementById('cardAbly');
-        if (cardAbly) {
-          cardAbly.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            alert("Ably 트렌드 페이지는 준비 중입니다.");
-          });
-        }
-
-        // NEW 배지 표시 (새로운 데이터가 있는지 확인)
-        checkAndShowNewBadges();
+      // 사이트 성과 페이지의 업체 선택을 우선 사용
+      const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+      
+      if (selectedCompany && selectedCompany !== "all") {
+        url += '?company_name=' + encodeURIComponent(selectedCompany);
       }
+      
+      // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
+      // 백엔드에서 업체가 선택되지 않았으면 trend_selection_page로 리다이렉트됨
+      window.location.href = url;
+    }
 
-      /**
-       * NEW 배지 표시 확인 (월간 리포트와 유사한 로직)
-       * 실제 구현은 백엔드 API가 필요하지만, 여기서는 기본 구조만 제공
-       */
-      function checkAndShowNewBadges() {
-        // TODO: 실제로는 백엔드 API를 호출하여 새로운 데이터가 있는지 확인
-        // 현재는 예시로 일부 카드에만 배지 표시
-        
-        // 29CM 카드에 NEW 배지 추가 (예시)
-        // const card29cm = document.getElementById('card29cm');
-        // if (card29cm && !card29cm.querySelector('.new-badge')) {
-        //   const badge = document.createElement('span');
-        //   badge.className = 'new-badge';
-        //   badge.setAttribute('aria-label', '새로운 데이터');
-        //   card29cm.appendChild(badge);
-        // }
-      }
+    function navigateToAbly() {
+      alert("Ably 트렌드 페이지는 준비 중입니다.");
+    }
 
-      // DOMContentLoaded 이벤트로 초기화
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initCardClickHandlers);
-      } else {
-        // DOM이 이미 로드된 경우
-        initCardClickHandlers();
-      }
+    /**
+     * NEW 배지 표시 확인 (월간 리포트와 유사한 로직)
+     * 실제 구현은 백엔드 API가 필요하지만, 여기서는 기본 구조만 제공
+     */
+    function checkAndShowNewBadges() {
+      // TODO: 실제로는 백엔드 API를 호출하여 새로운 데이터가 있는지 확인
+      // 현재는 예시로 일부 카드에만 배지 표시
+      
+      // 29CM 카드에 NEW 배지 추가 (예시)
+      // const card29cm = document.getElementById('card29cm');
+      // if (card29cm && !card29cm.querySelector('.new-badge')) {
+      //   const badge = document.createElement('span');
+      //   badge.className = 'new-badge';
+      //   badge.setAttribute('aria-label', '새로운 데이터');
+      //   card29cm.appendChild(badge);
+      // }
+    }
 
-      // jQuery도 함께 사용 (이중 보호)
-      if (typeof jQuery !== 'undefined') {
-        jQuery(document).ready(initCardClickHandlers);
-      }
-    })();
+    // 페이지 로드 시 NEW 배지 확인
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAndShowNewBadges();
+    });
   </script>
 </body>
 </html>

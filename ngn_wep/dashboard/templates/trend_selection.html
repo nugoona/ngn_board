@@ -14,105 +14,19 @@
     body {
       margin: 0;
       padding: 0;
-      background: #f8fafc;
+      background: #f9fafb; /* gray-50 */
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      overflow: hidden; /* 전체 스크롤 제거 */
     }
 
-    /* ✅ 햄버거 메뉴 스타일 */
-    .nav-buttons {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 8px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .nav-right {
-      display: flex;
-      align-items: center;
-    }
-
-    .hamburger-menu-wrapper {
-      position: relative;
-    }
-
-    .hamburger-icon {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 4px;
-      cursor: pointer;
-      padding: 4px;
-    }
-
-    .hamburger-icon div {
-      width: 20px;
-      height: 2px;
-      background: var(--primary, #1e293b);
-      border-radius: 2px;
-      transition: all 0.3s ease;
-    }
-
-    .hamburger-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      min-width: 180px;
-      margin-top: 8px;
-      display: none;
-      z-index: 1001;
-    }
-
-    .hamburger-dropdown.show {
-      display: block;
-    }
-
-    .hamburger-dropdown a {
-      display: block;
-      padding: 12px 16px;
-      color: #374151;
-      text-decoration: none;
-      transition: background 0.2s ease;
-    }
-
-    .hamburger-dropdown a:hover {
-      background: #f3f4f6;
-    }
-
-    .hamburger-dropdown a.active {
-      background: var(--primary, #1e293b);
-      color: #ffffff;
-    }
-
-    /* ✅ 메인 컨텐츠 영역 */
-    .trend-selection-container {
-      flex: 1;
+    /* ✅ 메인 컨텐츠 영역 - 스크롤 제거 및 정중앙 고정 */
+    .trend-selection-wrapper {
+      height: calc(100vh - 60px); /* 헤더 높이 제외 */
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 120px 24px 80px 24px;
-      min-height: 100vh;
+      overflow: hidden;
+      padding-top: 60px; /* 헤더 높이만큼 패딩 */
     }
 
     .trend-selection-cards {
@@ -123,15 +37,13 @@
       flex-wrap: wrap;
     }
 
-    /* ✅ 카드 스타일 */
+    /* ✅ 카드 스타일 - Brand Tiles */
     .trend-card {
       position: relative;
-      width: 320px;
-      height: 320px;
-      background: #ffffff;
-      border: 2px solid #0f172a; /* slate-900 */
-      border-radius: 16px; /* rounded-2xl */
-      box-shadow: 8px 8px 0px 0px rgba(30, 41, 59, 0.3); /* Hard Shadow, blur 없음 */
+      width: 288px; /* w-72 */
+      height: 288px; /* h-72 */
+      border: 2px solid #000000; /* border-black */
+      box-shadow: 8px 8px 0px 0px #000000; /* Hard Shadow, 진하고 선명 */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -141,37 +53,42 @@
     }
 
     .trend-card:hover {
-      transform: translateY(-4px); /* -translate-y-1 */
-      box-shadow: 10px 10px 0px 0px rgba(30, 41, 59, 0.35);
+      transform: translate(2px, 2px); /* translate-x-[2px] translate-y-[2px] */
+      box-shadow: 4px 4px 0px 0px #000000; /* 누르는 느낌 */
     }
 
     .trend-card:active {
-      transform: translateY(0);
-      box-shadow: 6px 6px 0px 0px rgba(30, 41, 59, 0.25);
+      transform: translate(4px, 4px);
+      box-shadow: 2px 2px 0px 0px #000000;
     }
 
-    /* ✅ 29CM 카드 */
+    /* ✅ 29CM 카드 - 검정 배경, 흰색 텍스트 */
     .trend-card-29cm {
-      color: #000000;
+      background: #000000; /* bg-black */
+      color: #ffffff; /* text-white */
     }
 
     .trend-card-29cm .card-text {
-      font-size: 64px;
-      font-weight: 800;
+      font-size: 72px;
+      font-weight: 800; /* font-bold */
       font-family: 'Inter', sans-serif;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.05em; /* tracking-tighter - 자간 좁게 */
+      color: #ffffff;
     }
 
-    /* ✅ Ably 카드 */
+    /* ✅ ABLY 카드 - 흰색 배경, 검정 텍스트 */
     .trend-card-ably {
-      color: #dc2626; /* red-600 */
+      background: #ffffff; /* bg-white */
+      color: #000000; /* text-black */
     }
 
     .trend-card-ably .card-text {
-      font-size: 64px;
-      font-weight: 700;
+      font-size: 72px;
+      font-weight: 900; /* font-black - 매우 굵게 */
       font-family: 'Inter', sans-serif;
-      letter-spacing: -0.01em;
+      letter-spacing: 0.15em; /* tracking-widest - 자간 넓게 */
+      color: #000000;
+      text-transform: uppercase;
     }
 
     /* ✅ NEW 배지 */
@@ -207,8 +124,8 @@
       }
 
       .trend-card {
-        width: 280px;
-        height: 280px;
+        width: 240px;
+        height: 240px;
       }
 
       .trend-card-29cm .card-text,
@@ -224,8 +141,8 @@
       }
 
       .trend-card {
-        width: 260px;
-        height: 260px;
+        width: 220px;
+        height: 220px;
       }
 
       .trend-card-29cm .card-text,
@@ -237,7 +154,7 @@
 </head>
 <body>
 
-  <!-- ✅ 햄버거 메뉴 -->
+  <!-- ✅ 햄버거 메뉴 (styles.css의 nav-buttons 스타일 사용) -->
   <div class="nav-buttons">
     <div class="nav-left">
       <div class="hamburger-menu-wrapper">
@@ -255,68 +172,45 @@
   </div>
 
   <!-- ✅ 메인 컨텐츠 -->
-  <div class="trend-selection-container">
+  <div class="trend-selection-wrapper">
     <div class="trend-selection-cards">
       <!-- 29CM 카드 -->
-      <div class="trend-card trend-card-29cm" id="card29cm" data-route="/trend/29cm">
+      <div class="trend-card trend-card-29cm" id="card29cm">
         <span class="card-text">29CM</span>
       </div>
 
-      <!-- Ably 카드 -->
-      <div class="trend-card trend-card-ably" id="cardAbly" data-route="/trend/ably">
-        <span class="card-text">Ably</span>
+      <!-- ABLY 카드 -->
+      <div class="trend-card trend-card-ably" id="cardAbly">
+        <span class="card-text">ABLY</span>
       </div>
     </div>
   </div>
 
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script>
-    // 햄버거 메뉴 토글
-    document.addEventListener('DOMContentLoaded', function() {
-      const hamburgerIcon = document.getElementById('hamburgerIcon');
-      const hamburgerDropdown = document.getElementById('hamburgerDropdown');
-
-      if (hamburgerIcon && hamburgerDropdown) {
-        hamburgerIcon.addEventListener('click', function(e) {
-          e.stopPropagation();
-          hamburgerDropdown.classList.toggle('show');
-        });
-
-        document.addEventListener('click', function(e) {
-          if (!hamburgerIcon.contains(e.target) && !hamburgerDropdown.contains(e.target)) {
-            hamburgerDropdown.classList.remove('show');
-          }
-        });
-      }
-
+    $(document).ready(function() {
       // 카드 클릭 이벤트
-      const card29cm = document.getElementById('card29cm');
-      const cardAbly = document.getElementById('cardAbly');
+      $('#card29cm').on('click', function() {
+        // sessionStorage에서 업체 선택 정보 가져오기
+        let url = '/trend/29cm';
+        const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+        const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+        
+        // 사이트 성과 페이지의 업체 선택을 우선 사용
+        const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        
+        if (selectedCompany && selectedCompany !== "all") {
+          url += '?company_name=' + encodeURIComponent(selectedCompany);
+        }
+        
+        // 백엔드에서 업체 선택을 확인하므로, 업체가 없어도 이동 시도
+        // 백엔드에서 업체가 선택되지 않았으면 trend_selection_page로 리다이렉트됨
+        window.location.href = url;
+      });
 
-      if (card29cm) {
-        card29cm.addEventListener('click', function() {
-          // 업체 선택 확인 (common.js의 로직과 유사)
-          const companySelect = document.getElementById("accountFilter");
-          let url = '/trend/29cm';
-          
-          if (companySelect) {
-            const selectedCompany = companySelect.value;
-            if (selectedCompany && selectedCompany !== "all") {
-              url += '?company_name=' + encodeURIComponent(selectedCompany);
-            }
-          }
-          
-          // 업체 선택은 백엔드에서 확인하므로, 직접 이동
-          // 백엔드에서 업체가 선택되지 않았으면 trend_selection_page로 리다이렉트됨
-          window.location.href = url;
-        });
-      }
-
-      if (cardAbly) {
-        cardAbly.addEventListener('click', function() {
-          alert("Ably 트렌드 페이지는 준비 중입니다.");
-        });
-      }
+      $('#cardAbly').on('click', function() {
+        alert("Ably 트렌드 페이지는 준비 중입니다.");
+      });
 
       // NEW 배지 표시 (새로운 데이터가 있는지 확인)
       checkAndShowNewBadges();
@@ -342,4 +236,3 @@
   </script>
 </body>
 </html>
-

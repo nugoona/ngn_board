@@ -1608,6 +1608,13 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         return;
     }
     
+    // 세그먼트 헤더 제거 (🔥 급상승 (Rising Star) 등)
+    let cleanedText = segmentText;
+    // 세그먼트 헤더 패턴 제거
+    cleanedText = cleanedText.replace(/^\*\*?[🔥🚀📉]\s*(급상승|신규 진입|순위 하락)\s*\([^\)]+\)\*\*?\s*\n*/m, '');
+    cleanedText = cleanedText.replace(/^\*\*?(Rising Star|New Entry|Rank Drop)\*\*?\s*\n*/m, '');
+    cleanedText = cleanedText.trim();
+    
     // 마크다운을 HTML로 변환
     let htmlContent = "";
     
@@ -1618,7 +1625,7 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 gfm: false
             });
             
-            const markdownHtml = marked.parse(segmentText);
+            const markdownHtml = marked.parse(cleanedText);
             
             if (typeof DOMPurify !== 'undefined') {
                 htmlContent = DOMPurify.sanitize(markdownHtml, {
@@ -1630,16 +1637,37 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             }
         } catch (e) {
             console.warn("[Section 3] 마크다운 변환 실패:", e);
-            htmlContent = segmentText.replace(/\n/g, '<br>');
+            htmlContent = cleanedText.replace(/\n/g, '<br>');
         }
     } else {
-        htmlContent = segmentText.replace(/\n/g, '<br>');
+        htmlContent = cleanedText.replace(/\n/g, '<br>');
     }
     
     // 텍스트 컨테이너 생성
     const textContainer = document.createElement('div');
     textContainer.className = 'trend-section3-text markdown-content';
     textContainer.innerHTML = htmlContent;
+    
+    // 카테고리 제목에 section5-title-box 스타일 적용
+    const categoryHeaders = textContainer.querySelectorAll('strong, h3, h4');
+    categoryHeaders.forEach(element => {
+        const textContent = (element.textContent || '').trim();
+        const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+        
+        if (categories.some(cat => textContent === `${cat}:` || textContent.startsWith(`${cat}:`))) {
+            // strong 태그를 h3로 변경하고 클래스 추가
+            const h3 = document.createElement('h3');
+            h3.className = 'section5-title-box';
+            h3.textContent = textContent;
+            
+            const parent = element.parentElement;
+            if (parent) {
+                parent.replaceChild(h3, element);
+            } else {
+                element.replaceWith(h3);
+            }
+        }
+    });
     
     container.innerHTML = '';
     container.appendChild(textContainer);
@@ -1682,8 +1710,8 @@ function renderSection3ThumbnailsForSegment(textContainer, segmentType) {
             return;
         }
         
-        // 카테고리 헤드라인 찾기
-        const categoryHeaders = textContainer.querySelectorAll('p, li, strong');
+        // 카테고리 헤드라인 찾기 (h3.section5-title-box 또는 strong)
+        const categoryHeaders = textContainer.querySelectorAll('h3.section5-title-box, strong, p, li');
         let categoryHeaderElement = null;
         
         for (const element of categoryHeaders) {
@@ -1694,10 +1722,16 @@ function renderSection3ThumbnailsForSegment(textContainer, segmentType) {
                 textContent === `${categoryName}:` || 
                 textContent.startsWith(`${categoryName}:`) ||
                 innerHTML.includes(`<strong>${categoryName}:</strong>`) ||
-                innerHTML.includes(`**${categoryName}:**`);
+                innerHTML.includes(`**${categoryName}:**`) ||
+                (element.tagName === 'H3' && element.classList.contains('section5-title-box') && textContent.includes(categoryName));
             
             if (isCategoryHeader) {
-                categoryHeaderElement = element.closest('p, li') || element.parentElement || element;
+                // h3.section5-title-box인 경우 그대로 사용, 아니면 부모 요소 찾기
+                if (element.tagName === 'H3' && element.classList.contains('section5-title-box')) {
+                    categoryHeaderElement = element;
+                } else {
+                    categoryHeaderElement = element.closest('p, li') || element.parentElement || element;
+                }
                 break;
             }
         }

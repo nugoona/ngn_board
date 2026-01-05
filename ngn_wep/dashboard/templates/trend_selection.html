@@ -12,19 +12,33 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.5">
   <script>
     // 전역 함수: 29CM 페이지로 이동
-    function goTo29cmTrend() {
-      let url = '/trend/29cm';
-      const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
-      const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
-      
-      const selectedCompany = siteSelectedCompany || adsSelectedCompany;
-      
-      if (selectedCompany && selectedCompany !== "all") {
-        url += '?company_name=' + encodeURIComponent(selectedCompany);
+    function goTo29cmTrend(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
       }
       
-      console.log('[Trend Selection] 29CM 이동 URL:', url);
-      window.location.href = url;
+      try {
+        let url = '/trend/29cm';
+        const siteSelectedCompany = sessionStorage.getItem('siteSelectedCompany');
+        const adsSelectedCompany = sessionStorage.getItem('adsSelectedCompany');
+        
+        console.log('[Trend Selection] goTo29cmTrend 호출됨');
+        console.log('[Trend Selection] siteSelectedCompany:', siteSelectedCompany);
+        console.log('[Trend Selection] adsSelectedCompany:', adsSelectedCompany);
+        
+        const selectedCompany = siteSelectedCompany || adsSelectedCompany;
+        
+        if (selectedCompany && selectedCompany !== "all") {
+          url += '?company_name=' + encodeURIComponent(selectedCompany);
+        }
+        
+        console.log('[Trend Selection] 최종 이동 URL:', url);
+        window.location.href = url;
+      } catch (error) {
+        console.error('[Trend Selection] 에러:', error);
+        window.location.href = '/trend/29cm';
+      }
     }
   </script>
   <style>
@@ -199,11 +213,11 @@
   <div class="trend-selection-wrapper">
     <div class="trend-selection-cards">
       <!-- 29CM 카드 -->
-      <a href="javascript:void(0)" class="trend-card-link" id="card29cmLink" onclick="goTo29cmTrend(); return false;">
+      <div class="trend-card-link" id="card29cmLink" onclick="goTo29cmTrend(event)">
         <div class="trend-card trend-card-29cm" id="card29cm">
           <span class="card-text">29CM</span>
         </div>
-      </a>
+      </div>
 
       <!-- ABLY 카드 -->
       <a href="#" class="trend-card-link" id="cardAblyLink">

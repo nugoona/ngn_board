@@ -432,7 +432,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='29CM 트렌드 스냅샷 생성')
     parser.add_argument('--run-id', type=str, help='특정 run_id로 스냅샷 생성 (기본값: 최신 주차)')
-    parser.add_argument('--force', action='store_true', help='기존 스냅샷이 있어도 재생성')
+    parser.add_argument('--force', action='store_true', help='[사용 안 함] 항상 강제 실행됩니다')
     parser.add_argument('--target-brand', type=str, help='분석 타겟 브랜드명 (한글명, 예: "썸웨어버터", "파이시스")')
     parser.add_argument('--company-name', type=str, help='업체명 (영문, 예: "piscess") - target-brand로 자동 변환 (자동 스케줄에서는 첫 번째 업체 사용)')
     
@@ -446,11 +446,9 @@ def main():
         run_id = get_current_week_run_id()
         print(f"📅 최신 주차 사용: {run_id}")
     
-    # 기존 스냅샷 확인
-    if not args.force and check_snapshot_exists(run_id):
-        print(f"⚠️ 스냅샷이 이미 존재합니다: {run_id}")
-        print("   재생성하려면 --force 옵션을 사용하세요.")
-        sys.exit(1)
+    # 기존 스냅샷 확인 (무조건 강제 실행)
+    if check_snapshot_exists(run_id):
+        print(f"⚠️ 스냅샷이 이미 존재하지만 강제로 재생성합니다: {run_id}")
     
     # 탭 목록 조회
     print(f"📂 탭 목록 조회 중...")

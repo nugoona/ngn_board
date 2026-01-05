@@ -75,6 +75,15 @@ function setupTrendTypeTabs() {
             
             // 현재 탭 데이터 재표시
             displayCurrentTabData();
+            
+            // AI 리포트 사이드바가 열려 있으면 썸네일 재렌더링
+            const sidebar = document.getElementById('trendAnalysisSidebar');
+            if (sidebar && !sidebar.classList.contains('hidden') && sidebar.classList.contains('active')) {
+                const contentElement = document.getElementById('trendAnalysisContent');
+                if (contentElement && window.trendInsights && window.trendInsights.analysis_report) {
+                    renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
+                }
+            }
         });
     });
 }
@@ -1012,8 +1021,16 @@ function createThumbnailGridFromProducts(products, trendType) {
 
 // 현재 활성화된 트렌드 타입 확인
 function getActiveTrendType() {
-    // 탭 버튼에서 활성화된 버튼 확인
-    const activeTab = document.querySelector('.trend-type-tab.active');
+    // 전역 변수 currentTrendType를 사용하거나, DOM에서 확인
+    if (currentTrendType) {
+        // currentTrendType이 'risingStar', 'newEntry', 'rankDrop' 형식이므로 변환 필요
+        if (currentTrendType === 'risingStar') return 'rising_star';
+        if (currentTrendType === 'newEntry') return 'new_entry';
+        if (currentTrendType === 'rankDrop') return 'rank_drop';
+    }
+    
+    // 폴백: DOM에서 활성화된 탭 버튼 확인
+    const activeTab = document.querySelector('.trend-type-tab-btn.active');
     if (activeTab) {
         const tabText = activeTab.textContent.trim();
         if (tabText.includes('급상승')) return 'rising_star';

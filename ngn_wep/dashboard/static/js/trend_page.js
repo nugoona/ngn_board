@@ -34,6 +34,15 @@ function setupTrendAnalysisToggle() {
             loadTrendAnalysisReport();
             sidebar.classList.remove('hidden');
             sidebar.classList.add('active');
+            
+            // 사이드바가 열릴 때 현재 선택된 탭에 맞는 썸네일 렌더링
+            setTimeout(() => {
+                const contentElement = document.getElementById('trendAnalysisContent');
+                if (contentElement && window.trendInsights && window.trendInsights.analysis_report) {
+                    console.log(`[Section 3 썸네일] 사이드바 열림, 현재 탭(${currentTrendType})에 맞는 썸네일 렌더링 시작`);
+                    renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
+                }
+            }, 300); // 사이드바 애니메이션 완료 후 실행
         });
         
         // 사이드바 닫기 (X 버튼)
@@ -60,9 +69,15 @@ function setupTrendAnalysisToggle() {
 
 // 트렌드 타입 탭 설정 (급상승, 신규진입, 순위하락)
 function setupTrendTypeTabs() {
-    document.querySelectorAll('.trend-type-tab-btn').forEach(btn => {
+    const buttons = document.querySelectorAll('.trend-type-tab-btn');
+    console.log(`[setupTrendTypeTabs] 탭 버튼 ${buttons.length}개 찾음`);
+    
+    buttons.forEach((btn, index) => {
+        console.log(`[setupTrendTypeTabs] 버튼 ${index}: data-type="${btn.dataset.type}", 텍스트="${btn.textContent.trim()}"`);
+        
         btn.addEventListener('click', function() {
             const trendType = this.dataset.type;
+            console.log(`[setupTrendTypeTabs] 탭 클릭 감지: ${trendType}`);
             
             // 활성화 상태 업데이트
             document.querySelectorAll('.trend-type-tab-btn').forEach(b => {
@@ -72,23 +87,10 @@ function setupTrendTypeTabs() {
             
             // 트렌드 타입 변경
             currentTrendType = trendType;
+            console.log(`[setupTrendTypeTabs] currentTrendType 변경: ${currentTrendType}`);
             
             // 현재 탭 데이터 재표시
             displayCurrentTabData();
-            
-            // AI 리포트 사이드바가 열려 있으면 썸네일 재렌더링
-            const sidebar = document.getElementById('trendAnalysisSidebar');
-            if (sidebar && !sidebar.classList.contains('hidden') && sidebar.classList.contains('active')) {
-                const contentElement = document.getElementById('trendAnalysisContent');
-                if (contentElement && window.trendInsights && window.trendInsights.analysis_report) {
-                    console.log(`[Section 3 썸네일] 탭 변경 감지 (${trendType}), 썸네일 재렌더링 시작`);
-                    renderSection3Thumbnails(contentElement, window.trendInsights.analysis_report);
-                } else {
-                    console.warn('[Section 3 썸네일] 탭 변경 시 썸네일 재렌더링 실패 - contentElement 또는 trendInsights 없음');
-                }
-            } else {
-                console.log('[Section 3 썸네일] 탭 변경 감지되었으나 사이드바가 닫혀있어 썸네일 재렌더링 스킵');
-            }
         });
     });
 }
@@ -667,7 +669,7 @@ function escapeRegex(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// Section 3 썸네일 카드 그리드 렌더링 (데이터 중심 접근, 세그먼트별 처리)
+// Section 3 썸네일 카드 그리드 렌더링 (데이터 중심 접근, 모든 세그먼트 처리)
 function renderSection3Thumbnails(containerElement, analysisText) {
     // window.allTabsData가 없으면 종료
     if (!window.allTabsData || Object.keys(window.allTabsData).length === 0) {
@@ -682,7 +684,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         return;
     }
     
-    // 기존 썸네일 제거 (탭 변경 시 기존 썸네일을 제거하기 위해)
+    // 기존 썸네일 제거
     const existingThumbnails = markdownContent.querySelectorAll('.trend-category-thumbnails');
     existingThumbnails.forEach(thumb => thumb.remove());
     console.log(`[Section 3 썸네일] 기존 썸네일 ${existingThumbnails.length}개 제거 완료`);
@@ -703,21 +705,21 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         return;
     }
     
-    // 현재 선택된 트렌드 타입 확인
-    const activeTrendType = getActiveTrendType(); // 'rising_star', 'new_entry', 'rank_drop'
+    // 모든 세그먼트 처리 (급상승, 신규 진입, 순위 하락)
+    const segments = [
+        { trendType: 'rising_star', patterns: ['급상승', 'Rising Star', '🔥'] },
+        { trendType: 'new_entry', patterns: ['신규 진입', 'New Entry', '🚀'] },
+        { trendType: 'rank_drop', patterns: ['순위 하락', 'Rank Drop', '📉'] }
+    ];
     
-    // 세그먼트 헤더 매핑 (트렌드 타입 -> 세그먼트 헤더 텍스트 패턴)
-    const segmentPatterns = {
-        'rising_star': ['급상승', 'Rising Star', '🔥'],
-        'new_entry': ['신규 진입', 'New Entry', '🚀'],
-        'rank_drop': ['순위 하락', 'Rank Drop', '📉']
-    };
-    
-    const activeSegmentPatterns = segmentPatterns[activeTrendType] || [];
-    if (activeSegmentPatterns.length === 0) {
-        console.warn('[Section 3 썸네일] 알 수 없는 트렌드 타입:', activeTrendType);
-        return;
-    }
+    // 각 세그먼트에 대해 썸네일 추가
+    segments.forEach(segment => {
+        renderThumbnailsForSegment(section3Start, markdownContent, segment.trendType, segment.patterns);
+    });
+}
+
+// 특정 세그먼트에 대한 썸네일 렌더링
+function renderThumbnailsForSegment(section3Start, markdownContent, trendType, segmentPatterns) {
     
     // Section 3 내의 모든 요소를 배열로 변환
     let currentElement = section3Start.nextElementSibling;
@@ -745,7 +747,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         const isSegmentHeader = 
             (element.tagName === 'STRONG' || element.tagName === 'H3' || element.tagName === 'H4' || 
              (element.tagName === 'P' && element.querySelector('strong'))) &&
-            activeSegmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern));
+            segmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern));
         
         if (isSegmentHeader) {
             segmentStartIndex = i;
@@ -754,7 +756,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
     }
     
     if (segmentStartIndex === -1) {
-        console.warn('[Section 3 썸네일] 활성화된 세그먼트 헤더를 찾을 수 없습니다:', activeTrendType);
+        console.warn(`[Section 3 썸네일] ${trendType} 세그먼트 헤더를 찾을 수 없습니다.`);
         return;
     }
     
@@ -773,13 +775,13 @@ function renderSection3Thumbnails(containerElement, analysisText) {
              textContent.includes('Rising Star') || textContent.includes('New Entry') || textContent.includes('Rank Drop') ||
              innerHTML.includes('🔥') || innerHTML.includes('🚀') || innerHTML.includes('📉'));
         
-        if (isOtherSegmentHeader && !activeSegmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern))) {
+        if (isOtherSegmentHeader && !segmentPatterns.some(pattern => textContent.includes(pattern) || innerHTML.includes(pattern))) {
             segmentEndIndex = i;
             break;
         }
     }
     
-    // 활성화된 세그먼트 내의 요소만 추출
+    // 해당 세그먼트 내의 요소만 추출
     const segmentElements = allElements.slice(segmentStartIndex + 1, segmentEndIndex);
     
     // 카테고리 목록
@@ -791,9 +793,9 @@ function renderSection3Thumbnails(containerElement, analysisText) {
         if (processedCategories.has(categoryName)) return;
         
         // 먼저 데이터가 있는지 확인
-        const categoryProducts = getProductsByCategory(categoryName, activeTrendType);
+        const categoryProducts = getProductsByCategory(categoryName, trendType);
         if (categoryProducts.length === 0) {
-            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType}) 데이터 없음 - 건너뜀`);
+            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${trendType}) 데이터 없음 - 건너뜀`);
             return;
         }
         
@@ -838,7 +840,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                 console.log(`[Section 3 썸네일] ${categoryName} 카테고리 헤드라인 찾음 (태그: ${tagName}, 텍스트: "${textContent.substring(0, 50)}")`);
                 
                 // 썸네일 카드 그리드 생성
-                const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, activeTrendType);
+                const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, trendType);
                 console.log(`[Section 3 썸네일 디버그] ${categoryName} thumbnailGrid:`, thumbnailGrid ? `생성됨 (${thumbnailGrid.length}자)` : 'null');
                 
                 if (thumbnailGrid) {
@@ -869,7 +871,7 @@ function renderSection3Thumbnails(containerElement, analysisText) {
                             }
                             
                             processedCategories.add(categoryName);
-                            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${activeTrendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
+                            console.log(`[Section 3 썸네일] ${categoryName} 카테고리 (${trendType})에 ${categoryProducts.length}개 썸네일 삽입 완료`);
                         } else {
                             console.log(`[Section 3 썸네일 디버그] ${categoryName} 이미 썸네일이 존재하여 삽입하지 않음`);
                         }

@@ -779,7 +779,13 @@ function renderThumbnailsForSegment(section3Start, markdownContent, trendType, s
     const segmentElements = allElements.slice(segmentStartIndex + 1, segmentEndIndex);
     
     // 카테고리 목록
-    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    // Ably의 경우 allTabsData에서 실제 카테고리 목록을 가져오고, 29CM의 경우 기본 카테고리 사용
+    let categories;
+    if (IS_ABLY && window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+        categories = Object.keys(window.allTabsData).sort();
+    } else {
+        categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    }
     const processedCategories = new Set(); // 이미 처리한 카테고리 추적
     
     // 각 카테고리를 역순으로 처리 (뒤에서부터 삽입하면 인덱스가 안 꼬임)
@@ -1953,7 +1959,13 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     console.log('[renderSection3SegmentContent] cleanedText 첫 500자:', cleanedText.substring(0, 500));
     
     // 카테고리별로 텍스트 파싱
-    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    // Ably의 경우 allTabsData에서 실제 카테고리 목록을 가져오고, 29CM의 경우 기본 카테고리 사용
+    let categories;
+    if (IS_ABLY && window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+        categories = Object.keys(window.allTabsData).sort();
+    } else {
+        categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    }
     const categoryData = {};
     
     // 각 카테고리별로 텍스트 추출 (인덱스 기반으로 변경하여 모든 bullet point 포함)
@@ -2128,7 +2140,13 @@ function renderSection3ThumbnailsForSegment(textContainer, segmentType) {
     existingThumbnails.forEach(thumb => thumb.remove());
     
     // 카테고리 목록
-    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    // Ably의 경우 allTabsData에서 실제 카테고리 목록을 가져오고, 29CM의 경우 기본 카테고리 사용
+    let categories;
+    if (IS_ABLY && window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+        categories = Object.keys(window.allTabsData).sort();
+    } else {
+        categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    }
     
     categories.forEach(categoryName => {
         const categoryProducts = getProductsByCategory(categoryName, segmentType);

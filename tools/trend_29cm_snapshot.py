@@ -375,6 +375,8 @@ def main():
     parser = argparse.ArgumentParser(description='29CM 트렌드 스냅샷 생성')
     parser.add_argument('--run-id', type=str, help='특정 run_id로 스냅샷 생성 (기본값: 최신 주차)')
     parser.add_argument('--force', action='store_true', help='기존 스냅샷이 있어도 재생성')
+    parser.add_argument('--target-brand', type=str, help='분석 타겟 브랜드명 (한글명, 예: "썸웨어버터", "파이시스")')
+    parser.add_argument('--company-name', type=str, help='업체명 (영문, 예: "piscess") - target-brand로 자동 변환')
     
     args = parser.parse_args()
     
@@ -441,11 +443,26 @@ def main():
         
         from trend_29cm_ai_analyst import generate_ai_analysis_from_file
         
+        # target_brand 결정 (우선순위: --target-brand > --company-name 변환 > None)
+        target_brand = args.target_brand
+        if not target_brand and args.company_name:
+            # company_name을 한글명으로 변환 시도
+            try:
+                # config 모듈 경로 추가
+                config_path = os.path.join(project_root, "tools", "config")
+                if config_path not in sys.path:
+                    sys.path.insert(0, os.path.join(project_root, "tools"))
+                from config.company_mapping import get_company_korean_name
+                target_brand = get_company_korean_name(args.company_name.lower())
+            except (ImportError, ModuleNotFoundError):
+                print(f"⚠️ [WARN] company_name을 target_brand로 변환 실패: {args.company_name}", file=sys.stderr)
+        
         # GCS 스냅샷에 AI 분석 추가 (같은 파일에 덮어쓰기)
         generate_ai_analysis_from_file(
             snapshot_file=snapshot_path,
             output_file=None,  # 입력 파일에 덮어쓰기
-            api_key=None  # 환경변수에서 로드 (.env 파일 자동 찾기)
+            api_key=None,  # 환경변수에서 로드 (.env 파일 자동 찾기)
+            target_brand=target_brand  # 타겟 브랜드 전달
         )
         
         print(f"✅ AI 분석 리포트 추가 완료!")

@@ -228,13 +228,38 @@
         card29cmLink.href = url;
         
         // 클릭 이벤트 리스너 추가 (강제 이동 보장)
+        // capture phase와 bubble phase 모두에서 처리
         card29cmLink.addEventListener('click', function(e) {
-          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생!');
+          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생 (capture)');
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
           console.log('[Trend Selection] 페이지 이동 시작:', url);
+          console.log('[Trend Selection] 현재 location:', window.location.href);
+          
+          // 즉시 이동 (동기적으로)
           window.location.href = url;
-        }, true); // capture phase에서 실행
+          
+          // 추가 보장 (비동기)
+          setTimeout(function() {
+            console.log('[Trend Selection] setTimeout 체크 - 현재 location:', window.location.href);
+            if (!window.location.href.includes('/trend/29cm')) {
+              console.log('[Trend Selection] 이동 실패 감지, 재시도');
+              window.location.replace(url);
+            }
+          }, 50);
+          
+          return false;
+        }, true); // capture phase
+        
+        card29cmLink.addEventListener('click', function(e) {
+          console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생 (bubble)');
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          window.location.href = url;
+          return false;
+        }, false); // bubble phase
         
         console.log('[Trend Selection] card29cmLink href 및 클릭 이벤트 설정 완료');
       } else {

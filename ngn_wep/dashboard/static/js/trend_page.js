@@ -995,9 +995,14 @@ function createThumbnailGridFromProducts(products, trendType) {
         } else if (trendType === 'new_entry') {
             rankChangeText = `🚀 차트 신규 진입`;
             rankChangeClass = 'trend-rank-change-new';
-        } else if (trendType === 'rank_drop' && rankChange !== null && rankChange !== undefined && rankChange < 0) {
-            rankChangeText = `📉 ${rankChange}위 하락`;
-            rankChangeClass = 'trend-rank-change-down';
+        } else if (trendType === 'rank_drop' && rankChange !== null && rankChange !== undefined) {
+            // 29CM: Rank_Change < 0 (음수) = 순위 하락
+            // Ably: Rank_Change > 0 (양수) = 순위 하락
+            const isRankDrop = IS_ABLY ? (rankChange > 0) : (rankChange < 0);
+            if (isRankDrop) {
+                rankChangeText = `📉 ${Math.abs(rankChange)}위 하락`;
+                rankChangeClass = 'trend-rank-change-down';
+            }
         }
         
         return `

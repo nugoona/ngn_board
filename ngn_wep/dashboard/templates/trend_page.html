@@ -882,22 +882,84 @@
       font-weight: 600;
     }
     
-    /* 카테고리 제목 박스 스타일 (월간 리포트 Section 5와 동일) */
-    .trend-section3-text .section5-title-box {
-      display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #ffffff !important;
-      padding: 8px 16px;
-      border-radius: 6px;
-      margin: 16px 0 12px 0;
-      font-size: 16px;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-      border: none;
+    /* 카테고리 Card UI 스타일 */
+    .trend-category-card {
+      background: #ffffff;
+      border: 1px solid #E9ECEF;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 40px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
-    .trend-section3-text .section5-title-box:first-child {
+    /* 통합 헤더 영역 */
+    .trend-category-header {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #E9ECEF;
+    }
+    
+    /* 카테고리 뱃지 */
+    .trend-category-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+      width: fit-content;
+    }
+    
+    /* AI 분석 영역 */
+    .trend-category-analysis {
+      flex: 1;
+    }
+    
+    /* AI 헤드라인 */
+    .trend-category-headline {
+      font-size: 16px;
+      font-weight: 700;
+      color: #212529;
+      margin: 0 0 8px 0;
+      line-height: 1.5;
+    }
+    
+    /* AI 인사이트 */
+    .trend-category-insight {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #495057;
+      margin-top: 8px;
+    }
+    
+    .trend-category-insight ul,
+    .trend-category-insight ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    .trend-category-insight li {
+      margin-bottom: 6px;
+      line-height: 1.7;
+    }
+    
+    .trend-category-insight p {
+      margin: 8px 0;
+      line-height: 1.7;
+    }
+    
+    /* 썸네일 그리드 간격 조정 */
+    .trend-category-card .trend-category-thumbnails {
       margin-top: 0;
+    }
+    
+    .trend-category-card .trend-thumbnails-grid {
+      gap: 16px;
     }
     
     .analysis-section {

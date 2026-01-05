@@ -1601,7 +1601,7 @@ function renderSection3WithTabs(section3Data) {
     return section3Container;
 }
 
-// Section 3 세그먼트 콘텐츠 렌더링 (텍스트 + 썸네일)
+// Section 3 세그먼트 콘텐츠 렌더링 (카테고리별 Card UI + 통합 헤더)
 function renderSection3SegmentContent(segmentType, segmentText, container) {
     if (!segmentText || !segmentText.trim()) {
         container.innerHTML = '<div class="trend-analysis-empty">분석 데이터가 없습니다.</div>';
@@ -1610,84 +1610,182 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     
     // 세그먼트 헤더 제거 (🔥 급상승 (Rising Star) 등)
     let cleanedText = segmentText;
-    // 세그먼트 헤더 패턴 제거
     cleanedText = cleanedText.replace(/^\*\*?[🔥🚀📉]\s*(급상승|신규 진입|순위 하락)\s*\([^\)]+\)\*\*?\s*\n*/m, '');
     cleanedText = cleanedText.replace(/^\*\*?(Rising Star|New Entry|Rank Drop)\*\*?\s*\n*/m, '');
     cleanedText = cleanedText.trim();
     
-    // 마크다운을 HTML로 변환
-    let htmlContent = "";
+    // 카테고리별로 텍스트 파싱
+    const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    const categoryData = {};
     
-    if (typeof marked !== 'undefined') {
-        try {
-            marked.setOptions({
-                breaks: true,
-                gfm: false
-            });
-            
-            const markdownHtml = marked.parse(cleanedText);
-            
-            if (typeof DOMPurify !== 'undefined') {
-                htmlContent = DOMPurify.sanitize(markdownHtml, {
-                    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote'],
-                    ALLOWED_ATTR: []
-                });
-            } else {
-                htmlContent = markdownHtml;
-            }
-        } catch (e) {
-            console.warn("[Section 3] 마크다운 변환 실패:", e);
-            htmlContent = cleanedText.replace(/\n/g, '<br>');
-        }
-    } else {
-        htmlContent = cleanedText.replace(/\n/g, '<br>');
-    }
-    
-    // 텍스트 컨테이너 생성
-    const textContainer = document.createElement('div');
-    textContainer.className = 'trend-section3-text markdown-content';
-    textContainer.innerHTML = htmlContent;
-    
-    // 카테고리 제목에 section5-title-box 스타일 적용
-    const categoryHeaders = textContainer.querySelectorAll('strong, h3, h4');
-    categoryHeaders.forEach(element => {
-        const textContent = (element.textContent || '').trim();
-        const categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
+    // 각 카테고리별로 텍스트 추출
+    categories.forEach(categoryName => {
+        // **카테고리명:** 패턴으로 시작하는 텍스트 추출
+        const categoryPattern = new RegExp(`\\*\\*${categoryName}:\\*\\*\\s*\\n([\\s\\S]*?)(?=\\*\\*[^:]+:\\*\\*|$)`, 'm');
+        const match = cleanedText.match(categoryPattern);
         
-        if (categories.some(cat => textContent === `${cat}:` || textContent.startsWith(`${cat}:`))) {
-            // strong 태그를 h3로 변경하고 클래스 추가
-            const h3 = document.createElement('h3');
-            h3.className = 'section5-title-box';
-            h3.textContent = textContent;
+        if (match && match[1]) {
+            let categoryText = match[1].trim();
             
-            const parent = element.parentElement;
-            if (parent) {
-                parent.replaceChild(h3, element);
+            // 마크다운을 HTML로 변환
+            if (typeof marked !== 'undefined') {
+                try {
+                    marked.setOptions({
+                        breaks: true,
+                        gfm: false
+                    });
+                    
+                    const markdownHtml = marked.parse(categoryText);
+                    
+                    if (typeof DOMPurify !== 'undefined') {
+                        categoryText = DOMPurify.sanitize(markdownHtml, {
+                            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'blockquote'],
+                            ALLOWED_ATTR: []
+                        });
+                    } else {
+                        categoryText = markdownHtml;
+                    }
+                } catch (e) {
+                    console.warn(`[Section 3] ${categoryName} 마크다운 변환 실패:`, e);
+                    categoryText = categoryText.replace(/\n/g, '<br>');
+                }
             } else {
-                element.replaceWith(h3);
+                categoryText = categoryText.replace(/\n/g, '<br>');
             }
+            
+            categoryData[categoryName] = categoryText;
         }
     });
     
+    // 컨테이너 초기화
     container.innerHTML = '';
-    container.appendChild(textContainer);
     
-    // 썸네일 추가 (allTabsData 준비될 때까지 대기)
-    const renderThumbnails = () => {
-        if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
-            renderSection3ThumbnailsForSegment(textContainer, segmentType);
-        } else {
-            const retryCount = (renderThumbnails.retryCount || 0) + 1;
-            renderThumbnails.retryCount = retryCount;
-            
-            if (retryCount < 50) {
-                setTimeout(renderThumbnails, 100);
-            } else {
-                console.warn('[Section 3 썸네일] allTabsData 대기 시간 초과');
-            }
+    // 각 카테고리에 대해 Card UI 생성
+    categories.forEach(categoryName => {
+        const categoryText = categoryData[categoryName];
+        
+        // 카테고리 데이터가 없으면 스킵
+        if (!categoryText) {
+            return;
         }
-    };
-    setTimeout(renderThumbnails, 100);
+        
+        // Card 컨테이너 생성
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'trend-category-card';
+        
+        // 통합 헤더 영역 생성
+        const headerSection = document.createElement('div');
+        headerSection.className = 'trend-category-header';
+        
+        // 카테고리 뱃지 (콜론 제거)
+        const categoryBadge = document.createElement('span');
+        categoryBadge.className = 'trend-category-badge';
+        categoryBadge.textContent = categoryName; // 콜론 없이
+        
+        // AI 분석 텍스트 영역
+        const analysisSection = document.createElement('div');
+        analysisSection.className = 'trend-category-analysis';
+        
+        // 임시 div로 HTML 파싱
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = categoryText;
+        
+        // 첫 번째 불렛 포인트나 문단을 헤드라인으로, 나머지를 인사이트로
+        const firstLi = tempDiv.querySelector('li:first-child');
+        const firstP = tempDiv.querySelector('p:first-child');
+        const firstElement = firstLi || firstP;
+        
+        if (firstElement) {
+            // 헤드라인 추출 (불렛 포인트 기호 제거)
+            const headline = document.createElement('h3');
+            headline.className = 'trend-category-headline';
+            let headlineText = firstElement.textContent || firstElement.innerText || '';
+            headlineText = headlineText.replace(/^[-•*]\s*/, '').trim();
+            headlineText = headlineText.replace(/^\*\*([^*]+)\*\*.*/, '$1'); // **굵게** 제거
+            headline.textContent = headlineText;
+            analysisSection.appendChild(headline);
+            
+            // 나머지 내용을 인사이트로
+            const insight = document.createElement('div');
+            insight.className = 'trend-category-insight';
+            
+            // 첫 번째 항목을 제외한 나머지 복사
+            if (firstLi && firstLi.parentElement && firstLi.parentElement.tagName === 'UL') {
+                // ul 내부의 첫 번째 li 제외
+                const ul = firstLi.parentElement;
+                const remainingLis = Array.from(ul.children).slice(1);
+                if (remainingLis.length > 0) {
+                    const newUl = document.createElement('ul');
+                    remainingLis.forEach(li => {
+                        newUl.appendChild(li.cloneNode(true));
+                    });
+                    insight.appendChild(newUl);
+                }
+            } else {
+                // 첫 번째 요소를 제외한 나머지 복사
+                Array.from(tempDiv.children).forEach((child, index) => {
+                    if (child !== firstElement && !(firstLi && child.contains && child.contains(firstLi))) {
+                        insight.appendChild(child.cloneNode(true));
+                    }
+                });
+            }
+            
+            if (insight.children.length > 0) {
+                analysisSection.appendChild(insight);
+            } else if (firstElement.textContent && firstElement.textContent.trim().length > headlineText.length) {
+                // 첫 번째 요소에 추가 내용이 있으면 인사이트로 추가
+                const remainingText = firstElement.textContent.replace(headlineText, '').trim();
+                if (remainingText) {
+                    const insightP = document.createElement('p');
+                    insightP.textContent = remainingText;
+                    insight.appendChild(insightP);
+                    analysisSection.appendChild(insight);
+                }
+            }
+        } else {
+            // 불렛 포인트나 문단이 없으면 전체를 인사이트로
+            const insight = document.createElement('div');
+            insight.className = 'trend-category-insight';
+            insight.innerHTML = categoryText;
+            analysisSection.appendChild(insight);
+        }
+        
+        // 헤더 섹션 구성
+        headerSection.appendChild(categoryBadge);
+        headerSection.appendChild(analysisSection);
+        
+        // 썸네일 그리드 생성 (allTabsData 준비될 때까지 대기)
+        const addThumbnails = () => {
+            if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+                const categoryProducts = getProductsByCategory(categoryName, segmentType);
+                if (categoryProducts.length > 0) {
+                    const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
+                    if (thumbnailGrid) {
+                        const gridContainer = document.createElement('div');
+                        gridContainer.className = 'trend-category-thumbnails';
+                        gridContainer.innerHTML = thumbnailGrid;
+                        cardContainer.appendChild(gridContainer);
+                    }
+                }
+            } else {
+                // allTabsData가 없으면 재시도
+                const retryCount = (addThumbnails.retryCount || 0) + 1;
+                addThumbnails.retryCount = retryCount;
+                
+                if (retryCount < 50) {
+                    setTimeout(addThumbnails, 100);
+                }
+            }
+        };
+        
+        // Card에 헤더 추가
+        cardContainer.appendChild(headerSection);
+        
+        // 썸네일 추가 시도
+        setTimeout(addThumbnails, 100);
+        
+        container.appendChild(cardContainer);
+    });
 }
 
 // Section 3 세그먼트에 대한 썸네일 렌더링 (기존 함수 활용)

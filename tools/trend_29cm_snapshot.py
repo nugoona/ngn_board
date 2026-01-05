@@ -16,6 +16,7 @@ import os
 import sys
 import re
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 # 프로젝트 루트를 Python 경로에 추가
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -227,6 +228,63 @@ def get_new_entry(tab_name: str, run_id: str) -> list:
     return [dict(row) for row in rows]
 
 
+def get_company_korean_name_from_bq(company_name_en: str) -> Optional[str]:
+    """
+    BigQuery company_info 테이블에서 한글명 조회
+    
+    Args:
+        company_name_en: 영문 company_name (예: "piscess")
+    
+    Returns:
+        한글명 (예: "파이시스"), 없으면 None
+    """
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        query = """
+        SELECT korean_name
+        FROM `winged-precept-443218-v8.ngn_dataset.company_info`
+        WHERE LOWER(company_name) = LOWER(@company_name)
+        LIMIT 1
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("company_name", "STRING", company_name_en)
+            ]
+        )
+        rows = client.query(query, job_config=job_config).result()
+        for row in rows:
+            korean_name = row.korean_name
+            if korean_name:
+                return korean_name
+        return None
+    except Exception as e:
+        print(f"⚠️ [WARN] BigQuery에서 한글명 조회 실패 ({company_name_en}): {e}", file=sys.stderr)
+        return None
+
+
+def get_all_companies_from_bq() -> list:
+    """
+    BigQuery company_info 테이블에서 모든 업체 목록 조회 (demo 제외)
+    
+    Returns:
+        업체명 리스트 (예: ["piscess", "other_company", ...])
+    """
+    try:
+        client = bigquery.Client(project=PROJECT_ID)
+        query = """
+        SELECT DISTINCT company_name
+        FROM `winged-precept-443218-v8.ngn_dataset.company_info`
+        WHERE LOWER(company_name) != 'demo'
+          AND korean_name IS NOT NULL
+        ORDER BY company_name
+        """
+        rows = client.query(query).result()
+        return [row.company_name for row in rows]
+    except Exception as e:
+        print(f"⚠️ [WARN] BigQuery에서 업체 목록 조회 실패: {e}", file=sys.stderr)
+        return []
+
+
 def get_rank_drop(tab_name: str, run_id: str) -> list:
     """순위 하락 조회"""
     client = bigquery.Client(project=PROJECT_ID)
@@ -377,6 +435,7 @@ def main():
     parser.add_argument('--force', action='store_true', help='기존 스냅샷이 있어도 재생성')
     parser.add_argument('--target-brand', type=str, help='분석 타겟 브랜드명 (한글명, 예: "썸웨어버터", "파이시스")')
     parser.add_argument('--company-name', type=str, help='업체명 (영문, 예: "piscess") - target-brand로 자동 변환')
+    parser.add_argument('--all-companies', action='store_true', help='모든 업체에 대해 AI 리포트 생성 (자동 스케줄용)')
     
     args = parser.parse_args()
     
@@ -428,49 +487,119 @@ def main():
     print(f"   탭 개수: {len(tabs)}")
     print(f"   경로: {snapshot_path}")
     
-    # AI 분석 자동 추가 (월간 리포트 방식)
-    # 사용자가 원하면 별도로 실행할 수 있도록 주석 처리하거나 옵션으로 만들 수 있음
-    # 현재는 자동 실행하되, 실패해도 스냅샷 생성은 성공으로 처리
-    print(f"\n🤖 AI 분석 리포트 생성 중...")
-    try:
-        # 프로젝트 루트를 Python 경로에 추가
-        # tools/trend_29cm_snapshot.py -> tools/ -> 프로젝트 루트 (ngn_board)
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(script_dir)  # tools/ -> 프로젝트 루트
-        tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
-        if tools_path not in sys.path:
-            sys.path.insert(0, tools_path)
-        
-        from trend_29cm_ai_analyst import generate_ai_analysis_from_file
-        
-        # target_brand 결정 (우선순위: --target-brand > --company-name 변환 > None)
-        target_brand = args.target_brand
-        if not target_brand and args.company_name:
-            # company_name을 한글명으로 변환 시도
-            try:
-                # config 모듈 경로 추가
-                config_path = os.path.join(project_root, "tools", "config")
-                if config_path not in sys.path:
-                    sys.path.insert(0, os.path.join(project_root, "tools"))
-                from config.company_mapping import get_company_korean_name
-                target_brand = get_company_korean_name(args.company_name.lower())
-            except (ImportError, ModuleNotFoundError):
-                print(f"⚠️ [WARN] company_name을 target_brand로 변환 실패: {args.company_name}", file=sys.stderr)
-        
-        # GCS 스냅샷에 AI 분석 추가 (같은 파일에 덮어쓰기)
-        generate_ai_analysis_from_file(
-            snapshot_file=snapshot_path,
-            output_file=None,  # 입력 파일에 덮어쓰기
-            api_key=None,  # 환경변수에서 로드 (.env 파일 자동 찾기)
-            target_brand=target_brand  # 타겟 브랜드 전달
-        )
-        
-        print(f"✅ AI 분석 리포트 추가 완료!")
-    except Exception as e:
-        print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}")
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        # AI 분석 실패해도 스냅샷은 정상적으로 저장되었으므로 계속 진행
+    # AI 분석 자동 추가
+    # --all-companies 옵션이 있으면 모든 업체에 대해 리포트 생성 (자동 스케줄용)
+    # 그렇지 않으면 --company-name 또는 --target-brand로 지정된 업체에 대해서만 생성
+    if args.all_companies:
+        print(f"\n🤖 모든 업체에 대한 AI 분석 리포트 생성 중...")
+        try:
+            # 모든 업체 목록 조회
+            companies = get_all_companies_from_bq()
+            if not companies:
+                print(f"⚠️ [WARN] 업체 목록을 찾을 수 없습니다.", file=sys.stderr)
+                return
+            
+            print(f"   찾은 업체: {', '.join(companies)} ({len(companies)}개)")
+            
+            # 프로젝트 루트를 Python 경로에 추가
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+            if tools_path not in sys.path:
+                sys.path.insert(0, tools_path)
+            
+            from trend_29cm_ai_analyst import generate_trend_analysis_from_snapshot
+            from google.cloud import storage
+            import gzip
+            import io
+            
+            # 스냅샷 데이터 다시 로드 (업체별 리포트를 추가하기 위해)
+            storage_client = storage.Client(project=PROJECT_ID)
+            bucket = storage_client.bucket(GCS_BUCKET)
+            blob = bucket.blob(get_snapshot_path(run_id))
+            snapshot_bytes = blob.download_as_bytes()
+            snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+            snapshot_data = json.loads(snapshot_json_str)
+            
+            # insights 구조 초기화
+            if "insights" not in snapshot_data:
+                snapshot_data["insights"] = {}
+            if "companies" not in snapshot_data["insights"]:
+                snapshot_data["insights"]["companies"] = {}
+            
+            # 각 업체에 대해 AI 리포트 생성
+            from datetime import datetime
+            from trend_29cm_ai_analyst import generate_trend_analysis
+            
+            for company_name in companies:
+                print(f"\n   [{company_name}] AI 리포트 생성 중...")
+                try:
+                    target_brand = get_company_korean_name_from_bq(company_name.lower())
+                    if not target_brand:
+                        print(f"      ⚠️ 한글명을 찾을 수 없어 건너뜁니다.", file=sys.stderr)
+                        continue
+                    
+                    # AI 분석 생성 (generate_trend_analysis는 문자열을 반환)
+                    analysis_text = generate_trend_analysis(
+                        snapshot_data.copy(),  # 원본 데이터 복사 (재사용 가능)
+                        api_key=None,  # 환경변수에서 로드
+                        target_brand=target_brand
+                    )
+                    
+                    if analysis_text:
+                        snapshot_data["insights"]["companies"][company_name] = {
+                            "analysis_report": analysis_text,
+                            "generated_at": datetime.utcnow().isoformat() + "Z"
+                        }
+                        print(f"      ✅ 완료")
+                    else:
+                        print(f"      ⚠️ 생성 실패", file=sys.stderr)
+                except Exception as e:
+                    print(f"      ⚠️ 오류: {e}", file=sys.stderr)
+                    continue
+            
+            # 업데이트된 스냅샷 저장
+            json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
+            json_bytes = json_str.encode('utf-8')
+            compressed_bytes = gzip.compress(json_bytes)
+            blob.upload_from_string(compressed_bytes, content_type='application/gzip')
+            print(f"\n✅ 모든 업체 AI 분석 리포트 추가 완료! ({len(snapshot_data['insights']['companies'])}개)")
+            
+        except Exception as e:
+            print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+    elif args.company_name or args.target_brand:
+        # 단일 업체에 대한 리포트 생성 (기존 방식)
+        print(f"\n🤖 AI 분석 리포트 생성 중...")
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(script_dir)
+            tools_path = os.path.join(project_root, 'tools', 'ai_report_test')
+            if tools_path not in sys.path:
+                sys.path.insert(0, tools_path)
+            
+            from trend_29cm_ai_analyst import generate_ai_analysis_from_file
+            
+            # target_brand 결정
+            target_brand = args.target_brand
+            if not target_brand and args.company_name:
+                target_brand = get_company_korean_name_from_bq(args.company_name.lower())
+                if not target_brand:
+                    print(f"⚠️ [WARN] BigQuery에서 한글명을 찾을 수 없습니다: {args.company_name}", file=sys.stderr)
+            
+            generate_ai_analysis_from_file(
+                snapshot_file=snapshot_path,
+                output_file=None,
+                api_key=None,
+                target_brand=target_brand
+            )
+            
+            print(f"✅ AI 분석 리포트 추가 완료!")
+        except Exception as e:
+            print(f"⚠️ AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
 
 
 if __name__ == "__main__":

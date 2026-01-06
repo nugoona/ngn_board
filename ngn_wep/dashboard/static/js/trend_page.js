@@ -1686,30 +1686,50 @@ function renderSection1AsCard(section1Text) {
 }
 
 // 자사몰 상품 찾기 (allTabsData에서 브랜드명으로 필터링)
+// ⚠️ 보안 중요: company_name을 정확히 확인하고, 해당 업체의 브랜드만 필터링해야 함
 function getCompanyProducts() {
     if (!window.allTabsData || Object.keys(window.allTabsData).length === 0) {
         return [];
     }
     
-    // company_name으로 한글명 추정 (간단한 매핑)
+    // company_name 가져오기 (URL 파라미터 또는 템플릿 변수)
     const urlParams = new URLSearchParams(window.location.search);
     const companyName = urlParams.get('company_name') || (typeof window.selectedCompany !== 'undefined' ? window.selectedCompany : '');
     
-    // 데모 계정인 경우 자사몰 상품 반환하지 않음 (보안)
-    if (companyName && companyName.toLowerCase() === 'demo') {
+    // ⚠️ 보안: company_name이 없거나 비어있으면 빈 배열 반환 (잘못된 업체 정보 사용 방지)
+    if (!companyName || companyName.trim() === '') {
+        console.warn('[getCompanyProducts] ⚠️ company_name이 없습니다. 자사몰 상품을 표시하지 않습니다.');
         return [];
     }
     
-    // 브랜드명 매핑 (일반적인 케이스)
+    const companyNameLower = companyName.toLowerCase().trim();
+    
+    // 데모 계정인 경우 자사몰 상품 반환하지 않음 (보안)
+    if (companyNameLower === 'demo') {
+        return [];
+    }
+    
+    // ⚠️ 보안 중요: 하드코딩된 매핑 사용 (백엔드 API에서 가져오는 것이 이상적이지만, 
+    // 프론트엔드에서 보안상 안전한 방법으로 처리)
+    // 매핑에 없는 업체는 빈 배열 반환 (다른 업체 브랜드가 표시되는 것을 방지)
     const brandMapping = {
-        'piscess': ['파이시스', 'PISCESS'],
-        'somewherebutter': ['썸웨어버터', 'Somewhere Butter', 'SOMEWHERE BUTTER'],
-        'demo': []
+        'piscess': ['파이시스', 'PISCESS', 'piscess', 'Piscess'],
+        'somewherebutter': ['썸웨어버터', 'Somewhere Butter', 'SOMEWHERE BUTTER', 'somewherebutter', 'SomewhereButter'],
+        'demo': [] // 데모는 이미 위에서 처리됨
     };
     
-    const targetBrands = brandMapping[companyName?.toLowerCase()] || [];
-    if (targetBrands.length === 0) {
-        console.warn('[getCompanyProducts] 브랜드 매핑 없음:', companyName);
+    // ⚠️ 보안: 매핑에 없는 업체는 반드시 빈 배열 반환
+    // 다른 업체의 브랜드(예: 파이시스)가 잘못 표시되는 것을 방지
+    if (!brandMapping.hasOwnProperty(companyNameLower)) {
+        console.warn(`[getCompanyProducts] ⚠️ 브랜드 매핑에 없는 업체입니다: "${companyName}". 자사몰 상품을 표시하지 않습니다.`);
+        return [];
+    }
+    
+    const targetBrands = brandMapping[companyNameLower];
+    
+    // ⚠️ 보안: targetBrands가 빈 배열이면 빈 배열 반환
+    if (!targetBrands || targetBrands.length === 0) {
+        console.warn(`[getCompanyProducts] ⚠️ 브랜드 목록이 비어있습니다: "${companyName}"`);
         return [];
     }
     

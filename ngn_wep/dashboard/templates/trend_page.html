@@ -777,7 +777,35 @@
       font-weight: 600;
     }
     
-    /* ✅ 오른쪽 하단 고정 버튼 */
+    /* ✅ 오른쪽 하단 고정 버튼 (Compare 버튼) */
+    .trend-compare-toggle-btn {
+      position: fixed;
+      bottom: 82px; /* Insights 버튼 위에 위치 (20px + 72px - 10px 겹침) */
+      right: 0;
+      background-color: #4B5563; /* 어두운 회색 */
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.15em; /* 자간 넓히기 */
+      padding: 36px 14px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed; /* 단어 전체를 눕힘 */
+      text-transform: uppercase; /* 대문자 */
+      border-top-left-radius: 8px; /* 모서리 둥글기 줄임 */
+      border-bottom-left-radius: 8px;
+      cursor: pointer;
+      z-index: 1501; /* Insights 버튼보다 위에 */
+      box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .trend-compare-toggle-btn:hover {
+      background-color: #374151; /* hover 시 더 진한 회색 */
+      color: #ffffff;
+      box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ✅ 오른쪽 하단 고정 버튼 (Insights 버튼) */
     .trend-analysis-toggle-btn {
       position: fixed;
       bottom: 20px;
@@ -1394,7 +1422,12 @@
   
 </div>
 
-<!-- ✅ 오른쪽 하단 고정 버튼 -->
+<!-- ✅ 오른쪽 하단 고정 버튼 (Compare) -->
+<div id="trendCompareToggleBtn" class="trend-compare-toggle-btn" aria-label="트렌드 비교 열기">
+  <span>Compare</span>
+</div>
+
+<!-- ✅ 오른쪽 하단 고정 버튼 (Insights) -->
 <div id="trendAnalysisToggleBtn" class="trend-analysis-toggle-btn" aria-label="트렌드 데이터 분석 열기">
   <span>Insights</span>
 </div>

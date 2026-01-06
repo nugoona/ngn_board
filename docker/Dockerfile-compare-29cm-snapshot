@@ -15,6 +15,7 @@ COPY ./tools/compare_29cm_snapshot.py /app/compare_29cm_snapshot.py
 
 # 환경변수 설정
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/app/ngn_wep
 
 # 실행 명령어 설정
 ENTRYPOINT ["python", "/app/compare_29cm_snapshot.py"]

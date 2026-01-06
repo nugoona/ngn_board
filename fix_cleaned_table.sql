@@ -82,3 +82,4 @@ FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table_cleaned_v2`;
 
 
 
+

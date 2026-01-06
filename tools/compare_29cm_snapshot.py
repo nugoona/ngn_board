@@ -13,13 +13,19 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any
 
 # 프로젝트 루트를 Python 경로에 추가
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Docker 환경에서는 /app이 루트이므로 PYTHONPATH로 설정됨
+# 로컬 환경에서는 프로젝트 루트를 경로에 추가
+if not os.environ.get('PYTHONPATH'):
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, project_root)
+    ngn_wep_path = os.path.join(project_root, 'ngn_wep')
+    if os.path.exists(ngn_wep_path):
+        sys.path.insert(0, ngn_wep_path)
 
 from google.cloud import bigquery
 from google.cloud import storage
 
 # 서비스 모듈 임포트
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ngn_wep'))
 from dashboard.services.compare_29cm_service import (
     get_competitor_keywords,
     load_best_ranking_dict,

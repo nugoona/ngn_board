@@ -34,3 +34,4 @@ WHERE DATE(event_date) BETWEEN DATE("2025-12-26") AND CURRENT_DATE();
 
 
 
+

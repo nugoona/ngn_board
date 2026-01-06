@@ -71,7 +71,7 @@ from ..services.trend_ably_service import (
 from ..services.compare_29cm_service import (
     get_competitor_keywords,
     fetch_product_reviews,
-    load_search_results_from_bq,
+    load_search_results_from_gcs,
 )
 
 
@@ -1765,12 +1765,15 @@ def get_compare_search_results():
                 }
                 search_keyword = brand_mapping.get(company_name.lower(), company_name)
         
-        # BigQuery에서 검색 결과 로드
-        results = load_search_results_from_bq(
+        # GCS 스냅샷에서 검색 결과 로드
+        results = load_search_results_from_gcs(
             company_name=company_name,
             run_id=run_id,
             search_keyword=search_keyword
         )
+        
+        if results is None:
+            return jsonify({"status": "error", "message": "스냅샷을 찾을 수 없습니다."}), 404
         
         # search_keyword가 지정된 경우 해당 키워드만 반환
         if search_keyword:

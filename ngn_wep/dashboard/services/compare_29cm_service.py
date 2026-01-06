@@ -7,6 +7,7 @@ import json
 import re
 import time
 import random
+import gzip
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlencode
@@ -14,9 +15,11 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 from google.cloud import bigquery
+from google.cloud import storage
 
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
 DATASET_ID = os.environ.get("BQ_DATASET", "ngn_dataset")
+GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
 SEARCH_RESULTS_TABLE = "platform_29cm_search_results"
 COMPETITOR_KEYWORDS_TABLE = "company_competitor_keywords"
 BEST_TABLE = "platform_29cm_best"
@@ -320,7 +323,28 @@ def delete_existing_search_results(company_name: str, search_keyword: str, run_i
     return True
 
 
-def save_search_results_to_bq(
+def get_compare_snapshot_path(run_id: str) -> str:
+    """스냅샷 GCS 경로 생성"""
+    # run_id 형식: {year}W{week:02d}_WEEKLY_...
+    week_match = re.match(r'(\d{4})W(\d{2})', run_id)
+    if not week_match:
+        raise ValueError(f"Invalid run_id format: {run_id}")
+    
+    year = week_match.group(1)
+    week = week_match.group(2)
+    
+    # ISO 주차를 사용하여 월 계산
+    jan4 = datetime(int(year), 1, 4)
+    jan4_day = jan4.weekday()
+    days_to_thursday = (3 - jan4_day + 7) % 7
+    first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
+    week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
+    month = week_start.month
+    
+    return f"ai-reports/compare/29cm/{year}-{month:02d}-{week}/search_results.json.gz"
+
+
+def save_search_results_to_gcs(
     company_name: str,
     search_keyword: str,
     run_id: str,
@@ -328,248 +352,101 @@ def save_search_results_to_bq(
     search_date: datetime
 ) -> bool:
     """
-    검색 결과를 BigQuery에 저장 (MERGE 문 사용)
-    스트리밍 버퍼 문제를 피하기 위해 DELETE 대신 MERGE 사용
+    검색 결과를 GCS 스냅샷으로 저장
+    BigQuery 저장은 포기하고 스냅샷만 사용
     """
     if not search_results:
         return False
     
-    client = get_bigquery_client()
-    
-    # 새 데이터 준비
-    rows = []
-    for result in search_results:
-        item_id = result.get("item_id")
-        if not item_id:
-            continue
-        
-        reviews = result.get("reviews", [])
-        reviews_json = json.dumps(reviews, ensure_ascii=False) if reviews else None
-        
-        # 날짜를 문자열로 변환 (BigQuery insert_rows_json은 DATE를 문자열로 받음)
-        search_date_str = search_date.date().isoformat()  # 'YYYY-MM-DD' 형식
-        created_at_str = search_date.isoformat()  # ISO 형식 문자열
-        
-        row = {
-            "search_keyword": search_keyword,
-            "company_name": company_name,
-            "run_id": run_id,
-            "item_id": item_id,
-            "rank": result.get("rank"),
-            "brand_name": result.get("brand_name"),
-            "product_name": result.get("product_name"),
-            "price": result.get("price"),
-            "discount_rate": result.get("discount_rate"),
-            "like_count": result.get("like_count"),
-            "review_count": result.get("review_count"),
-            "review_score": result.get("review_score"),
-            "thumbnail_url": result.get("thumbnail_url"),
-            "item_url": result.get("item_url"),
-            "best_rank": result.get("best_rank"),
-            "best_category": result.get("best_category"),
-            "search_date": search_date_str,  # 문자열로 변환
-            "created_at": created_at_str,  # 문자열로 변환
-            "updated_at": created_at_str,  # 문자열로 변환
-            "reviews": reviews_json,
-        }
-        rows.append(row)
-    
-    if not rows:
-        return False
-    
-    # 임시 테이블에 데이터 로드
-    temp_table_id = f"{SEARCH_RESULTS_TABLE}_temp_{run_id}_{company_name}_{search_keyword}".replace("-", "_").replace(".", "_").replace(" ", "_")
-    temp_table_ref = client.dataset(DATASET_ID).table(temp_table_id)
-    
     try:
-        # 기존 임시 테이블 삭제 (있다면)
-        client.delete_table(temp_table_ref, not_found_ok=True)
+        # 스냅샷 경로 생성
+        blob_path = get_compare_snapshot_path(run_id)
         
-        # 기존 테이블의 스키마 가져오기
-        main_table_ref = client.dataset(DATASET_ID).table(SEARCH_RESULTS_TABLE)
-        main_table = client.get_table(main_table_ref)
+        # 기존 스냅샷 로드 (있다면)
+        existing_snapshot = load_search_results_from_gcs(company_name, run_id)
+        if existing_snapshot is None:
+            existing_snapshot = {}
         
-        # 임시 테이블 생성 (같은 스키마 사용)
-        temp_table = bigquery.Table(temp_table_ref, schema=main_table.schema)
-        client.create_table(temp_table)
+        # 현재 검색어 데이터 업데이트
+        existing_snapshot[search_keyword] = search_results
         
-        # 임시 테이블에 데이터 로드 (스트리밍 버퍼 문제를 피하기 위해 load_table_from_json 사용)
-        job_config = bigquery.LoadJobConfig(
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-            schema=main_table.schema,
-            autodetect=False
-        )
+        # 스냅샷 데이터 구성
+        snapshot_data = {
+            "run_id": run_id,
+            "company_name": company_name,
+            "created_at": search_date.isoformat(),
+            "search_results": existing_snapshot
+        }
         
-        # JSON 문자열로 변환
-        json_rows = [json.dumps(row, ensure_ascii=False) for row in rows]
-        json_content = "\n".join(json_rows)
+        # JSON 직렬화 및 Gzip 압축
+        json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
+        json_bytes = json_str.encode('utf-8')
+        compressed_bytes = gzip.compress(json_bytes)
         
-        # 임시 테이블에 로드
-        from io import BytesIO
-        job = client.load_table_from_file(
-            BytesIO(json_content.encode('utf-8')),
-            temp_table_ref,
-            job_config=job_config
-        )
-        job.result()  # 완료 대기
+        # GCS에 업로드
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+        blob.upload_from_string(compressed_bytes, content_type='application/gzip')
         
-        print(f"[INFO] 임시 테이블에 {len(rows)}개 행 로드 완료: {temp_table_id}")
-        
-        # MERGE 문 실행 (다른 파일들과 동일한 패턴 사용)
-        # MERGE는 스트리밍 버퍼에 영향을 주지 않으므로 안전하게 사용 가능
-        merge_query = f"""
-        MERGE `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}` AS target
-        USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` AS source
-        ON target.company_name = source.company_name
-           AND target.search_keyword = source.search_keyword
-           AND target.run_id = source.run_id
-           AND target.item_id = source.item_id
-        WHEN MATCHED THEN
-          UPDATE SET
-            rank = source.rank,
-            brand_name = source.brand_name,
-            product_name = source.product_name,
-            price = source.price,
-            discount_rate = source.discount_rate,
-            like_count = source.like_count,
-            review_count = source.review_count,
-            review_score = source.review_score,
-            thumbnail_url = source.thumbnail_url,
-            item_url = source.item_url,
-            best_rank = source.best_rank,
-            best_category = source.best_category,
-            search_date = source.search_date,
-            updated_at = source.updated_at,
-            reviews = source.reviews
-        WHEN NOT MATCHED THEN
-          INSERT (
-            search_keyword, company_name, run_id, item_id, rank,
-            brand_name, product_name, price, discount_rate,
-            like_count, review_count, review_score,
-            thumbnail_url, item_url, best_rank, best_category,
-            search_date, created_at, updated_at, reviews
-          )
-          VALUES (
-            source.search_keyword, source.company_name, source.run_id, source.item_id, source.rank,
-            source.brand_name, source.product_name, source.price, source.discount_rate,
-            source.like_count, source.review_count, source.review_score,
-            source.thumbnail_url, source.item_url, source.best_rank, source.best_category,
-            source.search_date, source.created_at, source.updated_at, source.reviews
-          )
-        """
-        
-        merge_job = client.query(merge_query)
-        merge_job.result()  # 완료 대기
-        
-        print(f"[INFO] MERGE 완료: {len(rows)}개 행 처리됨 (기존 데이터 업데이트 또는 새 데이터 삽입)")
-        
-        # 임시 테이블 삭제
-        client.delete_table(temp_table_ref, not_found_ok=True)
-        
-        # 같은 run_id의 기존 데이터 중 MERGE되지 않은 데이터 삭제 (선택적)
-        # 주의: 스트리밍 버퍼 문제가 있을 수 있으므로 주석 처리
-        # delete_old_query = f"""
-        # DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}`
-        # WHERE company_name = @company_name
-        #   AND search_keyword = @search_keyword
-        #   AND run_id = @run_id
-        #   AND item_id NOT IN (
-        #     SELECT item_id FROM `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}`
-        #   )
-        # """
-        
+        print(f"[INFO] 스냅샷 저장 완료: {blob_path} ({search_keyword}: {len(search_results)}개)")
         return True
         
     except Exception as e:
-        print(f"[ERROR] save_search_results_to_bq 실패: {e}")
+        print(f"[ERROR] save_search_results_to_gcs 실패: {e}")
         import traceback
         traceback.print_exc()
-        
-        # 임시 테이블 정리
-        try:
-            client.delete_table(temp_table_ref, not_found_ok=True)
-        except:
-            pass
-        
         return False
-
-
-def load_search_results_from_bq(company_name: str, run_id: str, search_keyword: Optional[str] = None) -> Dict[str, List[Dict]]:
-    """BigQuery에서 검색 결과 로드"""
-    client = get_bigquery_client()
     
-    query = f"""
-    SELECT 
-      search_keyword,
-      item_id,
-      rank,
-      brand_name,
-      product_name,
-      price,
-      discount_rate,
-      like_count,
-      review_count,
-      review_score,
-      thumbnail_url,
-      item_url,
-      best_rank,
-      best_category,
-      reviews
-    FROM `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}`
-    WHERE company_name = @company_name
-      AND run_id = @run_id
+
+
+def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword: Optional[str] = None) -> Optional[Dict[str, List[Dict]]]:
     """
-    
-    params = [
-        bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-        bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
-    ]
-    
-    if search_keyword:
-        query += " AND search_keyword = @search_keyword"
-        params.append(bigquery.ScalarQueryParameter("search_keyword", "STRING", search_keyword))
-    
-    query += " ORDER BY search_keyword, rank"
-    
-    job_config = bigquery.QueryJobConfig(query_parameters=params)
-    
-    results = {}
+    GCS 스냅샷에서 검색 결과 로드
+    """
     try:
-        rows = client.query(query, job_config=job_config).result()
-        for row in rows:
-            keyword = row.search_keyword
-            if keyword not in results:
-                results[keyword] = []
-            
-            # JSON 파싱
-            reviews = []
-            if row.reviews:
-                try:
-                    reviews = json.loads(row.reviews) if isinstance(row.reviews, str) else row.reviews
-                except:
-                    reviews = []
-            
-            results[keyword].append({
-                "item_id": row.item_id,
-                "rank": row.rank,
-                "brand_name": row.brand_name,
-                "product_name": row.product_name,
-                "price": row.price,
-                "discount_rate": row.discount_rate,
-                "like_count": row.like_count,
-                "review_count": row.review_count,
-                "review_score": row.review_score,
-                "thumbnail_url": row.thumbnail_url,
-                "item_url": row.item_url,
-                "best_rank": row.best_rank,
-                "best_category": row.best_category,
-                "reviews": reviews,
-            })
+        blob_path = get_compare_snapshot_path(run_id)
+        
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+        
+        if not blob.exists():
+            print(f"[WARN] 스냅샷 파일이 없습니다: {blob_path}")
+            return None
+        
+        # 파일 읽기 및 압축 해제
+        snapshot_bytes = blob.download_as_bytes(raw_download=True)
+        
+        try:
+            snapshot_json_str = gzip.decompress(snapshot_bytes).decode('utf-8')
+        except (gzip.BadGzipFile, OSError):
+            snapshot_json_str = snapshot_bytes.decode('utf-8')
+        
+        snapshot_data = json.loads(snapshot_json_str)
+        
+        # company_name 확인
+        if snapshot_data.get("company_name") != company_name:
+            print(f"[WARN] 스냅샷의 company_name이 일치하지 않습니다: {snapshot_data.get('company_name')} != {company_name}")
+            return None
+        
+        # search_results 추출
+        search_results = snapshot_data.get("search_results", {})
+        
+        # search_keyword가 지정된 경우 해당 키워드만 반환
+        if search_keyword:
+            if search_keyword in search_results:
+                return {search_keyword: search_results[search_keyword]}
+            else:
+                return {}
+        
+        return search_results
+        
     except Exception as e:
-        print(f"[ERROR] load_search_results_from_bq 실패: {e}")
-    
-    return results
+        print(f"[ERROR] load_search_results_from_gcs 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 
 def collect_and_save_search_results(
@@ -600,9 +477,9 @@ def collect_and_save_search_results(
     # 3. 베스트 목록 매칭
     search_results = match_with_best_ranking(search_results, best_dict)
     
-    # 4. 저장
+    # 4. 저장 (GCS 스냅샷)
     search_date = datetime.now(timezone(timedelta(hours=9)))
-    success = save_search_results_to_bq(
+    success = save_search_results_to_gcs(
         company_name=company_name,
         search_keyword=search_keyword,
         run_id=run_id,

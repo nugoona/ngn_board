@@ -2243,9 +2243,32 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                             console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);
                         }
                         
+                        // 부모 카드 컨테이너도 확인
+                        const parentCard = gridContainer.closest('.trend-category-card');
+                        if (parentCard) {
+                            parentCard.style.display = 'block';
+                            parentCard.style.visibility = 'visible';
+                            parentCard.style.opacity = '1';
+                            parentCard.style.overflow = 'visible';
+                            console.log(`[renderSection3SegmentContent] ${categoryName} 부모 카드 스타일 강제 적용 완료`);
+                        }
+                        
+                        // 썸네일 카드들도 확인
+                        const thumbnailCards = gridContainer.querySelectorAll('.trend-thumbnail-card');
+                        thumbnailCards.forEach((card, idx) => {
+                            card.style.display = 'flex';
+                            card.style.visibility = 'visible';
+                            card.style.opacity = '1';
+                            if (idx === 0) {
+                                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 카드 ${thumbnailCards.length}개 스타일 강제 적용 완료`);
+                            }
+                        });
+                        
                         // DOM 확인
                         console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer:`, gridContainer);
                         console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.children.length:`, gridContainer.children.length);
+                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.offsetHeight:`, gridContainer.offsetHeight);
+                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.offsetWidth:`, gridContainer.offsetWidth);
                     } else {
                         console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 생성 실패`);
                     }

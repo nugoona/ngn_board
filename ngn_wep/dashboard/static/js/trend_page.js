@@ -536,7 +536,14 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     const contentElement = document.getElementById('trendAnalysisContent');
     if (!contentElement) return;
     
-    const analysisText = insights.analysis_report;
+    console.log('[renderTrendAnalysisReport] insights 객체:', {
+        hasInsights: !!insights,
+        insightsKeys: insights ? Object.keys(insights) : [],
+        hasAnalysisReport: !!(insights && insights.analysis_report),
+        analysisReportLength: insights && insights.analysis_report ? insights.analysis_report.length : 0
+    });
+    
+    const analysisText = insights ? insights.analysis_report : null;
     
     // 생성일 업데이트
     if (insights && insights.generated_at && createdAtElement) {
@@ -548,8 +555,22 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
         }
     }
     
+    // analysis_report가 없어도 페이지는 표시 (섹션이 있을 수 있음)
     if (!analysisText || !analysisText.trim()) {
-        contentElement.innerHTML = '<div class="trend-analysis-empty">분석 리포트가 아직 생성되지 않았습니다.</div>';
+        console.warn('[renderTrendAnalysisReport] analysis_report가 없거나 비어있음');
+        // analysis_report가 없어도 빈 컨테이너는 생성 (섹션이 있을 수 있음)
+        // 하지만 일반적으로 analysis_report가 없으면 섹션도 없으므로 메시지 표시
+        const container = document.createElement('div');
+        container.className = 'trend-analysis-report-container';
+        container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important;';
+        
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'trend-analysis-empty';
+        emptyMessage.innerHTML = '<p>현재 주차의 분석 리포트가 아직 생성되지 않았거나 데이터가 없습니다.</p>';
+        container.appendChild(emptyMessage);
+        
+        contentElement.innerHTML = '';
+        contentElement.appendChild(container);
         return;
     }
     

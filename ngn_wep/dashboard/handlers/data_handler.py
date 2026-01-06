@@ -1345,43 +1345,22 @@ def get_trend_data():
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
                 
-                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
-                # insights의 analysis_report를 확인하여 현재 업체의 브랜드가 포함되어 있는지 확인
+                # ✅ 리포트가 있으면 무조건 표시 (Section 1만 필터링)
+                # 브랜드 체크와 관계없이 리포트는 항상 반환
                 if company_name and insights.get("analysis_report"):
-                    # 현재 업체의 브랜드명 목록 가져오기
-                    company_ko = get_company_korean_name(company_name.lower())
-                    company_brands = []
-                    if company_ko and COMPANY_MAPPING_AVAILABLE:
-                        company_info = COMPANY_MAPPING.get(company_name.lower(), {})
-                        company_brands = company_info.get("brands", [])
-                    
-                    # insights 리포트에 현재 업체의 브랜드가 포함되어 있는지 확인
+                    # 리포트가 있으면 Section 1만 필터링하고 항상 반환
                     analysis_report = insights.get("analysis_report", "")
-                    has_company_brand = False
-                    if company_ko and analysis_report:
-                        # 리포트에 현재 업체의 브랜드명이 포함되어 있는지 확인
-                        for brand in company_brands:
-                            if brand in analysis_report:
-                                has_company_brand = True
-                                break
-                        # 한글명도 확인
-                        if company_ko in analysis_report:
-                            has_company_brand = True
-                    
-                    if has_company_brand:
-                        # 현재 업체의 브랜드가 포함되어 있으면 필터링
-                        filtered_report = filter_ai_report_by_company(
-                            analysis_report,
-                            company_name.lower() if isinstance(company_name, str) else company_name
-                        )
-                        insights = insights.copy()
-                        insights["analysis_report"] = filtered_report
-                    else:
-                        # 현재 업체의 브랜드가 포함되어 있지 않으면 빈 객체 반환
-                        insights = {}
+                    filtered_report = filter_ai_report_by_company(
+                        analysis_report,
+                        company_name.lower() if isinstance(company_name, str) else company_name
+                    )
+                    insights = insights.copy()
+                    insights["analysis_report"] = filtered_report
                 elif company_name:
-                    # 해당 업체의 insights가 없으면 빈 객체로 설정
-                    insights = {}
+                    # company_name이 있지만 insights에 analysis_report가 없는 경우
+                    # insights 자체가 없으면 빈 객체 유지
+                    if not insights:
+                        insights = {}
                 
                 result = {
                     "status": "success",
@@ -1616,43 +1595,22 @@ def get_ably_trend_data():
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
                 
-                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
-                # insights의 analysis_report를 확인하여 현재 업체의 브랜드가 포함되어 있는지 확인
+                # ✅ 리포트가 있으면 무조건 표시 (Section 1만 필터링)
+                # 브랜드 체크와 관계없이 리포트는 항상 반환
                 if company_name and insights.get("analysis_report"):
-                    # 현재 업체의 브랜드명 목록 가져오기
-                    company_ko = get_company_korean_name(company_name.lower())
-                    company_brands = []
-                    if company_ko and COMPANY_MAPPING_AVAILABLE:
-                        company_info = COMPANY_MAPPING.get(company_name.lower(), {})
-                        company_brands = company_info.get("brands", [])
-                    
-                    # insights 리포트에 현재 업체의 브랜드가 포함되어 있는지 확인
+                    # 리포트가 있으면 Section 1만 필터링하고 항상 반환
                     analysis_report = insights.get("analysis_report", "")
-                    has_company_brand = False
-                    if company_ko and analysis_report:
-                        # 리포트에 현재 업체의 브랜드명이 포함되어 있는지 확인
-                        for brand in company_brands:
-                            if brand in analysis_report:
-                                has_company_brand = True
-                                break
-                        # 한글명도 확인
-                        if company_ko in analysis_report:
-                            has_company_brand = True
-                    
-                    if has_company_brand:
-                        # 현재 업체의 브랜드가 포함되어 있으면 필터링
-                        filtered_report = filter_ai_report_by_company(
-                            analysis_report,
-                            company_name.lower() if isinstance(company_name, str) else company_name
-                        )
-                        insights = insights.copy()
-                        insights["analysis_report"] = filtered_report
-                    else:
-                        # 현재 업체의 브랜드가 포함되어 있지 않으면 빈 객체 반환
-                        insights = {}
+                    filtered_report = filter_ai_report_by_company(
+                        analysis_report,
+                        company_name.lower() if isinstance(company_name, str) else company_name
+                    )
+                    insights = insights.copy()
+                    insights["analysis_report"] = filtered_report
                 elif company_name:
-                    # 해당 업체의 insights가 없으면 빈 객체로 설정
-                    insights = {}
+                    # company_name이 있지만 insights에 analysis_report가 없는 경우
+                    # insights 자체가 없으면 빈 객체 유지
+                    if not insights:
+                        insights = {}
                 
                 result = {
                     "status": "success",

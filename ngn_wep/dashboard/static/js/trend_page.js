@@ -2351,12 +2351,29 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         // 헤더를 카드에 추가
         cardContainer.appendChild(headerSection);
         
-        // D. 썸네일 그리드 생성 및 추가
+        // D. 썸네일 그리드 생성 및 추가 (명시적 DOM 조립)
+        // 썸네일 wrapper를 명시적으로 생성
         const thumbnailsWrapper = document.createElement('div');
         thumbnailsWrapper.className = 'trend-category-thumbnails';
         
+        // 반드시 헤더 다음에 썸네일 wrapper를 추가 (DOM 구조 보장)
+        cardContainer.appendChild(thumbnailsWrapper);
+        
+        // DOM 구조 확인 로그
+        console.log(`[DEBUG] ${categoryName} - 카드 DOM 구조 생성 완료:`, {
+            hasHeader: !!cardContainer.querySelector('.trend-category-header'),
+            hasThumbnailsWrapper: !!cardContainer.querySelector('.trend-category-thumbnails'),
+            cardChildrenCount: cardContainer.children.length
+        });
+        
         // 썸네일 추가 함수 (allTabsData 준비 대기)
         const addThumbnails = () => {
+            // thumbnailsWrapper가 DOM에 제대로 연결되어 있는지 확인
+            if (!thumbnailsWrapper.parentElement || !cardContainer.contains(thumbnailsWrapper)) {
+                console.warn(`[DEBUG] ${categoryName} - thumbnailsWrapper가 카드에 연결되지 않음, 재연결 시도`);
+                cardContainer.appendChild(thumbnailsWrapper);
+            }
+            
             if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
                 console.log(`[DEBUG] ${categoryName} - 상품 데이터 요청 시작`);
                 console.log(`[DEBUG] ${categoryName} - 요청 파라미터: categoryName="${categoryName}", segmentType="${segmentType}"`);
@@ -2383,15 +2400,41 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     console.warn(`[DEBUG] ${categoryName} - 상품 데이터가 없습니다`);
                 }
                 
+                // 상품이 있으면 반드시 썸네일 그리드를 생성하고 주입
                 if (categoryProducts.length > 0) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
-                    if (thumbnailGrid) {
+                    if (thumbnailGrid && thumbnailGrid.trim().length > 0) {
                         console.log(`[DEBUG] ${categoryName} - 썸네일 그리드 HTML 생성 완료, 길이: ${thumbnailGrid.length}자`);
+                        
+                        // thumbnailsWrapper가 여전히 카드에 연결되어 있는지 재확인
+                        if (!cardContainer.contains(thumbnailsWrapper)) {
+                            console.warn(`[DEBUG] ${categoryName} - thumbnailsWrapper가 카드에서 분리됨, 재추가`);
+                            cardContainer.appendChild(thumbnailsWrapper);
+                        }
+                        
                         // HTML만 주입, 스타일은 CSS에 맡김
                         thumbnailsWrapper.innerHTML = thumbnailGrid;
+                        
+                        // DOM에 제대로 추가되었는지 확인 및 검증
+                        const insertedGrid = thumbnailsWrapper.querySelector('.trend-thumbnails-grid');
+                        if (insertedGrid) {
+                            const cardCount = insertedGrid.querySelectorAll('.trend-thumbnail-card').length;
+                            console.log(`[DEBUG] ${categoryName} - 썸네일 그리드 DOM 삽입 완료, 카드 수: ${cardCount}개`);
+                            
+                            // 최종 DOM 구조 확인
+                            if (cardCount === 0) {
+                                console.error(`[DEBUG] ${categoryName} - 썸네일 그리드는 삽입되었지만 카드가 없음!`);
+                            }
+                        } else {
+                            console.error(`[DEBUG] ${categoryName} - 썸네일 그리드가 DOM에 제대로 삽입되지 않음!`);
+                            console.error(`[DEBUG] ${categoryName} - thumbnailsWrapper.innerHTML 길이:`, thumbnailsWrapper.innerHTML.length);
+                        }
                     } else {
-                        console.warn(`[DEBUG] ${categoryName} - 썸네일 그리드 HTML 생성 실패`);
+                        console.warn(`[DEBUG] ${categoryName} - 썸네일 그리드 HTML 생성 실패 또는 빈 문자열`);
                     }
+                } else {
+                    // 상품이 없어도 빈 wrapper는 유지 (레이아웃 안정성)
+                    console.log(`[DEBUG] ${categoryName} - 상품 데이터 없음 (${categoryProducts.length}개), 빈 썸네일 wrapper 유지`);
                 }
             } else {
                 // 재시도
@@ -2409,14 +2452,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             }
         };
         
-        // 썸네일을 카드의 마지막 자식 요소로 추가
-        cardContainer.appendChild(thumbnailsWrapper);
-        
-        // 썸네일 추가 시도 시작
-        setTimeout(addThumbnails, 100);
-        
-        // 5. DOM 추가: 완성된 카드를 메인 컨테이너에 추가
+        // 5. DOM 추가: 완성된 카드를 메인 컨테이너에 추가 (썸네일 wrapper 포함)
         container.appendChild(cardContainer);
+        
+        // 썸네일 추가 시도 시작 (카드가 DOM에 추가된 후 실행)
+        setTimeout(addThumbnails, 100);
     });
 }
 

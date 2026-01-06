@@ -2313,19 +2313,26 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         let parent = gridContainer.parentElement;
                         let depth = 0;
                         while (parent && depth < 10) {
-                            // 사이드바 스크롤 컨테이너는 건드리지 않음
-                            if (parent.classList && (
-                                parent.classList.contains('trend-analysis-sidebar-content') ||
-                                parent.classList.contains('trend-analysis-sidebar-wrapper') ||
-                                parent.classList.contains('trend-section3-content-wrapper')
-                            )) {
-                                // 스크롤이 필요한 컨테이너는 overflow를 건드리지 않음
-                                parent.style.cssText = (parent.style.cssText || '') + 'display: block !important; visibility: visible !important; opacity: 1 !important;';
-                            } else {
-                                // 일반 부모 요소는 overflow: visible 적용
-                                const currentStyle = parent.style.cssText || '';
-                                parent.style.cssText = currentStyle + 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important;';
+                            // 스크롤 컨테이너인지 확인 (클래스명 또는 ID로 체크)
+                            const isScrollContainer = (
+                                (parent.classList && (
+                                    parent.classList.contains('trend-analysis-sidebar-content') ||
+                                    parent.classList.contains('trend-analysis-sidebar-wrapper') ||
+                                    parent.classList.contains('trend-section3-content-wrapper')
+                                )) ||
+                                parent.id === 'trendAnalysisContent'
+                            );
+                            
+                            // 스크롤 컨테이너를 만나면 상위로 전파를 멈추고 루프 종료
+                            if (isScrollContainer) {
+                                console.log(`[renderSection3SegmentContent] ${categoryName} 스크롤 컨테이너 발견, 루프 종료:`, parent.className || parent.id);
+                                break;
                             }
+                            
+                            // 일반 부모 요소는 overflow: visible 적용
+                            const currentStyle = parent.style.cssText || '';
+                            parent.style.cssText = currentStyle + 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important;';
+                            
                             parent = parent.parentElement;
                             depth++;
                         }

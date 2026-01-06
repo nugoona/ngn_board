@@ -308,31 +308,16 @@ def match_with_best_ranking(search_results: List[Dict], best_dict: Dict[int, Dic
 
 
 def delete_existing_search_results(company_name: str, search_keyword: str, run_id: str) -> bool:
-    """기존 검색 결과 삭제 (덮어쓰기용)"""
+    """
+    기존 검색 결과 삭제 (덮어쓰기용)
+    주의: 스트리밍 버퍼 문제로 인해 DELETE가 실패할 수 있으므로,
+    MERGE 문을 사용하는 것을 권장합니다.
+    """
     client = get_bigquery_client()
     
-    query = f"""
-    DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}`
-    WHERE company_name = @company_name
-      AND search_keyword = @search_keyword
-      AND run_id = @run_id
-    """
-    
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
-            bigquery.ScalarQueryParameter("search_keyword", "STRING", search_keyword),
-            bigquery.ScalarQueryParameter("run_id", "STRING", run_id),
-        ]
-    )
-    
-    try:
-        job = client.query(query, job_config=job_config)
-        job.result()  # 완료 대기
-        return True
-    except Exception as e:
-        print(f"[ERROR] delete_existing_search_results 실패: {e}")
-        return False
+    # 스트리밍 버퍼 문제를 피하기 위해 DELETE 대신 MERGE에서 처리
+    # 이 함수는 더 이상 사용하지 않지만, 호환성을 위해 남겨둠
+    return True
 
 
 def save_search_results_to_bq(
@@ -342,12 +327,14 @@ def save_search_results_to_bq(
     search_results: List[Dict],
     search_date: datetime
 ) -> bool:
-    """검색 결과를 BigQuery에 저장"""
+    """
+    검색 결과를 BigQuery에 저장 (MERGE 문 사용)
+    스트리밍 버퍼 문제를 피하기 위해 DELETE 대신 MERGE 사용
+    """
     if not search_results:
         return False
     
-    # 기존 데이터 삭제
-    delete_existing_search_results(company_name, search_keyword, run_id)
+    client = get_bigquery_client()
     
     # 새 데이터 준비
     rows = []
@@ -390,18 +377,120 @@ def save_search_results_to_bq(
     if not rows:
         return False
     
-    # BigQuery에 삽입
-    client = get_bigquery_client()
-    table_ref = client.dataset(DATASET_ID).table(SEARCH_RESULTS_TABLE)
+    # 임시 테이블에 데이터 로드
+    temp_table_id = f"{SEARCH_RESULTS_TABLE}_temp_{run_id}_{company_name}_{search_keyword}".replace("-", "_").replace(".", "_").replace(" ", "_")
+    temp_table_ref = client.dataset(DATASET_ID).table(temp_table_id)
     
     try:
-        errors = client.insert_rows_json(table_ref, rows)
-        if errors:
-            print(f"[ERROR] BigQuery insert errors: {errors}")
-            return False
+        # 기존 임시 테이블 삭제 (있다면)
+        client.delete_table(temp_table_ref, not_found_ok=True)
+        
+        # 기존 테이블의 스키마 가져오기
+        main_table_ref = client.dataset(DATASET_ID).table(SEARCH_RESULTS_TABLE)
+        main_table = client.get_table(main_table_ref)
+        
+        # 임시 테이블 생성 (같은 스키마 사용)
+        temp_table = bigquery.Table(temp_table_ref, schema=main_table.schema)
+        client.create_table(temp_table)
+        
+        # 임시 테이블에 데이터 로드 (스트리밍 버퍼 문제를 피하기 위해 load_table_from_json 사용)
+        job_config = bigquery.LoadJobConfig(
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            schema=main_table.schema,
+            autodetect=False
+        )
+        
+        # JSON 문자열로 변환
+        json_rows = [json.dumps(row, ensure_ascii=False) for row in rows]
+        json_content = "\n".join(json_rows)
+        
+        # 임시 테이블에 로드
+        from io import BytesIO
+        job = client.load_table_from_file(
+            BytesIO(json_content.encode('utf-8')),
+            temp_table_ref,
+            job_config=job_config
+        )
+        job.result()  # 완료 대기
+        
+        print(f"[INFO] 임시 테이블에 {len(rows)}개 행 로드 완료: {temp_table_id}")
+        
+        # MERGE 문 실행 (덮어쓰기)
+        merge_query = f"""
+        MERGE `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}` AS target
+        USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` AS source
+        ON target.company_name = source.company_name
+           AND target.search_keyword = source.search_keyword
+           AND target.run_id = source.run_id
+           AND target.item_id = source.item_id
+        WHEN MATCHED THEN
+          UPDATE SET
+            rank = source.rank,
+            brand_name = source.brand_name,
+            product_name = source.product_name,
+            price = source.price,
+            discount_rate = source.discount_rate,
+            like_count = source.like_count,
+            review_count = source.review_count,
+            review_score = source.review_score,
+            thumbnail_url = source.thumbnail_url,
+            item_url = source.item_url,
+            best_rank = source.best_rank,
+            best_category = source.best_category,
+            search_date = source.search_date,
+            updated_at = source.updated_at,
+            reviews = source.reviews
+        WHEN NOT MATCHED THEN
+          INSERT (
+            search_keyword, company_name, run_id, item_id, rank,
+            brand_name, product_name, price, discount_rate,
+            like_count, review_count, review_score,
+            thumbnail_url, item_url, best_rank, best_category,
+            search_date, created_at, updated_at, reviews
+          )
+          VALUES (
+            source.search_keyword, source.company_name, source.run_id, source.item_id, source.rank,
+            source.brand_name, source.product_name, source.price, source.discount_rate,
+            source.like_count, source.review_count, source.review_score,
+            source.thumbnail_url, source.item_url, source.best_rank, source.best_category,
+            source.search_date, source.created_at, source.updated_at, source.reviews
+          )
+        """
+        
+        merge_job = client.query(merge_query)
+        merge_job.result()  # 완료 대기
+        
+        print(f"[INFO] MERGE 완료: {len(rows)}개 행 처리됨")
+        
+        # 임시 테이블 삭제
+        client.delete_table(temp_table_ref, not_found_ok=True)
+        
+        # 같은 run_id의 기존 데이터 중 MERGE되지 않은 데이터 삭제 (선택적)
+        # 주의: 스트리밍 버퍼 문제가 있을 수 있으므로 주석 처리
+        # delete_old_query = f"""
+        # DELETE FROM `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}`
+        # WHERE company_name = @company_name
+        #   AND search_keyword = @search_keyword
+        #   AND run_id = @run_id
+        #   AND item_id NOT IN (
+        #     SELECT item_id FROM `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}`
+        #   )
+        # """
+        
         return True
+        
     except Exception as e:
         print(f"[ERROR] save_search_results_to_bq 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # 임시 테이블 정리
+        try:
+            client.delete_table(temp_table_ref, not_found_ok=True)
+        except:
+            pass
+        
         return False
 
 

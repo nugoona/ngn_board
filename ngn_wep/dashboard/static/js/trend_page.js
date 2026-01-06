@@ -2290,15 +2290,15 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         gridContainer.innerHTML = thumbnailGrid;
                         console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`, gridContainer.innerHTML.substring(0, 200));
                         
-                        // 강제로 표시되도록 스타일 확인 (Grid 컨테이너는 block으로 유지)
+                        // 강제로 표시되도록 스타일 확인 (Grid 컨테이너는 block으로 유지, 내부 Grid에 간섭하지 않음)
                         gridContainer.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; margin: 20px 0 !important; padding: 20px 0 !important; position: relative !important; z-index: 1 !important;';
                         
-                        // 내부 그리드 강제 적용 - Grid 속성을 확실하게 설정
+                        // 내부 그리드 강제 적용 - Grid 속성을 확실하게 설정 (반응형 지원)
                         const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
                         if (innerGrid) {
-                            // Grid 레이아웃을 확실하게 적용 (5개 컬럼, 반응형 대비)
-                            innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 16px !important; width: 100% !important; margin-top: 16px !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 2 !important; box-sizing: border-box !important;';
-                            console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료 (Grid: 5 columns)`);
+                            // Grid 레이아웃을 확실하게 적용 (auto-fill로 반응형 지원, 최소 140px)
+                            innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 16px !important; width: 100% !important; margin-top: 16px !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 2 !important; box-sizing: border-box !important;';
+                            console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료 (Grid: auto-fill, minmax(140px, 1fr))`);
                         } else {
                             console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);
                         }
@@ -2338,13 +2338,13 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                             depth++;
                         }
                         
-                        // 썸네일 카드들 확인 - Grid 셀 내에서 자연스럽게 크기 조정되도록 설정
+                        // 썸네일 카드들 확인 - Grid 셀 내에서 자연스럽게 크기 조정되도록 설정 (width 관련 스타일 제거)
                         const thumbnailCards = gridContainer.querySelectorAll('.trend-thumbnail-card');
                         thumbnailCards.forEach((card, idx) => {
-                            // width를 강제하지 않고, Grid 셀에 맞춰 자연스럽게 조정되도록 설정
-                            card.style.cssText = 'display: flex !important; flex-direction: column !important; visibility: visible !important; opacity: 1 !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important; position: relative !important; z-index: 3 !important; box-sizing: border-box !important; min-width: 0 !important;';
+                            // width 관련 스타일을 제거하고, Grid 셀 크기에 맞춰 자동으로 조정되도록 설정
+                            card.style.cssText = 'display: flex !important; flex-direction: column !important; visibility: visible !important; opacity: 1 !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important; position: relative !important; z-index: 3 !important; box-sizing: border-box !important; min-width: 0 !important; max-width: 100% !important;';
                             if (idx === 0) {
-                                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 카드 ${thumbnailCards.length}개 스타일 강제 적용 완료`);
+                                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 카드 ${thumbnailCards.length}개 스타일 강제 적용 완료 (Grid 셀에 맞춤)`);
                             }
                         });
                         

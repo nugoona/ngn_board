@@ -52,13 +52,17 @@ def get_meta_ads_insight_table(
     page: int = 1
 ):
     client = bigquery.Client()
-    conditions = [f"A.date BETWEEN '{start_date}' AND '{end_date}'"]
+    query_params = [
+        bigquery.ScalarQueryParameter("start_date", "DATE", start_date),
+        bigquery.ScalarQueryParameter("end_date", "DATE", end_date),
+    ]
+    conditions = ["A.date BETWEEN @start_date AND @end_date"]
 
     if date_type == "daily":
         select_date = "FORMAT_DATE('%Y-%m-%d', A.date) AS date,"
         group_date = "date"
     else:
-        select_date = f"'{start_date} ~ {end_date}' AS report_date,"
+        select_date = "CONCAT(@start_date, ' ~ ', @end_date) AS report_date,"
         group_date = ""
 
     updated_at_sub = """
@@ -209,22 +213,26 @@ def get_meta_ads_insight_table(
         return {"rows": [], "total_count": 0} if limit is not None else []
 
     if account_id:
-        conditions.append(f"A.account_id = '{account_id}'")
+        conditions.append("A.account_id = @account_id")
+        query_params.append(bigquery.ScalarQueryParameter("account_id", "STRING", account_id))
     else:
         # account level일 때만 account_id 없이 company_name으로 필터링
         if isinstance(company_name, list):
-            companies = ", ".join(f"'{c.lower()}'" for c in company_name)
-            conditions.append(f"LOWER({company_ref}) IN ({companies})")
+            conditions.append(f"LOWER({company_ref}) IN UNNEST(@company_names)")
+            query_params.append(bigquery.ArrayQueryParameter("company_names", "STRING", [c.lower() for c in company_name]))
         elif company_name != "all":
-            conditions.append(f"LOWER({company_ref}) = LOWER('{company_name}')")
+            conditions.append(f"LOWER({company_ref}) = @company_name")
+            query_params.append(bigquery.ScalarQueryParameter("company_name", "STRING", company_name.lower()))
 
     if campaign_id:
-        ids = ", ".join(f"'{x.strip()}'" for x in campaign_id.split(",") if x.strip())
-        conditions.append(f"A.campaign_id IN ({ids})")
+        campaign_ids = [x.strip() for x in campaign_id.split(",") if x.strip()]
+        conditions.append("A.campaign_id IN UNNEST(@campaign_ids)")
+        query_params.append(bigquery.ArrayQueryParameter("campaign_ids", "STRING", campaign_ids))
 
     if adset_id:
-        ids = ", ".join(f"'{x.strip()}'" for x in adset_id.split(",") if x.strip())
-        conditions.append(f"A.adset_id IN ({ids})")
+        adset_ids = [x.strip() for x in adset_id.split(",") if x.strip()]
+        conditions.append("A.adset_id IN UNNEST(@adset_ids)")
+        query_params.append(bigquery.ArrayQueryParameter("adset_ids", "STRING", adset_ids))
 
     if level == "ad":
         conditions.append(f"({latest_alias}.campaign_name IS NULL OR NOT LOWER({latest_alias}.campaign_name) LIKE '%instagram%')")
@@ -257,7 +265,9 @@ def get_meta_ads_insight_table(
     limit_clause = ""
     if limit is not None and page > 0:
         offset = (page - 1) * limit
-        limit_clause = f" LIMIT {limit} OFFSET {offset}"
+        limit_clause = " LIMIT @limit OFFSET @offset"
+        query_params.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
+        query_params.append(bigquery.ScalarQueryParameter("offset", "INT64", offset))
     
     query = f"""
       SELECT
@@ -278,15 +288,18 @@ def get_meta_ads_insight_table(
     """
 
     try:
-        rows = client.query(query).result()
+        # 파라미터화된 쿼리 실행
+        job_config = bigquery.QueryJobConfig(query_parameters=query_params)
+        rows = client.query(query, job_config=job_config).result()
         result = dictify_rows(rows)
         if date_type == "summary":
             for r in result:
                 r["start_date"], r["end_date"] = start_date, end_date
-        
+
         # 페이지네이션이 적용된 경우 전체 개수도 조회
         if limit is not None and page > 0:
-            # 전체 개수 조회 쿼리 (페이지네이션 없이)
+            # 전체 개수 조회 쿼리 (페이지네이션 없이) - limit/offset 파라미터 제외
+            count_params = [p for p in query_params if p.name not in ("limit", "offset")]
             count_query = f"""
               SELECT COUNT(*) AS total_count
               FROM (
@@ -298,9 +311,10 @@ def get_meta_ads_insight_table(
                 HAVING SUM(A.spend) > 0
               )
             """
-            
+
             try:
-                count_rows = client.query(count_query).result()
+                count_job_config = bigquery.QueryJobConfig(query_parameters=count_params)
+                count_rows = client.query(count_query, job_config=count_job_config).result()
                 total_count = next(count_rows)["total_count"]
                 print(f"[DEBUG] 메타 광고 전체 개수: {total_count}, 현재 페이지: {len(result)}개")
                 return {
@@ -313,7 +327,7 @@ def get_meta_ads_insight_table(
                     "rows": result,
                     "total_count": len(result)
                 }
-        
+
         return result
 
     except Exception as e:

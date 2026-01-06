@@ -1,9 +1,17 @@
+from google.cloud import bigquery
+
 def get_period_filtered_query(account_name="all", period_unit="daily", limit=15, offset=0):
+    """
+    특정 계정과 기간에 따른 데이터를 필터링하는 쿼리와 파라미터를 생성합니다.
+    Returns: (query_string, query_params)
+    """
     date_expression = {
         "daily": "FORMAT_TIMESTAMP('%Y-%m-%d', date)",
         "weekly": "FORMAT_TIMESTAMP('%Y-%m-%d', DATE_TRUNC(date, WEEK(MONDAY)))",
         "monthly": "FORMAT_TIMESTAMP('%Y-%m', DATE_TRUNC(date, MONTH))"
     }.get(period_unit, "FORMAT_TIMESTAMP('%Y-%m-%d', date)")
+
+    query_params = []
 
     query = f"""
     SELECT
@@ -25,14 +33,17 @@ def get_period_filtered_query(account_name="all", period_unit="daily", limit=15,
     """
 
     if account_name != "all":
-        query += f"WHERE account_name = '{account_name}'\n"
+        query += "WHERE account_name = @account_name\n"
+        query_params.append(bigquery.ScalarQueryParameter("account_name", "STRING", account_name))
 
     query += "GROUP BY account_name, period_date\n"
     query += "ORDER BY period_date DESC\n"
 
     if limit is not None:
-        query += f"LIMIT {limit}\n"
+        query += "LIMIT @limit\n"
+        query_params.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
     if offset is not None:
-        query += f"OFFSET {offset}\n"
+        query += "OFFSET @offset\n"
+        query_params.append(bigquery.ScalarQueryParameter("offset", "INT64", offset))
 
-    return query
+    return query, query_params

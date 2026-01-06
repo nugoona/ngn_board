@@ -65,14 +65,20 @@ def login():
 
         # 1) 사용자 인증
         try:
-            query = f"""
+            query = """
                 SELECT *
                 FROM `ngn_dataset.user_accounts`
-                WHERE user_id   = '{user_id}'
-                  AND password   = '{password}'
-                  AND status    IN ('approved', 'admin')
+                WHERE user_id = @user_id
+                  AND password = @password
+                  AND status IN ('approved', 'admin')
             """
-            result = list(client.query(query).result())
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+                    bigquery.ScalarQueryParameter("password", "STRING", password),
+                ]
+            )
+            result = list(client.query(query, job_config=job_config).result())
         except Exception as e:
             print(f"[ERROR] 유저 쿼리 실패: {e}")
             # 모바일인 경우 모바일 로그인 페이지로 에러 표시
@@ -100,12 +106,17 @@ def login():
             if session["is_demo_user"]:
                 company_names = ["demo"]
             else:
-                company_query = f"""
+                company_query = """
                     SELECT company_name
                     FROM `ngn_dataset.user_company_map`
-                    WHERE user_id = '{user_id}'
+                    WHERE user_id = @user_id
                 """
-                rows = client.query(company_query).result()
+                company_job_config = bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+                    ]
+                )
+                rows = client.query(company_query, job_config=company_job_config).result()
                 company_names = [
                     row.company_name
                     for row in rows

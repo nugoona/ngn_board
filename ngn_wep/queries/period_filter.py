@@ -1,6 +1,9 @@
+from google.cloud import bigquery
+
 def get_period_filtered_query(account_name="all", period_unit="daily", limit=15, offset=0):
     """
-    특정 계정과 기간에 따른 데이터를 필터링하는 쿼리를 생성합니다.
+    특정 계정과 기간에 따른 데이터를 필터링하는 쿼리와 파라미터를 생성합니다.
+    Returns: (query_string, query_params)
     """
     # 날짜 표현식 정의
     date_expression = {
@@ -8,6 +11,8 @@ def get_period_filtered_query(account_name="all", period_unit="daily", limit=15,
         "weekly": "FORMAT_TIMESTAMP('%Y-%m-%d', DATE_TRUNC(date, WEEK(MONDAY)))",
         "monthly": "FORMAT_TIMESTAMP('%Y-%m', DATE_TRUNC(date, MONTH))"
     }.get(period_unit, "FORMAT_TIMESTAMP('%Y-%m-%d', date)")
+
+    query_params = []
 
     # 기본 쿼리
     base_query = f"""
@@ -29,26 +34,30 @@ def get_period_filtered_query(account_name="all", period_unit="daily", limit=15,
     FROM `winged-precept-443218-v8.ngn_dataset.highest_spend_data`
     """
 
-    # 계정 필터링
+    # 계정 필터링 (파라미터화)
     if account_name != "all":
-        base_query += f"WHERE account_name = '{account_name}'\n"
+        base_query += "WHERE account_name = @account_name\n"
+        query_params.append(bigquery.ScalarQueryParameter("account_name", "STRING", account_name))
 
     # 그룹화 및 정렬
     base_query += "GROUP BY account_name, period_date\n"
     base_query += "ORDER BY period_date DESC\n"
 
-    # 페이지네이션
+    # 페이지네이션 (파라미터화)
     if limit is not None:
-        base_query += f"LIMIT {limit}\n"
+        base_query += "LIMIT @limit\n"
+        query_params.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
     if offset is not None:
-        base_query += f"OFFSET {offset}\n"
+        base_query += "OFFSET @offset\n"
+        query_params.append(bigquery.ScalarQueryParameter("offset", "INT64", offset))
 
-    return base_query
+    return base_query, query_params
 
 
 def get_total_records_query(account_name="all", period_unit="daily"):
     """
-    특정 계정과 기간에 따른 전체 레코드 수를 계산하는 쿼리를 생성합니다.
+    특정 계정과 기간에 따른 전체 레코드 수를 계산하는 쿼리와 파라미터를 생성합니다.
+    Returns: (query_string, query_params)
     """
     # 날짜 표현식 정의
     date_expression = {
@@ -56,6 +65,8 @@ def get_total_records_query(account_name="all", period_unit="daily"):
         "weekly": "FORMAT_TIMESTAMP('%Y-%m-%d', DATE_TRUNC(date, WEEK(MONDAY)))",
         "monthly": "FORMAT_TIMESTAMP('%Y-%m', DATE_TRUNC(date, MONTH))"
     }.get(period_unit, "FORMAT_TIMESTAMP('%Y-%m-%d', date)")
+
+    query_params = []
 
     # 기본 쿼리
     query = f"""
@@ -66,9 +77,10 @@ def get_total_records_query(account_name="all", period_unit="daily"):
     )
     """
 
-    # 계정 필터링
+    # 계정 필터링 (파라미터화)
     if account_name != "all":
-        query += f"WHERE account_name = '{account_name}'"
+        query += "WHERE account_name = @account_name"
+        query_params.append(bigquery.ScalarQueryParameter("account_name", "STRING", account_name))
 
-    return query
+    return query, query_params
 

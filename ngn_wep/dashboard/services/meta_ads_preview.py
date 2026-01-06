@@ -128,13 +128,19 @@ def get_meta_ads_preview_list(account_id):
     client = bigquery.Client()
 
     # ✅ 먼저 해당 account_id의 company_name이 demo인지 확인 (계정 매칭 검증 강화)
-    company_check_query = f"""
+    company_check_query = """
         SELECT company_name, meta_acc_id
         FROM `winged-precept-443218-v8.ngn_dataset.metaAds_acc`
-        WHERE meta_acc_id = '{account_id}'
+        WHERE meta_acc_id = @account_id
         LIMIT 1
     """
-    company_result = client.query(company_check_query).result()
+    company_check_params = [
+        bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+    ]
+    company_result = client.query(
+        company_check_query,
+        job_config=bigquery.QueryJobConfig(query_parameters=company_check_params)
+    ).result()
     company_data = next(iter(company_result), {})
     company_name = company_data.get("company_name", None)
     verified_account_id = company_data.get("meta_acc_id", None)
@@ -168,7 +174,7 @@ def get_meta_ads_preview_list(account_id):
         return dummy_ads
 
     # ✅ 일반 계정일 경우 실제 광고 가져오기 (최적화된 쿼리)
-    query = f"""
+    query = """
         WITH today_ads AS (
           SELECT
             A.date,
@@ -188,7 +194,7 @@ def get_meta_ads_preview_list(account_id):
             A.date = CURRENT_DATE('Asia/Seoul')
             AND A.ad_status = 'ACTIVE'
             AND A.spend > 0
-            AND A.account_id = '{account_id}'
+            AND A.account_id = @account_id
             AND (LOWER(A.ad_name) LIKE '%단일%' OR LOWER(A.ad_name) LIKE '%영상%')
         )
         SELECT
@@ -205,10 +211,16 @@ def get_meta_ads_preview_list(account_id):
         ORDER BY total_spend DESC
         LIMIT 10
     """
+    ads_query_params = [
+        bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+    ]
 
     logger.warning("[META_API][BIGQUERY] 광고 목록 조회 시작")
     query_start = time.time()
-    ads = client.query(query).result()
+    ads = client.query(
+        query,
+        job_config=bigquery.QueryJobConfig(query_parameters=ads_query_params)
+    ).result()
     
     # ✅ BigQuery 결과를 ad_list로 변환하면서 상세 로깅
     ad_list = []

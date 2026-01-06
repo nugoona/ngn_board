@@ -1766,10 +1766,11 @@ def get_compare_search_results():
                 search_keyword = brand_mapping.get(company_name.lower(), company_name)
         
         # GCS 스냅샷에서 검색 결과 로드
+        # search_keyword가 없으면 전체 데이터 로드 (초기 로드 최적화)
         results = load_search_results_from_gcs(
             company_name=company_name,
             run_id=run_id,
-            search_keyword=search_keyword
+            search_keyword=search_keyword if search_keyword else None
         )
         
         if results is None:
@@ -1784,7 +1785,7 @@ def get_compare_search_results():
                 "results": results.get(search_keyword, [])
             }), 200
         else:
-            # 모든 키워드 반환
+            # 모든 키워드 반환 (초기 로드 최적화)
             return jsonify({
                 "status": "success",
                 "run_id": run_id,

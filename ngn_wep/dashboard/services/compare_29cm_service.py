@@ -17,6 +17,17 @@ from urllib.error import HTTPError, URLError
 from google.cloud import bigquery
 from google.cloud import storage
 
+# 캐싱 유틸리티 임포트
+try:
+    from ..utils.cache_utils import cached_query
+    CACHE_AVAILABLE = True
+except ImportError:
+    CACHE_AVAILABLE = False
+    def cached_query(func_name=None, ttl=None):
+        def decorator(func):
+            return func
+        return decorator
+
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
 DATASET_ID = os.environ.get("BQ_DATASET", "ngn_dataset")
 GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
@@ -413,9 +424,10 @@ def save_search_results_to_gcs(
     
 
 
+@cached_query(func_name="compare_29cm_load_search_results", ttl=300)  # 5분 캐싱
 def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword: Optional[str] = None) -> Optional[Dict[str, List[Dict]]]:
     """
-    GCS 스냅샷에서 검색 결과 로드
+    GCS 스냅샷에서 검색 결과 로드 (캐싱 적용)
     """
     try:
         # 스냅샷 경로 생성 (company_name 포함)

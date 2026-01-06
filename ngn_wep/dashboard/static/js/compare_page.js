@@ -10,6 +10,7 @@
     let currentKeyword = null;
     let allKeywords = [];
     let currentResults = [];
+    let allResultsCache = {};  // 모든 검색어 데이터 캐시
     let currentPage = 1;
     const ITEMS_PER_PAGE = 10;
     
@@ -156,42 +157,22 @@
             
             allKeywords = keywordsData.keywords || [];
             
-            // 2. run_id 조회 (최신 주차)
-            const weekResponse = await fetch('/dashboard/trend', {
+            // 2. run_id 조회 (최신 주차) - 최적화된 API 사용
+            const runIdResponse = await fetch('/dashboard/compare/29cm/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tab_name: '전체',
-                    trend_type: 'all',
-                    company_name: currentCompanyName
+                    company_name: currentCompanyName,
+                    get_run_id_only: true
                 })
             });
-            const weekData = await weekResponse.json();
+            const runIdData = await runIdResponse.json();
             
-            // run_id 추출 (스냅샷 데이터에서)
-            if (weekData.current_week) {
-                currentRunId = weekData.current_week;
-            } else {
-                // BigQuery에서 직접 조회
-                const bqResponse = await fetch('/dashboard/trend', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tab_name: '전체',
-                        trend_type: 'all',
-                        company_name: currentCompanyName,
-                        use_snapshot: false
-                    })
-                });
-                const bqData = await bqResponse.json();
-                if (bqData.current_week) {
-                    currentRunId = bqData.current_week;
-                }
-            }
-            
-            if (!currentRunId) {
+            if (runIdData.status !== 'success' || !runIdData.run_id) {
                 throw new Error('주차 정보를 찾을 수 없습니다.');
             }
+            
+            currentRunId = runIdData.run_id;
             
             // 3. 기준 정보 업데이트
             updateInfoBar();
@@ -199,7 +180,10 @@
             // 4. 탭 렌더링
             renderTabs();
             
-            // 5. 첫 번째 탭 선택 (자사몰)
+            // 5. 모든 검색어 데이터를 한 번에 로드 (초기 로드 최적화)
+            await loadAllSearchResults();
+            
+            // 6. 첫 번째 탭 선택 (자사몰)
             await selectOwnCompanyTab();
             
         } catch (error) {
@@ -300,13 +284,77 @@
     }
     
     /**
-     * 검색 결과 로드
+     * 모든 검색어 데이터를 한 번에 로드 (초기 로드 최적화)
+     */
+    async function loadAllSearchResults() {
+        try {
+            // 캐시 키 생성
+            const cacheKey = `${currentCompanyName}_${currentRunId}`;
+            
+            // 캐시에 있으면 재사용
+            if (allResultsCache[cacheKey]) {
+                return;
+            }
+            
+            // 모든 검색어 데이터를 한 번에 로드 (search_keyword 없이 호출하면 전체 반환)
+            const response = await fetch('/dashboard/compare/29cm/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    company_name: currentCompanyName,
+                    run_id: currentRunId
+                    // search_keyword 없음 = 전체 데이터 요청
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status !== 'success') {
+                throw new Error(data.message || '검색 결과 조회 실패');
+            }
+            
+            // 전체 결과를 캐시에 저장
+            allResultsCache[cacheKey] = data.results || {};
+            
+        } catch (error) {
+            console.error('[Compare] 전체 검색 결과 로드 실패:', error);
+            // 에러가 나도 계속 진행 (개별 로드로 fallback)
+        }
+    }
+    
+    /**
+     * 검색 결과 로드 (캐시 우선 사용)
      */
     async function loadSearchResults(keyword) {
         try {
             showLoading();
             
-            // keyword가 'own'인 경우 서버에서 브랜드명으로 변환하도록 전달
+            // 캐시 키 생성
+            const cacheKey = `${currentCompanyName}_${currentRunId}`;
+            
+            // 캐시에서 먼저 확인
+            if (allResultsCache[cacheKey]) {
+                const allResults = allResultsCache[cacheKey];
+                
+                // 'own' 키워드 처리
+                let searchKey = keyword;
+                if (keyword === 'own') {
+                    // 자사몰 브랜드명 찾기
+                    const brandMapping = {
+                        'piscess': '파이시스'
+                    };
+                    searchKey = brandMapping[currentCompanyName?.toLowerCase()] || currentCompanyName;
+                }
+                
+                // 캐시에서 데이터 찾기
+                if (allResults[searchKey]) {
+                    currentResults = allResults[searchKey];
+                    renderCards();
+                    return;
+                }
+            }
+            
+            // 캐시에 없으면 API 호출
             const response = await fetch('/dashboard/compare/29cm/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -324,6 +372,13 @@
             }
             
             currentResults = data.results || [];
+            
+            // 캐시에 저장
+            if (!allResultsCache[cacheKey]) {
+                allResultsCache[cacheKey] = {};
+            }
+            const searchKey = keyword === 'own' ? (data.search_keyword || keyword) : keyword;
+            allResultsCache[cacheKey][searchKey] = currentResults;
             
             // 카드 렌더링
             renderCards();

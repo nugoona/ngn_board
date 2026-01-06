@@ -111,6 +111,12 @@
             return;
         }
         
+        // 이미 열려있으면 데이터만 새로고침
+        if (compareSidebar && compareSidebar.classList.contains('active')) {
+            await loadCompareData();
+            return;
+        }
+        
         // Insights 사이드바가 열려있으면 닫기
         const insightsSidebar = document.getElementById('trendAnalysisSidebar');
         if (insightsSidebar && insightsSidebar.classList.contains('active')) {
@@ -197,6 +203,9 @@
      */
     function renderTabs() {
         if (!compareTabs) return;
+        
+        // 기존 탭 모두 제거 (중복 방지)
+        compareTabs.innerHTML = '';
         
         // 자사몰 탭 추가 (첫 번째)
         const companyTab = document.createElement('button');

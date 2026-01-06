@@ -1333,7 +1333,8 @@ def get_trend_data():
             return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
         
         # 스냅샷에서 로드 시도 (우선순위 1: GCS 버킷)
-        snapshot_data = load_trend_snapshot_from_gcs(current_week)
+        # ✅ 업체명 폴더 구조 사용
+        snapshot_data = load_trend_snapshot_from_gcs(current_week, company_name) if company_name else None
         
         if snapshot_data:
             # 스냅샷 데이터 사용 (GCS 버킷에서 로드 성공)
@@ -1603,7 +1604,8 @@ def get_ably_trend_data():
             return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
         
         # 스냅샷에서 로드 시도 (우선순위 1: GCS 버킷)
-        snapshot_data = load_ably_trend_snapshot_from_gcs(current_week)
+        # ✅ 업체명 폴더 구조 사용
+        snapshot_data = load_ably_trend_snapshot_from_gcs(current_week, company_name) if company_name else None
         
         if snapshot_data:
             # 스냅샷 데이터 사용 (GCS 버킷에서 로드 성공)

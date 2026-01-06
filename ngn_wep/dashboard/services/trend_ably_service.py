@@ -258,10 +258,10 @@ def get_available_tabs() -> List[str]:
 # 스냅샷 관련 함수
 # ─────────────────────────────────────────────────────────────
 
-def get_trend_snapshot_path(run_id: str) -> str:
+def get_trend_snapshot_path(run_id: str, company_name: Optional[str] = None) -> str:
     """
     스냅샷 파일 경로 생성
-    형식: ai-reports/trend/ably/{YYYY}-{MM}-{week}/snapshot.json.gz
+    형식: ai-reports/trend/ably/{company_name}/{YYYY}-{MM}-{week}/snapshot.json.gz
     """
     import re
     
@@ -284,10 +284,15 @@ def get_trend_snapshot_path(run_id: str) -> str:
     week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
     month = week_start.month
     
-    return f"ai-reports/trend/ably/{year}-{month:02d}-{week}/snapshot.json.gz"
+    # ✅ 업체명 폴더 구조 추가
+    if company_name:
+        return f"ai-reports/trend/ably/{company_name.lower()}/{year}-{month:02d}-{week}/snapshot.json.gz"
+    else:
+        # 하위 호환성: 업체명이 없으면 기존 경로 반환
+        return f"ai-reports/trend/ably/{year}-{month:02d}-{week}/snapshot.json.gz"
 
 
-def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
+def load_trend_snapshot_from_gcs(run_id: str, company_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     GCS 버킷에서 트렌드 스냅샷 로드
     """
@@ -297,7 +302,7 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
         
         # 경로 생성
         try:
-            blob_path = get_trend_snapshot_path(run_id)
+            blob_path = get_trend_snapshot_path(run_id, company_name)
         except ValueError:
             print(f"[ERROR] Invalid run_id format: {run_id}")
             return None
@@ -309,8 +314,8 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
         blob = bucket.blob(blob_path)
         print(f"[DEBUG] 스냅샷 경로 확인: gs://{GCS_BUCKET}/{blob_path}")
         
-        if not blob.exists():
-            # 기존 포맷 경로 시도 (week를 int로 변환하여 앞의 0 제거)
+        # ✅ 하위 호환성: 업체명 폴더가 없으면 기존 경로도 시도
+        if not blob.exists() and company_name:
             try:
                 import re
                 match = re.match(r'(\d{4})W(\d{2})', run_id)
@@ -327,15 +332,16 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
                     week_start = first_thursday + timedelta(days=-3 + (week_int - 1) * 7)
                     month = week_start.month
                     
+                    # 기존 경로 시도 (업체명 폴더 없음)
                     old_blob_path = f"ai-reports/trend/ably/{year}-{month:02d}-{week_int}/snapshot.json.gz"
-                    print(f"[DEBUG] 기존 포맷 경로도 시도: gs://{GCS_BUCKET}/{old_blob_path}")
+                    print(f"[DEBUG] 하위 호환성: 기존 경로도 시도: gs://{GCS_BUCKET}/{old_blob_path}")
                     old_blob = bucket.blob(old_blob_path)
                     if old_blob.exists():
-                        print(f"[INFO] 기존 포맷 경로에서 스냅샷 발견: {old_blob_path}")
+                        print(f"[INFO] 하위 호환성: 기존 경로에서 스냅샷 발견: {old_blob_path}")
                         blob = old_blob
                         blob_path = old_blob_path
             except Exception as e:
-                print(f"[DEBUG] 기존 포맷 경로 시도 중 오류: {e}")
+                print(f"[DEBUG] 하위 호환성 경로 시도 중 오류: {e}")
         
         if not blob.exists():
             print(f"[WARN] 스냅샷 파일이 존재하지 않음: {blob_path}")
@@ -359,36 +365,22 @@ def load_trend_snapshot_from_gcs(run_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[Dict]]], current_week: str, enable_ai_analysis: bool = False) -> bool:
+def save_trend_snapshot_to_gcs(run_id: str, tabs_data: Dict[str, Dict[str, List[Dict]]], current_week: str, company_name: Optional[str] = None, enable_ai_analysis: bool = False) -> bool:
     """
     트렌드 데이터를 GCS 버킷에 스냅샷으로 저장
     썸네일 URL만 저장 (실제 이미지는 저장하지 않음)
     AI 분석 리포트도 함께 생성 가능 (enable_ai_analysis=True)
     """
     try:
-        import re
-        
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
-        # run_id에서 경로 생성
-        week_match = re.match(r'(\d{4})W(\d{2})', run_id)
-        if not week_match:
-            print(f"[ERROR] Invalid run_id format: {run_id}")
+        # 경로 생성 (get_trend_snapshot_path 사용)
+        try:
+            blob_path = get_trend_snapshot_path(run_id, company_name)
+        except ValueError as e:
+            print(f"[ERROR] Invalid run_id format: {run_id}, {e}")
             return False
-        
-        year = week_match.group(1)
-        week = week_match.group(2)
-        
-        # ISO 주차를 사용하여 월 계산
-        jan4 = datetime(int(year), 1, 4)
-        jan4_day = jan4.weekday()
-        days_to_thursday = (3 - jan4_day + 7) % 7
-        first_thursday = datetime(int(year), 1, 4 + days_to_thursday)
-        week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
-        month = week_start.month
-        
-        blob_path = f"ai-reports/trend/ably/{year}-{month:02d}-{week}/snapshot.json.gz"
         
         # 스냅샷 데이터 구조
         snapshot_data = {

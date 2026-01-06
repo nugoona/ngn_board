@@ -255,43 +255,51 @@ $(document).ready(function() {
     const href = $(this).attr('href');
     
     // 트렌드 페이지 링크인 경우, 업체 선택 확인 (월간 리포트와 동일)
-    // 단, /trend/selection은 업체 선택이 필요 없음
-    if (href && (href.includes('/trend') || href.includes('trend_page')) && !href.includes('/trend/selection')) {
-      const companySelect = document.getElementById("accountFilter");
-      if (companySelect) {
-        const selectedCompany = companySelect.value;
-        
-        // 업체가 선택되지 않았거나 "all"인 경우 링크 차단
-        if (!selectedCompany || selectedCompany === "all") {
-          e.preventDefault();
-          e.stopPropagation();
+    // ✅ /trend/selection도 체크 (데모 계정 제외)
+    if (href && (href.includes('/trend') || href.includes('trend_page'))) {
+      // 데모 계정은 예외 (브릿지 페이지로 이동 허용)
+      const isDemoUser = typeof currentUserId !== 'undefined' && currentUserId === "demo";
+      
+      if (!isDemoUser) {
+        const companySelect = document.getElementById("accountFilter");
+        if (companySelect) {
+          const selectedCompany = companySelect.value;
           
-          // 토스트 메시지 표시 (월간 리포트와 동일)
-          const existingToast = document.querySelector(".toast-message");
-          if (existingToast) existingToast.remove();
+          // 업체가 선택되지 않았거나 "all"인 경우 링크 차단
+          if (!selectedCompany || selectedCompany === "all") {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // 토스트 메시지 표시 (월간 리포트와 동일)
+            const existingToast = document.querySelector(".toast-message");
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement("div");
+            toast.className = "toast-message";
+            toast.textContent = "트렌드 페이지를 보려면 먼저 업체를 선택해주세요";
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add("show"), 10);
+            setTimeout(() => {
+              toast.classList.remove("show");
+              setTimeout(() => toast.remove(), 300);
+            }, 3000);
+            
+            $('#hamburgerDropdown').hide();
+            return false;
+          }
           
-          const toast = document.createElement("div");
-          toast.className = "toast-message";
-          toast.textContent = "트렌드 페이지를 보려면 먼저 업체를 선택해주세요";
-          document.body.appendChild(toast);
+          // /trend/selection이 아닌 경우에만 쿼리 파라미터 추가
+          if (!href.includes('/trend/selection')) {
+            // 선택된 업체를 쿼리 파라미터로 추가
+            const url = new URL(href, window.location.origin);
+            url.searchParams.set('company_name', selectedCompany);
+            $(this).attr('href', url.pathname + url.search);
+          }
           
-          setTimeout(() => toast.classList.add("show"), 10);
-          setTimeout(() => {
-            toast.classList.remove("show");
-            setTimeout(() => toast.remove(), 300);
-          }, 3000);
-          
-          $('#hamburgerDropdown').hide();
-          return false;
+          // ✅ 다른 페이지로 이동하기 전에 플래그 설정
+          sessionStorage.setItem("siteFromOtherPage", "true");
         }
-        
-        // 선택된 업체를 쿼리 파라미터로 추가
-        const url = new URL(href, window.location.origin);
-        url.searchParams.set('company_name', selectedCompany);
-        $(this).attr('href', url.pathname + url.search);
-        
-        // ✅ 다른 페이지로 이동하기 전에 플래그 설정
-        sessionStorage.setItem("siteFromOtherPage", "true");
       }
     }
     

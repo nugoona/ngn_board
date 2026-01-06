@@ -193,14 +193,14 @@
                 throw new Error('주차 정보를 찾을 수 없습니다.');
             }
             
-            // 3. 탭 렌더링
+            // 3. 기준 정보 업데이트
+            updateInfoBar();
+            
+            // 4. 탭 렌더링
             renderTabs();
             
-            // 4. 첫 번째 탭 선택 (자사몰)
-            if (allKeywords.length > 0) {
-                const firstTab = allKeywords[0];
-                await selectTab(firstTab.competitor_keyword, firstTab.display_name);
-            }
+            // 5. 첫 번째 탭 선택 (자사몰)
+            await selectOwnCompanyTab();
             
         } catch (error) {
             console.error('[Compare] 데이터 로드 실패:', error);
@@ -250,8 +250,32 @@
      * 자사몰 탭 선택
      */
     async function selectOwnCompanyTab() {
-        // 자사몰 상품은 추후 구현 (현재는 경쟁사만)
-        showError('자사몰 상품 기능은 준비 중입니다.');
+        // 탭 활성화
+        const tabs = compareTabs.querySelectorAll('.compare-tab-btn');
+        tabs.forEach(tab => {
+            if (tab.dataset.keyword === 'own') {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        
+        currentKeyword = 'own';
+        currentPage = 1;
+        
+        // 자사몰 검색 (search_keyword를 'own'으로 전달하면 서버에서 브랜드명으로 변환)
+        await loadSearchResults('own');
+    }
+    
+    /**
+     * 자사몰 브랜드명 가져오기
+     */
+    function getCompanyBrandName() {
+        // API에서 브랜드명을 가져오도록 수정 (임시로 기본값 사용)
+        const brandMapping = {
+            'piscess': '파이시스'
+        };
+        return brandMapping[currentCompanyName?.toLowerCase()] || currentCompanyName;
     }
     
     /**
@@ -282,12 +306,13 @@
         try {
             showLoading();
             
+            // keyword가 'own'인 경우 서버에서 브랜드명으로 변환하도록 전달
             const response = await fetch('/dashboard/compare/29cm/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     company_name: currentCompanyName,
-                    search_keyword: keyword,
+                    search_keyword: keyword === 'own' ? 'own' : keyword,
                     run_id: currentRunId
                 })
             });
@@ -310,6 +335,31 @@
     }
     
     /**
+     * 기준 정보 업데이트
+     */
+    function updateInfoBar() {
+        const infoBar = document.getElementById('compareInfoBar');
+        const infoText = document.getElementById('compareInfoText');
+        
+        if (!infoBar || !infoText) return;
+        
+        // 현재 날짜/시간 포맷팅
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        const ampm = now.getHours() < 12 ? '오전' : '오후';
+        const displayHours = now.getHours() % 12 || 12;
+        
+        const dateTimeStr = `${year}년 ${month}-${day} ${ampm} ${displayHours}시${minutes !== '00' ? minutes + '분' : ''}`;
+        
+        infoText.innerHTML = `<span class="compare-info-date">${dateTimeStr} 기준</span> - <span class="compare-info-type">추천순 TOP20 / 주간 베스트 상품</span>`;
+    }
+    
+    /**
      * 카드 렌더링
      */
     function renderCards() {
@@ -329,7 +379,16 @@
         const cardsHTML = itemsToShow.map((item, index) => {
             const rank = startIdx + index + 1;
             const price = item.price ? `${Math.round(item.price).toLocaleString()}원` : '가격 정보 없음';
-            const bestRankBadge = item.best_rank ? `<span class="compare-best-badge">베스트 ${item.best_rank}위</span>` : '';
+            
+            // 베스트 뱃지: 카테고리 정보 포함
+            let bestRankBadge = '';
+            if (item.best_rank && item.best_category) {
+                const categoryName = item.best_category || '전체';
+                bestRankBadge = `<span class="compare-best-badge">${categoryName} ${item.best_rank}위</span>`;
+            } else if (item.best_rank) {
+                bestRankBadge = `<span class="compare-best-badge">전체 ${item.best_rank}위</span>`;
+            }
+            
             const itemUrl = item.item_url || `https://29cm.co.kr/products/${item.item_id}`;
             
             return `

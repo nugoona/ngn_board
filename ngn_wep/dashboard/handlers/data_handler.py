@@ -22,12 +22,13 @@ if tools_path not in sys.path:
 
 # 자사몰 매핑 임포트
 try:
-    from config.company_mapping import get_company_korean_name, COMPANY_MAPPING
+    from config.company_mapping import get_company_korean_name, get_company_brands, COMPANY_MAPPING
     COMPANY_MAPPING_AVAILABLE = True
 except (ImportError, ModuleNotFoundError) as e:
     print(f"[WARN] company_mapping 모듈 로드 실패: {e}")
     COMPANY_MAPPING_AVAILABLE = False
     def get_company_korean_name(name): return None
+    def get_company_brands(name): return []
     COMPANY_MAPPING = {}
 
 # 캐시 유틸리티 임포트
@@ -1741,6 +1742,28 @@ def get_compare_search_results():
             run_id = get_current_week_info()
             if not run_id:
                 return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
+        
+        # 자사몰 검색인 경우 (search_keyword가 'own'인 경우)
+        # company_mapping에서 브랜드명 가져오기
+        if search_keyword == 'own':
+            if COMPANY_MAPPING_AVAILABLE:
+                brands = get_company_brands(company_name)
+                if brands:
+                    # 첫 번째 브랜드명으로 검색
+                    search_keyword = brands[0]
+                else:
+                    # 브랜드명이 없으면 한글명 사용
+                    korean_name = get_company_korean_name(company_name)
+                    if korean_name:
+                        search_keyword = korean_name
+                    else:
+                        search_keyword = company_name
+            else:
+                # 기본 매핑 (임시)
+                brand_mapping = {
+                    'piscess': '파이시스'
+                }
+                search_keyword = brand_mapping.get(company_name.lower(), company_name)
         
         # BigQuery에서 검색 결과 로드
         results = load_search_results_from_bq(

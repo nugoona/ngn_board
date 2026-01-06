@@ -360,8 +360,8 @@ def get_rank_drop(tab_name: str, run_id: str) -> list:
     return [dict(row) for row in rows]
 
 
-def get_snapshot_path(run_id: str) -> str:
-    """스냅샷 파일 경로 생성"""
+def get_snapshot_path(run_id: str, company_name: Optional[str] = None) -> str:
+    """스냅샷 파일 경로 생성 (업체명 폴더 구조)"""
     match = re.match(r'(\d{4})W(\d{2})', run_id)
     if not match:
         raise ValueError(f"Invalid run_id format: {run_id}")
@@ -377,13 +377,18 @@ def get_snapshot_path(run_id: str) -> str:
     week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
     month = week_start.month
     
-    return f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
+    # ✅ 업체명 폴더 구조 추가
+    if company_name:
+        return f"ai-reports/trend/29cm/{company_name.lower()}/{year}-{month:02d}-{week}/snapshot.json.gz"
+    else:
+        # 하위 호환성: 업체명이 없으면 기존 경로 반환
+        return f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
 
 
-def save_snapshot_to_gcs(run_id: str, tabs_data: dict) -> bool:
-    """스냅샷을 GCS에 저장"""
+def save_snapshot_to_gcs(run_id: str, tabs_data: dict, company_name: Optional[str] = None) -> bool:
+    """스냅샷을 GCS에 저장 (업체명 폴더 구조)"""
     try:
-        blob_path = get_snapshot_path(run_id)
+        blob_path = get_snapshot_path(run_id, company_name)
         
         snapshot_data = {
             "run_id": run_id,
@@ -413,10 +418,10 @@ def save_snapshot_to_gcs(run_id: str, tabs_data: dict) -> bool:
         return False
 
 
-def check_snapshot_exists(run_id: str) -> bool:
-    """스냅샷 존재 여부 확인"""
+def check_snapshot_exists(run_id: str, company_name: Optional[str] = None) -> bool:
+    """스냅샷 존재 여부 확인 (업체명 폴더 구조)"""
     try:
-        blob_path = get_snapshot_path(run_id)
+        blob_path = get_snapshot_path(run_id, company_name)
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)
         blob = bucket.blob(blob_path)
@@ -446,9 +451,19 @@ def main():
         run_id = get_current_week_run_id()
         print(f"📅 최신 주차 사용: {run_id}")
     
+    # ✅ company_name 결정 (--company-name이 있으면 사용, 없으면 첫 번째 업체 사용)
+    company_name = args.company_name
+    if not company_name:
+        companies = get_all_companies_from_bq()
+        if companies:
+            company_name = companies[0]
+            print(f"📌 업체명 자동 선택: {company_name}")
+        else:
+            print(f"⚠️ [WARN] 업체 목록을 찾을 수 없어 업체명 없이 저장합니다.", file=sys.stderr)
+    
     # 기존 스냅샷 확인 (무조건 강제 실행)
-    if check_snapshot_exists(run_id):
-        print(f"⚠️ 스냅샷이 이미 존재하지만 강제로 재생성합니다: {run_id}")
+    if company_name and check_snapshot_exists(run_id, company_name):
+        print(f"⚠️ 스냅샷이 이미 존재하지만 강제로 재생성합니다: {run_id} (업체: {company_name})")
     
     # 탭 목록 조회
     print(f"📂 탭 목록 조회 중...")
@@ -470,17 +485,18 @@ def main():
         print(f"      - 신규진입: {len(tabs_data[tab]['new_entry'])}개")
         print(f"      - 순위하락: {len(tabs_data[tab]['rank_drop'])}개")
     
-    # 스냅샷 저장
+    # 스냅샷 저장 (업체명 폴더 구조)
     print(f"\n💾 스냅샷 저장 중...")
-    success = save_snapshot_to_gcs(run_id, tabs_data)
+    success = save_snapshot_to_gcs(run_id, tabs_data, company_name)
     
     if not success:
         print(f"\n❌ 스냅샷 생성 실패")
         sys.exit(1)
     
-    snapshot_path = f"gs://{GCS_BUCKET}/{get_snapshot_path(run_id)}"
+    snapshot_path = f"gs://{GCS_BUCKET}/{get_snapshot_path(run_id, company_name)}"
     print(f"\n✅ 스냅샷 생성 완료!")
     print(f"   Run ID: {run_id}")
+    print(f"   업체명: {company_name or '(없음)'}")
     print(f"   탭 개수: {len(tabs)}")
     print(f"   경로: {snapshot_path}")
     

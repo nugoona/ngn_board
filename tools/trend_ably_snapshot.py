@@ -94,18 +94,7 @@ def get_all_companies_from_bq() -> list:
         return []
 
 
-def check_snapshot_exists(run_id: str) -> bool:
-    """스냅샷 존재 여부 확인"""
-    try:
-        blob_path = get_trend_snapshot_path(run_id)
-        from google.cloud import storage
-        client = storage.Client(project=PROJECT_ID)
-        bucket = client.bucket(GCS_BUCKET)
-        blob = bucket.blob(blob_path)
-        return blob.exists()
-    except Exception as e:
-        print(f"⚠️ 스냅샷 확인 실패: {e}")
-        return False
+# check_snapshot_exists 함수는 더 이상 사용하지 않음 (main에서 직접 확인)
 
 
 def main():
@@ -130,9 +119,25 @@ def main():
             sys.exit(1)
         print(f"📅 최신 주차 사용: {run_id}")
     
+    # ✅ company_name 결정 (--company-name이 있으면 사용, 없으면 첫 번째 업체 사용)
+    company_name = args.company_name
+    if not company_name:
+        companies = get_all_companies_from_bq()
+        if companies:
+            company_name = companies[0]
+            print(f"📌 업체명 자동 선택: {company_name}")
+        else:
+            print(f"⚠️ [WARN] 업체 목록을 찾을 수 없어 업체명 없이 저장합니다.", file=sys.stderr)
+    
     # 기존 스냅샷 확인
-    if check_snapshot_exists(run_id):
-        print(f"⚠️ 스냅샷이 이미 존재하지만 강제로 재생성합니다: {run_id}")
+    if company_name:
+        blob_path = get_trend_snapshot_path(run_id, company_name)
+        from google.cloud import storage
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+        if blob.exists():
+            print(f"⚠️ 스냅샷이 이미 존재하지만 강제로 재생성합니다: {run_id} (업체: {company_name})")
     
     # 탭 목록 조회
     print(f"📂 탭 목록 조회 중...")
@@ -154,17 +159,18 @@ def main():
         print(f"      - 신규진입: {len(tabs_data[tab]['new_entry'])}개")
         print(f"      - 순위하락: {len(tabs_data[tab]['rank_drop'])}개")
     
-    # 스냅샷 저장 (먼저 저장, AI 분석은 나중에 추가)
+    # 스냅샷 저장 (업체명 폴더 구조, 먼저 저장, AI 분석은 나중에 추가)
     print(f"\n💾 스냅샷 저장 중...")
-    success = save_trend_snapshot_to_gcs(run_id, tabs_data, run_id, enable_ai_analysis=False)
+    success = save_trend_snapshot_to_gcs(run_id, tabs_data, run_id, company_name=company_name, enable_ai_analysis=False)
     
     if not success:
         print(f"\n❌ 스냅샷 생성 실패")
         sys.exit(1)
     
-    snapshot_path = f"gs://{GCS_BUCKET}/{get_trend_snapshot_path(run_id)}"
+    snapshot_path = f"gs://{GCS_BUCKET}/{get_trend_snapshot_path(run_id, company_name)}"
     print(f"\n✅ 스냅샷 생성 완료!")
     print(f"   Run ID: {run_id}")
+    print(f"   업체명: {company_name or '(없음)'}")
     print(f"   탭 개수: {len(tabs)}")
     print(f"   경로: {snapshot_path}")
     

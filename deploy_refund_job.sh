@@ -41,3 +41,4 @@ echo "💡 To execute: gcloud run jobs execute $JOB --region=$REGION_RUN"
 
 
 
+

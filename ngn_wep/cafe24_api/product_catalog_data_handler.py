@@ -32,23 +32,28 @@ TOKEN_FILE_NAME = "tokens.json"
 client = bigquery.Client()
 
 
-# Cloud Storage에서 tokens.json 다운로드
+# Cloud Storage에서 tokens.json 다운로드 (Secret Manager 우선)
 def download_tokens():
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(BUCKET_NAME)
-    blob = bucket.blob(TOKEN_FILE_NAME)
-
     try:
-        token_data = blob.download_as_text()
-        logging.info(f"{TOKEN_FILE_NAME} 파일이 GCP 버킷에서 다운로드되었습니다.")
-        tokens = json.loads(token_data)
-        if isinstance(tokens, list):  # JSON 구조 확인
-            return tokens
-        else:
-            raise ValueError("다운로드된 토큰 파일 형식이 올바르지 않습니다.")
-    except Exception as e:
-        logging.error(f"토큰 파일 다운로드 실패: {e}")
-        return []
+        from .token_loader import load_tokens
+        return load_tokens()
+    except ImportError:
+        # 폴백: 기존 GCS 방식
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(TOKEN_FILE_NAME)
+
+        try:
+            token_data = blob.download_as_text()
+            logging.info(f"{TOKEN_FILE_NAME} 파일이 GCP 버킷에서 다운로드되었습니다.")
+            tokens = json.loads(token_data)
+            if isinstance(tokens, list):
+                return tokens
+            else:
+                raise ValueError("다운로드된 토큰 파일 형식이 올바르지 않습니다.")
+        except Exception as e:
+            logging.error(f"토큰 파일 다운로드 실패: {e}")
+            return []
 
 
 # tokens.json 로컬 경로 설정

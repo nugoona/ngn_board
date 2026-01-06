@@ -36,23 +36,28 @@ def safe_float(value, default=0.0):
     except (TypeError, ValueError):
         return default
 
-# ✅ (수정) 토큰 다운로드 함수: 리스트 형태로 반환
+# ✅ (수정) 토큰 다운로드 함수: Secret Manager 우선, GCS 폴백
 def download_tokens():
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(BUCKET_NAME)
-    blob = bucket.blob(TOKEN_FILE_NAME)
-
     try:
-        token_data = blob.download_as_text()
-        tokens = json.loads(token_data)
-        if isinstance(tokens, list):
-            logging.info(f"{TOKEN_FILE_NAME} 파일 다운로드 성공 (리스트 형태)")
-            return tokens  # ==> list
-        else:
-            raise ValueError("토큰 파일의 JSON 구조가 [list]가 아닙니다.")
-    except Exception as e:
-        logging.error(f"토큰 다운로드 실패: {e}")
-        return []  # 빈 리스트 반환
+        from .token_loader import load_tokens
+        return load_tokens()
+    except ImportError:
+        # 폴백: 기존 GCS 방식
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(TOKEN_FILE_NAME)
+
+        try:
+            token_data = blob.download_as_text()
+            tokens = json.loads(token_data)
+            if isinstance(tokens, list):
+                logging.info(f"{TOKEN_FILE_NAME} 파일 다운로드 성공 (리스트 형태)")
+                return tokens
+            else:
+                raise ValueError("토큰 파일의 JSON 구조가 [list]가 아닙니다.")
+        except Exception as e:
+            logging.error(f"토큰 다운로드 실패: {e}")
+            return []
 
 # ✅ (수정) Mall ID 기준으로 Token 찾는 함수
 def get_token_info(mall_id):

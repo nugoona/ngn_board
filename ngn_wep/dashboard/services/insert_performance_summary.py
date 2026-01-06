@@ -212,9 +212,9 @@ def insert_performance_summary(target_date, update_cart_signup_only=False):
     ),
 
     base AS (
-      SELECT DISTINCT company_name, DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) AS date
+      SELECT DISTINCT company_name, payment_date AS date
       FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
-      WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) = DATE('{date_str}') AND company_name IS NOT NULL
+      WHERE payment_date = DATE('{date_str}') AND company_name IS NOT NULL
       UNION DISTINCT
       SELECT DISTINCT company_name, DATE(DATETIME(TIMESTAMP(event_date), 'Asia/Seoul'))
       FROM `{PROJECT_ID}.{DATASET_ID}.ga4_traffic_ngn`
@@ -255,9 +255,10 @@ def insert_performance_summary(target_date, update_cart_signup_only=False):
     LEFT JOIN filtered_ads a
       ON b.company_name = a.company_name AND b.date = a.date
     LEFT JOIN (
-      SELECT company_name, DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) AS date, SUM(net_sales) AS site_revenue
+      SELECT company_name, payment_date AS date, SUM(net_sales) AS site_revenue
       FROM `{PROJECT_ID}.{DATASET_ID}.daily_cafe24_sales`
       WHERE company_name IS NOT NULL
+        AND payment_date = DATE('{date_str}')
       GROUP BY company_name, date
     ) s ON b.company_name = s.company_name AND b.date = s.date
     LEFT JOIN (

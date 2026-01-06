@@ -94,7 +94,7 @@ def get_cafe24_sales_data(company_name, period, start_date, end_date,
             SUM(total_refund_amount) AS total_refund_amount,
             SUM(total_payment - total_refund_amount) AS net_sales
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-        WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
+        WHERE payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
         GROUP BY {group_by_expr}
         {order_by_clause}
@@ -106,7 +106,7 @@ def get_cafe24_sales_data(company_name, period, start_date, end_date,
         FROM (
             SELECT 1
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-            WHERE DATE(DATETIME(TIMESTAMP(payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
+            WHERE payment_date BETWEEN @start_date AND @end_date
               AND {company_filter}
             GROUP BY {group_by_expr}
         )

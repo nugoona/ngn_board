@@ -55,11 +55,17 @@ def parse_date(date_value):
 
 
 def download_tokens():
-    bucket = gcs_client.bucket(BUCKET_NAME)
-    blob = bucket.blob(TOKEN_FILE_NAME)
-    token_data = blob.download_as_text()
-    tokens = json.loads(token_data)
-    return {t["mall_id"]: t for t in tokens if "mall_id" in t and "access_token" in t}
+    """토큰 로드 (Secret Manager 우선, GCS 폴백)"""
+    try:
+        from .token_loader import load_tokens_as_dict
+        return load_tokens_as_dict()
+    except ImportError:
+        # 폴백: 기존 GCS 방식
+        bucket = gcs_client.bucket(BUCKET_NAME)
+        blob = bucket.blob(TOKEN_FILE_NAME)
+        token_data = blob.download_as_text()
+        tokens = json.loads(token_data)
+        return {t["mall_id"]: t for t in tokens if "mall_id" in t and "access_token" in t}
 
 # ─────────────────────────────────────
 # ✅ Cafe24 주문 수집

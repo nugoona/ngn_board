@@ -80,8 +80,11 @@ def save_snapshot_to_gcs(run_id: str, snapshot_data: Dict[str, Any]) -> bool:
     try:
         from dashboard.services.compare_29cm_service import get_compare_snapshot_path
         
-        # 스냅샷 경로 생성 (company_name별로 동일한 경로 사용)
-        blob_path = get_compare_snapshot_path(run_id)
+        # company_name 추출
+        company_name = snapshot_data.get("company_name")
+        
+        # 스냅샷 경로 생성 (company_name 포함)
+        blob_path = get_compare_snapshot_path(run_id, company_name)
         
         # JSON 직렬화 및 Gzip 압축
         json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)

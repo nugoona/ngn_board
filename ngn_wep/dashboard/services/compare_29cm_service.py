@@ -323,8 +323,11 @@ def delete_existing_search_results(company_name: str, search_keyword: str, run_i
     return True
 
 
-def get_compare_snapshot_path(run_id: str) -> str:
-    """스냅샷 GCS 경로 생성"""
+def get_compare_snapshot_path(run_id: str, company_name: Optional[str] = None) -> str:
+    """
+    스냅샷 GCS 경로 생성
+    company_name이 있으면 경로에 포함 (같은 run_id에 여러 company가 있을 수 있으므로)
+    """
     # run_id 형식: {year}W{week:02d}_WEEKLY_...
     week_match = re.match(r'(\d{4})W(\d{2})', run_id)
     if not week_match:
@@ -341,7 +344,11 @@ def get_compare_snapshot_path(run_id: str) -> str:
     week_start = first_thursday + timedelta(days=-3 + (int(week) - 1) * 7)
     month = week_start.month
     
-    return f"ai-reports/compare/29cm/{year}-{month:02d}-{week}/search_results.json.gz"
+    # company_name이 있으면 경로에 포함
+    if company_name:
+        return f"ai-reports/compare/29cm/{company_name}/{year}-{month:02d}-{week}/search_results.json.gz"
+    else:
+        return f"ai-reports/compare/29cm/{year}-{month:02d}-{week}/search_results.json.gz"
 
 
 def save_search_results_to_gcs(
@@ -359,8 +366,8 @@ def save_search_results_to_gcs(
         return False
     
     try:
-        # 스냅샷 경로 생성
-        blob_path = get_compare_snapshot_path(run_id)
+        # 스냅샷 경로 생성 (company_name 포함)
+        blob_path = get_compare_snapshot_path(run_id, company_name)
         
         # 기존 스냅샷 로드 (있다면)
         existing_snapshot = load_search_results_from_gcs(company_name, run_id)
@@ -411,7 +418,8 @@ def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword:
     GCS 스냅샷에서 검색 결과 로드
     """
     try:
-        blob_path = get_compare_snapshot_path(run_id)
+        # 스냅샷 경로 생성 (company_name 포함)
+        blob_path = get_compare_snapshot_path(run_id, company_name)
         
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)

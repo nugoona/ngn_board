@@ -157,3 +157,265 @@ ngn_wep/dashboard/templates/trend_page.html
 - 사이드바 스크롤이 정상적으로 작동함
 - 페이지 전체 스크롤이 정상적으로 작동함
 
+---
+
+## 추가 작업: Section 3 탭별 카드 구조 개선
+
+### 문제 상황
+현재 Section 3는 각 카테고리(바지, 스커트 등)별로 개별 카드가 생성되어 표시되고 있습니다. 하지만 사용자가 원하는 구조는 **탭별(급상승, 신규 진입, 순위 하락)로 하나의 통합 카드**를 표시하는 것입니다.
+
+### 목표 구조
+각 탭을 선택하면 다음과 같은 구조로 표시되어야 합니다:
+
+```
+┌─────────────────────────────────────────┐
+│ [급상승] (탭 이름 - 텍스트박스/헤더)       │
+├─────────────────────────────────────────┤
+│ AI 요약 분석 텍스트 (전체 카테고리 통합)  │
+│ (모든 카테고리의 분석 내용을 하나로 통합) │
+├─────────────────────────────────────────┤
+│ [썸네일 그리드]                          │
+│ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐        │
+│ │바지│ │스커트│ │상의│ │원피스│ │니트│    │
+│ └───┘ └───┘ └───┘ └───┘ └───┘        │
+│ (모든 카테고리의 썸네일을 한 그룹으로)    │
+└─────────────────────────────────────────┘
+```
+
+### 작업 명령문
+
+**파일**: `ngn_wep/dashboard/static/js/trend_page.js`
+
+**함수**: `renderSection3SegmentContent()` (2080줄부터)
+
+**작업 내용**:
+
+1. **구조 변경**: 카테고리별 개별 카드 생성을 제거하고, 탭별 하나의 통합 카드로 변경
+   - 기존: 각 카테고리마다 `trend-category-card` 생성
+   - 변경: 탭 전체를 위한 하나의 `trend-segment-card` 생성
+
+2. **탭 이름 헤더 추가**:
+   ```javascript
+   // 탭 이름을 헤더로 표시
+   const segmentHeader = document.createElement('div');
+   segmentHeader.className = 'trend-segment-header';
+   segmentHeader.textContent = segmentType === 'rising_star' ? '급상승' 
+                               : segmentType === 'new_entry' ? '신규 진입' 
+                               : '순위 하락';
+   ```
+
+3. **AI 분석 텍스트 통합**:
+   - 각 카테고리별 텍스트를 개별 카드로 분리하지 않고
+   - 모든 카테고리의 분석 텍스트를 하나로 통합하여 표시
+   - 또는 각 카테고리별로 작은 섹션으로 구분하여 표시하되, 하나의 카드 안에 포함
+
+4. **썸네일 그리드 통합**:
+   - 모든 카테고리의 썸네일을 하나의 그리드로 통합
+   - 각 썸네일에 카테고리 라벨 추가 (예: 상단에 작은 뱃지)
+   - 그리드 레이아웃: `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))`
+
+**수정 예시**:
+
+```javascript
+function renderSection3SegmentContent(segmentType, segmentText, container) {
+    // ... 기존 텍스트 파싱 로직 유지 ...
+    
+    // 컨테이너 초기화
+    container.innerHTML = '';
+    
+    // 탭별 통합 카드 컨테이너 생성 (하나의 카드)
+    const segmentCard = document.createElement('div');
+    segmentCard.className = 'trend-segment-card';
+    
+    // 1. 탭 이름 헤더
+    const segmentHeader = document.createElement('div');
+    segmentHeader.className = 'trend-segment-header';
+    const segmentLabel = segmentType === 'rising_star' ? '급상승' 
+                        : segmentType === 'new_entry' ? '신규 진입' 
+                        : '순위 하락';
+    segmentHeader.textContent = segmentLabel;
+    segmentCard.appendChild(segmentHeader);
+    
+    // 2. AI 분석 텍스트 영역 (모든 카테고리 통합)
+    const analysisSection = document.createElement('div');
+    analysisSection.className = 'trend-segment-analysis';
+    
+    // 카테고리별로 분석 내용을 섹션으로 구분하여 표시
+    categories.forEach(categoryName => {
+        const categoryText = categoryData[categoryName];
+        if (categoryText) {
+            const categorySection = document.createElement('div');
+            categorySection.className = 'trend-segment-category-section';
+            
+            const categoryTitle = document.createElement('div');
+            categoryTitle.className = 'trend-segment-category-title';
+            categoryTitle.textContent = categoryName;
+            
+            const categoryContent = document.createElement('div');
+            categoryContent.className = 'trend-segment-category-content';
+            categoryContent.innerHTML = categoryText;
+            
+            categorySection.appendChild(categoryTitle);
+            categorySection.appendChild(categoryContent);
+            analysisSection.appendChild(categorySection);
+        }
+    });
+    
+    segmentCard.appendChild(analysisSection);
+    
+    // 3. 통합 썸네일 그리드 (모든 카테고리)
+    const thumbnailsSection = document.createElement('div');
+    thumbnailsSection.className = 'trend-segment-thumbnails';
+    
+    // 모든 카테고리의 상품을 하나의 배열로 수집
+    const allProducts = [];
+    categories.forEach(categoryName => {
+        const categoryProducts = getProductsByCategory(categoryName, segmentType);
+        // 각 상품에 카테고리 정보 추가
+        categoryProducts.forEach(product => {
+            allProducts.push({
+                ...product,
+                category: categoryName
+            });
+        });
+    });
+    
+    // 통합 썸네일 그리드 생성
+    if (allProducts.length > 0) {
+        const thumbnailGrid = createUnifiedThumbnailGrid(allProducts, segmentType);
+        thumbnailsSection.innerHTML = thumbnailGrid;
+    }
+    
+    segmentCard.appendChild(thumbnailsSection);
+    container.appendChild(segmentCard);
+}
+```
+
+**새로운 헬퍼 함수 추가**:
+
+```javascript
+// 통합 썸네일 그리드 생성 (모든 카테고리 포함)
+function createUnifiedThumbnailGrid(products, segmentType) {
+    if (!products || products.length === 0) return '';
+    
+    let gridHtml = '<div class="trend-thumbnails-grid">';
+    
+    products.forEach(product => {
+        gridHtml += `
+            <div class="trend-thumbnail-card" data-category="${product.category || ''}">
+                <div class="trend-thumbnail-category-badge">${product.category || ''}</div>
+                <div class="trend-thumbnail-image-wrapper">
+                    <img src="${product.thumbnail || product.image || ''}" 
+                         alt="${product.title || ''}" 
+                         class="trend-thumbnail-image"
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22160%22 height=%22160%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';">
+                </div>
+                <div class="trend-thumbnail-info">
+                    <div class="trend-thumbnail-title">${product.title || ''}</div>
+                    ${product.price ? `<div class="trend-thumbnail-price">${product.price}</div>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    gridHtml += '</div>';
+    return gridHtml;
+}
+```
+
+**CSS 스타일 추가**:
+
+**파일**: `ngn_wep/dashboard/templates/trend_page.html`
+
+```css
+/* 탭별 통합 카드 스타일 */
+.trend-segment-card {
+  background: #ffffff !important;
+  border: 1px solid #E9ECEF !important;
+  border-radius: 16px !important;
+  padding: 32px !important;
+  margin-bottom: 32px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* 탭 이름 헤더 */
+.trend-segment-header {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #212529 !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 2px solid #E9ECEF !important;
+}
+
+/* AI 분석 텍스트 영역 */
+.trend-segment-analysis {
+  margin-bottom: 32px !important;
+}
+
+.trend-segment-category-section {
+  margin-bottom: 20px !important;
+}
+
+.trend-segment-category-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #495057 !important;
+  margin-bottom: 12px !important;
+  padding: 8px 12px !important;
+  background: #F8F9FA !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+}
+
+.trend-segment-category-content {
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+  color: #495057 !important;
+  padding-left: 12px !important;
+}
+
+/* 통합 썸네일 그리드 */
+.trend-segment-thumbnails {
+  margin-top: 32px !important;
+  padding-top: 24px !important;
+  border-top: 1px solid #E9ECEF !important;
+}
+
+.trend-segment-thumbnails .trend-thumbnails-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  gap: 20px !important;
+}
+
+/* 썸네일 카드에 카테고리 뱃지 추가 */
+.trend-thumbnail-card {
+  position: relative !important;
+}
+
+.trend-thumbnail-category-badge {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  background: rgba(102, 126, 234, 0.9) !important;
+  color: #ffffff !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  z-index: 10 !important;
+}
+```
+
+### 수정 완료 후 확인 사항
+
+1. 탭을 선택하면 하나의 큰 카드가 표시되는지 확인
+2. 카드 상단에 탭 이름(급상승, 신규 진입, 순위 하락)이 헤더로 표시되는지 확인
+3. AI 분석 텍스트가 카테고리별로 구분되어 표시되는지 확인
+4. 모든 카테고리의 썸네일이 하나의 그리드로 통합되어 표시되는지 확인
+5. 각 썸네일에 카테고리 뱃지가 표시되는지 확인
+6. 스크롤이 정상적으로 작동하는지 확인
+

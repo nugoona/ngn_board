@@ -1,0 +1,494 @@
+/**
+ * 29CM 경쟁사 비교 페이지 JavaScript
+ */
+(function() {
+    'use strict';
+    
+    // 전역 변수
+    let currentCompanyName = null;
+    let currentRunId = null;
+    let currentKeyword = null;
+    let allKeywords = [];
+    let currentResults = [];
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 10;
+    
+    // DOM 요소
+    const compareToggleBtn = document.getElementById('trendCompareToggleBtn');
+    const compareSidebar = document.getElementById('compareSidebar');
+    const closeCompareBtn = document.getElementById('closeCompareSidebarBtn');
+    const compareTabs = document.getElementById('compareTabs');
+    const compareCardsContainer = document.getElementById('compareCardsContainer');
+    const comparePagination = document.getElementById('comparePagination');
+    const comparePrevBtn = document.getElementById('comparePrevBtn');
+    const compareNextBtn = document.getElementById('compareNextBtn');
+    const comparePageInfo = document.getElementById('comparePageInfo');
+    
+    // 리뷰 모달
+    const reviewModal = document.getElementById('compareReviewModal');
+    const closeReviewModalBtn = document.getElementById('closeCompareReviewModalBtn');
+    const reviewModalTitle = document.getElementById('compareReviewModalTitle');
+    const reviewModalBody = document.getElementById('compareReviewModalBody');
+    
+    /**
+     * 초기화
+     */
+    function init() {
+        // URL에서 company_name 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        currentCompanyName = urlParams.get('company_name');
+        
+        if (!currentCompanyName) {
+            console.warn('[Compare] company_name이 없습니다.');
+            return;
+        }
+        
+        // 이벤트 리스너 등록
+        setupEventListeners();
+    }
+    
+    /**
+     * 이벤트 리스너 설정
+     */
+    function setupEventListeners() {
+        // Compare 버튼 클릭
+        if (compareToggleBtn) {
+            compareToggleBtn.addEventListener('click', function() {
+                openCompareSidebar();
+            });
+        }
+        
+        // 사이드바 닫기
+        if (closeCompareBtn) {
+            closeCompareBtn.addEventListener('click', function() {
+                closeCompareSidebar();
+            });
+        }
+        
+        // 리뷰 모달 닫기
+        if (closeReviewModalBtn) {
+            closeReviewModalBtn.addEventListener('click', function() {
+                closeReviewModal();
+            });
+        }
+        
+        // 모달 오버레이 클릭 시 닫기
+        const modalOverlay = reviewModal?.querySelector('.compare-review-modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', function() {
+                closeReviewModal();
+            });
+        }
+        
+        // 페이지네이션 버튼
+        if (comparePrevBtn) {
+            comparePrevBtn.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderCards();
+                }
+            });
+        }
+        
+        if (compareNextBtn) {
+            compareNextBtn.addEventListener('click', function() {
+                const maxPage = Math.ceil(currentResults.length / ITEMS_PER_PAGE);
+                if (currentPage < maxPage) {
+                    currentPage++;
+                    renderCards();
+                }
+            });
+        }
+    }
+    
+    /**
+     * Compare 사이드바 열기
+     */
+    async function openCompareSidebar() {
+        if (!currentCompanyName) {
+            alert('업체를 먼저 선택해주세요.');
+            return;
+        }
+        
+        // Insights 사이드바가 열려있으면 닫기
+        const insightsSidebar = document.getElementById('trendAnalysisSidebar');
+        if (insightsSidebar && insightsSidebar.classList.contains('active')) {
+            insightsSidebar.classList.remove('active');
+            setTimeout(() => {
+                insightsSidebar.classList.add('hidden');
+            }, 300);
+        }
+        
+        // Compare 사이드바 열기
+        compareSidebar.classList.remove('hidden');
+        setTimeout(() => {
+            compareSidebar.classList.add('active');
+        }, 10);
+        
+        // 데이터 로드
+        await loadCompareData();
+    }
+    
+    /**
+     * Compare 사이드바 닫기
+     */
+    function closeCompareSidebar() {
+        compareSidebar.classList.remove('active');
+        setTimeout(() => {
+            compareSidebar.classList.add('hidden');
+        }, 300);
+    }
+    
+    /**
+     * 비교 데이터 로드
+     */
+    async function loadCompareData() {
+        try {
+            showLoading();
+            
+            // 1. 경쟁사 검색어 목록 조회
+            const keywordsResponse = await fetch(`/dashboard/compare/29cm/keywords?company_name=${encodeURIComponent(currentCompanyName)}`);
+            const keywordsData = await keywordsResponse.json();
+            
+            if (keywordsData.status !== 'success') {
+                throw new Error(keywordsData.message || '검색어 목록 조회 실패');
+            }
+            
+            allKeywords = keywordsData.keywords || [];
+            
+            // 2. run_id 조회 (최신 주차)
+            const weekResponse = await fetch('/dashboard/trend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tab_name: '전체',
+                    trend_type: 'all',
+                    company_name: currentCompanyName
+                })
+            });
+            const weekData = await weekResponse.json();
+            
+            // run_id 추출 (스냅샷 데이터에서)
+            if (weekData.current_week) {
+                currentRunId = weekData.current_week;
+            } else {
+                // BigQuery에서 직접 조회
+                const bqResponse = await fetch('/dashboard/trend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tab_name: '전체',
+                        trend_type: 'all',
+                        company_name: currentCompanyName,
+                        use_snapshot: false
+                    })
+                });
+                const bqData = await bqResponse.json();
+                if (bqData.current_week) {
+                    currentRunId = bqData.current_week;
+                }
+            }
+            
+            if (!currentRunId) {
+                throw new Error('주차 정보를 찾을 수 없습니다.');
+            }
+            
+            // 3. 탭 렌더링
+            renderTabs();
+            
+            // 4. 첫 번째 탭 선택 (자사몰)
+            if (allKeywords.length > 0) {
+                const firstTab = allKeywords[0];
+                await selectTab(firstTab.competitor_keyword, firstTab.display_name);
+            }
+            
+        } catch (error) {
+            console.error('[Compare] 데이터 로드 실패:', error);
+            showError(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+    
+    /**
+     * 탭 렌더링
+     */
+    function renderTabs() {
+        if (!compareTabs) return;
+        
+        // 자사몰 탭 추가 (첫 번째)
+        const companyTab = document.createElement('button');
+        companyTab.className = 'compare-tab-btn active';
+        companyTab.dataset.keyword = 'own';
+        companyTab.textContent = getCompanyDisplayName();
+        companyTab.addEventListener('click', function() {
+            selectOwnCompanyTab();
+        });
+        compareTabs.appendChild(companyTab);
+        
+        // 경쟁사 탭 추가
+        allKeywords.forEach((keyword, index) => {
+            const tab = document.createElement('button');
+            tab.className = 'compare-tab-btn';
+            tab.dataset.keyword = keyword.competitor_keyword;
+            tab.textContent = keyword.display_name || keyword.competitor_keyword;
+            tab.addEventListener('click', function() {
+                selectTab(keyword.competitor_keyword, keyword.display_name);
+            });
+            compareTabs.appendChild(tab);
+        });
+    }
+    
+    /**
+     * 자사몰 표시명 가져오기
+     */
+    function getCompanyDisplayName() {
+        // company_mapping에서 한글명 가져오기
+        // 임시로 company_name 사용
+        return currentCompanyName || '자사몰';
+    }
+    
+    /**
+     * 자사몰 탭 선택
+     */
+    async function selectOwnCompanyTab() {
+        // 자사몰 상품은 추후 구현 (현재는 경쟁사만)
+        showError('자사몰 상품 기능은 준비 중입니다.');
+    }
+    
+    /**
+     * 탭 선택
+     */
+    async function selectTab(keyword, displayName) {
+        // 탭 활성화
+        const tabs = compareTabs.querySelectorAll('.compare-tab-btn');
+        tabs.forEach(tab => {
+            if (tab.dataset.keyword === keyword) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        
+        currentKeyword = keyword;
+        currentPage = 1;
+        
+        // 검색 결과 로드
+        await loadSearchResults(keyword);
+    }
+    
+    /**
+     * 검색 결과 로드
+     */
+    async function loadSearchResults(keyword) {
+        try {
+            showLoading();
+            
+            const response = await fetch('/dashboard/compare/29cm/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    company_name: currentCompanyName,
+                    search_keyword: keyword,
+                    run_id: currentRunId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status !== 'success') {
+                throw new Error(data.message || '검색 결과 조회 실패');
+            }
+            
+            currentResults = data.results || [];
+            
+            // 카드 렌더링
+            renderCards();
+            
+        } catch (error) {
+            console.error('[Compare] 검색 결과 로드 실패:', error);
+            showError(error.message || '검색 결과를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+    
+    /**
+     * 카드 렌더링
+     */
+    function renderCards() {
+        if (!compareCardsContainer) return;
+        
+        const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIdx = startIdx + ITEMS_PER_PAGE;
+        const itemsToShow = currentResults.slice(startIdx, endIdx);
+        
+        if (itemsToShow.length === 0) {
+            compareCardsContainer.innerHTML = '<div class="compare-empty">표시할 상품이 없습니다.</div>';
+            comparePagination.style.display = 'none';
+            return;
+        }
+        
+        // 카드 HTML 생성
+        const cardsHTML = itemsToShow.map((item, index) => {
+            const rank = startIdx + index + 1;
+            const price = item.price ? `${Math.round(item.price).toLocaleString()}원` : '가격 정보 없음';
+            const bestRankBadge = item.best_rank ? `<span class="compare-best-badge">베스트 ${item.best_rank}위</span>` : '';
+            const itemUrl = item.item_url || `https://29cm.co.kr/products/${item.item_id}`;
+            
+            return `
+                <div class="compare-card">
+                    <div class="compare-card-rank">Rank ${rank}</div>
+                    ${bestRankBadge}
+                    <div class="compare-card-image">
+                        <img src="${item.thumbnail_url || ''}" alt="${item.product_name || ''}" loading="lazy" />
+                    </div>
+                    <div class="compare-card-info">
+                        <div class="compare-card-brand">${item.brand_name || ''}</div>
+                        <div class="compare-card-name">${item.product_name || ''}</div>
+                        <div class="compare-card-price">${price}</div>
+                    </div>
+                    <div class="compare-card-actions">
+                        <a href="${itemUrl}" target="_blank" class="compare-card-link-btn">바로가기</a>
+                        <button class="compare-card-review-btn" data-item-id="${item.item_id}" data-product-name="${(item.product_name || '').replace(/"/g, '&quot;')}">리뷰</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        compareCardsContainer.innerHTML = `
+            <div class="compare-cards-grid">
+                ${cardsHTML}
+            </div>
+        `;
+        
+        // 리뷰 버튼 이벤트
+        const reviewButtons = compareCardsContainer.querySelectorAll('.compare-card-review-btn');
+        reviewButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemId = this.dataset.itemId;
+                const productName = this.dataset.productName;
+                openReviewModal(itemId, productName);
+            });
+        });
+        
+        // 페이지네이션 업데이트
+        updatePagination();
+    }
+    
+    /**
+     * 페이지네이션 업데이트
+     */
+    function updatePagination() {
+        const maxPage = Math.ceil(currentResults.length / ITEMS_PER_PAGE);
+        
+        if (maxPage <= 1) {
+            comparePagination.style.display = 'none';
+            return;
+        }
+        
+        comparePagination.style.display = 'flex';
+        comparePageInfo.textContent = `${currentPage} / ${maxPage}`;
+        
+        comparePrevBtn.disabled = currentPage === 1;
+        compareNextBtn.disabled = currentPage === maxPage;
+    }
+    
+    /**
+     * 리뷰 모달 열기
+     */
+    async function openReviewModal(itemId, productName) {
+        reviewModalTitle.textContent = productName || '상품 리뷰';
+        reviewModalBody.innerHTML = '<div class="compare-review-loading">리뷰를 불러오는 중...</div>';
+        reviewModal.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/dashboard/compare/29cm/reviews?item_id=${itemId}`);
+            const data = await response.json();
+            
+            if (data.status !== 'success') {
+                throw new Error(data.message || '리뷰 조회 실패');
+            }
+            
+            const reviews = data.reviews || [];
+            
+            if (reviews.length === 0) {
+                reviewModalBody.innerHTML = '<div class="compare-review-empty">리뷰가 없습니다.</div>';
+                return;
+            }
+            
+            const reviewsHTML = reviews.map(review => {
+                const rating = '⭐'.repeat(review.rating || 0);
+                const option = review.option ? `<div class="compare-review-option">옵션: ${review.option}</div>` : '';
+                const createdAt = review.created_at ? `<div class="compare-review-date">${review.created_at}</div>` : '';
+                
+                return `
+                    <div class="compare-review-item">
+                        <div class="compare-review-header">
+                            <div class="compare-review-rating">${rating}</div>
+                            ${createdAt}
+                        </div>
+                        ${option}
+                        <div class="compare-review-content">${review.content || ''}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            reviewModalBody.innerHTML = `
+                <div class="compare-review-list">
+                    ${reviewsHTML}
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('[Compare] 리뷰 로드 실패:', error);
+            reviewModalBody.innerHTML = `<div class="compare-review-error">리뷰를 불러오는 중 오류가 발생했습니다: ${error.message}</div>`;
+        }
+    }
+    
+    /**
+     * 리뷰 모달 닫기
+     */
+    function closeReviewModal() {
+        reviewModal.style.display = 'none';
+    }
+    
+    /**
+     * 로딩 표시
+     */
+    function showLoading() {
+        if (compareCardsContainer) {
+            compareCardsContainer.innerHTML = '<div class="compare-loading">데이터를 불러오는 중...</div>';
+        }
+        if (comparePagination) {
+            comparePagination.style.display = 'none';
+        }
+    }
+    
+    /**
+     * 에러 표시
+     */
+    function showError(message) {
+        if (compareCardsContainer) {
+            compareCardsContainer.innerHTML = `<div class="compare-error">${message}</div>`;
+        }
+        if (comparePagination) {
+            comparePagination.style.display = 'none';
+        }
+    }
+    
+    /**
+     * 주차 번호 계산 (ISO 8601 기준)
+     */
+    function getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+    
+    // 초기화
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+

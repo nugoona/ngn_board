@@ -1457,10 +1457,59 @@
     </div>
   </div>
 </div>
+
+<!-- ✅ 경쟁사 비교 사이드바 -->
+<div id="compareSidebar" class="trend-analysis-sidebar-wrapper hidden">
+  <!-- ───────── 헤더 ───────── -->
+  <div class="trend-analysis-header-bar">
+    <div class="trend-analysis-header-title">29CM 경쟁사 추천순 TOP 20</div>
+    <button id="closeCompareSidebarBtn" class="trend-analysis-close-btn" aria-label="닫기">×</button>
+  </div>
+  
+  <!-- ───────── 본문 ───────── -->
+  <div class="trend-analysis-sidebar-content">
+    <!-- 탭 영역 -->
+    <div class="compare-tabs-wrapper" id="compareTabsWrapper">
+      <div class="compare-tabs" id="compareTabs">
+        <!-- 탭은 JavaScript로 동적 생성 -->
+      </div>
+    </div>
+    
+    <!-- 상품 카드 영역 -->
+    <div class="compare-content-wrapper">
+      <div class="compare-cards-container" id="compareCardsContainer">
+        <div class="compare-loading">데이터를 불러오는 중...</div>
+      </div>
+      
+      <!-- 페이지네이션 버튼 -->
+      <div class="compare-pagination" id="comparePagination" style="display: none;">
+        <button class="compare-prev-btn" id="comparePrevBtn" aria-label="이전">←</button>
+        <span class="compare-page-info" id="comparePageInfo">1 / 1</span>
+        <button class="compare-next-btn" id="compareNextBtn" aria-label="다음">→</button>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- ✅ 리뷰 모달 -->
+<div id="compareReviewModal" class="compare-review-modal" style="display: none;">
+  <div class="compare-review-modal-overlay"></div>
+  <div class="compare-review-modal-content">
+    <div class="compare-review-modal-header">
+      <h3 id="compareReviewModalTitle">상품 리뷰</h3>
+      <button id="closeCompareReviewModalBtn" class="compare-review-modal-close" aria-label="닫기">×</button>
+    </div>
+    <div class="compare-review-modal-body" id="compareReviewModalBody">
+      <div class="compare-review-loading">리뷰를 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/compare.css') }}?v=1.0">
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/trend_page.js') }}?v=1.0"></script>
+<script src="{{ url_for('static', filename='js/compare_page.js') }}?v=1.0"></script>
 
 </body>
 </html>

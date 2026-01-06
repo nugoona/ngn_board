@@ -65,7 +65,12 @@ from ..services.trend_ably_service import (
     get_available_tabs as get_ably_available_tabs,
     load_trend_snapshot_from_gcs as load_ably_trend_snapshot_from_gcs,
     save_trend_snapshot_to_gcs as save_ably_trend_snapshot_to_gcs,
-    get_all_tabs_data_from_bigquery as get_ably_all_tabs_data_from_bigquery
+    get_all_tabs_data_from_bigquery as get_ably_all_tabs_data_from_bq
+)
+from ..services.compare_29cm_service import (
+    get_competitor_keywords,
+    fetch_product_reviews,
+    load_search_results_from_bq,
 )
 
 
@@ -1686,4 +1691,107 @@ def get_ably_trend_tabs():
         return jsonify({"status": "success", "tabs": tabs}), 200
     except Exception as e:
         print(f"[ERROR] get_ably_trend_tabs 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 29CM 경쟁사 비교 페이지 API
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/compare/29cm/keywords", methods=["GET"])
+def get_compare_keywords():
+    """경쟁사 검색어 목록 조회"""
+    try:
+        company_name = request.args.get("company_name")
+        if not company_name:
+            return jsonify({"status": "error", "message": "company_name 파라미터가 필요합니다."}), 400
+        
+        keywords = get_competitor_keywords(company_name)
+        return jsonify({
+            "status": "success",
+            "keywords": keywords
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] get_compare_keywords 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/compare/29cm/search", methods=["POST"])
+def get_compare_search_results():
+    """경쟁사 검색 결과 조회"""
+    try:
+        data = request.get_json() or {}
+        company_name = data.get("company_name")
+        search_keyword = data.get("search_keyword")
+        run_id = data.get("run_id")
+        get_run_id_only = data.get("get_run_id_only", False)
+        
+        if not company_name:
+            return jsonify({"status": "error", "message": "company_name이 필요합니다."}), 400
+        
+        # run_id만 조회하는 경우
+        if get_run_id_only:
+            run_id = get_current_week_info()
+            if not run_id:
+                return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
+            return jsonify({"status": "success", "run_id": run_id}), 200
+        
+        # run_id가 없으면 최신 주차 사용
+        if not run_id:
+            run_id = get_current_week_info()
+            if not run_id:
+                return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
+        
+        # BigQuery에서 검색 결과 로드
+        results = load_search_results_from_bq(
+            company_name=company_name,
+            run_id=run_id,
+            search_keyword=search_keyword
+        )
+        
+        # search_keyword가 지정된 경우 해당 키워드만 반환
+        if search_keyword:
+            return jsonify({
+                "status": "success",
+                "run_id": run_id,
+                "search_keyword": search_keyword,
+                "results": results.get(search_keyword, [])
+            }), 200
+        else:
+            # 모든 키워드 반환
+            return jsonify({
+                "status": "success",
+                "run_id": run_id,
+                "results": results
+            }), 200
+            
+    except Exception as e:
+        print(f"[ERROR] get_compare_search_results 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/compare/29cm/reviews", methods=["GET"])
+def get_compare_reviews():
+    """상품 리뷰 조회"""
+    try:
+        item_id = request.args.get("item_id")
+        if not item_id:
+            return jsonify({"status": "error", "message": "item_id 파라미터가 필요합니다."}), 400
+        
+        try:
+            item_id_int = int(item_id)
+        except ValueError:
+            return jsonify({"status": "error", "message": "item_id는 숫자여야 합니다."}), 400
+        
+        reviews = fetch_product_reviews(item_id_int, limit=10)
+        return jsonify({
+            "status": "success",
+            "item_id": item_id_int,
+            "reviews": reviews
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] get_compare_reviews 실패: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500

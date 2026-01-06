@@ -564,14 +564,25 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     // Section 2 카드 레이아웃 추가
     if (sections.section2) {
         const section2Container = renderSection2AsCards(section2Data);
-        container.appendChild(section2Container);
+        if (section2Container) {
+            // Section 2 컨테이너 스타일 강제 적용
+            section2Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 32px !important;';
+            container.appendChild(section2Container);
+        }
     }
     
     // Section 3 탭 기반 UI 추가
     if (sections.section3) {
         const section3Container = renderSection3WithTabs(section3Data);
-        container.appendChild(section3Container);
+        if (section3Container) {
+            // Section 3 컨테이너 스타일 강제 적용
+            section3Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 24px !important;';
+            container.appendChild(section3Container);
+        }
     }
+    
+    // 컨테이너 스타일 강제 적용
+    container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important;';
     
     contentElement.innerHTML = '';
     contentElement.appendChild(container);
@@ -1815,24 +1826,33 @@ function getCompanyProducts() {
 function renderSection2AsCards(section2Data) {
     const container = document.createElement('div');
     container.className = 'trend-section2-container';
+    container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 32px !important;';
     
     // Section 2 헤더
     const header = document.createElement('h2');
     header.className = 'trend-section2-header';
     header.textContent = 'KEYWORD';
+    header.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
     container.appendChild(header);
     
     // 2열 그리드 컨테이너
     const gridContainer = document.createElement('div');
     gridContainer.className = 'trend-section2-grid';
+    gridContainer.style.cssText = 'display: grid !important; visibility: visible !important; opacity: 1 !important; grid-template-columns: repeat(2, 1fr) !important; gap: 24px !important; margin-bottom: 32px !important;';
     
     // Material 카드
     const materialCard = createSection2Card('🧶', 'Material Trend', '소재 트렌드', section2Data.material);
-    gridContainer.appendChild(materialCard);
+    if (materialCard) {
+        materialCard.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
+        gridContainer.appendChild(materialCard);
+    }
     
     // Mood 카드
     const moodCard = createSection2Card('✨', 'Mood & Style', '무드 & 스타일', section2Data.mood);
-    gridContainer.appendChild(moodCard);
+    if (moodCard) {
+        moodCard.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
+        gridContainer.appendChild(moodCard);
+    }
     
     container.appendChild(gridContainer);
     
@@ -1990,20 +2010,24 @@ function renderSection3WithTabs(section3Data) {
     // Section 3 컨테이너 생성
     const section3Container = document.createElement('div');
     section3Container.className = 'trend-section3-container';
+    section3Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 24px !important;';
     
     // Section 3 헤더 추가
     const sectionHeader = document.createElement('h2');
     sectionHeader.className = 'trend-section3-header';
     sectionHeader.textContent = 'TRENDS';
+    sectionHeader.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
     section3Container.appendChild(sectionHeader);
     
     // 탭 UI 생성 (월간 리포트 Section 5 스타일)
     const tabsWrapper = document.createElement('div');
     tabsWrapper.className = 'market-trend-tabs-wrapper';
+    tabsWrapper.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
     
     const tabs = document.createElement('div');
     tabs.className = 'market-trend-tabs';
     tabs.id = 'section3Tabs';
+    tabs.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important;';
     
     const segmentTabs = [
         { type: 'rising_star', label: '급상승' },
@@ -2017,6 +2041,7 @@ function renderSection3WithTabs(section3Data) {
         if (index === 0) button.classList.add('active');
         button.setAttribute('data-segment', tab.type);
         button.textContent = tab.label;
+        button.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important;';
         tabs.appendChild(button);
     });
     
@@ -2027,6 +2052,7 @@ function renderSection3WithTabs(section3Data) {
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'trend-section3-content-wrapper';
     contentWrapper.id = 'section3Content';
+    contentWrapper.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 24px !important;';
     
     section3Container.appendChild(contentWrapper);
     

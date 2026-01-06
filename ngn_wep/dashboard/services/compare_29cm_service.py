@@ -359,6 +359,10 @@ def save_search_results_to_bq(
         reviews = result.get("reviews", [])
         reviews_json = json.dumps(reviews, ensure_ascii=False) if reviews else None
         
+        # 날짜를 문자열로 변환 (BigQuery insert_rows_json은 DATE를 문자열로 받음)
+        search_date_str = search_date.date().isoformat()  # 'YYYY-MM-DD' 형식
+        created_at_str = search_date.isoformat()  # ISO 형식 문자열
+        
         row = {
             "search_keyword": search_keyword,
             "company_name": company_name,
@@ -376,9 +380,9 @@ def save_search_results_to_bq(
             "item_url": result.get("item_url"),
             "best_rank": result.get("best_rank"),
             "best_category": result.get("best_category"),
-            "search_date": search_date.date(),
-            "created_at": search_date,
-            "updated_at": search_date,
+            "search_date": search_date_str,  # 문자열로 변환
+            "created_at": created_at_str,  # 문자열로 변환
+            "updated_at": created_at_str,  # 문자열로 변환
             "reviews": reviews_json,
         }
         rows.append(row)

@@ -185,6 +185,28 @@
         font-size: 2rem; /* 작은 모바일에서 더 작게 */
       }
     }
+    
+    /* 토스트 메시지 스타일 (월간 리포트와 동일) */
+    .toast-message {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #212529;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 3000;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .toast-message.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -231,6 +253,23 @@
   </script>
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   <script>
+    // 토스트 메시지 함수 (월간 리포트와 동일)
+    function showToast(message) {
+      const existingToast = document.querySelector(".toast-message");
+      if (existingToast) existingToast.remove();
+      
+      const toast = document.createElement("div");
+      toast.className = "toast-message";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => toast.classList.add("show"), 10);
+      setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
     // 페이지 로드 시 29CM 링크에 company_name 파라미터 추가 및 클릭 이벤트 처리
     document.addEventListener('DOMContentLoaded', function() {
       console.log('[Trend Selection] DOMContentLoaded 실행');
@@ -279,7 +318,7 @@
             e.preventDefault();
             e.stopPropagation();
             const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
-            alert(message);
+            showToast(message);
             return false;
           }
           
@@ -339,7 +378,7 @@
             e.preventDefault();
             e.stopPropagation();
             const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
-            alert(message);
+            showToast(message);
             return false;
           }
           

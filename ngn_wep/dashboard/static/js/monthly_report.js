@@ -63,7 +63,7 @@ function openMonthlyReportModal() {
     
     // 데모 계정 제한 체크
     if (companyName.toLowerCase() === 'demo') {
-      const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+      const message = "해당 리포트는 정식 파트너십 체결 후 자사 브랜드 맞춤형 데이터로 제공됩니다";
       if (typeof showToast === 'function') {
         showToast(message);
       } else {

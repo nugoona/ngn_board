@@ -2112,7 +2112,7 @@ function renderSection3WithTabs(section3Data) {
     return section3Container;
 }
 
-// Section 3 세그먼트 콘텐츠 렌더링 (카테고리별 Card UI + 통합 헤더)
+// Section 3 세그먼트 콘텐츠 렌더링 (카테고리별 Card UI)
 function renderSection3SegmentContent(segmentType, segmentText, container) {
     console.log('[renderSection3SegmentContent] 호출됨:', segmentType, '텍스트 길이:', segmentText ? segmentText.length : 0);
     
@@ -2122,28 +2122,24 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         return;
     }
     
-    // 세그먼트 헤더 제거 (🔥 급상승 (Rising Star) 등)
-    let cleanedText = segmentText;
-    cleanedText = cleanedText.replace(/^\*\*?[🔥🚀📉]\s*(급상승|신규 진입|순위 하락)\s*\([^\)]+\)\*\*?\s*\n*/m, '');
-    cleanedText = cleanedText.replace(/^\*\*?(Rising Star|New Entry|Rank Drop)\*\*?\s*\n*/m, '');
-    cleanedText = cleanedText.trim();
-    
-    console.log('[renderSection3SegmentContent] cleanedText 길이:', cleanedText.length);
-    console.log('[renderSection3SegmentContent] cleanedText 첫 500자:', cleanedText.substring(0, 500));
-    
-    // 카테고리별로 텍스트 파싱
-    // Ably의 경우 allTabsData에서 실제 카테고리 목록을 가져오고, 29CM의 경우 기본 카테고리 사용
+    // 1. 카테고리 정의
     let categories;
     if (IS_ABLY && window.allTabsData && Object.keys(window.allTabsData).length > 0) {
         categories = Object.keys(window.allTabsData).sort();
     } else {
         categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
     }
-    const categoryData = {};
     
-    // 각 카테고리별로 텍스트 추출 (인덱스 기반으로 변경하여 모든 bullet point 포함)
+    // 세그먼트 헤더 제거
+    let cleanedText = segmentText;
+    cleanedText = cleanedText.replace(/^\*\*?[🔥🚀📉]\s*(급상승|신규 진입|순위 하락)\s*\([^\)]+\)\*\*?\s*\n*/m, '');
+    cleanedText = cleanedText.replace(/^\*\*?(Rising Star|New Entry|Rank Drop)\*\*?\s*\n*/m, '');
+    cleanedText = cleanedText.trim();
+    
+    // 카테고리별 텍스트 파싱
     const lines = cleanedText.split('\n');
     const categoryIndices = {};
+    const categoryData = {};
     
     // 각 카테고리 헤더 위치 찾기
     categories.forEach(categoryName => {
@@ -2154,16 +2150,15 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         }
     });
     
-    // 각 카테고리별로 텍스트 추출
+    // 각 카테고리별로 텍스트 추출 및 HTML 변환
     categories.forEach((categoryName, catIndex) => {
         const startIndex = categoryIndices[categoryName];
         
         if (startIndex === undefined || startIndex < 0) {
-            console.warn(`[Section 3] ${categoryName} 카테고리 헤더를 찾을 수 없습니다.`);
-            return;
+            return; // 카테고리 헤더를 찾을 수 없으면 스킵
         }
         
-        // 다음 카테고리 헤더의 위치 찾기 (또는 텍스트 끝)
+        // 다음 카테고리 헤더의 위치 찾기
         let endIndex = lines.length;
         if (catIndex < categories.length - 1) {
             for (let i = catIndex + 1; i < categories.length; i++) {
@@ -2175,27 +2170,18 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             }
         }
         
-        // 카테고리 텍스트 추출 (헤더 다음 줄부터 다음 카테고리 헤더 전까지)
+        // 카테고리 텍스트 추출
         const categoryLines = lines.slice(startIndex + 1, endIndex);
         let categoryText = categoryLines.join('\n').trim();
         
-        console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 길이:`, categoryText.length);
-        console.log(`[renderSection3SegmentContent] ${categoryName} 추출된 텍스트 첫 200자:`, categoryText.substring(0, 200));
-        
-        // 빈 텍스트 체크
         if (!categoryText || categoryText.length === 0) {
-            console.warn(`[Section 3] ${categoryName} 카테고리 텍스트가 비어있습니다.`);
-            return;
+            return; // 빈 텍스트면 스킵
         }
         
         // 마크다운을 HTML로 변환
         if (typeof marked !== 'undefined') {
             try {
-                marked.setOptions({
-                    breaks: true,
-                    gfm: false
-                });
-                
+                marked.setOptions({ breaks: true, gfm: false });
                 const markdownHtml = marked.parse(categoryText);
                 
                 if (typeof DOMPurify !== 'undefined') {
@@ -2206,8 +2192,6 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 } else {
                     categoryText = markdownHtml;
                 }
-                
-                console.log(`[renderSection3SegmentContent] ${categoryName} 마크다운 변환 후 길이:`, categoryText.length);
             } catch (e) {
                 console.warn(`[Section 3] ${categoryName} 마크다운 변환 실패:`, e);
                 categoryText = categoryText.replace(/\n/g, '<br>');
@@ -2219,182 +2203,88 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         categoryData[categoryName] = categoryText;
     });
     
-    // 디버깅: 파싱된 카테고리 데이터 확인
-    console.log('[renderSection3SegmentContent] 파싱된 카테고리 데이터:', Object.keys(categoryData));
-    console.log('[renderSection3SegmentContent] 카테고리 데이터 상세:', categoryData);
-    
     // 컨테이너 초기화
     container.innerHTML = '';
     
-    // 각 카테고리에 대해 Card UI 생성
+    // 2. 루프 실행: 각 카테고리를 순회하면서 Card UI 생성
     categories.forEach(categoryName => {
         const categoryText = categoryData[categoryName];
         
-        console.log(`[renderSection3SegmentContent] ${categoryName} 카테고리 렌더링 시작, categoryText 존재:`, !!categoryText);
-        
-        // 카테고리 데이터가 없으면 스킵
+        // A. 텍스트 추출: 텍스트가 없으면 스킵
         if (!categoryText) {
-            console.log(`[renderSection3SegmentContent] ${categoryName} 카테고리 데이터 없음, 스킵`);
             return;
         }
         
-        // Card 컨테이너 생성
+        // B. 카드 요소 생성
         const cardContainer = document.createElement('div');
         cardContainer.className = 'trend-category-card';
         
-        // 통합 헤더 영역 생성
+        // C. 헤더 영역 생성
         const headerSection = document.createElement('div');
         headerSection.className = 'trend-category-header';
         
-        // 카테고리 뱃지 (콜론 제거)
+        // 뱃지 생성
         const categoryBadge = document.createElement('span');
         categoryBadge.className = 'trend-category-badge';
-        categoryBadge.textContent = categoryName; // 콜론 없이
+        categoryBadge.textContent = categoryName;
+        headerSection.appendChild(categoryBadge);
         
-        // AI 분석 텍스트 영역
+        // 분석 텍스트 영역 생성
         const analysisSection = document.createElement('div');
         analysisSection.className = 'trend-category-analysis';
         
-        // categoryText가 HTML로 변환된 상태이므로 그대로 삽입
         const insight = document.createElement('div');
         insight.className = 'trend-category-insight';
         insight.innerHTML = categoryText;
         analysisSection.appendChild(insight);
         
-        // 헤더 섹션 구성
-        headerSection.appendChild(categoryBadge);
         headerSection.appendChild(analysisSection);
         
-        // Card에 헤더 먼저 추가
+        // 헤더를 카드에 추가
         cardContainer.appendChild(headerSection);
         
-        // 썸네일 그리드 컨테이너 미리 생성 (레이아웃 시프트 방지)
-        const gridContainer = document.createElement('div');
-        gridContainer.className = 'trend-category-thumbnails';
-        cardContainer.appendChild(gridContainer);
+        // D. 썸네일 그리드 생성 및 추가
+        const thumbnailsWrapper = document.createElement('div');
+        thumbnailsWrapper.className = 'trend-category-thumbnails';
         
-        // 썸네일 그리드 생성 (allTabsData 준비될 때까지 대기)
+        // 썸네일 추가 함수 (allTabsData 준비 대기)
         const addThumbnails = () => {
             if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
-                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 추가 시도 - segmentType: ${segmentType}`);
-                console.log(`[renderSection3SegmentContent] allTabsData 키 목록:`, Object.keys(window.allTabsData));
-                
                 const categoryProducts = getProductsByCategory(categoryName, segmentType);
-                console.log(`[renderSection3SegmentContent] ${categoryName} (${segmentType}) 상품 개수:`, categoryProducts.length);
                 
                 if (categoryProducts.length > 0) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
                     if (thumbnailGrid) {
-                        // 기존 내용 제거 후 새로 추가
-                        gridContainer.innerHTML = '';
-                        gridContainer.innerHTML = thumbnailGrid;
-                        console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`, gridContainer.innerHTML.substring(0, 200));
+                        thumbnailsWrapper.innerHTML = thumbnailGrid;
                         
-                        // 강제로 표시되도록 스타일 확인 (Grid 컨테이너는 block으로 유지, 내부 Grid에 간섭하지 않음)
-                        gridContainer.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; margin: 20px 0 !important; padding: 20px 0 !important; position: relative !important; z-index: 1 !important;';
-                        
-                        // 내부 그리드 강제 적용 - Grid 속성을 확실하게 설정 (반응형 지원)
-                        const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
+                        // Grid 레이아웃 확실하게 적용
+                        const innerGrid = thumbnailsWrapper.querySelector('.trend-thumbnails-grid');
                         if (innerGrid) {
-                            // Grid 레이아웃을 확실하게 적용 (auto-fill로 반응형 지원, 최소 140px)
-                            innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 16px !important; width: 100% !important; margin-top: 16px !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 2 !important; box-sizing: border-box !important;';
-                            console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료 (Grid: auto-fill, minmax(140px, 1fr))`);
-                        } else {
-                            console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);
+                            innerGrid.style.display = 'grid';
+                            innerGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+                            innerGrid.style.gap = '16px';
+                            innerGrid.style.width = '100%';
                         }
-                        
-                        // 부모 카드 컨테이너도 확인
-                        const parentCard = gridContainer.closest('.trend-category-card');
-                        if (parentCard) {
-                            parentCard.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; position: relative !important; z-index: 1 !important;';
-                            console.log(`[renderSection3SegmentContent] ${categoryName} 부모 카드 스타일 강제 적용 완료`);
-                        }
-                        
-                        // 모든 부모 요소 확인 (사이드바 스크롤 컨테이너는 제외)
-                        let parent = gridContainer.parentElement;
-                        let depth = 0;
-                        while (parent && depth < 10) {
-                            // 스크롤 컨테이너인지 확인 (클래스명 또는 ID로 체크)
-                            const isScrollContainer = (
-                                (parent.classList && (
-                                    parent.classList.contains('trend-analysis-sidebar-content') ||
-                                    parent.classList.contains('trend-analysis-sidebar-wrapper') ||
-                                    parent.classList.contains('trend-section3-content-wrapper')
-                                )) ||
-                                parent.id === 'trendAnalysisContent'
-                            );
-                            
-                            // 스크롤 컨테이너를 만나면 상위로 전파를 멈추고 루프 종료
-                            if (isScrollContainer) {
-                                console.log(`[renderSection3SegmentContent] ${categoryName} 스크롤 컨테이너 발견, 루프 종료:`, parent.className || parent.id);
-                                break;
-                            }
-                            
-                            // 일반 부모 요소는 overflow: visible 적용
-                            const currentStyle = parent.style.cssText || '';
-                            parent.style.cssText = currentStyle + 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important;';
-                            
-                            parent = parent.parentElement;
-                            depth++;
-                        }
-                        
-                        // 썸네일 카드들 확인 - Grid 셀 내에서 자연스럽게 크기 조정되도록 설정 (width 관련 스타일 제거)
-                        const thumbnailCards = gridContainer.querySelectorAll('.trend-thumbnail-card');
-                        thumbnailCards.forEach((card, idx) => {
-                            // width 관련 스타일을 제거하고, Grid 셀 크기에 맞춰 자동으로 조정되도록 설정
-                            card.style.cssText = 'display: flex !important; flex-direction: column !important; visibility: visible !important; opacity: 1 !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important; position: relative !important; z-index: 3 !important; box-sizing: border-box !important; min-width: 0 !important; max-width: 100% !important;';
-                            if (idx === 0) {
-                                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 카드 ${thumbnailCards.length}개 스타일 강제 적용 완료 (Grid 셀에 맞춤)`);
-                            }
-                        });
-                        
-                        // 이미지들도 확인
-                        const images = gridContainer.querySelectorAll('.trend-thumbnail-image');
-                        images.forEach((img, idx) => {
-                            img.style.cssText = 'width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 4 !important;';
-                            if (idx === 0) {
-                                console.log(`[renderSection3SegmentContent] ${categoryName} 이미지 ${images.length}개 스타일 강제 적용 완료`);
-                            }
-                        });
-                        
-                        // 이미지 래퍼 확인 - 카드 내부에서만 100% width (Grid 셀에 맞춤)
-                        const imageWrappers = gridContainer.querySelectorAll('.trend-thumbnail-image-wrapper');
-                        imageWrappers.forEach((wrapper, idx) => {
-                            // 카드 내부에서만 100% width를 사용하되, Grid 셀 크기에 맞춰 조정
-                            wrapper.style.cssText = 'width: 100% !important; aspect-ratio: 1 !important; overflow: hidden !important; background: #F8F9FA !important; position: relative !important; display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 0 !important; box-sizing: border-box !important;';
-                            if (idx === 0) {
-                                console.log(`[renderSection3SegmentContent] ${categoryName} 이미지 래퍼 ${imageWrappers.length}개 스타일 강제 적용 완료`);
-                            }
-                        });
-                        
-                        // DOM 확인
-                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer:`, gridContainer);
-                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.children.length:`, gridContainer.children.length);
-                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.offsetHeight:`, gridContainer.offsetHeight);
-                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.offsetWidth:`, gridContainer.offsetWidth);
-                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.getBoundingClientRect():`, gridContainer.getBoundingClientRect());
-                    } else {
-                        console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 생성 실패`);
                     }
-                } else {
-                    console.warn(`[renderSection3SegmentContent] ${categoryName} (${segmentType}) 상품이 없어 썸네일을 추가하지 않습니다.`);
                 }
             } else {
-                // allTabsData가 없으면 재시도
+                // 재시도
                 const retryCount = (addThumbnails.retryCount || 0) + 1;
                 addThumbnails.retryCount = retryCount;
                 
                 if (retryCount < 50) {
                     setTimeout(addThumbnails, 100);
-                } else {
-                    console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 추가 실패: allTabsData를 찾을 수 없습니다 (재시도 ${retryCount}회)`);
                 }
             }
         };
         
-        // 썸네일 추가 시도
+        // 썸네일을 카드의 마지막 자식 요소로 추가
+        cardContainer.appendChild(thumbnailsWrapper);
+        
+        // 썸네일 추가 시도 시작
         setTimeout(addThumbnails, 100);
         
+        // 3. DOM 추가: 완성된 카드를 메인 컨테이너에 추가
         container.appendChild(cardContainer);
     });
 }

@@ -93,6 +93,13 @@ def filter_ai_report_by_company(analysis_report: str, company_name: str) -> str:
     if not analysis_report or not company_name or not COMPANY_MAPPING_AVAILABLE:
         return analysis_report
     
+    # 데모 계정인 경우 자사몰 섹션 제거 (보안)
+    if company_name.lower() == "demo":
+        # Section 1 전체 제거
+        section1_pattern = r'##\s*Section\s*1[^#]*(?=##|$)'
+        analysis_report = re.sub(section1_pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
+        return analysis_report
+    
     company_ko = get_company_korean_name(company_name)
     if not company_ko:
         # 매핑되지 않은 업체인 경우, Section 1에서 자사몰 섹션 제거 또는 기본 메시지로 변경
@@ -1313,6 +1320,13 @@ def get_trend_data():
         trend_type = data.get("trend_type", "all")  # "rising", "new_entry", "rank_drop", "all"
         company_name = data.get("company_name")  # 현재 로그인한 업체명 (자사몰 필터링용)
         
+        # 데모 계정 제한 (보안)
+        if company_name and company_name.lower() == "demo":
+            return jsonify({
+                "status": "error",
+                "message": "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다"
+            }), 403
+        
         # 주차 정보 조회 (스냅샷 경로 생성을 위해)
         current_week = get_current_week_info()
         if not current_week:
@@ -1510,6 +1524,13 @@ def get_ably_trend_data():
         tab_name = data.get("tab_name")  # 단일 탭 (하위 호환)
         trend_type = data.get("trend_type", "all")  # "rising", "new_entry", "rank_drop", "all"
         company_name = data.get("company_name")  # 현재 로그인한 업체명 (자사몰 필터링용)
+        
+        # 데모 계정 제한 (보안)
+        if company_name and company_name.lower() == "demo":
+            return jsonify({
+                "status": "error",
+                "message": "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다"
+            }), 403
         
         # 주차 정보 조회 (스냅샷 경로 생성을 위해)
         current_week = get_ably_current_week_info()

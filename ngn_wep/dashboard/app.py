@@ -216,6 +216,11 @@ def trend_29cm_page():
         flash("트렌드 페이지를 보려면 먼저 사이트 성과 페이지에서 업체를 선택해주세요.", "warning")
         return redirect(url_for("trend_selection_page"))
     
+    # 데모 계정 제한 (보안)
+    if company_name.lower() == "demo":
+        flash("본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다", "error")
+        return redirect(url_for("trend_selection_page"))
+    
     # 업체가 세션의 company_names에 포함되어 있는지 확인 (보안)
     company_names = session.get("company_names", [])
     if company_name.lower() not in [name.lower() for name in company_names]:
@@ -241,6 +246,11 @@ def trend_ably_page():
     if not company_name or company_name == "all":
         # 업체가 선택되지 않았으면 트렌드 선택 페이지로 리다이렉트
         flash("트렌드 페이지를 보려면 먼저 사이트 성과 페이지에서 업체를 선택해주세요.", "warning")
+        return redirect(url_for("trend_selection_page"))
+    
+    # 데모 계정 제한 (보안)
+    if company_name.lower() == "demo":
+        flash("본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다", "error")
         return redirect(url_for("trend_selection_page"))
     
     # 업체가 세션의 company_names에 포함되어 있는지 확인 (보안)

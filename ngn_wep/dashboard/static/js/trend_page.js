@@ -192,6 +192,18 @@ async function loadAllTabsData() {
             }
         }
         
+        // 데모 계정 제한 체크 (최우선)
+        if (companyName && companyName === 'demo') {
+            const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+            showError(message);
+            
+            // 3초 후 사이트 성과 페이지로 리다이렉트
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
+            return;
+        }
+        
         // 업체가 선택되지 않았으면 에러 표시 및 리다이렉트
         if (!companyName) {
             console.warn("[트렌드 페이지] 업체가 선택되지 않았습니다.");
@@ -1682,6 +1694,11 @@ function getCompanyProducts() {
     // company_name으로 한글명 추정 (간단한 매핑)
     const urlParams = new URLSearchParams(window.location.search);
     const companyName = urlParams.get('company_name') || (typeof window.selectedCompany !== 'undefined' ? window.selectedCompany : '');
+    
+    // 데모 계정인 경우 자사몰 상품 반환하지 않음 (보안)
+    if (companyName && companyName.toLowerCase() === 'demo') {
+        return [];
+    }
     
     // 브랜드명 매핑 (일반적인 케이스)
     const brandMapping = {

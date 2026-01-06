@@ -289,7 +289,15 @@ $(document).ready(function() {
         const url = new URL(href, window.location.origin);
         url.searchParams.set('company_name', selectedCompany);
         $(this).attr('href', url.pathname + url.search);
+        
+        // ✅ 다른 페이지로 이동하기 전에 플래그 설정
+        sessionStorage.setItem("siteFromOtherPage", "true");
       }
+    }
+    
+    // ✅ 광고 성과 페이지나 트렌드 페이지로 이동할 때도 플래그 설정
+    if (href && (href.includes('/ads') || href.includes('/trend'))) {
+      sessionStorage.setItem("siteFromOtherPage", "true");
     }
     
     $('#hamburgerDropdown').hide();

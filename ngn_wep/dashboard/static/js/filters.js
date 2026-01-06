@@ -104,15 +104,25 @@ function initializeFilters() {
   
   if (currentPath === "/" || currentPath === "/dashboard") {
     // 사이트 성과 페이지 - 항상 "오늘"로 초기화
-    savedCompany = sessionStorage.getItem("siteSelectedCompany") || "all";
     savedPeriod = "today"; // 항상 "오늘"로 초기화
     
     // ✅ 복수 업체인 경우, 다른 페이지에서 돌아올 때 "모든 업체"로 초기화
-    if (userCompanyList && userCompanyList.length > 1 && savedCompany !== "all" && !sessionStorage.getItem("siteVisited")) {
-      savedCompany = "all";
-      sessionStorage.setItem("siteSelectedCompany", "all");
+    // sessionStorage의 siteFromOtherPage 플래그 확인
+    const fromOtherPage = sessionStorage.getItem("siteFromOtherPage") === "true";
+    
+    if (userCompanyList && userCompanyList.length > 1) {
+      if (fromOtherPage) {
+        // 다른 페이지에서 돌아온 경우 "모든 업체"로 초기화
+        savedCompany = "all";
+        sessionStorage.setItem("siteSelectedCompany", "all");
+        sessionStorage.removeItem("siteFromOtherPage"); // 플래그 제거
+      } else {
+        // 같은 페이지에서 새로고침한 경우 기존 선택 유지
+        savedCompany = sessionStorage.getItem("siteSelectedCompany") || "all";
+      }
+    } else {
+      savedCompany = sessionStorage.getItem("siteSelectedCompany") || "all";
     }
-    sessionStorage.setItem("siteVisited", "true");
   } else if (currentPath === "/ads") {
     // 광고 성과 페이지 - 저장된 값 사용
     savedCompany = sessionStorage.getItem("adsSelectedCompany") || "all";

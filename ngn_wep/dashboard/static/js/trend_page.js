@@ -2225,10 +2225,27 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     if (thumbnailGrid) {
                         gridContainer.innerHTML = thumbnailGrid;
                         console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`, gridContainer.innerHTML.substring(0, 200));
+                        
                         // 강제로 표시되도록 스타일 확인
                         gridContainer.style.display = 'block';
                         gridContainer.style.visibility = 'visible';
                         gridContainer.style.opacity = '1';
+                        gridContainer.style.width = '100%';
+                        
+                        // 내부 그리드도 강제로 표시
+                        const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
+                        if (innerGrid) {
+                            innerGrid.style.display = 'grid';
+                            innerGrid.style.visibility = 'visible';
+                            innerGrid.style.opacity = '1';
+                            console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료`);
+                        } else {
+                            console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);
+                        }
+                        
+                        // DOM 확인
+                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer:`, gridContainer);
+                        console.log(`[renderSection3SegmentContent] ${categoryName} gridContainer.children.length:`, gridContainer.children.length);
                     } else {
                         console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 생성 실패`);
                     }

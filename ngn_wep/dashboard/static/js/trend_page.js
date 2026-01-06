@@ -2224,7 +2224,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
                     if (thumbnailGrid) {
                         gridContainer.innerHTML = thumbnailGrid;
-                        console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`);
+                        console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`, gridContainer.innerHTML.substring(0, 200));
+                        // 강제로 표시되도록 스타일 확인
+                        gridContainer.style.display = 'block';
+                        gridContainer.style.visibility = 'visible';
+                        gridContainer.style.opacity = '1';
                     } else {
                         console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 생성 실패`);
                     }

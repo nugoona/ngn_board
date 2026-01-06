@@ -2210,14 +2210,6 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         return;
     }
     
-    // 1. 카테고리 정의
-    let categories;
-    if (IS_ABLY && window.allTabsData && Object.keys(window.allTabsData).length > 0) {
-        categories = Object.keys(window.allTabsData).sort();
-    } else {
-        categories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업'];
-    }
-    
     // 세그먼트 헤더 제거
     let cleanedText = segmentText;
     cleanedText = cleanedText.replace(/^\*\*?[🔥🚀📉]\s*(급상승|신규 진입|순위 하락)\s*\([^\)]+\)\*\*?\s*\n*/m, '');
@@ -2227,14 +2219,51 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     // 카테고리별 텍스트 파싱
     const lines = cleanedText.split('\n');
     
-    // 1. 모든 카테고리의 인덱스를 찾아서 객체 배열로 저장
-    const categoryIndexList = [];
-    categories.forEach(categoryName => {
-        const headerPattern = `**${categoryName}:**`;
-        const index = lines.findIndex(line => line.trim() === headerPattern || line.trim().includes(headerPattern));
-        if (index >= 0) {
-            categoryIndexList.push({ name: categoryName, index: index });
+    // 1. AI 리포트에서 실제로 사용된 카테고리 헤더를 동적으로 찾기
+    const foundCategoriesInText = [];
+    const categoryHeaderRegex = /^\*\*([^:]+):\*\*/;
+    
+    lines.forEach((line, lineIndex) => {
+        const match = line.trim().match(categoryHeaderRegex);
+        if (match && match[1]) {
+            const categoryName = match[1].trim();
+            if (categoryName && !foundCategoriesInText.some(c => c.name === categoryName)) {
+                foundCategoriesInText.push({ name: categoryName, index: lineIndex });
+            }
         }
+    });
+    
+    console.log('[renderSection3SegmentContent] AI 리포트에서 발견된 카테고리:', foundCategoriesInText.map(c => c.name));
+    
+    // 2. allTabsData의 키와 AI 리포트에서 찾은 카테고리를 병합
+    let categoriesFromData = [];
+    if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+        categoriesFromData = Object.keys(window.allTabsData);
+        console.log('[renderSection3SegmentContent] allTabsData의 카테고리:', categoriesFromData);
+    }
+    
+    // 3. 기본 카테고리 목록 (하드코딩)
+    const defaultCategories = ['상의', '바지', '스커트', '원피스', '니트웨어', '셋업', '아우터', '언더웨어', '점프수트', '파티복/행사복', '해외브랜드', '홈웨어'];
+    
+    // 4. 병합: AI 리포트에서 찾은 카테고리를 우선 사용하고, allTabsData와 기본 목록과 합치기
+    const allPossibleCategories = new Set();
+    
+    // AI 리포트에서 찾은 카테고리 추가 (우선순위 1)
+    foundCategoriesInText.forEach(cat => allPossibleCategories.add(cat.name));
+    
+    // allTabsData의 카테고리 추가 (우선순위 2)
+    categoriesFromData.forEach(cat => allPossibleCategories.add(cat));
+    
+    // 기본 카테고리 추가 (우선순위 3)
+    defaultCategories.forEach(cat => allPossibleCategories.add(cat));
+    
+    const mergedCategories = Array.from(allPossibleCategories).sort();
+    console.log('[renderSection3SegmentContent] 병합된 카테고리 목록:', mergedCategories);
+    
+    // 5. 실제로 AI 리포트에 존재하는 카테고리만 필터링하여 인덱스 리스트 생성
+    const categoryIndexList = [];
+    foundCategoriesInText.forEach(categoryInfo => {
+        categoryIndexList.push({ name: categoryInfo.name, index: categoryInfo.index });
     });
     
     // 2. 인덱스 오름차순(등장 순서)으로 정렬
@@ -2379,9 +2408,41 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 console.log(`[DEBUG] ${categoryName} - 요청 파라미터: categoryName="${categoryName}", segmentType="${segmentType}"`);
                 console.log(`[DEBUG] ${categoryName} - allTabsData 사용 가능한 카테고리:`, Object.keys(window.allTabsData));
                 
-                const categoryProducts = getProductsByCategory(categoryName, segmentType);
+                // 카테고리명으로 상품 조회 시도
+                let categoryProducts = getProductsByCategory(categoryName, segmentType);
                 
-                console.log(`[DEBUG] ${categoryName} - 가져온 상품 개수: ${categoryProducts.length}개`);
+                // 상품이 없으면 카테고리명 변형을 시도
+                if (categoryProducts.length === 0) {
+                    console.log(`[DEBUG] ${categoryName} - 기본 카테고리명으로 상품 없음, 변형 시도 중...`);
+                    
+                    // 슬래시가 있으면 분리 시도 (예: "파티복/행사복" -> "파티복", "행사복")
+                    if (categoryName.includes('/')) {
+                        const parts = categoryName.split('/').map(p => p.trim());
+                        for (const part of parts) {
+                            categoryProducts = getProductsByCategory(part, segmentType);
+                            if (categoryProducts.length > 0) {
+                                console.log(`[DEBUG] ${categoryName} - 변형 성공: "${part}"에서 ${categoryProducts.length}개 상품 발견`);
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 여전히 없으면 부분 매칭 시도
+                    if (categoryProducts.length === 0 && window.allTabsData) {
+                        const availableTabs = Object.keys(window.allTabsData);
+                        for (const tabName of availableTabs) {
+                            if (tabName.includes(categoryName) || categoryName.includes(tabName)) {
+                                categoryProducts = getProductsByCategory(tabName, segmentType);
+                                if (categoryProducts.length > 0) {
+                                    console.log(`[DEBUG] ${categoryName} - 부분 매칭 성공: "${tabName}"에서 ${categoryProducts.length}개 상품 발견`);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`[DEBUG] ${categoryName} - 최종 가져온 상품 개수: ${categoryProducts.length}개`);
                 if (categoryProducts.length > 0) {
                     console.log(`[DEBUG] ${categoryName} - 첫 번째 상품 샘플:`, {
                         product: categoryProducts[0].product || categoryProducts[0].product_name,

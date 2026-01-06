@@ -159,28 +159,35 @@ ngn_wep/dashboard/templates/trend_page.html
 
 ---
 
-## 추가 작업: Section 3 탭별 카드 구조 개선
+## 추가 작업: Section 3 카테고리별 카드 구조 확인 및 개선
 
-### 문제 상황
-현재 Section 3는 각 카테고리(바지, 스커트 등)별로 개별 카드가 생성되어 표시되고 있습니다. 하지만 사용자가 원하는 구조는 **탭별(급상승, 신규 진입, 순위 하락)로 하나의 통합 카드**를 표시하는 것입니다.
+### 현재 구조 확인 (이미지 기준)
+이미지를 보면 다음과 같은 구조로 표시되어야 합니다:
 
-### 목표 구조
-각 탭을 선택하면 다음과 같은 구조로 표시되어야 합니다:
+1. **탭 영역**: 상단에 "급상승", "신규 진입", "순위 하락" 탭이 표시됨
+2. **카테고리별 카드**: 선택된 탭에 따라 각 카테고리(상의, 바지 등)별로 하나의 카드가 표시됨
 
+**각 카테고리 카드의 구조:**
 ```
 ┌─────────────────────────────────────────┐
-│ [급상승] (탭 이름 - 텍스트박스/헤더)       │
+│ [상의] (카테고리 뱃지 - 보라색)          │
 ├─────────────────────────────────────────┤
-│ AI 요약 분석 텍스트 (전체 카테고리 통합)  │
-│ (모든 카테고리의 분석 내용을 하나로 통합) │
+│ AI 요약 분석 텍스트 (카테고리별)         │
+│ • 캠퍼스 로고와 빈티지 스웨트의 부상...  │
+│ • 유니크한 디테일의 터틀넥 인기...       │
 ├─────────────────────────────────────────┤
 │ [썸네일 그리드]                          │
 │ ┌───┐ ┌───┐ ┌───┐ ┌───┐ ┌───┐        │
-│ │바지│ │스커트│ │상의│ │원피스│ │니트│    │
+│ │상품1│ │상품2│ │상품3│ │상품4│ │상품5│    │
 │ └───┘ └───┘ └───┘ └───┘ └───┘        │
-│ (모든 카테고리의 썸네일을 한 그룹으로)    │
+│ (해당 카테고리의 썸네일들, 한 줄에 5개)   │
 └─────────────────────────────────────────┘
 ```
+
+**중요**: 
+- 각 카테고리는 독립적인 카드로 표시되어야 함
+- 한 탭에 여러 카테고리가 있으면, 각각이 별도의 카드로 표시되어야 함
+- 탭 이름은 상단에만 표시되고, 각 카드에는 카테고리 이름만 표시됨
 
 ### 작업 명령문
 
@@ -188,127 +195,72 @@ ngn_wep/dashboard/templates/trend_page.html
 
 **함수**: `renderSection3SegmentContent()` (2080줄부터)
 
+**현재 상태**: 코드를 보면 이미 카테고리별로 개별 카드를 생성하고 있습니다 (2194줄부터). 이 구조는 올바르지만, 다음과 같은 문제가 있을 수 있습니다:
+
+1. **카테고리 카드가 제대로 표시되지 않는 문제**
+2. **썸네일 그리드가 표시되지 않는 문제**
+3. **레이아웃이 깨지는 문제**
+
 **작업 내용**:
 
-1. **구조 변경**: 카테고리별 개별 카드 생성을 제거하고, 탭별 하나의 통합 카드로 변경
-   - 기존: 각 카테고리마다 `trend-category-card` 생성
-   - 변경: 탭 전체를 위한 하나의 `trend-segment-card` 생성
+1. **카테고리별 카드 구조 확인 및 수정**:
+   - 현재 코드는 각 카테고리마다 `trend-category-card`를 생성하고 있음 (올바름)
+   - 각 카드 내부 구조 확인:
+     - 카테고리 뱃지 (`.trend-category-badge`)
+     - AI 분석 텍스트 (`.trend-category-insight`)
+     - 썸네일 그리드 (`.trend-category-thumbnails`)
 
-2. **탭 이름 헤더 추가**:
+2. **썸네일 그리드 레이아웃 개선**:
+   - 한 줄에 5개씩 표시되도록 그리드 설정
+   - `grid-template-columns: repeat(5, 1fr)` 또는 `repeat(auto-fill, minmax(180px, 1fr))`
+   - 반응형: 모바일에서는 한 줄에 2-3개
+
+3. **카드 간 간격 및 스타일 확인**:
+   - 각 카테고리 카드가 명확히 구분되도록 `margin-bottom` 설정
+   - 카드 배경색, 테두리, 그림자 확인
+
+**확인 및 수정 사항**:
+
+현재 코드는 이미 올바른 구조를 가지고 있지만, 다음을 확인하고 개선해야 합니다:
+
+1. **카테고리 카드가 제대로 표시되는지 확인**:
+   - `trend-category-card` 클래스가 제대로 적용되는지
+   - CSS 스타일이 제대로 적용되는지
+   - 카드가 화면에 보이는지 (display, visibility, opacity)
+
+2. **썸네일 그리드 레이아웃 개선**:
    ```javascript
-   // 탭 이름을 헤더로 표시
-   const segmentHeader = document.createElement('div');
-   segmentHeader.className = 'trend-segment-header';
-   segmentHeader.textContent = segmentType === 'rising_star' ? '급상승' 
-                               : segmentType === 'new_entry' ? '신규 진입' 
-                               : '순위 하락';
+   // createThumbnailGridFromProducts 함수 또는 관련 부분에서
+   // 그리드 컬럼 수를 5개로 설정
+   const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
+   if (innerGrid) {
+       innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 16px !important;';
+   }
    ```
 
-3. **AI 분석 텍스트 통합**:
-   - 각 카테고리별 텍스트를 개별 카드로 분리하지 않고
-   - 모든 카테고리의 분석 텍스트를 하나로 통합하여 표시
-   - 또는 각 카테고리별로 작은 섹션으로 구분하여 표시하되, 하나의 카드 안에 포함
+3. **카테고리 뱃지 스타일 확인**:
+   - 보라색 그라데이션 배경
+   - 흰색 텍스트
+   - 적절한 패딩과 둥근 모서리
 
-4. **썸네일 그리드 통합**:
-   - 모든 카테고리의 썸네일을 하나의 그리드로 통합
-   - 각 썸네일에 카테고리 라벨 추가 (예: 상단에 작은 뱃지)
-   - 그리드 레이아웃: `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))`
+**썸네일 그리드 생성 함수 확인**:
 
-**수정 예시**:
+기존의 `createThumbnailGridFromProducts` 함수가 제대로 작동하는지 확인하고, 필요시 다음과 같이 수정:
 
 ```javascript
-function renderSection3SegmentContent(segmentType, segmentText, container) {
-    // ... 기존 텍스트 파싱 로직 유지 ...
-    
-    // 컨테이너 초기화
-    container.innerHTML = '';
-    
-    // 탭별 통합 카드 컨테이너 생성 (하나의 카드)
-    const segmentCard = document.createElement('div');
-    segmentCard.className = 'trend-segment-card';
-    
-    // 1. 탭 이름 헤더
-    const segmentHeader = document.createElement('div');
-    segmentHeader.className = 'trend-segment-header';
-    const segmentLabel = segmentType === 'rising_star' ? '급상승' 
-                        : segmentType === 'new_entry' ? '신규 진입' 
-                        : '순위 하락';
-    segmentHeader.textContent = segmentLabel;
-    segmentCard.appendChild(segmentHeader);
-    
-    // 2. AI 분석 텍스트 영역 (모든 카테고리 통합)
-    const analysisSection = document.createElement('div');
-    analysisSection.className = 'trend-segment-analysis';
-    
-    // 카테고리별로 분석 내용을 섹션으로 구분하여 표시
-    categories.forEach(categoryName => {
-        const categoryText = categoryData[categoryName];
-        if (categoryText) {
-            const categorySection = document.createElement('div');
-            categorySection.className = 'trend-segment-category-section';
-            
-            const categoryTitle = document.createElement('div');
-            categoryTitle.className = 'trend-segment-category-title';
-            categoryTitle.textContent = categoryName;
-            
-            const categoryContent = document.createElement('div');
-            categoryContent.className = 'trend-segment-category-content';
-            categoryContent.innerHTML = categoryText;
-            
-            categorySection.appendChild(categoryTitle);
-            categorySection.appendChild(categoryContent);
-            analysisSection.appendChild(categorySection);
-        }
-    });
-    
-    segmentCard.appendChild(analysisSection);
-    
-    // 3. 통합 썸네일 그리드 (모든 카테고리)
-    const thumbnailsSection = document.createElement('div');
-    thumbnailsSection.className = 'trend-segment-thumbnails';
-    
-    // 모든 카테고리의 상품을 하나의 배열로 수집
-    const allProducts = [];
-    categories.forEach(categoryName => {
-        const categoryProducts = getProductsByCategory(categoryName, segmentType);
-        // 각 상품에 카테고리 정보 추가
-        categoryProducts.forEach(product => {
-            allProducts.push({
-                ...product,
-                category: categoryName
-            });
-        });
-    });
-    
-    // 통합 썸네일 그리드 생성
-    if (allProducts.length > 0) {
-        const thumbnailGrid = createUnifiedThumbnailGrid(allProducts, segmentType);
-        thumbnailsSection.innerHTML = thumbnailGrid;
-    }
-    
-    segmentCard.appendChild(thumbnailsSection);
-    container.appendChild(segmentCard);
-}
-```
-
-**새로운 헬퍼 함수 추가**:
-
-```javascript
-// 통합 썸네일 그리드 생성 (모든 카테고리 포함)
-function createUnifiedThumbnailGrid(products, segmentType) {
+// createThumbnailGridFromProducts 함수에서 그리드 컬럼 수를 5개로 설정
+function createThumbnailGridFromProducts(products, segmentType) {
     if (!products || products.length === 0) return '';
     
-    let gridHtml = '<div class="trend-thumbnails-grid">';
+    let gridHtml = '<div class="trend-thumbnails-grid" style="display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 16px !important;">';
     
     products.forEach(product => {
         gridHtml += `
-            <div class="trend-thumbnail-card" data-category="${product.category || ''}">
-                <div class="trend-thumbnail-category-badge">${product.category || ''}</div>
+            <div class="trend-thumbnail-card">
                 <div class="trend-thumbnail-image-wrapper">
                     <img src="${product.thumbnail || product.image || ''}" 
                          alt="${product.title || ''}" 
-                         class="trend-thumbnail-image"
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22160%22 height=%22160%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';">
+                         class="trend-thumbnail-image">
                 </div>
                 <div class="trend-thumbnail-info">
                     <div class="trend-thumbnail-title">${product.title || ''}</div>
@@ -323,99 +275,78 @@ function createUnifiedThumbnailGrid(products, segmentType) {
 }
 ```
 
-**CSS 스타일 추가**:
+**CSS 스타일 확인 및 개선**:
 
 **파일**: `ngn_wep/dashboard/templates/trend_page.html`
 
+현재 CSS를 확인하고 다음 사항을 보완:
+
+1. **카테고리 카드 스타일** (이미 존재하지만 확인 필요):
 ```css
-/* 탭별 통합 카드 스타일 */
-.trend-segment-card {
+.trend-category-card {
   background: #ffffff !important;
   border: 1px solid #E9ECEF !important;
-  border-radius: 16px !important;
-  padding: 32px !important;
-  margin-bottom: 32px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  margin-bottom: 40px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
+```
 
-/* 탭 이름 헤더 */
-.trend-segment-header {
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  color: #212529 !important;
-  margin-bottom: 24px !important;
-  padding-bottom: 16px !important;
-  border-bottom: 2px solid #E9ECEF !important;
-}
-
-/* AI 분석 텍스트 영역 */
-.trend-segment-analysis {
-  margin-bottom: 32px !important;
-}
-
-.trend-segment-category-section {
-  margin-bottom: 20px !important;
-}
-
-.trend-segment-category-title {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  color: #495057 !important;
-  margin-bottom: 12px !important;
-  padding: 8px 12px !important;
-  background: #F8F9FA !important;
-  border-radius: 6px !important;
+2. **카테고리 뱃지 스타일** (보라색 그라데이션):
+```css
+.trend-category-badge {
   display: inline-block !important;
-}
-
-.trend-segment-category-content {
-  font-size: 14px !important;
-  line-height: 1.7 !important;
-  color: #495057 !important;
-  padding-left: 12px !important;
-}
-
-/* 통합 썸네일 그리드 */
-.trend-segment-thumbnails {
-  margin-top: 32px !important;
-  padding-top: 24px !important;
-  border-top: 1px solid #E9ECEF !important;
-}
-
-.trend-segment-thumbnails .trend-thumbnails-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
-  gap: 20px !important;
-}
-
-/* 썸네일 카드에 카테고리 뱃지 추가 */
-.trend-thumbnail-card {
-  position: relative !important;
-}
-
-.trend-thumbnail-category-badge {
-  position: absolute !important;
-  top: 8px !important;
-  left: 8px !important;
-  background: rgba(102, 126, 234, 0.9) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: #ffffff !important;
-  padding: 4px 8px !important;
-  border-radius: 4px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  z-index: 10 !important;
+  padding: 6px 16px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2) !important;
+  width: fit-content !important;
+}
+```
+
+3. **썸네일 그리드 스타일** (한 줄에 5개):
+```css
+.trend-thumbnails-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: 16px !important;
+  margin-top: 20px !important;
+}
+
+/* 반응형: 모바일에서는 2-3개 */
+@media (max-width: 1200px) {
+  .trend-thumbnails-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .trend-thumbnails-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .trend-thumbnails-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 ```
 
 ### 수정 완료 후 확인 사항
 
-1. 탭을 선택하면 하나의 큰 카드가 표시되는지 확인
-2. 카드 상단에 탭 이름(급상승, 신규 진입, 순위 하락)이 헤더로 표시되는지 확인
-3. AI 분석 텍스트가 카테고리별로 구분되어 표시되는지 확인
-4. 모든 카테고리의 썸네일이 하나의 그리드로 통합되어 표시되는지 확인
-5. 각 썸네일에 카테고리 뱃지가 표시되는지 확인
-6. 스크롤이 정상적으로 작동하는지 확인
+1. 탭을 선택하면 각 카테고리별로 별도의 카드가 표시되는지 확인
+2. 각 카드 상단에 카테고리 뱃지(예: "상의", "바지")가 보라색 그라데이션으로 표시되는지 확인
+3. 각 카드에 AI 분석 텍스트가 카테고리별로 표시되는지 확인
+4. 각 카드 하단에 해당 카테고리의 썸네일이 한 줄에 5개씩 그리드로 표시되는지 확인
+5. 스크롤이 정상적으로 작동하는지 확인
+6. 카드 간 간격이 적절한지 확인 (margin-bottom)
 

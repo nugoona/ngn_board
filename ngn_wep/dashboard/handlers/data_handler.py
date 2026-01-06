@@ -1767,14 +1767,18 @@ def get_compare_search_results():
         
         # GCS 스냅샷에서 검색 결과 로드
         # search_keyword가 없으면 전체 데이터 로드 (초기 로드 최적화)
-        results = load_search_results_from_gcs(
+        snapshot_data = load_search_results_from_gcs(
             company_name=company_name,
             run_id=run_id,
             search_keyword=search_keyword if search_keyword else None
         )
         
-        if results is None:
+        if snapshot_data is None:
             return jsonify({"status": "error", "message": "스냅샷을 찾을 수 없습니다."}), 404
+        
+        # 결과 추출
+        search_results = snapshot_data.get("search_results", {})
+        created_at = snapshot_data.get("created_at")
         
         # search_keyword가 지정된 경우 해당 키워드만 반환
         if search_keyword:
@@ -1782,14 +1786,16 @@ def get_compare_search_results():
                 "status": "success",
                 "run_id": run_id,
                 "search_keyword": search_keyword,
-                "results": results.get(search_keyword, [])
+                "results": search_results.get(search_keyword, []),
+                "created_at": created_at
             }), 200
         else:
             # 모든 키워드 반환 (초기 로드 최적화)
             return jsonify({
                 "status": "success",
                 "run_id": run_id,
-                "results": results
+                "results": search_results,
+                "created_at": created_at
             }), 200
             
     except Exception as e:

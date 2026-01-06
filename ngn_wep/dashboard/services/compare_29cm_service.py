@@ -458,15 +458,25 @@ def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword:
         
         # search_results 추출
         search_results = snapshot_data.get("search_results", {})
+        created_at = snapshot_data.get("created_at")  # 수집 시간
         
         # search_keyword가 지정된 경우 해당 키워드만 반환
         if search_keyword:
             if search_keyword in search_results:
-                return {search_keyword: search_results[search_keyword]}
+                return {
+                    "search_results": {search_keyword: search_results[search_keyword]},
+                    "created_at": created_at
+                }
             else:
-                return {}
+                return {
+                    "search_results": {},
+                    "created_at": created_at
+                }
         
-        return search_results
+        return {
+            "search_results": search_results,
+            "created_at": created_at
+        }
         
     except Exception as e:
         print(f"[ERROR] load_search_results_from_gcs 실패: {e}")

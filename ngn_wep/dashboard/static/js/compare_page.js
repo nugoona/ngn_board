@@ -11,6 +11,7 @@
     let allKeywords = [];
     let currentResults = [];
     let allResultsCache = {};  // 모든 검색어 데이터 캐시
+    let snapshotCreatedAt = null;  // 스냅샷 수집 시간
     let currentPage = 1;
     const ITEMS_PER_PAGE = 10;
     
@@ -325,6 +326,12 @@
             // 전체 결과를 캐시에 저장
             allResultsCache[cacheKey] = data.results || {};
             
+            // 수집 시간 저장
+            if (data.created_at) {
+                snapshotCreatedAt = data.created_at;
+                updateInfoBar();  // 수집 시간으로 정보 바 업데이트
+            }
+            
         } catch (error) {
             console.error('[Compare] 전체 검색 결과 로드 실패:', error);
             // 에러가 나도 계속 진행 (개별 로드로 fallback)
@@ -382,6 +389,12 @@
             
             currentResults = data.results || [];
             
+            // 수집 시간 저장
+            if (data.created_at) {
+                snapshotCreatedAt = data.created_at;
+                updateInfoBar();  // 수집 시간으로 정보 바 업데이트
+            }
+            
             // 캐시에 저장
             if (!allResultsCache[cacheKey]) {
                 allResultsCache[cacheKey] = {};
@@ -407,18 +420,37 @@
         
         if (!infoBar || !infoText) return;
         
-        // 현재 날짜/시간 포맷팅
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
+        let dateTimeStr;
         
-        const ampm = now.getHours() < 12 ? '오전' : '오후';
-        const displayHours = now.getHours() % 12 || 12;
-        
-        const dateTimeStr = `${year}년 ${month}-${day} ${ampm} ${displayHours}시${minutes !== '00' ? minutes + '분' : ''}`;
+        // 수집 시간이 있으면 사용, 없으면 현재 시간 사용
+        if (snapshotCreatedAt) {
+            // ISO 형식의 날짜 문자열을 파싱 (자동으로 로컬 시간으로 변환됨)
+            const collectedDate = new Date(snapshotCreatedAt);
+            
+            const year = collectedDate.getFullYear();
+            const month = String(collectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(collectedDate.getDate()).padStart(2, '0');
+            const hours = collectedDate.getHours();
+            const minutes = String(collectedDate.getMinutes()).padStart(2, '0');
+            
+            const ampm = hours < 12 ? '오전' : '오후';
+            const displayHours = hours % 12 || 12;
+            
+            dateTimeStr = `${year}년 ${month}-${day} ${ampm} ${displayHours}시${minutes !== '00' ? minutes + '분' : ''}`;
+        } else {
+            // 현재 날짜/시간 포맷팅 (fallback)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const ampm = now.getHours() < 12 ? '오전' : '오후';
+            const displayHours = now.getHours() % 12 || 12;
+            
+            dateTimeStr = `${year}년 ${month}-${day} ${ampm} ${displayHours}시${minutes !== '00' ? minutes + '분' : ''}`;
+        }
         
         infoText.innerHTML = `<span class="compare-info-date">${dateTimeStr} 기준</span> - <span class="compare-info-type">추천순 TOP20 / 주간 베스트 상품</span>`;
     }

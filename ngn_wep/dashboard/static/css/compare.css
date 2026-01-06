@@ -187,6 +187,15 @@
   color: #212529;
 }
 
+.compare-card-like {
+  font-size: 11px;
+  color: #6C757D;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .compare-card-actions {
   display: flex;
   gap: 8px;

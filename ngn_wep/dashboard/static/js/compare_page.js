@@ -457,10 +457,11 @@
                         <div class="compare-card-brand">${item.brand_name || ''}</div>
                         <div class="compare-card-name">${item.product_name || ''}</div>
                         <div class="compare-card-price">${price}</div>
+                        ${item.like_count ? `<div class="compare-card-like">❤️ ${item.like_count.toLocaleString()}</div>` : ''}
                     </div>
                     <div class="compare-card-actions">
                         <a href="${itemUrl}" target="_blank" class="compare-card-link-btn">바로가기</a>
-                        <button class="compare-card-review-btn" data-item-id="${item.item_id}" data-product-name="${(item.product_name || '').replace(/"/g, '&quot;')}">리뷰</button>
+                        <button class="compare-card-review-btn" data-item-id="${item.item_id}" data-product-name="${(item.product_name || '').replace(/"/g, '&quot;')}">최신 리뷰 10</button>
                     </div>
                 </div>
             `;

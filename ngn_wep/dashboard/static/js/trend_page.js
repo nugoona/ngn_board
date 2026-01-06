@@ -483,6 +483,15 @@ function loadTrendAnalysisReport() {
     // 로딩 상태
     contentElement.innerHTML = '<div class="trend-analysis-loading">분석 리포트를 불러오는 중...</div>';
     
+    // company_name 가져오기 (URL 파라미터 또는 템플릿 변수)
+    const urlParams = new URLSearchParams(window.location.search);
+    let companyName = urlParams.get('company_name');
+    if (!companyName && typeof window.selectedCompany !== 'undefined' && window.selectedCompany) {
+        companyName = window.selectedCompany;
+    }
+    
+    console.log('[loadTrendAnalysisReport] API 호출 시작, company_name:', companyName, 'API_ENDPOINT:', API_ENDPOINT);
+    
     // API 호출로 분석 리포트 가져오기
     fetch(API_ENDPOINT, {
         method: 'POST',
@@ -491,25 +500,34 @@ function loadTrendAnalysisReport() {
         },
         body: JSON.stringify({
             tab_names: Object.keys(allTabsData || {}),
-            trend_type: 'all'
+            trend_type: 'all',
+            company_name: companyName ? companyName.toLowerCase() : null
         })
     })
     .then(response => response.json())
     .then(data => {
+        console.log('[loadTrendAnalysisReport] API 응답:', data);
         if (data.status === 'success') {
             // insights 데이터 저장
             if (data.insights) {
                 window.trendInsights = data.insights;
+                console.log('[loadTrendAnalysisReport] insights 저장 완료:', {
+                    hasAnalysisReport: !!data.insights.analysis_report,
+                    analysisReportLength: data.insights.analysis_report ? data.insights.analysis_report.length : 0
+                });
             }
             
             renderTrendAnalysisReport(data.insights || {}, createdAtElement);
         } else {
-            contentElement.innerHTML = '<div class="trend-analysis-error">분석 리포트를 불러올 수 없습니다.</div>';
+            console.warn('[loadTrendAnalysisReport] API 응답 실패:', data.message || data);
+            // 에러 메시지가 있어도 페이지는 표시 (빈 상태로)
+            renderTrendAnalysisReport({}, createdAtElement);
         }
     })
     .catch(error => {
-        console.error('분석 리포트 로드 실패:', error);
-        contentElement.innerHTML = '<div class="trend-analysis-error">분석 리포트를 불러오는 중 오류가 발생했습니다.</div>';
+        console.error('[loadTrendAnalysisReport] API 호출 실패:', error);
+        // 에러가 발생해도 페이지는 표시 (빈 상태로)
+        renderTrendAnalysisReport({}, createdAtElement);
     });
 }
 
@@ -628,17 +646,20 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     // 컨테이너 스타일 강제 적용
     container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important;';
     
-    // Section 2나 Section 3 중 하나라도 있으면 페이지 표시
-    const hasAnySection = container.children.length > 0;
+    // 섹션이 없어도 페이지 표시 (빈 상태로라도)
+    // 업체명이 없는 버킷만 안 보이게 했으므로, 여기서는 항상 표시
+    contentElement.innerHTML = '';
+    contentElement.appendChild(container);
     
-    if (hasAnySection) {
-        contentElement.innerHTML = '';
-        contentElement.appendChild(container);
-        console.log('[renderTrendAnalysisReport] 트렌드 분석 리포트 렌더링 완료, 섹션 수:', container.children.length);
-    } else {
-        // 모든 섹션이 없을 때만 메시지 표시
-        contentElement.innerHTML = '<div class="trend-analysis-empty">분석 리포트 데이터가 없습니다.</div>';
-        console.warn('[renderTrendAnalysisReport] 표시할 섹션이 없습니다.');
+    const sectionCount = container.children.length;
+    console.log('[renderTrendAnalysisReport] 트렌드 분석 리포트 렌더링 완료, 섹션 수:', sectionCount);
+    
+    if (sectionCount === 0) {
+        // 섹션이 없으면 안내 메시지 추가
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'trend-analysis-empty';
+        emptyMessage.innerHTML = '<p>현재 주차의 분석 리포트가 아직 생성되지 않았거나 데이터가 없습니다.</p>';
+        container.appendChild(emptyMessage);
     }
 }
 

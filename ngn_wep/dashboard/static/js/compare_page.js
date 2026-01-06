@@ -393,7 +393,7 @@
             
             return `
                 <div class="compare-card">
-                    <div class="compare-card-rank">Rank ${rank}</div>
+                    <div class="compare-card-rank">${rank}</div>
                     ${bestRankBadge}
                     <div class="compare-card-image">
                         <img src="${item.thumbnail_url || ''}" alt="${item.product_name || ''}" loading="lazy" />

@@ -952,10 +952,34 @@ function getProductsByCategory(categoryName, trendType) {
     
     const products = [];
     
+    // 카테고리명 정규화 및 매칭 (유연한 매칭)
+    let matchedTabName = null;
+    const availableTabs = Object.keys(window.allTabsData);
+    
+    // 정확한 매칭 시도
+    if (window.allTabsData[categoryName]) {
+        matchedTabName = categoryName;
+    } else {
+        // 부분 매칭 시도 (예: "상의"와 "상의/하의" 등)
+        const normalizedCategoryName = categoryName.trim();
+        for (const tabName of availableTabs) {
+            if (tabName.includes(normalizedCategoryName) || normalizedCategoryName.includes(tabName)) {
+                matchedTabName = tabName;
+                console.log(`[getProductsByCategory] 카테고리명 부분 매칭: "${categoryName}" → "${tabName}"`);
+                break;
+            }
+        }
+    }
+    
+    if (!matchedTabName) {
+        console.warn(`[getProductsByCategory] ${categoryName} 카테고리 데이터 없음. 사용 가능한 카테고리:`, availableTabs);
+        return [];
+    }
+    
     // 해당 카테고리의 탭 데이터 찾기
-    const tabData = window.allTabsData[categoryName];
+    const tabData = window.allTabsData[matchedTabName];
     if (!tabData) {
-        console.warn(`[getProductsByCategory] ${categoryName} 카테고리 데이터 없음. 사용 가능한 카테고리:`, Object.keys(window.allTabsData));
+        console.warn(`[getProductsByCategory] ${matchedTabName} 탭 데이터 없음`);
         return [];
     }
     
@@ -1982,9 +2006,9 @@ function renderSection3WithTabs(section3Data) {
     tabs.id = 'section3Tabs';
     
     const segmentTabs = [
-        { type: 'rising_star', label: '🔥 급상승', displayLabel: '급상승' },
-        { type: 'new_entry', label: '🚀 신규 진입', displayLabel: '신규 진입' },
-        { type: 'rank_drop', label: '📉 순위 하락', displayLabel: '순위 하락' }
+        { type: 'rising_star', label: '🔥 급상승', displayLabel: '🔥 급상승' },
+        { type: 'new_entry', label: '🚀 신규 진입', displayLabel: '🚀 신규 진입' },
+        { type: 'rank_drop', label: '📉 순위 하락', displayLabel: '📉 순위 하락' }
     ];
     
     segmentTabs.forEach((tab, index) => {
@@ -2190,12 +2214,22 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         // 썸네일 그리드 생성 (allTabsData 준비될 때까지 대기)
         const addThumbnails = () => {
             if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
+                console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 추가 시도 - segmentType: ${segmentType}`);
+                console.log(`[renderSection3SegmentContent] allTabsData 키 목록:`, Object.keys(window.allTabsData));
+                
                 const categoryProducts = getProductsByCategory(categoryName, segmentType);
+                console.log(`[renderSection3SegmentContent] ${categoryName} (${segmentType}) 상품 개수:`, categoryProducts.length);
+                
                 if (categoryProducts.length > 0) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
                     if (thumbnailGrid) {
                         gridContainer.innerHTML = thumbnailGrid;
+                        console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`);
+                    } else {
+                        console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 생성 실패`);
                     }
+                } else {
+                    console.warn(`[renderSection3SegmentContent] ${categoryName} (${segmentType}) 상품이 없어 썸네일을 추가하지 않습니다.`);
                 }
             } else {
                 // allTabsData가 없으면 재시도
@@ -2204,6 +2238,8 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 
                 if (retryCount < 50) {
                     setTimeout(addThumbnails, 100);
+                } else {
+                    console.warn(`[renderSection3SegmentContent] ${categoryName} 썸네일 추가 실패: allTabsData를 찾을 수 없습니다 (재시도 ${retryCount}회)`);
                 }
             }
         };

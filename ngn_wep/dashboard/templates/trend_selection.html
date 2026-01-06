@@ -270,9 +270,19 @@
         // href 설정
         card29cmLink.href = url;
         
-        // 클릭 이벤트 리스너 추가 (단순화)
+        // 클릭 이벤트 리스너 추가 (데모 계정 체크 포함)
         card29cmLink.addEventListener('click', function(e) {
           console.log('[Trend Selection] 29CM 카드 클릭 이벤트 발생');
+          
+          // 데모 계정 체크
+          if (selectedCompany && selectedCompany.toLowerCase() === 'demo') {
+            e.preventDefault();
+            e.stopPropagation();
+            const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+            alert(message);
+            return false;
+          }
+          
           e.preventDefault();
           e.stopPropagation();
           console.log('[Trend Selection] 페이지 이동 시작:', url);
@@ -320,9 +330,19 @@
         // href 설정
         cardAblyLink.href = url;
         
-        // 클릭 이벤트 리스너 추가 (29CM와 동일)
+        // 클릭 이벤트 리스너 추가 (데모 계정 체크 포함)
         cardAblyLink.addEventListener('click', function(e) {
           console.log('[Trend Selection] Ably 카드 클릭 이벤트 발생');
+          
+          // 데모 계정 체크
+          if (selectedCompany && selectedCompany.toLowerCase() === 'demo') {
+            e.preventDefault();
+            e.stopPropagation();
+            const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+            alert(message);
+            return false;
+          }
+          
           e.preventDefault();
           e.stopPropagation();
           console.log('[Trend Selection] Ably - 페이지 이동 시작:', url);

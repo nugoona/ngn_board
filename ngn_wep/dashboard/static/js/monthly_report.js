@@ -2419,36 +2419,36 @@ function initMonthlyReportButton() {
   openBtn.parentNode.replaceChild(newBtn, openBtn);
   const freshBtn = document.getElementById("openMonthlyReportBtn");
   
-  // 클릭 이벤트 리스너 추가
+  // 클릭 이벤트 리스너 추가 (단일 이벤트로 통합)
+  let isProcessing = false; // 중복 실행 방지 플래그
+  
   freshBtn.addEventListener("click", function(e) {
+    if (isProcessing) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+    
     console.log("[월간 리포트] 버튼 클릭 이벤트 발생!", e);
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+    
+    isProcessing = true;
     openMonthlyReportModal();
+    
+    // 짧은 딜레이 후 플래그 리셋 (더블 클릭 방지)
+    setTimeout(() => {
+      isProcessing = false;
+    }, 500);
+    
     return false;
   }, true); // capture phase에서도 실행
   
-  // onclick 속성도 추가 (백업)
-  freshBtn.onclick = function(e) {
-    console.log("[월간 리포트] onclick 이벤트 발생!", e);
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
-    openMonthlyReportModal();
-    return false;
-  };
+  // onclick 속성 제거 (중복 방지)
+  freshBtn.onclick = null;
   
-  // mousedown 이벤트도 추가 (추가 보장)
-  freshBtn.addEventListener("mousedown", function(e) {
-    console.log("[월간 리포트] mousedown 이벤트 발생!");
-    e.preventDefault();
-    e.stopPropagation();
-    openMonthlyReportModal();
-    return false;
-  });
+  // mousedown 이벤트 제거 (중복 방지)
   
   // 페이지 로드 시 새로운 데이터 확인 및 NEW 배지 표시
   try {

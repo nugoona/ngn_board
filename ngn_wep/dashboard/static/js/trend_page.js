@@ -2387,16 +2387,8 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     const thumbnailGrid = createThumbnailGridFromProducts(categoryProducts, segmentType);
                     if (thumbnailGrid) {
                         console.log(`[DEBUG] ${categoryName} - 썸네일 그리드 HTML 생성 완료, 길이: ${thumbnailGrid.length}자`);
+                        // HTML만 주입, 스타일은 CSS에 맡김
                         thumbnailsWrapper.innerHTML = thumbnailGrid;
-                        
-                        // Grid 레이아웃 확실하게 적용 (인라인 스타일로 주입)
-                        const innerGrid = thumbnailsWrapper.querySelector('.trend-thumbnails-grid');
-                        if (innerGrid) {
-                            innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 16px !important; width: 100% !important;';
-                            console.log(`[DEBUG] ${categoryName} - Grid 스타일 적용 완료`);
-                        } else {
-                            console.warn(`[DEBUG] ${categoryName} - .trend-thumbnails-grid 요소를 찾을 수 없습니다`);
-                        }
                     } else {
                         console.warn(`[DEBUG] ${categoryName} - 썸네일 그리드 HTML 생성 실패`);
                     }

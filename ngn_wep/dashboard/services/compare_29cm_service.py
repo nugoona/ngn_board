@@ -416,7 +416,8 @@ def save_search_results_to_bq(
         
         print(f"[INFO] 임시 테이블에 {len(rows)}개 행 로드 완료: {temp_table_id}")
         
-        # MERGE 문 실행 (덮어쓰기)
+        # MERGE 문 실행 (다른 파일들과 동일한 패턴 사용)
+        # MERGE는 스트리밍 버퍼에 영향을 주지 않으므로 안전하게 사용 가능
         merge_query = f"""
         MERGE `{PROJECT_ID}.{DATASET_ID}.{SEARCH_RESULTS_TABLE}` AS target
         USING `{PROJECT_ID}.{DATASET_ID}.{temp_table_id}` AS source
@@ -461,7 +462,7 @@ def save_search_results_to_bq(
         merge_job = client.query(merge_query)
         merge_job.result()  # 완료 대기
         
-        print(f"[INFO] MERGE 완료: {len(rows)}개 행 처리됨")
+        print(f"[INFO] MERGE 완료: {len(rows)}개 행 처리됨 (기존 데이터 업데이트 또는 새 데이터 삽입)")
         
         # 임시 테이블 삭제
         client.delete_table(temp_table_ref, not_found_ok=True)

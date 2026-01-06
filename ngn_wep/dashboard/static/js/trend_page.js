@@ -2009,30 +2009,120 @@ function createSection2Card(icon, titleEn, titleKo, content) {
     contentDiv.className = 'trend-section2-card-content';
     
     if (content && content.trim()) {
-        // 마크다운을 HTML로 변환
+        // 텍스트 요약 로직 적용 (가독성 향상)
+        let summarizedContent = content.trim();
+        
+        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출
+        const bulletPattern = /^[\s]*[-*•]\s*(.+)$/gm;
+        const bullets = [];
+        let match;
+        
+        while ((match = bulletPattern.exec(content)) !== null) {
+            bullets.push(match[1].trim());
+        }
+        
+        // 불릿 포인트가 있으면 요약 처리
+        if (bullets.length > 0) {
+            console.log(`[Section 2] 발견된 불릿 포인트 수: ${bullets.length}개`);
+            
+            // 최대 3-4개로 제한 (KEYWORD 섹션은 조금 더 자세하게)
+            const maxBullets = Math.min(4, bullets.length);
+            const selectedBullets = bullets.slice(0, maxBullets);
+            
+            // 각 불릿 포인트를 간결하게 요약 (최대 200자)
+            const summarizedBullets = selectedBullets.map(bullet => {
+                let summarized = bullet.trim();
+                
+                // 너무 길면 핵심만 추출
+                if (summarized.length > 200) {
+                    // 첫 문장 또는 핵심 키워드 포함 부분 추출
+                    const firstSentence = summarized.split(/[.!?]/)[0];
+                    if (firstSentence && firstSentence.length <= 200) {
+                        summarized = firstSentence;
+                    } else {
+                        // 핵심 키워드가 포함된 부분 찾기
+                        const keywords = ['급상승', '인기', '증가', '부상', '상승', '사랑받', '수요', '증대', '트렌드', '강세', '활발'];
+                        for (const keyword of keywords) {
+                            const keywordIndex = summarized.indexOf(keyword);
+                            if (keywordIndex >= 0) {
+                                const start = Math.max(0, keywordIndex - 60);
+                                const end = Math.min(summarized.length, keywordIndex + 140);
+                                summarized = summarized.substring(start, end).trim();
+                                
+                                // 앞뒤로 문장 경계 찾기
+                                const beforeMatch = summarized.match(/^[^.!?]*[.!?]\s*(.+)$/);
+                                if (beforeMatch) {
+                                    summarized = beforeMatch[1];
+                                }
+                                const afterMatch = summarized.match(/^(.+?)[.!?]/);
+                                if (afterMatch) {
+                                    summarized = afterMatch[1] + '.';
+                                }
+                                
+                                if (summarized.length <= 200) break;
+                            }
+                        }
+                        
+                        // 그래도 길면 단순히 앞부분만 자르기
+                        if (summarized.length > 200) {
+                            summarized = summarized.substring(0, 197) + '...';
+                        }
+                    }
+                }
+                
+                return summarized;
+            });
+            
+            // 요약된 불릿 포인트로 재구성
+            summarizedContent = summarizedBullets.map(bullet => `- ${bullet}`).join('\n');
+            
+            console.log(`[Section 2] 요약 완료: ${bullets.length}개 → ${summarizedBullets.length}개`);
+        } else {
+            // 불릿 포인트가 없으면 일반 텍스트 요약 (최대 400자)
+            if (summarizedContent.length > 400) {
+                summarizedContent = summarizedContent.substring(0, 397) + '...';
+            }
+        }
+        
+        // 마크다운을 HTML로 변환 (개선된 로직)
         if (typeof marked !== 'undefined') {
             try {
+                // marked 옵션 설정
                 marked.setOptions({
                     breaks: true,
-                    gfm: false
+                    gfm: false,
+                    headerIds: false,
+                    mangle: false
                 });
                 
-                const markdownHtml = marked.parse(content);
+                // 마크다운 파싱
+                const markdownHtml = marked.parse(summarizedContent);
+                
+                console.log(`[Section 2] 마크다운 변환 완료, 원본 길이: ${content.length}자, 요약 길이: ${summarizedContent.length}자`);
                 
                 if (typeof DOMPurify !== 'undefined') {
+                    // DOMPurify로 안전하게 정제
                     contentDiv.innerHTML = DOMPurify.sanitize(markdownHtml, {
-                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li'],
-                        ALLOWED_ATTR: []
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'span', 'mark'],
+                        ALLOWED_ATTR: ['class', 'style']
                     });
                 } else {
                     contentDiv.innerHTML = markdownHtml;
                 }
             } catch (e) {
-                console.warn("[Section 2] 마크다운 변환 실패:", e);
-                contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+                console.error("[Section 2] 마크다운 변환 실패:", e);
+                console.error("[Section 2] 원본 텍스트:", summarizedContent.substring(0, 200));
+                // 폴백: 줄바꿈만 처리
+                contentDiv.innerHTML = summarizedContent.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             }
         } else {
-            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            console.warn("[Section 2] marked 라이브러리가 로드되지 않음");
+            // 폴백: 간단한 마크다운 처리
+            let fallbackHtml = summarizedContent
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+            contentDiv.innerHTML = fallbackHtml;
         }
     } else {
         contentDiv.textContent = '분석 데이터가 없습니다.';
@@ -2301,11 +2391,86 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             return; // 빈 텍스트면 스킵
         }
         
+        // 텍스트 요약 로직: 불릿 포인트를 2-3개로 제한하고 각각의 길이 제한
+        let summarizedText = categoryText;
+        
+        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출
+        const bulletPattern = /^[\s]*[-*•]\s*(.+)$/gm;
+        const bullets = [];
+        let match;
+        
+        while ((match = bulletPattern.exec(categoryText)) !== null) {
+            bullets.push(match[1].trim());
+        }
+        
+        // 불릿 포인트가 있으면 요약 처리
+        if (bullets.length > 0) {
+            console.log(`[DEBUG] ${categoryName} - 발견된 불릿 포인트 수: ${bullets.length}개`);
+            
+            // 최대 2-3개로 제한 (중요한 내용 우선)
+            const maxBullets = Math.min(3, bullets.length);
+            const selectedBullets = bullets.slice(0, maxBullets);
+            
+            // 각 불릿 포인트를 간결하게 요약 (최대 150자)
+            const summarizedBullets = selectedBullets.map(bullet => {
+                let summarized = bullet.trim();
+                
+                // 너무 길면 핵심만 추출
+                if (summarized.length > 150) {
+                    // 첫 문장 또는 핵심 키워드 포함 부분 추출
+                    const firstSentence = summarized.split(/[.!?]/)[0];
+                    if (firstSentence && firstSentence.length <= 150) {
+                        summarized = firstSentence;
+                    } else {
+                        // 핵심 키워드가 포함된 부분 찾기
+                        const keywords = ['급상승', '인기', '증가', '부상', '상승', '사랑받', '수요', '증대', '트렌드'];
+                        for (const keyword of keywords) {
+                            const keywordIndex = summarized.indexOf(keyword);
+                            if (keywordIndex >= 0) {
+                                const start = Math.max(0, keywordIndex - 50);
+                                const end = Math.min(summarized.length, keywordIndex + 100);
+                                summarized = summarized.substring(start, end).trim();
+                                
+                                // 앞뒤로 문장 경계 찾기
+                                const beforeMatch = summarized.match(/^[^.!?]*[.!?]\s*(.+)$/);
+                                if (beforeMatch) {
+                                    summarized = beforeMatch[1];
+                                }
+                                const afterMatch = summarized.match(/^(.+?)[.!?]/);
+                                if (afterMatch) {
+                                    summarized = afterMatch[1] + '.';
+                                }
+                                
+                                if (summarized.length <= 150) break;
+                            }
+                        }
+                        
+                        // 그래도 길면 단순히 앞부분만 자르기
+                        if (summarized.length > 150) {
+                            summarized = summarized.substring(0, 147) + '...';
+                        }
+                    }
+                }
+                
+                return summarized;
+            });
+            
+            // 요약된 불릿 포인트로 재구성
+            summarizedText = summarizedBullets.map(bullet => `- ${bullet}`).join('\n');
+            
+            console.log(`[DEBUG] ${categoryName} - 요약 완료: ${bullets.length}개 → ${summarizedBullets.length}개`);
+        } else {
+            // 불릿 포인트가 없으면 일반 텍스트 요약 (최대 300자)
+            if (summarizedText.length > 300) {
+                summarizedText = summarizedText.substring(0, 297) + '...';
+            }
+        }
+        
         // 마크다운을 HTML로 변환
         if (typeof marked !== 'undefined') {
             try {
                 marked.setOptions({ breaks: true, gfm: false });
-                const markdownHtml = marked.parse(categoryText);
+                const markdownHtml = marked.parse(summarizedText);
                 
                 if (typeof DOMPurify !== 'undefined') {
                     categoryText = DOMPurify.sanitize(markdownHtml, {
@@ -2316,13 +2481,13 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     categoryText = markdownHtml;
                 }
                 
-                console.log(`[DEBUG] ${categoryName} - 마크다운 변환 완료, HTML 길이: ${categoryText.length}자`);
+                console.log(`[DEBUG] ${categoryName} - 마크다운 변환 완료, HTML 길이: ${categoryText.length}자 (원본: ${categoryText.length}자 → 요약: ${summarizedText.length}자)`);
             } catch (e) {
                 console.warn(`[DEBUG] ${categoryName} - 마크다운 변환 실패:`, e);
-                categoryText = categoryText.replace(/\n/g, '<br>');
+                categoryText = summarizedText.replace(/\n/g, '<br>');
             }
         } else {
-            categoryText = categoryText.replace(/\n/g, '<br>');
+            categoryText = summarizedText.replace(/\n/g, '<br>');
         }
         
         categoryData[categoryName] = categoryText;

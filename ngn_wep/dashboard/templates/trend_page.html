@@ -1322,12 +1322,15 @@
     
     .trend-section2-card-content {
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.8;
       color: #495057;
+      letter-spacing: -0.01em;
     }
     
     .trend-section2-card-content p {
-      margin: 0 0 12px 0;
+      margin: 0 0 14px 0;
+      word-break: keep-all;
+      overflow-wrap: break-word;
     }
     
     .trend-section2-card-content p:last-child {
@@ -1336,22 +1339,32 @@
     
     .trend-section2-card-content ul,
     .trend-section2-card-content ol {
-      margin: 12px 0;
-      padding-left: 24px;
+      margin: 14px 0;
+      padding-left: 26px;
+      list-style-position: outside;
     }
     
     .trend-section2-card-content li {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      line-height: 1.8;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    
+    .trend-section2-card-content li:last-child {
+      margin-bottom: 0;
     }
     
     .trend-section2-card-content strong,
-    .trend-section2-card-content em {
+    .trend-section2-card-content em,
+    .trend-section2-card-content mark {
       font-style: normal;
-      font-weight: 700;
+      font-weight: 600;
       color: #1a1a1a;
-      background-color: rgba(255, 224, 51, 0.3);
-      padding: 0 4px;
-      border-radius: 4px;
+      background-color: rgba(255, 224, 51, 0.4);
+      padding: 2px 5px;
+      border-radius: 3px;
+      display: inline-block;
     }
     
     .trend-section2-card-content em {

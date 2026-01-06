@@ -2006,9 +2006,9 @@ function renderSection3WithTabs(section3Data) {
     tabs.id = 'section3Tabs';
     
     const segmentTabs = [
-        { type: 'rising_star', label: '🔥 급상승', displayLabel: '🔥 급상승' },
-        { type: 'new_entry', label: '🚀 신규 진입', displayLabel: '🚀 신규 진입' },
-        { type: 'rank_drop', label: '📉 순위 하락', displayLabel: '📉 순위 하락' }
+        { type: 'rising_star', label: '급상승' },
+        { type: 'new_entry', label: '신규 진입' },
+        { type: 'rank_drop', label: '순위 하락' }
     ];
     
     segmentTabs.forEach((tab, index) => {
@@ -2016,7 +2016,7 @@ function renderSection3WithTabs(section3Data) {
         button.className = 'market-trend-tab-btn';
         if (index === 0) button.classList.add('active');
         button.setAttribute('data-segment', tab.type);
-        button.textContent = tab.label; // displayLabel 대신 label 사용 (이모지 포함)
+        button.textContent = tab.label;
         tabs.appendChild(button);
     });
     
@@ -2229,12 +2229,12 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 그리드 추가 완료`, gridContainer.innerHTML.substring(0, 200));
                         
                         // 강제로 표시되도록 스타일 확인
-                        gridContainer.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; margin: 20px 0 !important; padding: 20px 0 !important;';
+                        gridContainer.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; margin: 20px 0 !important; padding: 20px 0 !important; position: relative !important; z-index: 1 !important;';
                         
                         // 내부 그리드도 강제로 표시
                         const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
                         if (innerGrid) {
-                            innerGrid.style.cssText = 'display: grid !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 16px !important; margin-top: 16px !important;';
+                            innerGrid.style.cssText = 'display: grid !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 16px !important; margin-top: 16px !important; position: relative !important; z-index: 2 !important;';
                             console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료`);
                         } else {
                             console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);
@@ -2243,14 +2243,24 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         // 부모 카드 컨테이너도 확인
                         const parentCard = gridContainer.closest('.trend-category-card');
                         if (parentCard) {
-                            parentCard.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important;';
+                            parentCard.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; position: relative !important; z-index: 1 !important;';
                             console.log(`[renderSection3SegmentContent] ${categoryName} 부모 카드 스타일 강제 적용 완료`);
+                        }
+                        
+                        // 모든 부모 요소 확인
+                        let parent = gridContainer.parentElement;
+                        let depth = 0;
+                        while (parent && depth < 10) {
+                            const currentStyle = parent.style.cssText || '';
+                            parent.style.cssText = currentStyle + 'display: block !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important;';
+                            parent = parent.parentElement;
+                            depth++;
                         }
                         
                         // 썸네일 카드들도 확인
                         const thumbnailCards = gridContainer.querySelectorAll('.trend-thumbnail-card');
                         thumbnailCards.forEach((card, idx) => {
-                            card.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-direction: column !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;';
+                            card.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; flex-direction: column !important; background: #ffffff !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; overflow: hidden !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important; position: relative !important; z-index: 3 !important;';
                             if (idx === 0) {
                                 console.log(`[renderSection3SegmentContent] ${categoryName} 썸네일 카드 ${thumbnailCards.length}개 스타일 강제 적용 완료`);
                             }
@@ -2259,9 +2269,18 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         // 이미지들도 확인
                         const images = gridContainer.querySelectorAll('.trend-thumbnail-image');
                         images.forEach((img, idx) => {
-                            img.style.cssText = 'width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; visibility: visible !important; opacity: 1 !important;';
+                            img.style.cssText = 'width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 4 !important;';
                             if (idx === 0) {
                                 console.log(`[renderSection3SegmentContent] ${categoryName} 이미지 ${images.length}개 스타일 강제 적용 완료`);
+                            }
+                        });
+                        
+                        // 이미지 래퍼도 확인
+                        const imageWrappers = gridContainer.querySelectorAll('.trend-thumbnail-image-wrapper');
+                        imageWrappers.forEach((wrapper, idx) => {
+                            wrapper.style.cssText = 'width: 100% !important; aspect-ratio: 1 !important; overflow: hidden !important; background: #F8F9FA !important; position: relative !important; display: block !important; visibility: visible !important; opacity: 1 !important; min-height: 160px !important;';
+                            if (idx === 0) {
+                                console.log(`[renderSection3SegmentContent] ${categoryName} 이미지 래퍼 ${imageWrappers.length}개 스타일 강제 적용 완료`);
                             }
                         });
                         

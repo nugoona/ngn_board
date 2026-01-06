@@ -262,6 +262,39 @@ async function loadAllTabsData() {
 function switchTab(tabName) {
     if (currentTab === tabName) return;
     
+    // 데모 계정 제한 체크
+    let companyName = null;
+    
+    // URL 쿼리 파라미터에서 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const companyFromUrl = urlParams.get('company_name');
+    if (companyFromUrl) {
+        companyName = companyFromUrl.toLowerCase();
+    }
+    
+    // 템플릿에서 전달된 selectedCompany 사용
+    if (!companyName && typeof window.selectedCompany !== 'undefined' && window.selectedCompany) {
+        companyName = window.selectedCompany.toLowerCase();
+    }
+    
+    // accountFilter에서 가져오기
+    if (!companyName) {
+        const companyFromFilter = getSelectedCompany();
+        if (companyFromFilter) {
+            companyName = companyFromFilter.toLowerCase();
+        }
+    }
+    
+    if (companyName && companyName === 'demo') {
+        const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+        if (typeof showToast === 'function') {
+            showToast(message);
+        } else {
+            alert(message);
+        }
+        return;
+    }
+    
     currentTab = tabName;
     
     // 탭 버튼 활성화 상태 업데이트

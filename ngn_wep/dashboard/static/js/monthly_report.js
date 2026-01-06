@@ -61,6 +61,17 @@ function openMonthlyReportModal() {
       return;
     }
     
+    // 데모 계정 제한 체크
+    if (companyName.toLowerCase() === 'demo') {
+      const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
+      if (typeof showToast === 'function') {
+        showToast(message);
+      } else {
+        alert(message);
+      }
+      return;
+    }
+    
     // NEW 표시 제거
     try {
       hideMonthlyReportNewBadge();

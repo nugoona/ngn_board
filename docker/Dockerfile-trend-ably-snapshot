@@ -10,11 +10,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 프로젝트 관련 파일 복사 (디렉토리 구조 유지)
 COPY ./tools/ /app/tools/
-COPY ./tools/ai_report_test/jobs/trend_ably_snapshot_job.py /app/trend_ably_snapshot_job.py
+COPY ./ngn_wep/ /app/ngn_wep/
 
 # 환경변수 설정
 ENV PYTHONUNBUFFERED=1
+ENV RUNNING_IN_CLOUD_RUN=true
 
 # 실행 명령어 설정
-ENTRYPOINT ["python", "/app/trend_ably_snapshot_job.py"]
+ENTRYPOINT ["python", "/app/tools/trend_ably_snapshot.py"]
 

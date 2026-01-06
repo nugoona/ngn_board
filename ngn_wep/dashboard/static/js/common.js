@@ -320,7 +320,7 @@ $(document).ready(function() {
 
 function getRequestData(page = 1, extra = {}) {
   const companyName = $("#accountFilter").val() || "all";
-  const period = $("#periodFilter").val();
+  const period = $("#periodFilter").val() || "today";  // ✅ 기본값 설정 (데모 계정 대응)
   
   // 기간에 따라 날짜 계산
   let startDate = "";

@@ -383,9 +383,7 @@ async function loadMonthlyReport(companyName, year, month) {
     if (loadingEl) {
       loadingEl.innerHTML = `
         <div class="error-state">
-          <div class="error-icon">⚠️</div>
-          <div class="error-text">리포트를 불러올 수 없습니다</div>
-          <div class="error-subtext">${error.message}</div>
+          <div class="error-text">${error.message}</div>
         </div>
       `;
     }

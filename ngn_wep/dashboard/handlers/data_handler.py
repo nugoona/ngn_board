@@ -1343,6 +1343,8 @@ def get_trend_data():
                 # 여러 탭 처리
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
+                
+                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
                 if company_name and insights.get("analysis_report"):
                     filtered_report = filter_ai_report_by_company(
                         insights["analysis_report"],
@@ -1350,6 +1352,9 @@ def get_trend_data():
                     )
                     insights = insights.copy()
                     insights["analysis_report"] = filtered_report
+                elif company_name:
+                    # 해당 업체의 insights가 없으면 빈 객체로 설정
+                    insights = {}
                 
                 result = {
                     "status": "success",
@@ -1380,6 +1385,8 @@ def get_trend_data():
                 
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
+                
+                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
                 if company_name and insights.get("analysis_report"):
                     filtered_report = filter_ai_report_by_company(
                         insights["analysis_report"],
@@ -1387,6 +1394,12 @@ def get_trend_data():
                     )
                     insights = insights.copy()
                     insights["analysis_report"] = filtered_report
+                elif company_name:
+                    # 해당 업체의 insights가 없으면 빈 객체로 설정
+                    insights = {}
+                elif company_name:
+                    # 해당 업체의 insights가 없으면 빈 객체로 설정
+                    insights = {}
                 
                 result = {
                     "status": "success",
@@ -1548,6 +1561,8 @@ def get_ably_trend_data():
                 # 여러 탭 처리
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
+                
+                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
                 if company_name and insights.get("analysis_report"):
                     filtered_report = filter_ai_report_by_company(
                         insights["analysis_report"],
@@ -1555,6 +1570,9 @@ def get_ably_trend_data():
                     )
                     insights = insights.copy()
                     insights["analysis_report"] = filtered_report
+                elif company_name:
+                    # 해당 업체의 insights가 없으면 빈 객체로 설정
+                    insights = {}
                 
                 result = {
                     "status": "success",
@@ -1585,6 +1603,8 @@ def get_ably_trend_data():
                 
                 # AI 리포트 필터링 (현재 업체에 해당하는 자사몰 섹션만 포함)
                 insights = snapshot_data.get("insights", {})
+                
+                # ✅ 업체별로 insights가 없으면 빈 객체 반환 (버킷이 없는 업체)
                 if company_name and insights.get("analysis_report"):
                     filtered_report = filter_ai_report_by_company(
                         insights["analysis_report"],
@@ -1592,6 +1612,9 @@ def get_ably_trend_data():
                     )
                     insights = insights.copy()
                     insights["analysis_report"] = filtered_report
+                elif company_name:
+                    # 해당 업체의 insights가 없으면 빈 객체로 설정
+                    insights = {}
                 
                 result = {
                     "status": "success",

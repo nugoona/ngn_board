@@ -540,14 +540,13 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     console.log('[renderTrendAnalysisReport] Section 분리 결과:', {
         section1Length: sections.section1.length,
         section2Length: sections.section2.length,
-        section3Length: sections.section3.length
+        section3Length: sections.section3.length,
+        section1Preview: sections.section1.substring(0, 200),
+        section2Preview: sections.section2.substring(0, 200),
+        section3Preview: sections.section3.substring(0, 200)
     });
     
-    // Section 2 파싱 (Material과 TPO 추출)
-    const section2Data = parseSection2IntoMaterialAndTPO(sections.section2);
-    
-    // Section 3 세그먼트별로 파싱
-    const section3Data = parseSection3BySegment(sections.section3);
+    // Section 2와 Section 3 데이터는 렌더링 시점에 파싱 (조건부 처리)
     
     // HTML 구조 생성
     const container = document.createElement('div');
@@ -562,23 +561,60 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     }
     
     // Section 2 카드 레이아웃 추가
-    if (sections.section2) {
-        const section2Container = renderSection2AsCards(section2Data);
-        if (section2Container) {
-            // Section 2 컨테이너 스타일 강제 적용
-            section2Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 32px !important;';
-            container.appendChild(section2Container);
+    if (sections.section2 && sections.section2.trim().length > 0) {
+        console.log('[renderTrendAnalysisReport] Section 2 파싱 시도, 길이:', sections.section2.length);
+        const section2Data = parseSection2IntoMaterialAndTPO(sections.section2);
+        console.log('[renderTrendAnalysisReport] Section 2 데이터:', {
+            materialLength: section2Data.material.length,
+            moodLength: section2Data.mood.length,
+            material: section2Data.material.substring(0, 100),
+            mood: section2Data.mood.substring(0, 100)
+        });
+        
+        // material 또는 mood 중 하나라도 있으면 렌더링
+        if (section2Data.material.trim() || section2Data.mood.trim()) {
+            const section2Container = renderSection2AsCards(section2Data);
+            if (section2Container) {
+                // Section 2 컨테이너 스타일 강제 적용
+                section2Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 32px !important;';
+                container.appendChild(section2Container);
+                console.log('[renderTrendAnalysisReport] Section 2 컨테이너 추가 완료');
+            } else {
+                console.warn('[renderTrendAnalysisReport] Section 2 컨테이너가 null입니다');
+            }
+        } else {
+            console.warn('[renderTrendAnalysisReport] Section 2 Material과 Mood가 모두 비어있음');
         }
+    } else {
+        console.warn('[renderTrendAnalysisReport] Section 2 텍스트가 비어있음');
     }
     
     // Section 3 탭 기반 UI 추가
-    if (sections.section3) {
-        const section3Container = renderSection3WithTabs(section3Data);
-        if (section3Container) {
-            // Section 3 컨테이너 스타일 강제 적용
-            section3Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 24px !important;';
-            container.appendChild(section3Container);
+    if (sections.section3 && sections.section3.trim().length > 0) {
+        console.log('[renderTrendAnalysisReport] Section 3 파싱 시도, 길이:', sections.section3.length);
+        const section3Data = parseSection3BySegment(sections.section3);
+        console.log('[renderTrendAnalysisReport] Section 3 데이터:', {
+            risingStarLength: section3Data.rising_star.length,
+            newEntryLength: section3Data.new_entry.length,
+            rankDropLength: section3Data.rank_drop.length
+        });
+        
+        // 최소한 하나의 세그먼트라도 있으면 렌더링
+        if (section3Data.rising_star.trim() || section3Data.new_entry.trim() || section3Data.rank_drop.trim()) {
+            const section3Container = renderSection3WithTabs(section3Data);
+            if (section3Container) {
+                // Section 3 컨테이너 스타일 강제 적용
+                section3Container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; margin-top: 32px !important; margin-bottom: 24px !important;';
+                container.appendChild(section3Container);
+                console.log('[renderTrendAnalysisReport] Section 3 컨테이너 추가 완료');
+            } else {
+                console.warn('[renderTrendAnalysisReport] Section 3 컨테이너가 null입니다');
+            }
+        } else {
+            console.warn('[renderTrendAnalysisReport] Section 3 세그먼트가 모두 비어있음');
         }
+    } else {
+        console.warn('[renderTrendAnalysisReport] Section 3 텍스트가 비어있음');
     }
     
     // 컨테이너 스타일 강제 적용
@@ -2260,7 +2296,7 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                         // 내부 그리드도 강제로 표시
                         const innerGrid = gridContainer.querySelector('.trend-thumbnails-grid');
                         if (innerGrid) {
-                            innerGrid.style.cssText = 'display: grid !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 16px !important; margin-top: 16px !important; position: relative !important; z-index: 2 !important;';
+                            innerGrid.style.cssText = 'display: grid !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; grid-template-columns: repeat(5, 1fr) !important; gap: 16px !important; margin-top: 16px !important; position: relative !important; z-index: 2 !important;';
                             console.log(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 스타일 강제 적용 완료`);
                         } else {
                             console.warn(`[renderSection3SegmentContent] ${categoryName} 내부 그리드 요소를 찾을 수 없습니다`);

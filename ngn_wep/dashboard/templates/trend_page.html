@@ -522,12 +522,37 @@
     
     .trend-thumbnails-grid {
       display: grid !important;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+      grid-template-columns: repeat(5, 1fr) !important;
       gap: 16px !important;
       margin-top: 16px !important;
       visibility: visible !important;
       opacity: 1 !important;
       width: 100% !important;
+    }
+    
+    /* 반응형: 화면 크기에 따라 컬럼 수 조정 */
+    @media (max-width: 1400px) {
+      .trend-thumbnails-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+    
+    @media (max-width: 1024px) {
+      .trend-thumbnails-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .trend-thumbnails-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .trend-thumbnails-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
     
     .trend-thumbnail-card {

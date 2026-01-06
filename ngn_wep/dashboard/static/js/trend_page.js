@@ -1849,45 +1849,70 @@ function getCompanyProducts() {
     const products = [];
     
     try {
-        // 모든 카테고리와 세그먼트를 순회
-        Object.keys(window.allTabsData).forEach(categoryName => {
-            const tabData = window.allTabsData[categoryName];
-            if (!tabData) {
-                return; // tabData가 없으면 스킵
-            }
-            
-            ['rising_star', 'new_entry', 'rank_drop'].forEach(trendType => {
-                const items = tabData[trendType] || [];
-                items.forEach(item => {
-                    const brand = item.Brand_Name || item.Brand || '';
-                    const product = item.Product_Name || item.Product || '';
-                    const thumbnail = item.thumbnail_url || '';
-                    const itemUrl = item.item_url || '';
-                    const rank = item.This_Week_Rank || item.Ranking || '';
-                    const rankChange = item.Rank_Change;
-                    const price = item.price || item.Price || 0;
-                    
-                    // 브랜드명 매칭 (대소문자 무시, 공백 무시)
-                    const brandMatch = targetBrands.some(targetBrand => 
-                        brand.trim().toLowerCase().includes(targetBrand.toLowerCase().trim()) ||
-                        targetBrand.toLowerCase().trim().includes(brand.trim().toLowerCase())
-                    );
-                    
-                    if (brandMatch && brand && product && thumbnail) {
-                        products.push({
-                            brand: brand,
-                            product: product,
-                            thumbnail: thumbnail,
-                            itemUrl: itemUrl,
-                            rank: rank,
-                            rankChange: rankChange,
-                            price: price,
-                            trendType: trendType,
-                            category: categoryName
+        // allTabsData가 존재하는지 확인
+        if (!window.allTabsData || typeof window.allTabsData !== 'object') {
+            console.warn('[getCompanyProducts] window.allTabsData가 없거나 유효하지 않습니다.');
+            return [];
+        }
+        
+        // 모든 카테고리와 세그먼트를 순회 (변수명을 catName으로 명확히 지정)
+        const allCategoryNames = Object.keys(window.allTabsData);
+        console.log(`[DEBUG] [getCompanyProducts] 처리할 카테고리 개수: ${allCategoryNames.length}개`, allCategoryNames);
+        
+        allCategoryNames.forEach((catName) => {
+            try {
+                const tabData = window.allTabsData[catName];
+                if (!tabData || typeof tabData !== 'object') {
+                    return; // tabData가 없거나 유효하지 않으면 스킵
+                }
+                
+                ['rising_star', 'new_entry', 'rank_drop'].forEach((trendType) => {
+                    try {
+                        const items = tabData[trendType] || [];
+                        if (!Array.isArray(items)) {
+                            return; // items가 배열이 아니면 스킵
+                        }
+                        
+                        items.forEach((item) => {
+                            try {
+                                const brand = item.Brand_Name || item.Brand || '';
+                                const product = item.Product_Name || item.Product || '';
+                                const thumbnail = item.thumbnail_url || '';
+                                const itemUrl = item.item_url || '';
+                                const rank = item.This_Week_Rank || item.Ranking || '';
+                                const rankChange = item.Rank_Change;
+                                const price = item.price || item.Price || 0;
+                                
+                                // 브랜드명 매칭 (대소문자 무시, 공백 무시)
+                                const brandMatch = targetBrands.some((targetBrand) => 
+                                    brand.trim().toLowerCase().includes(targetBrand.toLowerCase().trim()) ||
+                                    targetBrand.toLowerCase().trim().includes(brand.trim().toLowerCase())
+                                );
+                                
+                                if (brandMatch && brand && product && thumbnail) {
+                                    products.push({
+                                        brand: brand,
+                                        product: product,
+                                        thumbnail: thumbnail,
+                                        itemUrl: itemUrl,
+                                        rank: rank,
+                                        rankChange: rankChange,
+                                        price: price,
+                                        trendType: trendType,
+                                        category: catName  // catName 사용
+                                    });
+                                }
+                            } catch (itemError) {
+                                console.warn(`[getCompanyProducts] 아이템 처리 중 에러 (무시하고 계속):`, itemError);
+                            }
                         });
+                    } catch (trendTypeError) {
+                        console.warn(`[getCompanyProducts] trendType 처리 중 에러 (무시하고 계속):`, trendTypeError);
                     }
                 });
-            });
+            } catch (categoryError) {
+                console.warn(`[getCompanyProducts] 카테고리 "${catName}" 처리 중 에러 (무시하고 계속):`, categoryError);
+            }
         });
         
         // 순위변화 기준으로 정렬 (급상승 우선)
@@ -1915,7 +1940,7 @@ function getCompanyProducts() {
         
         return products;
     } catch (e) {
-        console.error('[getCompanyProducts] 에러 발생:', e);
+        console.error('[getCompanyProducts] 에러 발생 (빈 배열 반환):', e);
         console.error('[getCompanyProducts] 에러 스택:', e.stack);
         return [];
     }

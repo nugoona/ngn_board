@@ -553,10 +553,18 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     container.className = 'trend-analysis-report-container';
     
     // Section 1 카드 레이아웃 추가
+    // 자사몰 상품이 없어도 Section 1은 표시 (내용이 없을 수 있음)
     if (sections.section1) {
         const section1Container = renderSection1AsCard(sections.section1);
         if (section1Container) {
             container.appendChild(section1Container);
+        } else {
+            // Section 1 텍스트는 있지만 정리 후 비어있을 경우, 빈 MY BRAND 섹션 표시
+            console.log('[renderTrendAnalysisReport] Section 1 컨테이너가 null이지만 Section 1 텍스트는 존재, 빈 MY BRAND 섹션 표시');
+            const emptySection1Container = createEmptySection1Container();
+            if (emptySection1Container) {
+                container.appendChild(emptySection1Container);
+            }
         }
     }
     
@@ -620,8 +628,44 @@ function renderTrendAnalysisReport(insights, createdAtElement) {
     // 컨테이너 스타일 강제 적용
     container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 100% !important;';
     
-    contentElement.innerHTML = '';
-    contentElement.appendChild(container);
+    // Section 2나 Section 3 중 하나라도 있으면 페이지 표시
+    const hasAnySection = container.children.length > 0;
+    
+    if (hasAnySection) {
+        contentElement.innerHTML = '';
+        contentElement.appendChild(container);
+        console.log('[renderTrendAnalysisReport] 트렌드 분석 리포트 렌더링 완료, 섹션 수:', container.children.length);
+    } else {
+        // 모든 섹션이 없을 때만 메시지 표시
+        contentElement.innerHTML = '<div class="trend-analysis-empty">분석 리포트 데이터가 없습니다.</div>';
+        console.warn('[renderTrendAnalysisReport] 표시할 섹션이 없습니다.');
+    }
+}
+
+// 빈 Section 1 컨테이너 생성 (자사몰 상품이 없을 때)
+function createEmptySection1Container() {
+    const container = document.createElement('div');
+    container.className = 'trend-section1-container';
+    
+    // Section 1 헤더
+    const header = document.createElement('h2');
+    header.className = 'trend-section1-header';
+    header.textContent = 'MY BRAND';
+    container.appendChild(header);
+    
+    // 카드 컨테이너
+    const cardContainer = document.createElement('div');
+    cardContainer.className = 'trend-section1-card';
+    
+    // 내용 영역
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'trend-section1-card-content';
+    contentDiv.innerHTML = '<p>이번 주 베스트 랭킹에 자사몰 상품이 포함되지 않았습니다.</p>';
+    
+    cardContainer.appendChild(contentDiv);
+    container.appendChild(cardContainer);
+    
+    return container;
 }
 
 // AI 리포트에서 상품명 제거하고 썸네일로 교체
@@ -1710,9 +1754,11 @@ function renderSection1AsCard(section1Text) {
         .replace(/이번 주 데이터에 자사몰 상품이 포함되지 않았습니다[.\s]*/gi, '')
         .trim();
     
-    // 텍스트가 비어있으면 null 반환
+    // 텍스트가 비어있어도 기본 메시지와 함께 표시
+    // (자사몰 상품이 없어도 MY BRAND 섹션은 표시되도록)
     if (!cleanedText || cleanedText.length === 0) {
-        return null;
+        // 빈 텍스트일 때는 기본 메시지만 표시하되 null을 반환하지 않음
+        cleanedText = '이번 주 베스트 랭킹에 자사몰 상품이 포함되지 않았습니다.';
     }
     
     const container = document.createElement('div');

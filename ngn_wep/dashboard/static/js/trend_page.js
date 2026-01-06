@@ -2138,39 +2138,35 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     
     // 카테고리별 텍스트 파싱
     const lines = cleanedText.split('\n');
-    const categoryIndices = {};
-    const categoryData = {};
     
-    // 각 카테고리 헤더 위치 찾기
+    // 1. 모든 카테고리의 인덱스를 찾아서 객체 배열로 저장
+    const categoryIndexList = [];
     categories.forEach(categoryName => {
         const headerPattern = `**${categoryName}:**`;
         const index = lines.findIndex(line => line.trim() === headerPattern || line.trim().includes(headerPattern));
         if (index >= 0) {
-            categoryIndices[categoryName] = index;
+            categoryIndexList.push({ name: categoryName, index: index });
         }
     });
     
-    // 각 카테고리별로 텍스트 추출 및 HTML 변환
-    categories.forEach((categoryName, catIndex) => {
-        const startIndex = categoryIndices[categoryName];
+    // 2. 인덱스 오름차순(등장 순서)으로 정렬
+    categoryIndexList.sort((a, b) => a.index - b.index);
+    
+    console.log('[renderSection3SegmentContent] 카테고리 등장 순서:', categoryIndexList.map(c => `${c.name} (${c.index})`));
+    
+    // 3. 정렬된 순서대로 텍스트 추출 및 HTML 변환
+    const categoryData = {};
+    categoryIndexList.forEach((categoryInfo, catIndex) => {
+        const categoryName = categoryInfo.name;
+        const startIndex = categoryInfo.index;
         
-        if (startIndex === undefined || startIndex < 0) {
-            return; // 카테고리 헤더를 찾을 수 없으면 스킵
-        }
-        
-        // 다음 카테고리 헤더의 위치 찾기
+        // 다음 카테고리 헤더의 위치 찾기 (정렬된 배열에서 다음 항목)
         let endIndex = lines.length;
-        if (catIndex < categories.length - 1) {
-            for (let i = catIndex + 1; i < categories.length; i++) {
-                const nextCategoryStart = categoryIndices[categories[i]];
-                if (nextCategoryStart !== undefined && nextCategoryStart >= 0) {
-                    endIndex = nextCategoryStart;
-                    break;
-                }
-            }
+        if (catIndex < categoryIndexList.length - 1) {
+            endIndex = categoryIndexList[catIndex + 1].index;
         }
         
-        // 카테고리 텍스트 추출
+        // 카테고리 텍스트 추출 (헤더 다음 줄부터 다음 카테고리 헤더 전까지)
         const categoryLines = lines.slice(startIndex + 1, endIndex);
         let categoryText = categoryLines.join('\n').trim();
         
@@ -2206,12 +2202,14 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
     // 컨테이너 초기화
     container.innerHTML = '';
     
-    // 2. 루프 실행: 각 카테고리를 순회하면서 Card UI 생성
-    categories.forEach(categoryName => {
+    // 4. 루프 실행: 정렬된 순서대로 카테고리를 순회하면서 Card UI 생성
+    categoryIndexList.forEach(categoryInfo => {
+        const categoryName = categoryInfo.name;
         const categoryText = categoryData[categoryName];
         
-        // A. 텍스트 추출: 텍스트가 없으면 스킵
+        // 예외 처리: 텍스트가 없으면 카드 생성하지 않고 건너뜀
         if (!categoryText) {
+            console.log(`[renderSection3SegmentContent] ${categoryName} 텍스트 없음, 스킵`);
             return;
         }
         
@@ -2257,13 +2255,10 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     if (thumbnailGrid) {
                         thumbnailsWrapper.innerHTML = thumbnailGrid;
                         
-                        // Grid 레이아웃 확실하게 적용
+                        // Grid 레이아웃 확실하게 적용 (인라인 스타일로 주입)
                         const innerGrid = thumbnailsWrapper.querySelector('.trend-thumbnails-grid');
                         if (innerGrid) {
-                            innerGrid.style.display = 'grid';
-                            innerGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
-                            innerGrid.style.gap = '16px';
-                            innerGrid.style.width = '100%';
+                            innerGrid.style.cssText = 'display: grid !important; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 16px !important; width: 100% !important;';
                         }
                     }
                 }
@@ -2284,7 +2279,7 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         // 썸네일 추가 시도 시작
         setTimeout(addThumbnails, 100);
         
-        // 3. DOM 추가: 완성된 카드를 메인 컨테이너에 추가
+        // 5. DOM 추가: 완성된 카드를 메인 컨테이너에 추가
         container.appendChild(cardContainer);
     });
 }

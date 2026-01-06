@@ -383,10 +383,16 @@ def save_search_results_to_gcs(
         json_bytes = json_str.encode('utf-8')
         compressed_bytes = gzip.compress(json_bytes)
         
-        # GCS에 업로드
+        # GCS에 업로드 (덮어쓰기)
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)
         blob = bucket.blob(blob_path)
+        
+        # 기존 파일이 있으면 삭제 후 업로드 (명시적 덮어쓰기)
+        if blob.exists():
+            blob.delete()
+            print(f"[INFO] 기존 스냅샷 삭제: {blob_path}")
+        
         blob.upload_from_string(compressed_bytes, content_type='application/gzip')
         
         print(f"[INFO] 스냅샷 저장 완료: {blob_path} ({search_keyword}: {len(search_results)}개)")

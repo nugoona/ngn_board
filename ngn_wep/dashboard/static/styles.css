@@ -1,8 +1,12 @@
 /* ================================
-   🎨 모던 대시보드 디자인 시스템
+   🎨 Stripe 스타일 대시보드 디자인 시스템
 ================================ */
 
-/* CSS 변수 정의 */
+/* Google Fonts - Inter & Pretendard */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* CSS 변수 정의 - Stripe 스타일 */
 :root {
   /* 색상 팔레트 */
   --primary: #1e293b;
@@ -13,28 +17,31 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #475569;
-  
-  /* 배경 색상 */
-  --bg-primary: #f8fafc;
+
+  /* Stripe 스타일 배경 색상 */
+  --bg-primary: #f8f9fa;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
-  
+
   /* 텍스트 색상 */
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --text-muted: #94a3b8;
-  
-  /* 테두리 색상 */
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
-  --border-dark: #94a3b8;
-  
-  /* 그림자 */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
+
+  /* 테두리 색상 - Stripe 스타일 (border 없음) */
+  --border-light: transparent;
+  --border-medium: transparent;
+  --border-dark: transparent;
+
+  /* Stripe 스타일 그림자 */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Stripe 카드 그림자 */
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
   /* 간격 */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -42,14 +49,14 @@
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   --spacing-2xl: 3rem;
-  
-  /* 둥근 모서리 */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  
+
+  /* Stripe 스타일 둥근 모서리 - 10px 통일 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+
   /* 전환 효과 */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;
@@ -60,8 +67,8 @@
    1) 공통 페이지 스타일
 ================================ */
 body {
-  font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg-primary);
+  font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: #f8f9fa; /* Stripe 스타일 연한 회색 배경 */
   color: var(--text-primary);
   margin: 0;
   padding-top: 80px; /* 고정된 필터 아래 공간 확보 */
@@ -227,13 +234,14 @@ body {
 
 
 
-/* 테이블 래퍼에서 페이지네이션 항상 표시 */
+/* 테이블 래퍼에서 페이지네이션 항상 표시 - Stripe 스타일 */
 .table-wrapper {
   position: relative;
   overflow: visible;
   background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  border: none; /* Stripe 스타일 border 제거 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   padding: 20px;
   margin-bottom: 20px;
   /* 폭 자체는 .left-wide / .right-narrow에서 결정 */
@@ -264,7 +272,7 @@ thead th {
   table-layout: auto; /* 자동 레이아웃 유지 */
 }
 
-/* ✅ 모던한 드롭다운 공통 CSS */
+/* ✅ 모던한 드롭다운 공통 CSS - Stripe 스타일 */
 .modern-dropdown {
   position: relative;
   display: inline-block;
@@ -276,9 +284,10 @@ thead th {
   -webkit-appearance: none;
   -moz-appearance: none;
   background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+  padding: 10px 14px;
   font-size: 14px;
   font-weight: 500;
   color: #374151;
@@ -287,20 +296,19 @@ thead th {
   min-width: 120px;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   background-size: 16px;
-  padding-right: 32px;
+  padding-right: 34px;
 }
 
 .modern-dropdown select:hover {
-  border-color: #d1d5db;
-  background-color: #f9fafb;
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08); /* Stripe 스타일 hover 그림자 */
+  background-color: #ffffff;
 }
 
 .modern-dropdown select:focus {
   outline: none;
-  border-color: #1e293b;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   background-color: #ffffff;
 }
 
@@ -308,15 +316,16 @@ thead th {
   background-color: #f3f4f6;
   color: #9ca3af;
   cursor: not-allowed;
-  border-color: #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* ✅ 모던한 입력 필드 공통 CSS */
+/* ✅ 모던한 입력 필드 공통 CSS - Stripe 스타일 */
 .modern-input {
   background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+  padding: 10px 14px;
   font-size: 14px;
   font-weight: 500;
   color: #374151;
@@ -325,14 +334,13 @@ thead th {
 }
 
 .modern-input:hover {
-  border-color: #d1d5db;
-  background-color: #f9fafb;
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08); /* Stripe 스타일 hover 그림자 */
+  background-color: #ffffff;
 }
 
 .modern-input:focus {
   outline: none;
-  border-color: #1e293b;
-  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
+  box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   background-color: #ffffff;
 }
 
@@ -341,17 +349,17 @@ thead th {
   font-weight: 400;
 }
 
-/* ✅ 모던한 필터 컨테이너 */
+/* ✅ 모던한 필터 컨테이너 - Stripe 스타일 */
 .modern-filter-container {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  background: #ffffff; /* Stripe 스타일 흰색 배경 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  border: none; /* Stripe 스타일 border 제거 */
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 /* 첫 번째 줄: 소스별 + 국가별 */
@@ -540,24 +548,31 @@ th {
 .pagination-btn {
   background-color: #1e293b;
   color: white;
-  padding: 8px 12px;
+  padding: 10px 14px;
   margin: 0; /* 마진 제거 */
-  border: none;
-  border-radius: 6px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+}
+.pagination-btn:hover {
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.15), 0 3px 6px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 .pagination-btn.disabled {
-  background-color: #ccc;
+  background-color: #e5e7eb;
+  color: #9ca3af;
   cursor: not-allowed;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transform: none;
 }
 .pagination-btn.active {
   background-color: #334155;
   color: #fff;
-  border: 2px solid #475569;
+  border: none; /* Stripe 스타일 border 제거 */
 }
 .dropdown {
   padding: 8px 12px;
@@ -587,12 +602,12 @@ th {
 .performance-summary-section {
   background-color: var(--bg-secondary);
   padding: var(--spacing-2xl);
-  border-radius: var(--radius-2xl);
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   margin-bottom: var(--spacing-sm);
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   position: relative;
   z-index: 1;
-  border: 1px solid var(--border-light);
+  border: none; /* Stripe 스타일 border 제거 */
 }
 
 /* 🔥 성과 요약 섹션 로딩 시 배경 투명화 - 최고 우선순위 */
@@ -689,19 +704,19 @@ th {
   background: #f1f5f9;
 }
 
-/* ✅ 카드 공통 스타일 */
+/* ✅ 카드 공통 스타일 - Stripe 스타일 */
 .summary-card {
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  background: #ffffff; /* Stripe 스타일 흰색 배경 */
   padding: var(--spacing-xl);
-  border-radius: var(--radius-xl);
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   flex: 1 1 auto; /* 자동 크기 조정 */
   min-width: 0; /* 최소 너비 제거 */
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   transition: var(--transition-normal);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1px solid var(--border-light);
+  border: none; /* Stripe 스타일 border 제거 */
   position: relative;
   overflow: hidden;
 }
@@ -1072,15 +1087,16 @@ height: 360px;
   overflow: visible;
 }
 
-/* ✅ 차트 박스 스타일 (기본) - 기존 차트용 */
+/* ✅ 차트 박스 스타일 (기본) - Stripe 스타일 */
 .pie-chart-container {
   position: relative;
   width: 100%;
   padding: 20px 20px 40px;
-  border: 2px solid black;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   box-sizing: border-box;
+  background: #ffffff;
 }
 
 /* ✅ 차트 라벨 (기본) - 기존 차트용 */
@@ -1099,16 +1115,16 @@ height: 360px;
   z-index: 10;
 }
 
-/* ✅ ApexCharts용 차트 스타일 (우선순위 높음) - 기존 차트용 */
+/* ✅ ApexCharts용 차트 스타일 - Stripe 스타일 */
 .product-sales-ratio-chart .pie-chart-container {
   position: relative;
   width: 100%;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   text-align: center;
 }
 
@@ -1171,22 +1187,22 @@ overflow-x: auto;
 scrollbar-width: thin;
 }
 
-/* ✅ 탭 버튼 스타일 수정 (탭 너비, 패딩 조정) */
+/* ✅ 탭 버튼 스타일 수정 - Stripe 스타일 */
 .tab-btn {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center; /* ✅ 가운데 정렬 */
-  background-color: #f5f7fa;
+  background-color: #ffffff;
   color: #333;
   padding: 12px 30px; /* ✅ 패딩 키움 */
-  border-radius: 8px 8px 0 0; /* ✅ 모서리 덜 둥글게 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   font-weight: 600;
   font-size: 16px; /* ✅ 글자 약간 키움 */
   cursor: pointer;
-  border: 1px solid #ccc;
-  border-bottom: none;
-  transition: background 0.3s ease, color 0.3s ease;
+  border: none; /* Stripe 스타일 border 제거 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+  transition: all 0.2s ease;
   min-width: 140px; /* ✅ 탭 가로폭 넓힘 */
   max-width: 320px;
   white-space: nowrap;
@@ -1194,12 +1210,17 @@ scrollbar-width: thin;
   text-overflow: ellipsis;
 }
 
-/* ✅ 탭 활성화 스타일 */
+.tab-btn:hover {
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ✅ 탭 활성화 스타일 - Stripe 스타일 */
 .tab-btn.active {
   background-color: #1e293b;
   color: white;
-  border-color: #1e293b;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2); /* ✅ 그림자 조금 강하게 */
+  border: none; /* Stripe 스타일 border 제거 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 /* ✅ 선택된 필터 태그 스타일 */
@@ -1399,16 +1420,22 @@ th.sortable.desc::after {
   column-gap: 20px;
 }
 
-/* 카드 스타일 */
+/* 카드 스타일 - Stripe 스타일 */
 .insta-card {
   width: 100%;
   margin-bottom: 20px;
   break-inside: avoid; /* ✅ Masonry 깨짐 방지 */
   background: white;
-  border: 1px solid #dbdbdb;
-  border-radius: 10px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   overflow: hidden;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+  transition: all 0.2s ease;
+}
+
+.insta-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
 }
 
 /* 광고 이미지 */
@@ -2058,15 +2085,16 @@ th.sortable.desc::after {
   flex-grow: 1;
 }
 
-/* ✅ 테이블 카드 */
+/* ✅ 테이블 카드 - Stripe 스타일 */
 .catalog-table-card {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   overflow: hidden;
   background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 /* ✅ 테이블 제목 */
@@ -2286,14 +2314,14 @@ th.sortable.desc::after {
   display: none !important;
 }
 
-/* ✅ 팝업 모달: 콘텐츠 박스 */
+/* ✅ 팝업 모달: 콘텐츠 박스 - Stripe 스타일 */
 .modal-content {
   background-color: #ffffff;
   width: 480px;
   max-width: 90vw;
   max-height: 90vh;
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Stripe 스타일 그림자 */
   overflow: hidden;
   display: flex;
   flex-direction: column;

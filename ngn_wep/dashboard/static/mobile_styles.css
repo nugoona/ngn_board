@@ -1,4 +1,8 @@
-/* 모바일 전용 CSS - Tailwind CSS 대체 */
+/* 모바일 전용 CSS - Stripe 스타일 */
+
+/* Google Fonts - Inter & Pretendard */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 /* 기본 리셋 */
 * {
@@ -7,12 +11,12 @@
     padding: 0;
 }
 
-/* 기본 색상 변수 */
+/* 기본 색상 변수 - Stripe 스타일 */
 :root {
     --primary: #6366f1;
     --primary-dark: #4f46e5;
     --primary-light: #a5b4fc;
-    --gray-50: #f8fafc;
+    --gray-50: #f8f9fa; /* Stripe 스타일 배경색 */
     --gray-100: #f1f5f9;
     --gray-200: #e2e8f0;
     --gray-300: #cbd5e1;
@@ -25,12 +29,15 @@
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
+
+    /* Stripe 스타일 그림자 */
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* 기본 레이아웃 */
+/* 기본 레이아웃 - Stripe 스타일 */
 body {
     font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-    background: var(--gray-100);
+    background: #f8f9fa; /* Stripe 스타일 연한 회색 배경 */
     color: var(--gray-900);
     line-height: 1.6;
     overflow-x: hidden;
@@ -55,9 +62,9 @@ body {
 .mb-4 { margin-bottom: 1rem; }
 .mt-4 { margin-top: 1rem; }
 .mx-auto { margin-left: auto; margin-right: auto; }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-xl { border-radius: 0.75rem; }
-.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
+.rounded-lg { border-radius: 10px; } /* Stripe 스타일 10px 통일 */
+.rounded-xl { border-radius: 10px; } /* Stripe 스타일 10px 통일 */
+.shadow-lg { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } /* Stripe 스타일 그림자 */
 .bg-white { background-color: white; }
 .bg-gray-50 { background-color: var(--gray-50); }
 .bg-gray-100 { background-color: var(--gray-100); }
@@ -73,8 +80,8 @@ body {
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
-.border { border: 1px solid var(--gray-200); }
-.border-gray-200 { border-color: var(--gray-200); }
+.border { border: none; } /* Stripe 스타일 border 제거 */
+.border-gray-200 { border-color: transparent; } /* Stripe 스타일 border 제거 */
 .grid { display: grid; }
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -91,10 +98,11 @@ body {
 
 .mobile-card {
     background: white;
-    border-radius: 0.75rem;
+    border-radius: 10px; /* Stripe 스타일 10px 통일 */
     padding: 1.5rem;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: none; /* Stripe 스타일 border 제거 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .mobile-header {
@@ -128,39 +136,46 @@ body {
 .mobile-button {
     background: var(--primary);
     color: white;
-    border: none;
+    border: none; /* Stripe 스타일 border 제거 */
     padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: 10px; /* Stripe 스타일 10px 통일 */
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .mobile-button:hover {
     background: var(--primary-dark);
+    box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
 
 .mobile-button:disabled {
     background: var(--gray-400);
     cursor: not-allowed;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transform: none;
 }
 
 .mobile-select {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--gray-300);
-    border-radius: 0.5rem;
+    border: none; /* Stripe 스타일 border 제거 */
+    border-radius: 10px; /* Stripe 스타일 10px 통일 */
     background: white;
     font-size: 0.875rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .mobile-input {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--gray-300);
-    border-radius: 0.5rem;
+    border: none; /* Stripe 스타일 border 제거 */
+    border-radius: 10px; /* Stripe 스타일 10px 통일 */
     background: white;
     font-size: 0.875rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .mobile-loading {

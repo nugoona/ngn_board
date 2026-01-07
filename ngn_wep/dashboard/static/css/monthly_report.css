@@ -1,8 +1,12 @@
 /* ============================================
-   월간 프리미엄 전략 리포트 스타일
+   월간 프리미엄 전략 리포트 스타일 - Stripe 스타일
    ============================================ */
 
-/* ✅ 월간 리포트 사이드바 토글 버튼 (오른쪽 하단 고정) */
+/* Google Fonts - Inter & Pretendard */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* ✅ 월간 리포트 사이드바 토글 버튼 (오른쪽 하단 고정) - Stripe 스타일 */
 .monthly-report-toggle-btn {
   position: fixed;
   bottom: 20px;
@@ -16,11 +20,11 @@
   writing-mode: vertical-rl;
   text-orientation: mixed;
   text-transform: uppercase;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
+  border-top-left-radius: 10px; /* Stripe 스타일 10px 통일 */
+  border-bottom-left-radius: 10px; /* Stripe 스타일 10px 통일 */
   cursor: pointer;
   z-index: 1500;
-  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   transition: all 0.3s ease;
   border: none;
   user-select: none;
@@ -29,7 +33,7 @@
 .monthly-report-toggle-btn:hover {
   background-color: #b8382d;
   color: #ffffff;
-  box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* ✅ NEW 표시 배지 */
@@ -57,7 +61,7 @@
   }
 }
 
-/* ✅ 월간 리포트 사이드바 */
+/* ✅ 월간 리포트 사이드바 - Stripe 스타일 */
 .monthly-report-sidebar-wrapper {
   position: fixed;
   top: 20px;
@@ -67,7 +71,7 @@
   min-width: 1600px;
   max-height: calc(100vh - 40px);
   background: #ffffff;
-  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); /* Stripe 스타일 그림자 */
   z-index: 2000;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
@@ -76,8 +80,8 @@
   display: flex;
   flex-direction: column;
   padding: 0;
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
+  border-top-left-radius: 10px; /* Stripe 스타일 10px 통일 */
+  border-bottom-left-radius: 10px; /* Stripe 스타일 10px 통일 */
   overflow: hidden;
   contain: layout style;
 }
@@ -308,13 +312,14 @@
   width: 100%;
 }
 
-/* ✅ AI 분석 박스 - 메인 콘텐츠와 같은 높이, 내부 스크롤 사용 */
+/* ✅ AI 분석 박스 - Stripe 스타일 */
 .section-ai-analysis {
   /* Grid 레이아웃에서는 flex 속성 제거 */
-  background: #F8F9FA;
-  border-radius: 8px;
+  background: #ffffff; /* Stripe 스타일 흰색 배경 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 20px;
-  border-left: 3px solid #003366;
+  border-left: none; /* Stripe 스타일 border 제거 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   /* position: sticky 제거 - 새로운 전략 */
   height: 100%; /* 메인 콘텐츠와 같은 높이 */
   max-height: calc(90vh - 100px); /* 최대 높이 제한 (뷰포트 기준) */
@@ -333,10 +338,11 @@
 }
 
 .section-7-analysis-box {
-  background-color: #f9fafb; /* 연한 회색 (gray-50) */
-  border-radius: 8px;
+  background-color: #ffffff; /* Stripe 스타일 흰색 배경 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: none; /* Stripe 스타일 border 제거 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .section-7-analysis-box .ai-analysis-label {
@@ -717,10 +723,10 @@
 
 .scorecard-item {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .scorecard-label {
@@ -792,19 +798,21 @@
 
 .products-tab-btn {
   padding: 10px 20px;
-  border: none;
-  background: #F8F9FA;
+  border: none; /* Stripe 스타일 border 제거 */
+  background: #ffffff; /* Stripe 스타일 흰색 배경 */
   color: #212529;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .products-tab-btn:hover {
-  background: #E9ECEF;
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .products-tab-btn.active {
@@ -979,20 +987,22 @@
 
 .market-trend-tab-btn {
   padding: 10px 20px;
-  border: none;
-  background: #F8F9FA;
+  border: none; /* Stripe 스타일 border 제거 */
+  background: #ffffff; /* Stripe 스타일 흰색 배경 */
   color: #212529;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .market-trend-tab-btn:hover {
-  background: #E9ECEF;
+  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.12), 0 3px 6px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 .market-trend-tab-btn.active {
@@ -1052,10 +1062,10 @@
 
 .market-trend-card-compact {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
@@ -1064,7 +1074,7 @@
 
 .market-trend-card-compact:hover {
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .market-trend-rank-badge {
@@ -1275,10 +1285,10 @@
   gap: 16px;
   padding: 16px;
   background: #ffffff;
-  border: 1px solid #E9ECEF;
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .ads-ranking-rank {
@@ -1327,10 +1337,10 @@
 .comparison-table-wrapper {
   margin-bottom: 24px;
   background: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   padding: 0; /* 여백 제거 */
 }
 
@@ -1467,10 +1477,10 @@
 
 .comparison-box {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   overflow: hidden;
 }
 
@@ -1501,7 +1511,7 @@
   margin-bottom: 0;
   padding: 16px;
   border-bottom: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: 10px 10px 0 0; /* Stripe 스타일 10px 통일 */
 }
 
 .market-box .comparison-box-header {
@@ -1725,10 +1735,10 @@
 
 .forecast-card {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
 }
 
 .forecast-label {
@@ -1763,10 +1773,10 @@
 
 .strategy-card {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
+  border: none; /* Stripe 스타일 border 제거 */
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   padding: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -1775,7 +1785,7 @@
 
 .strategy-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .strategy-card-header {
@@ -1885,12 +1895,12 @@
   background: #212529;
   color: #ffffff;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 10px; /* Stripe 스타일 10px 통일 */
   font-size: 14px;
   z-index: 3000;
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Stripe 스타일 그림자 */
 }
 
 .toast-message.show {

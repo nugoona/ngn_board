@@ -225,7 +225,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
         WHERE DATE(DATETIME(TIMESTAMP(i.payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
           AND {company_filter}
-          AND i.item_product_sales > 0
+          AND (i.item_product_sales > 0 OR i.total_canceled > 0)
         GROUP BY i.company_name, i.product_name, i.product_no
         ORDER BY {order_by_column} DESC, i.company_name, i.product_name
         LIMIT @limit OFFSET @offset

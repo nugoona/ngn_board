@@ -2516,6 +2516,12 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         const categoryLines = lines.slice(startIndex + 1, endIndex);
         let categoryText = categoryLines.join('\n').trim();
         
+        // 텍스트 전처리: 리터럴 \n을 실제 줄바꿈으로 변환
+        categoryText = categoryText
+            .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+            .replace(/\r\n/g, '\n')  // Windows 줄바꿈 정규화
+            .replace(/\r/g, '\n');    // Mac 줄바꿈 정규화
+        
         console.log(`[DEBUG] ${categoryName} - 추출된 원본 텍스트 길이: ${categoryText.length}자`);
         if (categoryText.length > 0) {
             console.log(`[DEBUG] ${categoryName} - 추출된 텍스트 앞부분 (200자):`, categoryText.substring(0, 200));
@@ -2529,13 +2535,32 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         // 텍스트 요약 로직: 불릿 포인트를 2-3개로 제한하고 각각의 길이 제한
         let summarizedText = categoryText;
         
-        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출
-        const bulletPattern = /^[\s]*[-*•]\s*(.+)$/gm;
+        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출 (개선된 패턴)
+        // \n* 또는 줄 시작의 * 패턴도 포함
+        const bulletPattern = /(?:^|\n)[\s]*[-*•]\s+(.+?)(?=\n(?:[\s]*[-*•]|$)|\n\s*\n|$)/gs;
         const bullets = [];
         let match;
         
         while ((match = bulletPattern.exec(categoryText)) !== null) {
-            bullets.push(match[1].trim());
+            const bulletText = match[1].trim();
+            if (bulletText.length > 0) {
+                bullets.push(bulletText);
+            }
+        }
+        
+        // 불렛 포인트 패턴이 매칭되지 않았을 때, 수동으로 * 또는 - 로 시작하는 줄 찾기
+        if (bullets.length === 0) {
+            const lines = categoryText.split('\n');
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                // * 또는 - 로 시작하고, 그 다음에 공백이 오는 경우
+                if ((trimmedLine.startsWith('*') || trimmedLine.startsWith('-')) && trimmedLine.length > 2) {
+                    const bulletText = trimmedLine.substring(1).trim();
+                    if (bulletText.length > 0 && !bulletText.startsWith('*') && !bulletText.startsWith('**')) {
+                        bullets.push(bulletText);
+                    }
+                }
+            }
         }
         
         // 불릿 포인트가 있으면 요약 처리
@@ -2605,7 +2630,15 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         if (typeof marked !== 'undefined') {
             try {
                 marked.setOptions({ breaks: true, gfm: false });
-                const markdownHtml = marked.parse(summarizedText);
+                
+                // 마크다운 파싱 전 추가 정리
+                let cleanedMarkdown = summarizedText
+                    .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                    .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                    .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                    .replace(/\n\s*\*\s*\n/g, '\n');   // 빈 줄의 * 제거
+                
+                const markdownHtml = marked.parse(cleanedMarkdown);
                 
                 if (typeof DOMPurify !== 'undefined') {
                     categoryText = DOMPurify.sanitize(markdownHtml, {
@@ -2619,10 +2652,29 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                 console.log(`[DEBUG] ${categoryName} - 마크다운 변환 완료, HTML 길이: ${categoryText.length}자 (원본: ${categoryText.length}자 → 요약: ${summarizedText.length}자)`);
             } catch (e) {
                 console.warn(`[DEBUG] ${categoryName} - 마크다운 변환 실패:`, e);
-                categoryText = summarizedText.replace(/\n/g, '<br>');
+                // 폴백: 개선된 마크다운 처리
+                let fallbackHtml = summarizedText
+                    .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                    .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                    .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+                    .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+                    .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+                    .replace(/\n/g, '<br>');  // 줄바꿈 처리
+                categoryText = fallbackHtml;
             }
         } else {
-            categoryText = summarizedText.replace(/\n/g, '<br>');
+            // 폴백: 개선된 마크다운 처리
+            let fallbackHtml = summarizedText
+                .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+                .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+                .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')  // *텍스트* → <em>텍스트</em> (strong이 아닌 경우만)
+                .replace(/\n/g, '<br>');  // 줄바꿈 처리
+            categoryText = fallbackHtml;
         }
         
         categoryData[categoryName] = categoryText;

@@ -2635,9 +2635,14 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
                     .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
                     .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
                     .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
-                    .replace(/\n\s*\*\s*\n/g, '\n');   // 빈 줄의 * 제거
+                    .replace(/\n\s*\*\s*\n/g, '\n')   // 빈 줄의 * 제거
+                    .replace(/([^*])\*\*([^*])/g, '$1**$2');  // ** 앞뒤 공백 확인용
+                
+                console.log(`[DEBUG] ${categoryName} - 마크다운 파싱 전 텍스트 (200자):`, cleanedMarkdown.substring(0, 200));
                 
                 const markdownHtml = marked.parse(cleanedMarkdown);
+                
+                console.log(`[DEBUG] ${categoryName} - 마크다운 파싱 후 HTML (200자):`, markdownHtml.substring(0, 200));
                 
                 if (typeof DOMPurify !== 'undefined') {
                     categoryText = DOMPurify.sanitize(markdownHtml, {

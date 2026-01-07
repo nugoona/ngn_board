@@ -133,7 +133,7 @@ def run_query(process_date):
       FROM order_agg AS oa
       LEFT JOIN refund_summary AS r
       ON oa.mall_id = r.mall_id
-      AND oa.payment_date = r.refund_date
+      AND oa.payment_date = r.payment_date
     ) AS source
 
     ON target.payment_date = source.payment_date

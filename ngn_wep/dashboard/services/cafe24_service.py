@@ -248,9 +248,17 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
 
     try:
         t1 = time.time()
+        print(f"[DEBUG] data_query: {data_query}")
+        print(f"[DEBUG] query_params_main: {query_params_main}")
         result = client.query(data_query, job_config=bigquery.QueryJobConfig(query_parameters=query_params_main)).result()
         rows = [dict(row) for row in result]
         t2 = time.time()
+
+        # ✅ 디버그: total_canceled 값 확인
+        canceled_rows = [r for r in rows if r.get('total_canceled', 0) > 0]
+        print(f"[DEBUG] total_canceled > 0 인 행: {len(canceled_rows)}개")
+        if canceled_rows:
+            print(f"[DEBUG] 샘플: {canceled_rows[:2]}")
 
         count_result = client.query(count_query, job_config=bigquery.QueryJobConfig(query_parameters=query_params_base + query_params_common)).result()
         total_count = next(count_result)["total_count"]

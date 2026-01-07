@@ -106,7 +106,8 @@ def fetch_orders_data(mall_id, access_token, start_date, end_date):
                     "mall_id": mall_id,
                     "order_id": order.get("order_id"),
                     "order_date": parse_date(order.get("order_date") or order.get("ordered_date")),
-                    "payment_date": parse_date(order.get("payment_date")),
+                    # ✅ 환불된 주문은 payment_date가 NULL로 오므로 order_date를 fallback으로 사용
+                    "payment_date": parse_date(order.get("payment_date") or order.get("order_date") or order.get("ordered_date")),
                     "payment_method": ",".join(order.get("payment_method_name", [])),
                     "first_order": to_bool(order.get("first_order")),
                     "naverpay_payment_information": order.get("naverpay_payment_information"),

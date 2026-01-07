@@ -2222,9 +2222,33 @@ function createSection2Card(icon, titleEn, titleKo, content) {
             
             console.log(`[Section 2] 요약 완료: ${bullets.length}개 → ${summarizedBullets.length}개`);
         } else {
-            // 불릿 포인트가 없으면 일반 텍스트 요약 (최대 400자)
-            if (summarizedContent.length > 400) {
-                summarizedContent = summarizedContent.substring(0, 397) + '...';
+            // 불릿 포인트가 없으면 문단을 불렛 포인트로 변환 시도
+            console.log(`[Section 2] 불렛 포인트 없음, 문단을 불렛 포인트로 변환 시도`);
+            
+            // 문장 단위로 분리 (마침표, 느낌표, 물음표로 끝나는 문장)
+            const sentences = summarizedContent
+                .split(/([.!?]\s+)/)
+                .filter(s => s.trim().length > 0)
+                .reduce((acc, curr, idx) => {
+                    if (idx % 2 === 0) {
+                        acc.push(curr + (sentences[idx + 1] || ''));
+                    }
+                    return acc;
+                }, [])
+                .filter(s => s.trim().length > 10); // 너무 짧은 문장 제외
+            
+            // 문장을 불렛 포인트로 변환 (최대 4-5개)
+            if (sentences.length > 0) {
+                const maxSentences = Math.min(5, sentences.length);
+                summarizedContent = sentences.slice(0, maxSentences)
+                    .map(s => `* ${s.trim()}`)
+                    .join('\n');
+                console.log(`[Section 2] 문단을 ${sentences.length}개 문장 → ${maxSentences}개 불렛 포인트로 변환`);
+            } else {
+                // 문장 분리가 안되면 그대로 유지 (최대 400자)
+                if (summarizedContent.length > 400) {
+                    summarizedContent = summarizedContent.substring(0, 397) + '...';
+                }
             }
         }
         

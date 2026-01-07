@@ -177,7 +177,7 @@ def merge_temp_to_main_table():
                 t.refund_code,
                 c.company_name,
                 ROW_NUMBER() OVER (
-                    PARTITION BY t.refund_code, t.mall_id, c.company_name 
+                    PARTITION BY t.refund_code, t.mall_id, t.order_id, t.order_item_code, c.company_name 
                     ORDER BY t.refund_date DESC
                 ) AS rn
             FROM {PROJECT_ID}.{DATASET_ID}.{TEMP_REFUNDS_TABLE_ID} t
@@ -191,6 +191,7 @@ def merge_temp_to_main_table():
     ) AS source
     ON target.mall_id = source.mall_id
        AND target.order_id = source.order_id
+       AND target.order_item_code = source.order_item_code
        AND target.refund_code = source.refund_code
 
     WHEN MATCHED THEN
@@ -226,10 +227,10 @@ def merge_temp_to_main_table():
         logging.error(f"❌ 병합 실패: {e}")
 
 
-# ✅ 메인 실행 함수 (오늘 포함 지난 7일)
+# ✅ 메인 실행 함수 (오늘 + 어제만 수집 - 실시간 매출 정확도 확보)
 def main():
-    start_date = (current_time - timedelta(days=6)).strftime("%Y-%m-%d")  # 오늘 포함 7일
-    end_date = current_time.strftime("%Y-%m-%d")
+    start_date = (current_time - timedelta(days=1)).strftime("%Y-%m-%d")  # 어제
+    end_date = current_time.strftime("%Y-%m-%d")  # 오늘
 
     # (수정) download_tokens()는 list 반환
     tokens_list = download_tokens()

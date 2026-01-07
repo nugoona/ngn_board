@@ -1820,15 +1820,29 @@ function renderSection1AsCard(section1Text) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'trend-section1-card-content';
     
+    // 텍스트 전처리: 리터럴 \n을 실제 줄바꿈으로 변환
+    let processedText = cleanedText
+        .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+        .replace(/\r\n/g, '\n')  // Windows 줄바꿈 정규화
+        .replace(/\r/g, '\n');    // Mac 줄바꿈 정규화
+    
     // 마크다운을 HTML로 변환
     if (typeof marked !== 'undefined') {
         try {
             marked.setOptions({
                 breaks: true,
-                gfm: false
+                gfm: false,
+                headerIds: false,
+                mangle: false
             });
             
-            const markdownHtml = marked.parse(cleanedText);
+            // 마크다운 파싱 전 추가 정리
+            let cleanedMarkdown = processedText
+                .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                .replace(/\n\s*\*\s*\n/g, '\n');   // 빈 줄의 * 제거
+            
+            const markdownHtml = marked.parse(cleanedMarkdown);
             
             if (typeof DOMPurify !== 'undefined') {
                 contentDiv.innerHTML = DOMPurify.sanitize(markdownHtml, {
@@ -1840,10 +1854,26 @@ function renderSection1AsCard(section1Text) {
             }
         } catch (e) {
             console.warn("[Section 1] 마크다운 변환 실패:", e);
-            contentDiv.innerHTML = cleanedText.replace(/\n/g, '<br>');
+            // 폴백: 개선된 마크다운 처리
+            let fallbackHtml = processedText
+                .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+                .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+                .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+                .replace(/\n/g, '<br>');  // 줄바꿈 처리
+            contentDiv.innerHTML = fallbackHtml;
         }
     } else {
-        contentDiv.innerHTML = cleanedText.replace(/\n/g, '<br>');
+        // 폴백: 개선된 마크다운 처리
+        let fallbackHtml = processedText
+            .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+            .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+            .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+            .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+            .replace(/\n/g, '<br>');  // 줄바꿈 처리
+        contentDiv.innerHTML = fallbackHtml;
     }
     
     // 썸네일 그리드 컨테이너 (자사몰 상품용)

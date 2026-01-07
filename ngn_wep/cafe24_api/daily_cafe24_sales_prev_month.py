@@ -68,7 +68,7 @@ def run_daily_sales_query(process_date):
           SELECT
               o.mall_id,
               o.order_id,
-              DATE(TIMESTAMP(o.payment_date), 'Asia/Seoul') AS payment_date,
+              DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
               MAX(
                   CASE 
                       WHEN o.order_price_amount = 0 THEN o.payment_amount + o.naverpay_point
@@ -85,7 +85,7 @@ def run_daily_sales_query(process_date):
               MAX(CASE WHEN o.canceled = TRUE THEN 1 ELSE 0 END) AS is_canceled,
               MAX(CASE WHEN o.naverpay_payment_information = 'N' THEN 1 ELSE 0 END) AS is_naverpay_payment_info
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
-          WHERE DATE(TIMESTAMP(o.payment_date), 'Asia/Seoul') = '{process_date}'
+          WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
           GROUP BY o.mall_id, o.order_id, payment_date
       ),
       order_agg AS (

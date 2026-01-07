@@ -115,11 +115,12 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         # CTE 기반 통합 쿼리
         query = f"""
         WITH
-        -- 0. 카페24 최신 수집 시간 (기간 무관 - 항상 최신 시간 표시)
+        -- 0. 카페24 주문 테이블 최신 수정 시간 (orders_handler.py가 1시간마다 실행)
         cafe24_latest_update AS (
-            SELECT MAX(updated_at) AS updated_at
-            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-            WHERE {company_filter}
+            SELECT
+                TIMESTAMP_MILLIS(last_modified_time) AS updated_at
+            FROM `winged-precept-443218-v8.ngn_dataset.__TABLES__`
+            WHERE table_id = 'cafe24_orders'
         ),
 
         -- 1. 카페24 매출 데이터

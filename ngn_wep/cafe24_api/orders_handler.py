@@ -40,7 +40,6 @@ def get_date_range(mode):
 def to_bool(value):
     return str(value).lower() in ["true", "t", "1"]
 
-KST = timezone(timedelta(hours=9))
 
 def parse_date(date_value):
     if not date_value:

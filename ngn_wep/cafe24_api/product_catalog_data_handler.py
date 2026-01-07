@@ -16,13 +16,7 @@ current_time = datetime.now(timezone.utc).astimezone(KST)
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# 로그 파일 경로 설정
-LOG_FILE = "/home/oscar/ngn_board/ngn_wep/logs/product_catalog_data_handler.log"
-
-
-# 로그 파일이 존재하지 않으면 생성
-if not os.path.exists(os.path.dirname(LOG_FILE)):
-    os.makedirs(os.path.dirname(LOG_FILE))
+# ✅ Cloud Run 환경에서는 stdout으로 로깅 (별도 파일 불필요)
 
 # GCP Cloud Storage 설정
 BUCKET_NAME = "winged-precept-443218-v8.appspot.com"

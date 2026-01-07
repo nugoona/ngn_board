@@ -31,6 +31,16 @@ function renderCafe24ProductSalesTable() {
   const rowsHtml = cafe24ProductSalesRawData.map(row => {
     const formattedDate = cleanData(row.report_date);
     const firstOrder = row.total_first_order != null ? cleanData(row.total_first_order) : "0";
+    
+    // ✅ 디버깅: total_canceled 값 확인
+    if (row.total_canceled !== undefined && row.total_canceled !== null && row.total_canceled !== 0) {
+      console.log("[DEBUG] 취소된 주문 발견:", {
+        product_name: row.product_name,
+        total_canceled: row.total_canceled,
+        total_quantity: row.total_quantity,
+        item_quantity: row.item_quantity
+      });
+    }
 
     return `
       <tr>
@@ -39,7 +49,7 @@ function renderCafe24ProductSalesTable() {
         <td>${cleanData(row.product_name)}</td>
         <td>${cleanData(row.product_price)}</td>
         <td>${cleanData(row.total_quantity)}</td>
-        <td>${cleanData(row.total_canceled)}</td>
+        <td>${cleanData(row.total_canceled || 0)}</td>
         <td>${cleanData(row.item_quantity)}</td>
         <td>${cleanData(row.item_product_sales)}</td>
         <td>${firstOrder}</td>
@@ -149,6 +159,14 @@ function fetchCafe24ProductSalesData(requestData) {
         console.log("[DEBUG] 추출된 데이터:", data);
         console.log("[DEBUG] 데이터 개수:", data.length);
         console.log("[DEBUG] 전체 개수:", totalCount);
+        
+        // ✅ total_canceled 값 확인
+        if (data.length > 0) {
+          console.log("[DEBUG] 첫 번째 상품 데이터:", data[0]);
+          console.log("[DEBUG] 첫 번째 상품 total_canceled:", data[0].total_canceled, typeof data[0].total_canceled);
+          console.log("[DEBUG] 첫 번째 상품 total_quantity:", data[0].total_quantity);
+          console.log("[DEBUG] 첫 번째 상품 item_quantity:", data[0].item_quantity);
+        }
 
         cafe24ProductSalesRawData = data;
         cafe24ProductSalesTotalCount = totalCount;

@@ -36,7 +36,7 @@ def execute_bigquery(process_type="today"):
       WHERE LOWER(company_name) != 'demo'
     ),
     FilteredOrders AS (
-      SELECT
+      SELECT DISTINCT
         o.order_id,
         DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
         m.company_name,
@@ -50,8 +50,34 @@ def execute_bigquery(process_type="today"):
         AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) BETWEEN DATE('{start_date}') AND DATE('{end_date}')
         AND m.company_name IS NOT NULL 
     ),
+    -- ✅ 핵심 수정: order_item_code별로 먼저 중복 제거, 그 다음 order_id + product_no별로 수량 합산
+    OrderItemsDeduped AS (
+      SELECT 
+        order_id,
+        CAST(mall_id AS STRING) AS mall_id,
+        CAST(product_no AS INT64) AS product_no,
+        SUM(item_qty) AS quantity,
+        MAX(product_name) AS product_name,
+        MAX(product_price) AS product_price
+      FROM (
+        -- 1단계: order_item_code별 유니크 행 추출 (같은 order_item_code 중복 제거)
+        SELECT 
+          order_id, 
+          CAST(mall_id AS STRING) AS mall_id,
+          CAST(product_no AS INT64) AS product_no, 
+          order_item_code,
+          MAX(product_name) AS product_name,
+          MAX(CAST(quantity AS INT64)) AS item_qty,
+          MAX(CAST(product_price AS FLOAT64)) AS product_price
+        FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table`
+        GROUP BY order_id, mall_id, product_no, order_item_code
+      )
+      -- 2단계: order_id + product_no별로 수량 합산 (같은 상품 여러 개 주문한 경우 정상 합산)
+      GROUP BY order_id, mall_id, product_no
+    ),
     CanceledOrders AS (
-      SELECT
+      -- 취소 여부도 order_item_code 단위로 유니크하게 확인
+      SELECT DISTINCT
         order_id,
         CAST(mall_id AS STRING) AS mall_id,
         CAST(product_no AS INT64) AS product_no,
@@ -63,14 +89,13 @@ def execute_bigquery(process_type="today"):
       SELECT
         o.payment_date,
         CAST(o.mall_id AS STRING) AS mall_id,
-        CAST(oi.product_no AS INT64) AS product_no,
-        oi.order_id,
-        oi.product_name,
-        SUM(CASE WHEN o.first_order THEN oi.quantity ELSE 0 END) AS first_order_quantity
+        oid.product_no,
+        o.order_id,
+        SUM(CASE WHEN o.first_order THEN oid.quantity ELSE 0 END) AS first_order_quantity
       FROM FilteredOrders AS o
-      JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
-        ON o.order_id = oi.order_id AND o.mall_id = oi.mall_id
-      GROUP BY o.payment_date, o.mall_id, oi.product_no, oi.order_id, oi.product_name
+      JOIN OrderItemsDeduped AS oid
+        ON o.order_id = oid.order_id AND o.mall_id = oid.mall_id
+      GROUP BY o.payment_date, o.mall_id, oid.product_no, o.order_id
     ),
     OrderDetails AS (
       SELECT
@@ -78,25 +103,27 @@ def execute_bigquery(process_type="today"):
         o.mall_id,
         o.company_name,
         o.main_url,
-        CAST(oi.product_no AS INT64) AS product_no,
-        oi.order_id,
+        oid.product_no,
+        o.order_id,
         REGEXP_REPLACE(
-          ARRAY_AGG(oi.product_name ORDER BY oi.ordered_date DESC LIMIT 1)[SAFE_OFFSET(0)],
+          oid.product_name,
           r'^\\[(?i)(?!set\\])[^\\]]+\\]\\s*',
           ''
         ) AS product_name,
-        CAST(oi.product_price AS FLOAT64) AS product_price,
-        SUM(oi.quantity) AS quantity,
+        CAST(oid.product_price AS FLOAT64) AS product_price,
+        oid.quantity,
         COALESCE(c.canceled, 0) AS canceled,
-        p.category_no
+        MAX(p.category_no) AS category_no
       FROM FilteredOrders AS o
-      JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
-        ON o.order_id = oi.order_id AND o.mall_id = oi.mall_id
+      JOIN OrderItemsDeduped AS oid
+        ON o.order_id = oid.order_id AND o.mall_id = oid.mall_id
       LEFT JOIN CanceledOrders AS c
-        ON o.order_id = c.order_id AND o.mall_id = c.mall_id
+        ON oid.order_id = c.order_id 
+        AND oid.mall_id = c.mall_id
+        AND oid.product_no = c.product_no
       LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS p
-        ON oi.mall_id = p.mall_id AND oi.product_no = p.product_no
-      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oi.product_no, oi.order_id, oi.product_price, c.canceled, p.category_no
+        ON oid.mall_id = p.mall_id AND CAST(oid.product_no AS STRING) = p.product_no
+      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oid.product_no, o.order_id, oid.product_price, oid.quantity, oid.product_name, c.canceled, p.category_no
     )
     SELECT
       od.payment_date,
@@ -104,29 +131,29 @@ def execute_bigquery(process_type="today"):
       od.company_name,
       od.order_id,
       CAST(od.product_no AS INT64) AS product_no,
-      MAX(od.product_name) AS product_name,
-      MAX(od.product_price) AS product_price,
-      SUM(od.quantity) AS total_quantity,
-      SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS total_canceled,
-      SUM(od.quantity) - SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS item_quantity,
-      CAST(MAX(od.product_price) * (SUM(od.quantity) - SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END)) AS FLOAT64) AS item_product_sales,
-      SUM(COALESCE(fo.first_order_quantity, 0)) AS total_first_order,
+      od.product_name,
+      od.product_price,
+      od.quantity AS total_quantity,
+      CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS total_canceled,
+      od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS item_quantity,
+      CAST(od.product_price * (od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS FLOAT64) AS item_product_sales,
+      COALESCE(fo.first_order_quantity, 0) AS total_first_order,
       CONCAT(
-        'https://', MAX(od.main_url),
+        'https://', od.main_url,
         '/product/',
         REGEXP_REPLACE(
           LOWER(
             REPLACE(
-              REGEXP_REPLACE(MAX(od.product_name), r'_', ''), 
+              REGEXP_REPLACE(od.product_name, r'_', ''), 
               ' ', '-'
             )
           ),
           r'[^a-z0-9-]+', ''
         ),
         '/',
-        CAST(MAX(od.product_no) AS STRING),
+        CAST(od.product_no AS STRING),
         '/category/',
-        CAST(MAX(od.category_no) AS STRING),
+        CAST(od.category_no AS STRING),
         '/display/1/'
       ) AS product_url,
       CURRENT_TIMESTAMP() AS updated_at
@@ -136,7 +163,6 @@ def execute_bigquery(process_type="today"):
      AND od.product_no = fo.product_no
      AND od.payment_date = fo.payment_date
      AND od.order_id = fo.order_id
-    GROUP BY od.payment_date, od.mall_id, od.company_name, od.order_id, od.product_no
     """
 
     merge_query = f"""
@@ -146,7 +172,6 @@ def execute_bigquery(process_type="today"):
        AND target.mall_id = source.mall_id
        AND target.product_no = source.product_no
        AND target.order_id = source.order_id
-       AND (target.payment_date IS NULL OR DATE(target.payment_date) BETWEEN DATE('{start_date}') AND DATE('{end_date}'))
     WHEN MATCHED THEN
       UPDATE SET
         product_url = source.product_url,  -- ✅ 강제 갱신

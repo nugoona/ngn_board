@@ -1,11 +1,9 @@
 """
-2025년 12월 데이터 재수집 스크립트
-- daily_cafe24_sales
-- cafe24_refunds_table
+2026년 1월 daily_cafe24_sales 재수집 스크립트
 """
 import os
 from google.cloud import bigquery
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 
 # ✅ 로깅 설정
@@ -175,12 +173,12 @@ def run_daily_sales_query(process_date):
 
 def main():
     logging.info("=" * 60)
-    logging.info("🔧 2025년 12월 데이터 재수집 시작")
+    logging.info("🔧 2026년 1월 daily_cafe24_sales 재수집 시작")
     logging.info("=" * 60)
     
-    # 2025년 12월 1일 ~ 31일
-    start_date = datetime(2025, 12, 1)
-    end_date = datetime(2025, 12, 31)
+    # 2026년 1월 1일 ~ 31일
+    start_date = datetime(2026, 1, 1)
+    end_date = datetime(2026, 1, 31)
     
     current_date = start_date
     total_days = (end_date - start_date).days + 1
@@ -191,13 +189,13 @@ def main():
         date_str = current_date.strftime("%Y-%m-%d")
         logging.info(f"📅 [{day_count}/{total_days}] {date_str} 처리 중...")
         
-        # daily_cafe24_sales 복구
+        # daily_cafe24_sales 재수집
         run_daily_sales_query(date_str)
         
         current_date += timedelta(days=1)
     
     logging.info("=" * 60)
-    logging.info("✅ 2025년 12월 데이터 재수집 완료!")
+    logging.info("✅ 2026년 1월 daily_cafe24_sales 재수집 완료!")
     logging.info("=" * 60)
 
 

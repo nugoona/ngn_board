@@ -27,28 +27,29 @@ def run_query(process_date):
           FROM `winged-precept-443218-v8.ngn_dataset.company_info`
       ),
       refund_summary AS (
-          -- ✅ order_id 기준으로 먼저 집계하여 중복 문제 완전 해결
-          -- cafe24_refunds_table의 중복 레코드도 처리, cafe24_orders의 중복도 처리
+          -- ✅ 환불을 결제일(payment_date) 기준으로 집계 (refund_date가 아닌 order의 payment_date 사용)
           SELECT
-              refund_agg.mall_id,
-              refund_agg.company_name,
-              refund_agg.refund_date,
-              SUM(refund_agg.total_refund_amount) AS total_refund_amount
+              refund_with_payment.mall_id,
+              refund_with_payment.company_name,
+              refund_with_payment.payment_date,
+              SUM(refund_with_payment.total_refund_amount) AS total_refund_amount
           FROM (
-              -- order_id별로 먼저 집계 (cafe24_refunds_table의 중복 레코드 처리)
+              -- order_id별로 먼저 집계하고, 주문의 payment_date를 가져옴
               SELECT
                   r.mall_id,
                   c.company_name,
-                  DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,
+                  DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
                   r.order_id,
                   SUM(r.total_refund_amount) AS total_refund_amount
               FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
+              JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
+                  ON r.order_id = o.order_id AND r.mall_id = o.mall_id
               JOIN company_mall_ids c
                   ON r.mall_id = c.mall_id
-              WHERE DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) = '{process_date}'
-              GROUP BY r.mall_id, c.company_name, refund_date, r.order_id
-          ) refund_agg
-          GROUP BY refund_agg.mall_id, refund_agg.company_name, refund_agg.refund_date
+              WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
+              GROUP BY r.mall_id, c.company_name, payment_date, r.order_id
+          ) refund_with_payment
+          GROUP BY refund_with_payment.mall_id, refund_with_payment.company_name, refund_with_payment.payment_date
       ),
 
       -- ✅ 주문 상품 총 판매 개수 (order_id 기준으로 개수 집계)

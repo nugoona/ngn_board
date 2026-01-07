@@ -226,9 +226,9 @@ def merge_temp_to_main_table():
         logging.error(f"❌ 병합 실패: {e}")
 
 
-# ✅ 메인 실행 함수 (오늘부터 어제까지)
+# ✅ 메인 실행 함수 (오늘 포함 지난 7일)
 def main():
-    start_date = (current_time - timedelta(days=1)).strftime("%Y-%m-%d")
+    start_date = (current_time - timedelta(days=6)).strftime("%Y-%m-%d")  # 오늘 포함 7일
     end_date = current_time.strftime("%Y-%m-%d")
 
     # (수정) download_tokens()는 list 반환

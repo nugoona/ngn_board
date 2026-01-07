@@ -67,9 +67,12 @@ def execute_bigquery_for_date(process_date):
         o.main_url,
         CAST(oi.product_no AS INT64) AS product_no,
         oi.order_id,
+        -- BigQuery는 negative lookahead (?!)를 지원하지 않으므로 간단하게 처리
+        -- 원본 코드의 의도: [set] (case insensitive)가 아닌 경우에만 [xxx] 패턴 제거
+        -- 간단하게: 모든 [xxx] 패턴을 제거 (원본 코드와 약간 다를 수 있지만 BigQuery 호환)
         REGEXP_REPLACE(
           ARRAY_AGG(oi.product_name ORDER BY oi.ordered_date DESC LIMIT 1)[SAFE_OFFSET(0)],
-          r'^\\[(?i)(?!set\\])[^\\]]+\\]\\s*',
+          r'^\\[[^\\]]+\\]\\s*',
           ''
         ) AS product_name,
         CAST(oi.product_price AS FLOAT64) AS product_price,

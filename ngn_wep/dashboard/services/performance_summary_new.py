@@ -115,12 +115,18 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         # CTE 기반 통합 쿼리
         query = f"""
         WITH
+        -- 0. 카페24 최신 수집 시간 (기간 무관 - 항상 최신 시간 표시)
+        cafe24_latest_update AS (
+            SELECT MAX(updated_at) AS updated_at
+            FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
+            WHERE {company_filter}
+        ),
+
         -- 1. 카페24 매출 데이터
         cafe24_summary AS (
             SELECT
                 COALESCE(SUM(net_sales), 0) AS total_revenue,
-                COALESCE(SUM(total_orders), 0) AS total_orders,
-                MAX(updated_at) AS updated_at
+                COALESCE(SUM(total_orders), 0) AS total_orders
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
             WHERE payment_date BETWEEN @start_date AND @end_date
               AND {company_filter}
@@ -143,8 +149,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
                 COALESCE(SUM(A.spend), 0) AS total_spend,
                 COALESCE(SUM(A.clicks), 0) AS total_clicks,
                 COALESCE(SUM(A.purchases), 0) AS total_purchases,
-                COALESCE(SUM(A.purchase_value), 0) AS total_purchase_value,
-                MAX(A.updated_at) AS updated_at
+                COALESCE(SUM(A.purchase_value), 0) AS total_purchase_value
             FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_account_summary` A
             LEFT JOIN latest_meta_accounts L ON A.account_id = L.account_id
             WHERE A.date BETWEEN @start_date AND @end_date
@@ -191,12 +196,13 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
             m.total_clicks,
             m.total_purchases,
             m.total_purchase_value,
-            c.updated_at,
+            u.updated_at,
             g.total_visitors,
             v.product_views,
             cs.cart_users,
             cs.signup_count
         FROM cafe24_summary c
+        CROSS JOIN cafe24_latest_update u
         CROSS JOIN meta_summary m
         CROSS JOIN ga4_visitors g
         CROSS JOIN ga4_viewitem v

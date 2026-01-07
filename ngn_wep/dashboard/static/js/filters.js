@@ -372,10 +372,15 @@ async function fetchFilteredDataWithoutPopup() {
     console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
     return;
   }
-  window.isLoading = true;
-  console.log("[DEBUG] 로딩 시작 (팝업 없음) - window.isLoading = true");
 
   const pathname = window.location.pathname;
+
+  // ✅ 대시보드 페이지는 updateAllData()가 자체적으로 로딩 상태 관리
+  const isDashboard = pathname === "/" || pathname === "/dashboard";
+  if (!isDashboard) {
+    window.isLoading = true;
+    console.log("[DEBUG] 로딩 시작 (팝업 없음) - window.isLoading = true");
+  }
   const selectedCompany = $("#accountFilter").val() || "all";
 
   // ✅ 모든 페이지에서 실제 선택된 기간 값 사용
@@ -398,7 +403,9 @@ async function fetchFilteredDataWithoutPopup() {
 
   if (isAllCompany && isDateMissing) {
     console.warn("[BLOCKED] '모든 업체 + 날짜 없음' 조합으로 get_data 요청 차단됨");
-    window.isLoading = false;
+    if (!isDashboard) {
+      window.isLoading = false;
+    }
     return;
   }
 
@@ -484,8 +491,11 @@ async function fetchFilteredDataWithoutPopup() {
   } catch (e) {
     console.error("[ERROR] fetchFilteredDataWithoutPopup 순차 요청 중 오류 발생:", e);
   } finally {
-    window.isLoading = false;
-    console.log("[DEBUG] 로딩 완료 (팝업 없음) - window.isLoading = false");
+    // ✅ 대시보드 페이지는 updateAllData()가 자체적으로 로딩 상태 관리
+    if (!isDashboard) {
+      window.isLoading = false;
+      console.log("[DEBUG] 로딩 완료 (팝업 없음) - window.isLoading = false");
+    }
   }
 }
 
@@ -494,10 +504,16 @@ async function fetchFilteredData() {
     console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
     return;
   }
-  window.isLoading = true;
-  console.log("[DEBUG] 로딩 시작 - window.isLoading = true");
 
   const pathname = window.location.pathname;
+
+  // ✅ 대시보드 페이지는 updateAllData()가 자체적으로 로딩 상태 관리
+  const isDashboard = pathname === "/" || pathname === "/dashboard";
+  if (!isDashboard) {
+    window.isLoading = true;
+    console.log("[DEBUG] 로딩 시작 - window.isLoading = true");
+  }
+
   const selectedCompany = $("#accountFilter").val() || "all";
 
   // ✅ 모든 페이지에서 실제 선택된 기간 값 사용
@@ -520,7 +536,9 @@ async function fetchFilteredData() {
 
   if (isAllCompany && isDateMissing) {
     console.warn("[BLOCKED] '모든 업체 + 날짜 없음' 조합으로 get_data 요청 차단됨");
-    window.isLoading = false;
+    if (!isDashboard) {
+      window.isLoading = false;
+    }
     return;
   }
 
@@ -606,8 +624,11 @@ async function fetchFilteredData() {
   } catch (e) {
     console.error("[ERROR] fetchFilteredData 순차 요청 중 오류 발생:", e);
   } finally {
-    window.isLoading = false;
-    console.log("[DEBUG] 로딩 완료 - window.isLoading = false");
+    // ✅ 대시보드 페이지는 updateAllData()가 자체적으로 로딩 상태 관리
+    if (!isDashboard) {
+      window.isLoading = false;
+      console.log("[DEBUG] 로딩 완료 - window.isLoading = false");
+    }
   }
 }
 

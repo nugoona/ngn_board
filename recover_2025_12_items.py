@@ -45,6 +45,7 @@ def execute_bigquery_for_date(process_date):
         CAST(mall_id AS STRING) AS mall_id,
         CAST(product_no AS INT64) AS product_no,
         SUM(CAST(quantity AS INT64)) AS quantity,
+        SUM(CASE WHEN status_code IN ('C1', 'C2', 'C3') THEN CAST(quantity AS INT64) ELSE 0 END) AS canceled_quantity,
         MAX(product_name) AS product_name,
         MAX(CAST(product_price AS FLOAT64)) AS product_price
       FROM (
@@ -58,6 +59,7 @@ def execute_bigquery_for_date(process_date):
             oi.product_name,
             oi.quantity,
             oi.product_price,
+            oi.status_code,
             ROW_NUMBER() OVER(
               PARTITION BY CAST(oi.mall_id AS STRING), oi.order_item_code 
               ORDER BY oi.ordered_date DESC
@@ -71,16 +73,6 @@ def execute_bigquery_for_date(process_date):
       )
       -- 2단계: order_id + product_no별로 수량 합산 (같은 상품 여러 개 주문한 경우 정상 합산)
       GROUP BY order_id, mall_id, product_no
-    ),
-    CanceledOrders AS (
-      -- 취소 여부도 order_item_code 단위로 유니크하게 확인
-      SELECT DISTINCT
-        order_id,
-        CAST(mall_id AS STRING) AS mall_id,
-        CAST(product_no AS INT64) AS product_no,
-        1 AS canceled
-      FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table`
-      WHERE status_code IN ('C1', 'C2', 'C3')
     ),
     FirstOrderCount AS (
       SELECT
@@ -109,18 +101,14 @@ def execute_bigquery_for_date(process_date):
         ) AS product_name,
         CAST(oid.product_price AS FLOAT64) AS product_price,
         oid.quantity,
-        COALESCE(c.canceled, 0) AS canceled,
+        oid.canceled_quantity,
         MAX(p.category_no) AS category_no
       FROM FilteredOrders AS o
       JOIN OrderItemsDeduped AS oid
         ON o.order_id = oid.order_id AND o.mall_id = oid.mall_id
-      LEFT JOIN CanceledOrders AS c
-        ON oid.order_id = c.order_id 
-        AND oid.mall_id = c.mall_id
-        AND oid.product_no = c.product_no
       LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS p
         ON oid.mall_id = p.mall_id AND CAST(oid.product_no AS STRING) = p.product_no
-      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oid.product_no, o.order_id, oid.product_price, oid.quantity, oid.product_name, c.canceled, p.category_no
+      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oid.product_no, o.order_id, oid.product_price, oid.quantity, oid.canceled_quantity, oid.product_name, p.category_no
     )
     SELECT
       od.payment_date,
@@ -131,9 +119,9 @@ def execute_bigquery_for_date(process_date):
       od.product_name,
       od.product_price,
       od.quantity AS total_quantity,
-      CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS total_canceled,
-      od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS item_quantity,
-      CAST(od.product_price * (od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS FLOAT64) AS item_product_sales,
+      od.canceled_quantity AS total_canceled,
+      od.quantity - od.canceled_quantity AS item_quantity,
+      CAST(od.product_price * (od.quantity - od.canceled_quantity) AS FLOAT64) AS item_product_sales,
       COALESCE(fo.first_order_quantity, 0) AS total_first_order,
       CONCAT(
         'https://', od.main_url,

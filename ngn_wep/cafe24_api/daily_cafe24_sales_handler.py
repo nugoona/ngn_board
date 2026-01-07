@@ -109,8 +109,7 @@ def run_query(process_date):
           JOIN `winged-precept-443218-v8.ngn_dataset.company_info` AS c
           ON os.mall_id = c.mall_id  
           GROUP BY os.payment_date, os.mall_id, c.company_name
-      )
-      
+      ),
       -- ✅ 모든 날짜 수집 (주문 또는 환불이 있는 날짜)
       all_dates AS (
           SELECT payment_date AS process_date, mall_id, company_name FROM order_agg

@@ -118,12 +118,11 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         -- 1. 카페24 매출 데이터
         cafe24_summary AS (
             SELECT
-                COALESCE(SUM(total_payment - total_refund_amount), 0) AS total_revenue,
+                COALESCE(SUM(net_sales), 0) AS total_revenue,
                 COALESCE(SUM(total_orders), 0) AS total_orders
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
             WHERE payment_date BETWEEN @start_date AND @end_date
               AND {company_filter}
-              AND total_payment > 0
         ),
 
         -- 2. Meta 광고 최신 계정 정보
@@ -305,12 +304,11 @@ def get_cafe24_summary_simple(company_name, start_date: str, end_date: str, user
 
     query = f"""
         SELECT
-            COALESCE(SUM(total_payment - total_refund_amount), 0) AS total_revenue,
+            COALESCE(SUM(net_sales), 0) AS total_revenue,
             COALESCE(SUM(total_orders), 0) AS total_orders
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
         WHERE payment_date BETWEEN @start_date AND @end_date
           AND {company_filter}
-          AND total_payment > 0
     """
 
     try:

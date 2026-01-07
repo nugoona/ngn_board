@@ -50,27 +50,37 @@ def execute_bigquery(process_type="today"):
         AND DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) BETWEEN DATE('{start_date}') AND DATE('{end_date}')
         AND m.company_name IS NOT NULL 
     ),
-    -- ✅ 핵심 수정: order_item_code별로 먼저 중복 제거, 그 다음 order_id + product_no별로 수량 합산
+    -- ✅ 핵심 수정: order_item_code별로 먼저 중복 제거 (ordered_date DESC로 최신 것만), 그 다음 order_id + product_no별로 수량 합산
+    -- ⚠️ 중요: FilteredOrders에 있는 주문의 아이템만 포함 (취소된 주문 포함)
     OrderItemsDeduped AS (
       SELECT 
         order_id,
         CAST(mall_id AS STRING) AS mall_id,
         CAST(product_no AS INT64) AS product_no,
-        SUM(item_qty) AS quantity,
+        SUM(CAST(quantity AS INT64)) AS quantity,
         MAX(product_name) AS product_name,
-        MAX(product_price) AS product_price
+        MAX(CAST(product_price AS FLOAT64)) AS product_price
       FROM (
-        -- 1단계: order_item_code별 유니크 행 추출 (같은 order_item_code 중복 제거)
-        SELECT 
-          order_id, 
-          CAST(mall_id AS STRING) AS mall_id,
-          CAST(product_no AS INT64) AS product_no, 
-          order_item_code,
-          MAX(product_name) AS product_name,
-          MAX(CAST(quantity AS INT64)) AS item_qty,
-          MAX(CAST(product_price AS FLOAT64)) AS product_price
-        FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table`
-        GROUP BY order_id, mall_id, product_no, order_item_code
+        -- 1단계: order_item_code별 유니크 행 추출 (ROW_NUMBER로 ordered_date DESC 기준 최신 것만)
+        SELECT * EXCEPT(row_num)
+        FROM (
+          SELECT 
+            oi.order_id,
+            CAST(oi.mall_id AS STRING) AS mall_id,
+            CAST(oi.product_no AS INT64) AS product_no,
+            oi.product_name,
+            oi.quantity,
+            oi.product_price,
+            ROW_NUMBER() OVER(
+              PARTITION BY CAST(oi.mall_id AS STRING), oi.order_item_code 
+              ORDER BY oi.ordered_date DESC
+            ) AS row_num
+          FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
+          INNER JOIN FilteredOrders AS fo
+            ON oi.order_id = fo.order_id 
+            AND CAST(oi.mall_id AS STRING) = fo.mall_id
+        )
+        WHERE row_num = 1
       )
       -- 2단계: order_id + product_no별로 수량 합산 (같은 상품 여러 개 주문한 경우 정상 합산)
       GROUP BY order_id, mall_id, product_no

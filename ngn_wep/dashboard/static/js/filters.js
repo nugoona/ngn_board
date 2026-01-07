@@ -172,8 +172,8 @@ function initializeFilters() {
   $("#accountFilter").off("change").on("change", function () {
     if (isRestoringFilter) return;
 
-    if (isLoading) {
-      const prevValue = currentPath === "/" || currentPath === "/dashboard" 
+    if (window.isLoading) {
+      const prevValue = currentPath === "/" || currentPath === "/dashboard"
         ? sessionStorage.getItem("siteSelectedCompany") || "all"
         : sessionStorage.getItem("adsSelectedCompany") || "all";
       showBlockingAlert(() => {
@@ -207,8 +207,8 @@ function initializeFilters() {
   $("#periodFilter").off("change").on("change", function () {
     if (isRestoringFilter) return;
 
-    if (isLoading) {
-      const prevValue = currentPath === "/" || currentPath === "/dashboard" 
+    if (window.isLoading) {
+      const prevValue = currentPath === "/" || currentPath === "/dashboard"
         ? "today"
         : sessionStorage.getItem("adsSelectedPeriod") || "today";
       showBlockingAlert(() => {
@@ -271,7 +271,7 @@ function initializeFilters() {
       metaAdsState.endDate = endDate;
     }
 
-    if (isLoading) {
+    if (window.isLoading) {
       console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
@@ -296,7 +296,7 @@ function initializeFilters() {
       metaAdsState.endDate = endDate;
     }
 
-    if (isLoading) {
+    if (window.isLoading) {
       console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
@@ -307,7 +307,7 @@ function initializeFilters() {
 
   // ✅ 초기화 버튼
   $("#applyDateFilter").off("click").on("click", function () {
-    if (isLoading) {
+    if (window.isLoading) {
       console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
       return;
     }
@@ -331,23 +331,22 @@ function initializeFilters() {
 
 // ✅ 로딩 차단 팝업 함수
 function showBlockingAlert(afterPopup) {
-  // 로딩 상태를 즉시 해제하여 다음 요청이 가능하도록 함
-  isLoading = false;
-  console.log("[DEBUG] showBlockingAlert - isLoading = false로 설정");
-  
+  // ⚠️ isLoading 상태를 유지하여 추가 요청을 차단
+  console.log("[DEBUG] showBlockingAlert - 로딩 중 차단 팝업 표시");
+
   if (window.Swal) {
     Swal.fire({
       title: "로딩 중입니다",
       text: "잠시만 기다려주세요...",
       icon: "info",
       showConfirmButton: false,
-      timer: 2000,
+      timer: 1500,
       didOpen: () => {
         // 팝업이 열릴 때 즉시 실행 가능
       },
       didClose: () => {
         if (typeof afterPopup === "function") {
-          afterPopup();  // 팝업이 닫힌 직후 실행
+          afterPopup();  // 팝업이 닫힌 직후 실행 (드롭다운 복원)
         }
       },
       width: "320px",
@@ -369,30 +368,20 @@ function showBlockingAlert(afterPopup) {
 }
 
 async function fetchFilteredDataWithoutPopup() {
-  if (isLoading) {
+  if (window.isLoading) {
     console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
     return;
   }
-  isLoading = true;
-  console.log("[DEBUG] 로딩 시작 (팝업 없음) - isLoading = true");
+  window.isLoading = true;
+  console.log("[DEBUG] 로딩 시작 (팝업 없음) - window.isLoading = true");
 
   const pathname = window.location.pathname;
   const selectedCompany = $("#accountFilter").val() || "all";
-  
-  // ✅ 페이지별 기간 필터 처리
-  let selectedPeriod, startDate, endDate;
-  
-  if (pathname === "/" || pathname === "/dashboard") {
-    // 사이트 성과 페이지 - 항상 "today" 사용
-    selectedPeriod = "today";
-    startDate = "";
-    endDate = "";
-  } else {
-    // 광고 성과 페이지 - 실제 선택된 값 사용
-    selectedPeriod = $("#periodFilter").val();
-    startDate = $("#startDate").val()?.trim();
-    endDate = $("#endDate").val()?.trim();
-  }
+
+  // ✅ 모든 페이지에서 실제 선택된 기간 값 사용
+  const selectedPeriod = $("#periodFilter").val() || "today";
+  const startDate = $("#startDate").val()?.trim() || "";
+  const endDate = $("#endDate").val()?.trim() || "";
 
   // ✅ company_name 가공
   let companyName;
@@ -409,7 +398,7 @@ async function fetchFilteredDataWithoutPopup() {
 
   if (isAllCompany && isDateMissing) {
     console.warn("[BLOCKED] '모든 업체 + 날짜 없음' 조합으로 get_data 요청 차단됨");
-    isLoading = false;
+    window.isLoading = false;
     return;
   }
 
@@ -495,36 +484,26 @@ async function fetchFilteredDataWithoutPopup() {
   } catch (e) {
     console.error("[ERROR] fetchFilteredDataWithoutPopup 순차 요청 중 오류 발생:", e);
   } finally {
-    isLoading = false;
-    console.log("[DEBUG] 로딩 완료 (팝업 없음) - isLoading = false");
+    window.isLoading = false;
+    console.log("[DEBUG] 로딩 완료 (팝업 없음) - window.isLoading = false");
   }
 }
 
 async function fetchFilteredData() {
-  if (isLoading) {
+  if (window.isLoading) {
     console.log("[BLOCKED] 이미 로딩 중이므로 요청 차단");
     return;
   }
-  isLoading = true;
-  console.log("[DEBUG] 로딩 시작 - isLoading = true");
+  window.isLoading = true;
+  console.log("[DEBUG] 로딩 시작 - window.isLoading = true");
 
   const pathname = window.location.pathname;
   const selectedCompany = $("#accountFilter").val() || "all";
-  
-  // ✅ 페이지별 기간 필터 처리
-  let selectedPeriod, startDate, endDate;
-  
-  if (pathname === "/" || pathname === "/dashboard") {
-    // 사이트 성과 페이지 - 항상 "today" 사용
-    selectedPeriod = "today";
-    startDate = "";
-    endDate = "";
-  } else {
-    // 광고 성과 페이지 - 실제 선택된 값 사용
-    selectedPeriod = $("#periodFilter").val();
-    startDate = $("#startDate").val()?.trim();
-    endDate = $("#endDate").val()?.trim();
-  }
+
+  // ✅ 모든 페이지에서 실제 선택된 기간 값 사용
+  const selectedPeriod = $("#periodFilter").val() || "today";
+  const startDate = $("#startDate").val()?.trim() || "";
+  const endDate = $("#endDate").val()?.trim() || "";
 
   // ✅ company_name 가공
   let companyName;
@@ -541,7 +520,7 @@ async function fetchFilteredData() {
 
   if (isAllCompany && isDateMissing) {
     console.warn("[BLOCKED] '모든 업체 + 날짜 없음' 조합으로 get_data 요청 차단됨");
-    isLoading = false;
+    window.isLoading = false;
     return;
   }
 
@@ -627,8 +606,8 @@ async function fetchFilteredData() {
   } catch (e) {
     console.error("[ERROR] fetchFilteredData 순차 요청 중 오류 발생:", e);
   } finally {
-    isLoading = false;
-    console.log("[DEBUG] 로딩 완료 - isLoading = false");
+    window.isLoading = false;
+    console.log("[DEBUG] 로딩 완료 - window.isLoading = false");
   }
 }
 

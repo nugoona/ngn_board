@@ -229,6 +229,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         cart_users = int(row.cart_users or 0)
         signup_count = int(row.signup_count or 0)
         updated_at = row.updated_at
+        print(f"[DEBUG] updated_at 값: {updated_at}, 타입: {type(updated_at)}")
 
         # 계산 (0으로 나누기 방지)
         roas_percentage = (total_purchase_value / ad_spend * 100) if ad_spend > 0 else 0

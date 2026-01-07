@@ -1,4 +1,5 @@
-let isLoading = false;
+// ✅ 전역 isLoading 상태 (filters.js와 공유)
+window.isLoading = window.isLoading || false;
 const requestRegistry = {};
 
 // ✅ 배포 환경에서는 디버깅 로그 비활성화 (전역 변수로 선언)
@@ -103,8 +104,8 @@ function getRequestData(page = 1, extra = {}) {
 // updateAllData 함수를 전역으로 노출
 window.updateAllData = async function() {
   console.log("🎯 dashboard.js의 updateAllData() 함수 시작 (Batch API)");
-  
-  if (isLoading) {
+
+  if (window.isLoading) {
     console.log("⚠️ 이미 로딩 중이므로 중단");
     return; // 이미 데이터 요청 중이면 중지
   }
@@ -112,14 +113,14 @@ window.updateAllData = async function() {
   const period = $("#periodFilter").val();
   const endDate = $("#endDate").val()?.trim();
   debugLog("📊 현재 필터 값:", { period, endDate });
-  
+
   if (period === "manual" && !endDate) {
     debugLog("⚠️ manual 모드에서 endDate가 없으므로 중단");
     return;
   }
 
   debugLog("✅ updateAllData() 실행 조건 만족 - 로딩 시작");
-  isLoading = true;
+  window.isLoading = true;
 
   // ✅ 모든 위젯의 로딩 스피너 표시
   const loadingOverlays = [
@@ -352,13 +353,13 @@ window.updateAllData = async function() {
       debugError("[ERROR] 폴백 방식도 실패:", fallbackError);
     }
   } finally {
-    isLoading = false;
-    
+    window.isLoading = false;
+
     // ✅ 안전장치: 모든 로딩 스피너 제거
     loadingOverlays.forEach(overlayId => {
       hideLoading(overlayId);
     });
-    
+
     debugLog("✅ updateAllData completed - Batch API");
   }
 }

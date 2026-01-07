@@ -27,30 +27,28 @@ def run_query(process_date):
           FROM `winged-precept-443218-v8.ngn_dataset.company_info`
       ),
       refund_summary AS (
-          -- ✅ 환불을 결제일(payment_date) 기준으로 집계 (refund_date가 아닌 order의 payment_date 사용)
+          -- ✅ 환불을 환불 발생일(refund_date) 기준으로 집계
           -- ⚠️ 중요: refund_code별로 먼저 집계하여 중복 방지 (하나의 refund_code는 한 번만 집계)
           SELECT
-              refund_with_payment.mall_id,
-              refund_with_payment.company_name,
-              refund_with_payment.payment_date,
-              SUM(refund_with_payment.total_refund_amount) AS total_refund_amount
+              refund_by_date.mall_id,
+              refund_by_date.company_name,
+              refund_by_date.refund_date,
+              SUM(refund_by_date.total_refund_amount) AS total_refund_amount
           FROM (
               -- refund_code별로 먼저 집계 (같은 refund_code는 한 번만 집계)
               SELECT
                   r.mall_id,
                   c.company_name,
-                  DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
+                  DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) AS refund_date,
                   r.refund_code,
                   MAX(r.total_refund_amount) AS total_refund_amount  -- refund_code별로 하나의 금액만 사용
               FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
-              JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
-                  ON r.order_id = o.order_id AND r.mall_id = o.mall_id
-              JOIN company_mall_ids c
+              JOIN `winged-precept-443218-v8.ngn_dataset.company_info` c
                   ON r.mall_id = c.mall_id
-              WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
-              GROUP BY r.mall_id, c.company_name, payment_date, r.refund_code
-          ) refund_with_payment
-          GROUP BY refund_with_payment.mall_id, refund_with_payment.company_name, refund_with_payment.payment_date
+              WHERE DATE(DATETIME(TIMESTAMP(r.refund_date), 'Asia/Seoul')) = '{process_date}'
+              GROUP BY r.mall_id, c.company_name, refund_date, r.refund_code
+          ) refund_by_date
+          GROUP BY refund_by_date.mall_id, refund_by_date.company_name, refund_by_date.refund_date
       ),
 
       -- ✅ 주문 상품 총 판매 개수 (order_id 기준으로 개수 집계)
@@ -113,6 +111,7 @@ def run_query(process_date):
       )
       
       -- ✅ 최종 집계 쿼리 (환불 금액 별도 추가)
+      -- ⚠️ 환불은 refund_date 기준으로 집계되므로, process_date에 발생한 환불을 추가
       SELECT
           oa.payment_date,
           oa.mall_id,
@@ -134,7 +133,7 @@ def run_query(process_date):
       FROM order_agg AS oa
       LEFT JOIN refund_summary AS r
       ON oa.mall_id = r.mall_id
-      AND oa.payment_date = r.payment_date
+      AND oa.payment_date = r.refund_date  -- refund_date 기준으로 JOIN
     ) AS source
 
     ON target.payment_date = source.payment_date

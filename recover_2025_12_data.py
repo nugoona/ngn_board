@@ -25,26 +25,27 @@ def run_daily_sales_query(process_date):
       ),
       refund_summary AS (
           -- ✅ 환불을 결제일(payment_date) 기준으로 집계 (refund_date가 아닌 order의 payment_date 사용)
+          -- ⚠️ 중요: refund_code별로 먼저 집계하여 중복 방지 (하나의 refund_code는 한 번만 집계)
           SELECT
               refund_with_payment.mall_id,
               refund_with_payment.company_name,
               refund_with_payment.payment_date,
               SUM(refund_with_payment.total_refund_amount) AS total_refund_amount
           FROM (
-              -- order_id별로 먼저 집계하고, 주문의 payment_date를 가져옴
+              -- refund_code별로 먼저 집계 (같은 refund_code는 한 번만 집계)
               SELECT
                   r.mall_id,
                   c.company_name,
                   DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
-                  r.order_id,
-                  SUM(r.total_refund_amount) AS total_refund_amount
+                  r.refund_code,
+                  MAX(r.total_refund_amount) AS total_refund_amount  -- refund_code별로 하나의 금액만 사용
               FROM `winged-precept-443218-v8.ngn_dataset.cafe24_refunds_table` r
               JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_orders` o
                   ON r.order_id = o.order_id AND r.mall_id = o.mall_id
               JOIN company_mall_ids c
                   ON r.mall_id = c.mall_id
               WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
-              GROUP BY r.mall_id, c.company_name, payment_date, r.order_id
+              GROUP BY r.mall_id, c.company_name, payment_date, r.refund_code
           ) refund_with_payment
           GROUP BY refund_with_payment.mall_id, refund_with_payment.company_name, refund_with_payment.payment_date
       ),

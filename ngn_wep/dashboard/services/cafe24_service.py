@@ -199,10 +199,11 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
         SELECT
             CONCAT(@start_date, ' ~ ', @end_date) AS report_date,
             i.company_name,
-            i.product_name,
+            -- ✅ product_name은 가장 많이 사용된 것을 선택 (정상 판매 우선)
+            ARRAY_AGG(i.product_name ORDER BY i.item_product_sales DESC, i.total_quantity DESC LIMIT 1)[OFFSET(0)] AS product_name,
             MAX(i.product_price) AS product_price,
             SUM(i.total_quantity) AS total_quantity,
-            COALESCE(SUM(i.total_canceled), 0) AS total_canceled,
+            SUM(i.total_canceled) AS total_canceled,
             SUM(i.item_quantity) AS item_quantity,
             SUM(i.item_product_sales) AS item_product_sales,
             SUM(i.total_first_order) AS total_first_order,
@@ -210,7 +211,7 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             CONCAT(
                 'https://', MAX(info.main_url),
                 '/product/',
-                REPLACE(LOWER(REGEXP_REPLACE(MAX(i.product_name), r'[^\w]+', '-')), '--', '-'),
+                REPLACE(LOWER(REGEXP_REPLACE(ARRAY_AGG(i.product_name ORDER BY i.item_product_sales DESC LIMIT 1)[OFFSET(0)], r'[^\w]+', '-')), '--', '-'),
                 '/',
                 CAST(i.product_no AS STRING),
                 '/category/',
@@ -225,10 +226,10 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             ON i.mall_id = prod.mall_id AND CAST(i.product_no AS STRING) = prod.product_no
         WHERE DATE(DATETIME(TIMESTAMP(i.payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
           AND {company_filter}
-          AND i.item_product_sales > 0
-        GROUP BY i.company_name, i.product_name, i.product_no
+          AND (i.item_product_sales > 0 OR i.total_canceled > 0)
+        GROUP BY i.company_name, i.product_no
         HAVING SUM(i.total_quantity) > 0
-        ORDER BY {order_by_column} DESC, i.company_name, i.product_name
+        ORDER BY {order_by_column} DESC, i.company_name, MAX(i.product_name)
         LIMIT @limit OFFSET @offset
     """
 
@@ -239,8 +240,9 @@ def get_cafe24_product_sales(company_name, period, start_date, end_date,
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_items` AS i
             WHERE DATE(DATETIME(TIMESTAMP(i.payment_date), 'Asia/Seoul')) BETWEEN @start_date AND @end_date
               AND {company_filter}
-              AND i.item_product_sales > 0
-            GROUP BY i.company_name, i.product_name, i.product_no
+              AND (i.item_product_sales > 0 OR i.total_canceled > 0)
+            GROUP BY i.company_name, i.product_no
+            HAVING SUM(i.total_quantity) > 0
         )
     """
 

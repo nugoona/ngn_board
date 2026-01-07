@@ -2570,43 +2570,33 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
             const maxBullets = Math.min(3, bullets.length);
             const selectedBullets = bullets.slice(0, maxBullets);
             
-            // 각 불릿 포인트를 간결하게 요약 (최대 150자)
+            // 각 불릿 포인트를 간결하게 요약 (최대 200자, 앞부분 보존)
             const summarizedBullets = selectedBullets.map(bullet => {
                 let summarized = bullet.trim();
                 
-                // 너무 길면 핵심만 추출
-                if (summarized.length > 150) {
-                    // 첫 문장 또는 핵심 키워드 포함 부분 추출
-                    const firstSentence = summarized.split(/[.!?]/)[0];
-                    if (firstSentence && firstSentence.length <= 150) {
-                        summarized = firstSentence;
-                    } else {
-                        // 핵심 키워드가 포함된 부분 찾기
-                        const keywords = ['급상승', '인기', '증가', '부상', '상승', '사랑받', '수요', '증대', '트렌드'];
-                        for (const keyword of keywords) {
-                            const keywordIndex = summarized.indexOf(keyword);
-                            if (keywordIndex >= 0) {
-                                const start = Math.max(0, keywordIndex - 50);
-                                const end = Math.min(summarized.length, keywordIndex + 100);
-                                summarized = summarized.substring(start, end).trim();
-                                
-                                // 앞뒤로 문장 경계 찾기
-                                const beforeMatch = summarized.match(/^[^.!?]*[.!?]\s*(.+)$/);
-                                if (beforeMatch) {
-                                    summarized = beforeMatch[1];
-                                }
-                                const afterMatch = summarized.match(/^(.+?)[.!?]/);
-                                if (afterMatch) {
-                                    summarized = afterMatch[1] + '.';
-                                }
-                                
-                                if (summarized.length <= 150) break;
-                            }
+                // 너무 길면 앞부분을 보존하면서 자르기
+                if (summarized.length > 200) {
+                    // 문장 단위로 자르기 시도 (더 자연스러운 자름)
+                    const sentences = summarized.split(/([.!?])/);
+                    let result = '';
+                    for (let i = 0; i < sentences.length; i += 2) {
+                        const sentence = (sentences[i] || '') + (sentences[i + 1] || '');
+                        if ((result + sentence).length <= 200) {
+                            result += sentence;
+                        } else {
+                            break;
                         }
-                        
-                        // 그래도 길면 단순히 앞부분만 자르기
-                        if (summarized.length > 150) {
-                            summarized = summarized.substring(0, 147) + '...';
+                    }
+                    
+                    // 문장 단위로 자르기 성공했으면 사용
+                    if (result.length > 50) {
+                        summarized = result.trim();
+                    } else {
+                        // 문장 단위로 자르기 실패 시 앞부분 200자 유지
+                        summarized = summarized.substring(0, 197).trim();
+                        // 마지막이 문장 부호로 끝나지 않으면 ... 추가하지 않음 (문맥 보존)
+                        if (!/[.!?]$/.test(summarized)) {
+                            summarized += '...';
                         }
                     }
                 }

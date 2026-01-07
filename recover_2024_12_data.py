@@ -1,5 +1,5 @@
 """
-2024년 12월 데이터 복구 스크립트
+2025년 12월 데이터 재수집 스크립트
 - daily_cafe24_sales
 - cafe24_refunds_table
 """
@@ -171,12 +171,12 @@ def run_daily_sales_query(process_date):
 
 def main():
     logging.info("=" * 60)
-    logging.info("🔧 2024년 12월 데이터 복구 시작")
+    logging.info("🔧 2025년 12월 데이터 재수집 시작")
     logging.info("=" * 60)
     
-    # 2024년 12월 1일 ~ 31일
-    start_date = datetime(2024, 12, 1)
-    end_date = datetime(2024, 12, 31)
+    # 2025년 12월 1일 ~ 31일
+    start_date = datetime(2025, 12, 1)
+    end_date = datetime(2025, 12, 31)
     
     current_date = start_date
     total_days = (end_date - start_date).days + 1
@@ -193,7 +193,7 @@ def main():
         current_date += timedelta(days=1)
     
     logging.info("=" * 60)
-    logging.info("✅ 2024년 12월 데이터 복구 완료!")
+    logging.info("✅ 2025년 12월 데이터 재수집 완료!")
     logging.info("=" * 60)
 
 

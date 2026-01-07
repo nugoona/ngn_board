@@ -1,72 +1,25 @@
 #!/bin/bash
-set -euo pipefail
-cd ~/ngn_board
 
-REGION_RUN="asia-northeast3"
-REGION_AR="asia-northeast1"
-REPO="ngn-dashboard"
+# Codespaces 경로로 수정
+cd /workspaces/ngn_dashboard
+
+# gcloud 경로 활성화
+source ./google-cloud-sdk/path.bash.inc || source ~/google-cloud-sdk/path.bash.inc
+
 PROJECT="winged-precept-443218-v8"
-SA="439320386143-compute@developer.gserviceaccount.com"
+REGION="asia-northeast3"
 
-# ============================================
-# query-sales-today-job
-# ============================================
-JOB="query-sales-today-job"
-DOCKERFILE="docker/Dockerfile-sales-today"
+echo "=========================================="
+echo "🚀 [Codespaces] Sales Jobs 배포 시작"
+echo "=========================================="
 
-IMAGE="${REGION_AR}-docker.pkg.dev/${PROJECT}/${REPO}/${JOB}:manual-$(date +%Y%m%d-%H%M%S)"
+gcloud run jobs deploy sales-sync-job \
+  --source . \
+  --project "$PROJECT" \
+  --region "$REGION" \
+  --set-env-vars="ENV_TYPE=production" \
+  --quiet
 
-echo "🚀 Building image for ${JOB}..."
-gcloud builds submit --tag "$IMAGE" --dockerfile="$DOCKERFILE" .
-
-echo "📦 Updating Cloud Run Job ${JOB}..."
-gcloud run jobs update "$JOB" \
-  --image "$IMAGE" \
-  --region="$REGION_RUN" \
-  --service-account="$SA" \
-  --memory=512Mi \
-  --cpu=1 \
-  --max-retries=3 \
-  --task-timeout=600s
-
-echo "✅ Deployment completed for ${JOB}!"
-
-# ============================================
-# query-sales-yesterday-job
-# ============================================
-JOB="query-sales-yesterday-job"
-DOCKERFILE="docker/Dockerfile-sales-yesterday"
-
-IMAGE="${REGION_AR}-docker.pkg.dev/${PROJECT}/${REPO}/${JOB}:manual-$(date +%Y%m%d-%H%M%S)"
-
-echo "🚀 Building image for ${JOB}..."
-gcloud builds submit --tag "$IMAGE" --dockerfile="$DOCKERFILE" .
-
-echo "📦 Updating Cloud Run Job ${JOB}..."
-gcloud run jobs update "$JOB" \
-  --image "$IMAGE" \
-  --region="$REGION_RUN" \
-  --service-account="$SA" \
-  --memory=512Mi \
-  --cpu=1 \
-  --max-retries=3 \
-  --task-timeout=600s
-
-echo "✅ Deployment completed for ${JOB}!"
-echo "🎉 All sales jobs deployed successfully!"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+echo "=========================================="
+echo "✅ 배포 완료!"
+echo "=========================================="

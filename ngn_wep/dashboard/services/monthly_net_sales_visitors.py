@@ -14,12 +14,14 @@ def get_monthly_net_sales_visitors(company_name):
 
     # ✅ 업체 필터 분기 처리
     if isinstance(company_name, list):
-        company_filter = "LOWER(s.company_name) IN UNNEST(@company_name_list)"
+        company_filter_cte = "LOWER(company_name) IN UNNEST(@company_name_list)"
+        company_filter_final = "LOWER(s.company_name) IN UNNEST(@company_name_list)"
         query_params = [
             bigquery.ArrayQueryParameter("company_name_list", "STRING", company_name)
         ]
     else:
-        company_filter = "LOWER(s.company_name) = LOWER(@company_name)"
+        company_filter_cte = "LOWER(company_name) = LOWER(@company_name)"
+        company_filter_final = "LOWER(s.company_name) = LOWER(@company_name)"
         query_params = [
             bigquery.ScalarQueryParameter("company_name", "STRING", company_name)
         ]
@@ -34,9 +36,10 @@ def get_monthly_net_sales_visitors(company_name):
         FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
         WHERE payment_date BETWEEN DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 13 MONTH)
                                AND CURRENT_DATE()
-          AND net_sales > 0
+          AND {company_filter_cte}
           AND company_name IS NOT NULL
         GROUP BY company_name, month
+        HAVING SUM(net_sales) > 0
       ),
       monthly_traffic AS (
         SELECT
@@ -60,8 +63,7 @@ def get_monthly_net_sales_visitors(company_name):
     LEFT JOIN monthly_traffic t
       ON s.company_name = t.company_name
       AND s.month = t.month
-    WHERE {company_filter}
-      AND s.net_sales > 0
+    WHERE {company_filter_final}
     ORDER BY s.month ASC
     """
 

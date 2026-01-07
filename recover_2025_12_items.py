@@ -38,10 +38,11 @@ def execute_bigquery_for_date(process_date):
         AND m.company_name IS NOT NULL 
     ),
     CanceledOrders AS (
-      SELECT DISTINCT
+      SELECT
         order_id,
         CAST(mall_id AS STRING) AS mall_id,
-        CAST(product_no AS INT64) AS product_no
+        CAST(product_no AS INT64) AS product_no,
+        1 AS canceled
       FROM `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table`
       WHERE status_code IN ('C1', 'C2', 'C3')
     ),
@@ -51,11 +52,12 @@ def execute_bigquery_for_date(process_date):
         CAST(o.mall_id AS STRING) AS mall_id,
         CAST(oi.product_no AS INT64) AS product_no,
         oi.order_id,
+        oi.product_name,
         SUM(CASE WHEN o.first_order THEN oi.quantity ELSE 0 END) AS first_order_quantity
       FROM FilteredOrders AS o
       JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
         ON o.order_id = oi.order_id AND o.mall_id = oi.mall_id
-      GROUP BY o.payment_date, o.mall_id, oi.product_no, oi.order_id
+      GROUP BY o.payment_date, o.mall_id, oi.product_no, oi.order_id, oi.product_name
     ),
     OrderDetails AS (
       SELECT
@@ -66,8 +68,6 @@ def execute_bigquery_for_date(process_date):
         CAST(oi.product_no AS INT64) AS product_no,
         oi.order_id,
         -- BigQuery는 negative lookahead (?!)를 지원하지 않으므로 간단하게 처리
-        -- 원본 코드의 의도: [set] (case insensitive)가 아닌 경우에만 [xxx] 패턴 제거
-        -- 간단하게: 모든 [xxx] 패턴을 제거 (원본 코드와 약간 다를 수 있지만 BigQuery 호환)
         REGEXP_REPLACE(
           ARRAY_AGG(oi.product_name ORDER BY oi.ordered_date DESC LIMIT 1)[SAFE_OFFSET(0)],
           r'^\\[[^\\]]+\\]\\s*',
@@ -75,18 +75,16 @@ def execute_bigquery_for_date(process_date):
         ) AS product_name,
         CAST(oi.product_price AS FLOAT64) AS product_price,
         SUM(oi.quantity) AS quantity,
-        CASE WHEN c.product_no IS NOT NULL THEN 1 ELSE 0 END AS canceled,
-        MAX(p.category_no) AS category_no
+        COALESCE(c.canceled, 0) AS canceled,
+        p.category_no
       FROM FilteredOrders AS o
       JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_order_items_table` AS oi
         ON o.order_id = oi.order_id AND o.mall_id = oi.mall_id
       LEFT JOIN CanceledOrders AS c
-        ON oi.order_id = c.order_id 
-        AND CAST(oi.mall_id AS STRING) = c.mall_id
-        AND CAST(oi.product_no AS INT64) = c.product_no
+        ON o.order_id = c.order_id AND o.mall_id = c.mall_id
       LEFT JOIN `winged-precept-443218-v8.ngn_dataset.cafe24_products_table` AS p
         ON oi.mall_id = p.mall_id AND oi.product_no = p.product_no
-      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oi.product_no, oi.order_id, oi.product_price, c.product_no
+      GROUP BY o.payment_date, o.mall_id, o.company_name, o.main_url, oi.product_no, oi.order_id, oi.product_price, c.canceled, p.category_no
     )
     SELECT
       od.payment_date,
@@ -94,29 +92,29 @@ def execute_bigquery_for_date(process_date):
       od.company_name,
       od.order_id,
       CAST(od.product_no AS INT64) AS product_no,
-      od.product_name,
-      od.product_price,
-      od.quantity AS total_quantity,
-      CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS total_canceled,
-      od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END AS item_quantity,
-      CAST(od.product_price * (od.quantity - CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS FLOAT64) AS item_product_sales,
-      COALESCE(fo.first_order_quantity, 0) AS total_first_order,
+      MAX(od.product_name) AS product_name,
+      MAX(od.product_price) AS product_price,
+      SUM(od.quantity) AS total_quantity,
+      SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS total_canceled,
+      SUM(od.quantity) - SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END) AS item_quantity,
+      CAST(MAX(od.product_price) * (SUM(od.quantity) - SUM(CASE WHEN od.canceled = 1 THEN od.quantity ELSE 0 END)) AS FLOAT64) AS item_product_sales,
+      SUM(COALESCE(fo.first_order_quantity, 0)) AS total_first_order,
       CONCAT(
-        'https://', od.main_url,
+        'https://', MAX(od.main_url),
         '/product/',
         REGEXP_REPLACE(
           LOWER(
             REPLACE(
-              REGEXP_REPLACE(od.product_name, r'_', ''), 
+              REGEXP_REPLACE(MAX(od.product_name), r'_', ''), 
               ' ', '-'
             )
           ),
           r'[^a-z0-9-]+', ''
         ),
         '/',
-        CAST(od.product_no AS STRING),
+        CAST(MAX(od.product_no) AS STRING),
         '/category/',
-        CAST(od.category_no AS STRING),
+        CAST(MAX(od.category_no) AS STRING),
         '/display/1/'
       ) AS product_url,
       CURRENT_TIMESTAMP() AS updated_at
@@ -126,6 +124,7 @@ def execute_bigquery_for_date(process_date):
      AND od.product_no = fo.product_no
      AND od.payment_date = fo.payment_date
      AND od.order_id = fo.order_id
+    GROUP BY od.payment_date, od.mall_id, od.company_name, od.order_id, od.product_no
     """
 
     merge_query = f"""

@@ -39,7 +39,6 @@ def get_monthly_net_sales_visitors(company_name):
           AND {company_filter_cte}
           AND company_name IS NOT NULL
         GROUP BY company_name, month
-        HAVING SUM(net_sales) > 0
       ),
       monthly_traffic AS (
         SELECT

@@ -2540,11 +2540,11 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         const bullets = [];
         
         // 먼저 줄 단위로 분리해서 처리
-        const categoryLines = categoryText.split('\n');
-        console.log(`[DEBUG] ${categoryName} - 총 ${categoryLines.length}줄 분석 시작`);
+        const textLines = categoryText.split('\n');
+        console.log(`[DEBUG] ${categoryName} - 총 ${textLines.length}줄 분석 시작`);
         
-        for (let i = 0; i < categoryLines.length; i++) {
-            const line = categoryLines[i];
+        for (let i = 0; i < textLines.length; i++) {
+            const line = textLines[i];
             const trimmedLine = line.trim();
             
             // * 또는 - 로 시작하는 줄 찾기 (공백 포함 패턴도 처리)

@@ -99,7 +99,14 @@ def run_query(process_date):
               SUM(os.item_product_price) AS item_product_price,
               SUM(os.shipping_fee) AS total_shipping_fee,
               SUM(os.coupon_discount_price) AS total_coupon_discount,
-              SUM(os.payment_amount) + SUM(os.points_spent_amount) + SUM(os.naverpay_point) AS total_payment,
+              -- ✅ 환불된 주문은 payment_amount=0이므로 item_product_price 기반으로 계산
+              SUM(
+                  CASE
+                      WHEN os.payment_amount = 0 AND os.item_product_price > 0
+                      THEN os.item_product_price + os.shipping_fee - os.coupon_discount_price
+                      ELSE os.payment_amount + os.points_spent_amount + os.naverpay_point
+                  END
+              ) AS total_payment,
               SUM(os.naverpay_point) AS total_naverpay_point,
               SUM(os.is_prepayment) AS total_prepayment,
               SUM(os.is_first_order) AS total_first_order,

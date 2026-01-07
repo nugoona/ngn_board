@@ -1490,10 +1490,12 @@
   
 </div>
 
-<!-- ✅ 오른쪽 하단 고정 버튼 (Compare) -->
+<!-- ✅ 오른쪽 하단 고정 버튼 (Compare) - 29CM 전용 -->
+{% if page_type != 'ably' %}
 <div id="trendCompareToggleBtn" class="trend-compare-toggle-btn" aria-label="트렌드 비교 열기">
   <span>Compare</span>
 </div>
+{% endif %}
 
 <!-- ✅ 오른쪽 하단 고정 버튼 (Insights) -->
 <div id="trendAnalysisToggleBtn" class="trend-analysis-toggle-btn" aria-label="트렌드 데이터 분석 열기">
@@ -1526,7 +1528,8 @@
   </div>
 </div>
 
-<!-- ✅ 경쟁사 비교 사이드바 -->
+<!-- ✅ 경쟁사 비교 사이드바 - 29CM 전용 -->
+{% if page_type != 'ably' %}
 <div id="compareSidebar" class="trend-analysis-sidebar-wrapper hidden">
   <!-- ───────── 헤더 ───────── -->
   <div class="trend-analysis-header-bar">
@@ -1565,8 +1568,10 @@
     </div>
   </div>
 </div>
+{% endif %}
 
-<!-- ✅ 리뷰 모달 -->
+<!-- ✅ 리뷰 모달 - 29CM 전용 -->
+{% if page_type != 'ably' %}
 <div id="compareReviewModal" class="compare-review-modal" style="display: none;">
   <div class="compare-review-modal-overlay"></div>
   <div class="compare-review-modal-content">
@@ -1579,12 +1584,15 @@
     </div>
   </div>
 </div>
+{% endif %}
 </div>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/compare.css') }}?v=1.0">
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/trend_page.js') }}?v=1.0"></script>
+{% if page_type != 'ably' %}
 <script src="{{ url_for('static', filename='js/compare_page.js') }}?v=1.0"></script>
+{% endif %}
 
 </body>
 </html>

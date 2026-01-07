@@ -12,7 +12,8 @@ if (performance.navigation.type === 1) {
   sessionStorage.clear();
 }
 
-let isLoading = false;
+// ✅ 전역 isLoading 상태 (dashboard.js와 공유)
+window.isLoading = window.isLoading || false;
 
 window.onload = async function () {
   try {

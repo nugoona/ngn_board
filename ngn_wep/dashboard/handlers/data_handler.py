@@ -568,13 +568,26 @@ def get_dashboard_data_route():
                 # 페이지네이션된 결과 (전체 개수 포함)
                 response_data["meta_ads_insight_table"] = rows["rows"]
                 response_data["meta_ads_insight_table_total_count"] = rows["total_count"]
-                if rows["rows"]:
-                    response_data["updated_at"] = rows["rows"][0].get("updated_at")
             else:
                 # 기존 형식 (페이지네이션 없음)
                 response_data["meta_ads_insight_table"] = rows
-                if rows:
-                    response_data["updated_at"] = rows[0].get("updated_at")
+
+            # ✅ 카페24 매출 수집시간 사용
+            try:
+                from google.cloud import bigquery as bq_client
+                client = bq_client.Client()
+                cafe24_query = """
+                    SELECT MAX(updated_at) AS updated_at
+                    FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
+                    WHERE payment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+                """
+                result = client.query(cafe24_query).result()
+                for row in result:
+                    if row.updated_at:
+                        response_data["updated_at"] = row.updated_at.isoformat() if hasattr(row.updated_at, 'isoformat') else str(row.updated_at)
+                        break
+            except Exception as e:
+                print(f"[WARN] 카페24 updated_at 조회 실패: {e}")
 
         # Meta Ads 계정 목록 요청 처리
         if data_type == "meta_account_list":

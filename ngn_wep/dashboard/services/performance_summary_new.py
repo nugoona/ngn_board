@@ -119,7 +119,8 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
         cafe24_summary AS (
             SELECT
                 COALESCE(SUM(net_sales), 0) AS total_revenue,
-                COALESCE(SUM(total_orders), 0) AS total_orders
+                COALESCE(SUM(total_orders), 0) AS total_orders,
+                MAX(updated_at) AS updated_at
             FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
             WHERE payment_date BETWEEN @start_date AND @end_date
               AND {company_filter}
@@ -190,7 +191,7 @@ def get_performance_summary_new(company_name, start_date: str, end_date: str, us
             m.total_clicks,
             m.total_purchases,
             m.total_purchase_value,
-            m.updated_at,
+            c.updated_at,
             g.total_visitors,
             v.product_views,
             cs.cart_users,

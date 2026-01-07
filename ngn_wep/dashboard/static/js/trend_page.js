@@ -2536,32 +2536,31 @@ function renderSection3SegmentContent(segmentType, segmentText, container) {
         let summarizedText = categoryText;
         
         // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출 (개선된 패턴)
-        // \n* 또는 줄 시작의 * 패턴도 포함
-        const bulletPattern = /(?:^|\n)[\s]*[-*•]\s+(.+?)(?=\n(?:[\s]*[-*•]|$)|\n\s*\n|$)/gs;
+        // *   또는 * 로 시작하는 패턴 처리
         const bullets = [];
-        let match;
         
-        while ((match = bulletPattern.exec(categoryText)) !== null) {
-            const bulletText = match[1].trim();
-            if (bulletText.length > 0) {
-                bullets.push(bulletText);
-            }
-        }
+        // 먼저 줄 단위로 분리해서 처리
+        const lines = categoryText.split('\n');
+        console.log(`[DEBUG] ${categoryName} - 총 ${lines.length}줄 분석 시작`);
         
-        // 불렛 포인트 패턴이 매칭되지 않았을 때, 수동으로 * 또는 - 로 시작하는 줄 찾기
-        if (bullets.length === 0) {
-            const lines = categoryText.split('\n');
-            for (const line of lines) {
-                const trimmedLine = line.trim();
-                // * 또는 - 로 시작하고, 그 다음에 공백이 오는 경우
-                if ((trimmedLine.startsWith('*') || trimmedLine.startsWith('-')) && trimmedLine.length > 2) {
-                    const bulletText = trimmedLine.substring(1).trim();
-                    if (bulletText.length > 0 && !bulletText.startsWith('*') && !bulletText.startsWith('**')) {
-                        bullets.push(bulletText);
-                    }
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // * 또는 - 로 시작하는 줄 찾기 (공백 포함 패턴도 처리)
+            // 예: "*   **텍스트**" 또는 "* **텍스트**" 또는 "* 텍스트"
+            if (trimmedLine.match(/^[\s]*[-*•]\s+/)) {
+                // 불렛 기호와 공백 제거
+                let bulletText = trimmedLine.replace(/^[\s]*[-*•]\s+/, '').trim();
+                
+                if (bulletText.length > 0) {
+                    bullets.push(bulletText);
+                    console.log(`[DEBUG] ${categoryName} - 불렛 포인트 ${bullets.length} 발견: "${bulletText.substring(0, 50)}..."`);
                 }
             }
         }
+        
+        console.log(`[DEBUG] ${categoryName} - 총 ${bullets.length}개 불렛 포인트 추출 완료`);
         
         // 불릿 포인트가 있으면 요약 처리
         if (bullets.length > 0) {

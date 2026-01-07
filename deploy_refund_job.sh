@@ -1,32 +1,20 @@
 #!/bin/bash
 set -euo pipefail
-cd ~/ngn_board
 
-JOB="ngn-refund-job"
-REGION_RUN="asia-northeast3"
-REGION_AR="asia-northeast1"
-REPO="ngn-dashboard"
+# 2-1. 변수 설정
+TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
 PROJECT="winged-precept-443218-v8"
-SA="439320386143-compute@developer.gserviceaccount.com"
-DOCKERFILE="docker/Dockerfile-refund"
+IMAGE="asia-northeast1-docker.pkg.dev/$PROJECT/ngn-dashboard/ngn-refund-job:manual-$TIMESTAMP"
 
-IMAGE="${REGION_AR}-docker.pkg.dev/${PROJECT}/${REPO}/${JOB}:manual-$(date +%Y%m%d-%H%M%S)"
+# 2-2. Dockerfile을 루트로 복사
+cp docker/Dockerfile-refund ./Dockerfile
 
-echo "🚀 Building image for ${JOB}..."
-gcloud builds submit --tag "$IMAGE" --dockerfile="$DOCKERFILE" .
+# 2-3. 빌드 및 업데이트 실행
+gcloud builds submit --tag="$IMAGE" --project="$PROJECT" . && \
+gcloud run jobs update ngn-refund-job --image="$IMAGE" --region="asia-northeast3" --project="$PROJECT" --service-account="439320386143-compute@developer.gserviceaccount.com" --memory=512Mi --cpu=1 --max-retries=3 --task-timeout=600s
 
-echo "📦 Updating Cloud Run Job..."
-gcloud run jobs update "$JOB" \
-  --image "$IMAGE" \
-  --region="$REGION_RUN" \
-  --service-account="$SA" \
-  --memory=512Mi \
-  --cpu=1 \
-  --max-retries=3 \
-  --task-timeout=600s
-
-echo "✅ Deployment completed for ${JOB}!"
-echo "💡 To execute: gcloud run jobs execute $JOB --region=$REGION_RUN"
+# 2-4. 임시 파일 삭제
+rm ./Dockerfile
 
 
 

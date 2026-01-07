@@ -2097,16 +2097,42 @@ function createSection2Card(icon, titleEn, titleKo, content) {
     contentDiv.className = 'trend-section2-card-content';
     
     if (content && content.trim()) {
-        // 텍스트 요약 로직 적용 (가독성 향상)
-        let summarizedContent = content.trim();
+        // 텍스트 전처리: \n을 실제 줄바꿈으로 변환, 리터럴 \n 제거
+        let processedContent = content
+            .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+            .replace(/\r\n/g, '\n')  // Windows 줄바꿈 정규화
+            .replace(/\r/g, '\n')    // Mac 줄바꿈 정규화
+            .trim();
         
-        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출
-        const bulletPattern = /^[\s]*[-*•]\s*(.+)$/gm;
+        // 텍스트 요약 로직 적용 (가독성 향상)
+        let summarizedContent = processedContent;
+        
+        // 불릿 포인트(- 또는 * 로 시작하는 줄) 추출 (개선된 패턴)
+        // \n* 또는 줄 시작의 * 패턴도 포함
+        const bulletPattern = /(?:^|\n)[\s]*[-*•]\s+(.+?)(?=\n(?:[\s]*[-*•]|$)|\n\s*\n|$)/gs;
         const bullets = [];
         let match;
         
-        while ((match = bulletPattern.exec(content)) !== null) {
-            bullets.push(match[1].trim());
+        while ((match = bulletPattern.exec(processedContent)) !== null) {
+            const bulletText = match[1].trim();
+            if (bulletText.length > 0) {
+                bullets.push(bulletText);
+            }
+        }
+        
+        // 불렛 포인트 패턴이 매칭되지 않았을 때, 수동으로 * 또는 - 로 시작하는 줄 찾기
+        if (bullets.length === 0) {
+            const lines = processedContent.split('\n');
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                // * 또는 - 로 시작하고, 그 다음에 공백이 오는 경우
+                if ((trimmedLine.startsWith('*') || trimmedLine.startsWith('-')) && trimmedLine.length > 2) {
+                    const bulletText = trimmedLine.substring(1).trim();
+                    if (bulletText.length > 0 && !bulletText.startsWith('*') && !bulletText.startsWith('**')) {
+                        bullets.push(bulletText);
+                    }
+                }
+            }
         }
         
         // 불릿 포인트가 있으면 요약 처리
@@ -2183,8 +2209,16 @@ function createSection2Card(icon, titleEn, titleKo, content) {
                     mangle: false
                 });
                 
+                // 마크다운 파싱 전 추가 정리
+                // 리터럴 \n 제거, 연속된 ** 정리
+                let cleanedMarkdown = summarizedContent
+                    .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                    .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                    .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                    .replace(/\n\s*\*\s*\n/g, '\n');   // 빈 줄의 * 제거
+                
                 // 마크다운 파싱
-                const markdownHtml = marked.parse(summarizedContent);
+                const markdownHtml = marked.parse(cleanedMarkdown);
                 
                 console.log(`[Section 2] 마크다운 변환 완료, 원본 길이: ${content.length}자, 요약 길이: ${summarizedContent.length}자`);
                 
@@ -2200,16 +2234,29 @@ function createSection2Card(icon, titleEn, titleKo, content) {
             } catch (e) {
                 console.error("[Section 2] 마크다운 변환 실패:", e);
                 console.error("[Section 2] 원본 텍스트:", summarizedContent.substring(0, 200));
-                // 폴백: 줄바꿈만 처리
-                contentDiv.innerHTML = summarizedContent.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                // 폴백: 개선된 마크다운 처리
+                let fallbackHtml = summarizedContent
+                    .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                    .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                    .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+                    .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+                    .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+                    .replace(/\n/g, '<br>');  // 줄바꿈 처리
+                contentDiv.innerHTML = fallbackHtml;
             }
         } else {
             console.warn("[Section 2] marked 라이브러리가 로드되지 않음");
-            // 폴백: 간단한 마크다운 처리
+            // 폴백: 개선된 마크다운 처리
             let fallbackHtml = summarizedContent
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                .replace(/\n/g, '<br>');
+                .replace(/\\n/g, '\n')  // 리터럴 \n을 실제 줄바꿈으로
+                .replace(/\*\*\*\*/g, '')  // 연속된 **** 제거
+                .replace(/\n\s*\*\*\s*\n/g, '\n')  // 빈 줄의 ** 제거
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **텍스트** → <strong>텍스트</strong>
+                .replace(/\*\*([^*]+)$/g, '<strong>$1</strong>')  // 끝에 남은 ** 처리
+                .replace(/^\*\*([^*]+)\*\*/gm, '<strong>$1</strong>')  // 줄 시작의 ** 처리
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')  // *텍스트* → <em>텍스트</em> (strong이 아닌 경우만)
+                .replace(/\n/g, '<br>');  // 줄바꿈 처리
             contentDiv.innerHTML = fallbackHtml;
         }
     } else {

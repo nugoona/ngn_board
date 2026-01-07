@@ -111,12 +111,12 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     
-    /* 트렌드 테이블 섹션 (탭과 테이블을 하나의 박스로) */
+    /* 트렌드 테이블 섹션 - Stripe 스타일 */
     .trend-table-section {
-      background: #ffffff;
-      border: 1px solid #E9ECEF;
-      border-radius: 0;
-      box-shadow: none;
+      background: #ffffff !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
       overflow: hidden;
       margin-bottom: 32px;
       margin-top: 0;
@@ -567,10 +567,10 @@
     
     .trend-thumbnail-card {
       background: #ffffff !important;
-      border: 1px solid rgba(0, 0, 0, 0.08) !important;
-      border-radius: 8px !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
       overflow: hidden !important;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
       transition: transform 0.2s ease, box-shadow 0.2s ease !important;
       display: flex !important;
       flex-direction: column !important;
@@ -579,8 +579,8 @@
     }
     
     .trend-thumbnail-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     }
     
     .trend-thumbnail-link {
@@ -981,14 +981,14 @@
       font-weight: 600;
     }
     
-    /* 카테고리 Card UI 스타일 */
+    /* 카테고리 Card UI 스타일 - Stripe 스타일 */
     .trend-category-card {
       background: #ffffff !important;
-      border: 1px solid #E9ECEF !important;
-      border-radius: 12px !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
       padding: 24px !important;
       margin-bottom: 40px !important;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
@@ -1123,16 +1123,17 @@
     }
     
     .trend-section1-card {
-      background: #ffffff;
-      border: 1px solid #E9ECEF;
-      border-radius: 16px;
+      background: #ffffff !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
       padding: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    
+
     .trend-section1-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     }
     
     .trend-section1-card-content {
@@ -1193,16 +1194,17 @@
     }
     
     .trend-section1-card {
-      background: #ffffff;
-      border: 1px solid #E9ECEF;
-      border-radius: 16px;
+      background: #ffffff !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
       padding: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    
+
     .trend-section1-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     }
     
     .trend-section1-card-content {
@@ -1277,19 +1279,20 @@
     }
     
     .trend-section2-card {
-      background: #ffffff;
-      border: 1px solid #E9ECEF;
-      border-radius: 16px;
+      background: #ffffff !important;
+      border: none !important; /* Stripe 스타일 border 제거 */
+      border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
       padding: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       min-height: 200px;
       display: flex;
       flex-direction: column;
     }
-    
+
     .trend-section2-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
     }
     
     .trend-section2-card-header {

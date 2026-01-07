@@ -704,19 +704,19 @@ th {
   background: #f1f5f9;
 }
 
-/* ✅ 카드 공통 스타일 - Stripe 스타일 */
+/* ✅ 카드 공통 스타일 - Stripe 스타일 (강제 적용) */
 .summary-card {
-  background: #ffffff; /* Stripe 스타일 흰색 배경 */
-  padding: var(--spacing-xl);
-  border-radius: 10px; /* Stripe 스타일 10px 통일 */
+  background: #ffffff !important; /* Stripe 스타일 흰색 배경 */
+  padding: var(--spacing-xl) !important;
+  border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
   flex: 1 1 auto; /* 자동 크기 조정 */
   min-width: 0; /* 최소 너비 제거 */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Stripe 스타일 그림자 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; /* Stripe 스타일 그림자 */
   transition: var(--transition-normal);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: none; /* Stripe 스타일 border 제거 */
+  border: none !important; /* Stripe 스타일 border 제거 */
   position: relative;
   overflow: hidden;
 }
@@ -3825,13 +3825,14 @@ h2::before {
  로딩 오버레이 관련 스타일
 ======================== */
 
-/* 🔥 캠페인 목표별 요약 레이아웃 */
+/* 🔥 캠페인 목표별 요약 레이아웃 - Stripe 스타일 (강제 적용) */
 .chart-card {
   width: 100%;
-  padding: 1rem;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1rem !important;
+  background: #ffffff !important;
+  border-radius: 10px !important; /* Stripe 스타일 10px 통일 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border: none !important;
 }
 
 /* 캠페인 목표별 성과 요약 전용 스타일 - 이중 배경 제거 */

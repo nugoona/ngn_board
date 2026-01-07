@@ -62,11 +62,12 @@ def run_query(process_date):
       ),
 
       -- ✅ 주문 데이터 중복 제거 (order_id 기준 먼저 집계)
+      -- ⚠️ payment_date는 이미 UTC TIMESTAMP로 저장되어 있으므로, DATETIME() 변환 시 KST 적용
       order_summary AS (
           SELECT
               o.mall_id,
               o.order_id,
-              DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) AS payment_date,
+              DATE(TIMESTAMP(o.payment_date), 'Asia/Seoul') AS payment_date,
               MAX(
                   CASE 
                       WHEN o.order_price_amount = 0 THEN o.payment_amount + o.naverpay_point
@@ -83,7 +84,7 @@ def run_query(process_date):
               MAX(CASE WHEN o.canceled = TRUE THEN 1 ELSE 0 END) AS is_canceled,
               MAX(CASE WHEN o.naverpay_payment_information = 'N' THEN 1 ELSE 0 END) AS is_naverpay_payment_info
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
-          WHERE DATE(DATETIME(TIMESTAMP(o.payment_date), 'Asia/Seoul')) = '{process_date}'
+          WHERE DATE(TIMESTAMP(o.payment_date), 'Asia/Seoul') = '{process_date}'
           GROUP BY o.mall_id, o.order_id, payment_date
       ),
       
@@ -110,30 +111,39 @@ def run_query(process_date):
           GROUP BY os.payment_date, os.mall_id, c.company_name
       )
       
+      -- ✅ 모든 날짜 수집 (주문 또는 환불이 있는 날짜)
+      all_dates AS (
+          SELECT payment_date AS process_date, mall_id, company_name FROM order_agg
+          UNION DISTINCT
+          SELECT refund_date AS process_date, mall_id, company_name FROM refund_summary
+      )
       -- ✅ 최종 집계 쿼리 (환불 금액 별도 추가)
-      -- ⚠️ 환불은 refund_date 기준으로 집계되므로, process_date에 발생한 환불을 추가
+      -- ⚠️ 환불은 refund_date 기준으로 집계되므로, 환불만 있는 날짜도 포함
       SELECT
-          oa.payment_date,
-          oa.mall_id,
-          oa.company_name,
-          oa.total_orders,
-          oa.item_orders,
-          oa.item_product_price,
-          oa.total_shipping_fee,
-          oa.total_coupon_discount,
-          oa.total_payment,
+          ad.process_date AS payment_date,
+          ad.mall_id,
+          ad.company_name,
+          COALESCE(oa.total_orders, 0) AS total_orders,
+          COALESCE(oa.item_orders, 0) AS item_orders,
+          COALESCE(oa.item_product_price, 0) AS item_product_price,
+          COALESCE(oa.total_shipping_fee, 0) AS total_shipping_fee,
+          COALESCE(oa.total_coupon_discount, 0) AS total_coupon_discount,
+          COALESCE(oa.total_payment, 0) AS total_payment,
           COALESCE(r.total_refund_amount, 0) AS total_refund_amount,
-          (oa.total_payment - COALESCE(r.total_refund_amount, 0)) AS net_sales,
-          oa.total_naverpay_point,
-          oa.total_prepayment,
-          oa.total_first_order,
-          oa.total_canceled,
-          oa.total_naverpay_payment_info,
+          (COALESCE(oa.total_payment, 0) - COALESCE(r.total_refund_amount, 0)) AS net_sales,
+          COALESCE(oa.total_naverpay_point, 0) AS total_naverpay_point,
+          COALESCE(oa.total_prepayment, 0) AS total_prepayment,
+          COALESCE(oa.total_first_order, 0) AS total_first_order,
+          COALESCE(oa.total_canceled, 0) AS total_canceled,
+          COALESCE(oa.total_naverpay_payment_info, 0) AS total_naverpay_payment_info,
           CURRENT_TIMESTAMP() AS updated_at
-      FROM order_agg AS oa
+      FROM all_dates AS ad
+      LEFT JOIN order_agg AS oa
+      ON ad.process_date = oa.payment_date
+      AND ad.mall_id = oa.mall_id
       LEFT JOIN refund_summary AS r
-      ON oa.mall_id = r.mall_id
-      AND oa.payment_date = r.refund_date  -- refund_date 기준으로 JOIN
+      ON ad.process_date = r.refund_date
+      AND ad.mall_id = r.mall_id
     ) AS source
 
     ON target.payment_date = source.payment_date

@@ -98,11 +98,16 @@ def run_daily_sales_query(process_date):
               SUM(os.item_product_price) AS item_product_price,
               SUM(os.shipping_fee) AS total_shipping_fee,
               SUM(os.coupon_discount_price) AS total_coupon_discount,
-              -- ✅ 환불된 주문은 payment_amount=0이므로 item_product_price 기반으로 계산
+              -- ✅ 취소된 주문(canceled=TRUE)은 제외, 환불된 주문만 item_product_price 사용
               SUM(
                   CASE
+                      -- 취소된 주문은 결제된 적 없으므로 제외
+                      WHEN os.is_canceled = 1
+                      THEN 0
+                      -- 환불된 주문 (canceled=FALSE, payment_amount=0)
                       WHEN os.payment_amount = 0 AND os.item_product_price > 0
                       THEN os.item_product_price + os.shipping_fee - os.coupon_discount_price
+                      -- 일반 주문
                       ELSE os.payment_amount + os.points_spent_amount + os.naverpay_point
                   END
               ) AS total_payment,

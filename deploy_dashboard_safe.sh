@@ -1,24 +1,35 @@
 #!/bin/bash
-
+########################################
+# ngn-wep Cloud Run 대시보드 배포 스크립트
+# - Artifact Registry: asia-northeast1
+# - Cloud Run: asia-northeast1
+########################################
 set -euo pipefail
-cd ~/ngn_board
 
-# 1️⃣ 반드시 최신 코드
+# 1. 작업 디렉토리 설정
+cd /workspaces/ngn_dashboard
+
+# 2. 최신 코드 동기화
 echo "📥 최신 코드 가져오는 중..."
 git pull origin main
 
+# 3. 프로젝트 설정
 PROJECT="winged-precept-443218-v8"
-REGION_AR="asia-northeast1"
-REGION_RUN="asia-northeast1"
+REGION="asia-northeast1"
 REPO="ngn-dashboard"
 SERVICE="ngn-wep"
 SA="439320386143-compute@developer.gserviceaccount.com"
 
-IMAGE="${REGION_AR}-docker.pkg.dev/${PROJECT}/${REPO}/ngn-dashboard:deploy-$(date +%Y%m%d-%H%M%S)"
+# 4. 이미지 태그 생성
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}/ngn-dashboard:deploy-${TIMESTAMP}"
 
-echo "🔨 이미지 태그: $IMAGE"
+echo "------------------------------------------------"
+echo "🔨 이미지 경로: $IMAGE"
+echo "🌏 빌드/배포 리전: $REGION"
+echo "------------------------------------------------"
 
-# 2️⃣ env 로드
+# 5. 환경 변수 로드 (선택적)
 if [ -f config/ngn.env ]; then
   echo "📝 환경 변수 로드 중..."
   set -a
@@ -28,27 +39,33 @@ else
   echo "⚠️  config/ngn.env 파일이 없습니다. 환경 변수 없이 진행합니다."
 fi
 
-# 3️⃣ Dockerfile 복사
+# 6. Dockerfile 준비
 echo "📋 Dockerfile 복사 중..."
 cp docker/Dockerfile-dashboard ./Dockerfile
 
-# 4️⃣ 빌드 (단계별로 진행, 오류 발생 시 중단)
-echo "🔨 Docker 이미지 빌드 중... (이 작업은 몇 분 걸릴 수 있습니다)"
-if ! gcloud builds submit --tag "$IMAGE" .; then
+# 7. 빌드 및 푸시 (cloudbuild.yaml 무시)
+echo "🔨 Docker 이미지 빌드 중... (몇 분 소요될 수 있습니다)"
+if ! gcloud builds submit \
+  --tag "$IMAGE" \
+  --project="$PROJECT" \
+  --region="$REGION" \
+  --config=/dev/null \
+  .; then
   echo "❌ 빌드 실패!"
   rm -f ./Dockerfile
   exit 1
 fi
 
-# 3️⃣에서 복사한 Dockerfile 정리
+# 8. 임시 파일 정리
 echo "🧹 임시 파일 정리 중..."
-rm ./Dockerfile
+rm -f ./Dockerfile
 
-# 5️⃣ 배포
+# 9. Cloud Run 배포
 echo "🚀 Cloud Run 서비스 배포 중..."
 gcloud run deploy "$SERVICE" \
   --image="$IMAGE" \
-  --region="$REGION_RUN" \
+  --region="$REGION" \
+  --project="$PROJECT" \
   --platform=managed \
   --allow-unauthenticated \
   --service-account="$SA" \
@@ -58,12 +75,12 @@ gcloud run deploy "$SERVICE" \
   --max-instances=3 \
   --cpu-boost \
   --execution-environment=gen2 \
-  --update-env-vars="META_SYSTEM_TOKEN=${META_SYSTEM_TOKEN:-},META_SYSTEM_USER_TOKEN=${META_SYSTEM_USER_TOKEN:-},CRAWL_FUNCTION_URL=https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog"
+  --update-env-vars="GEMINI_API_KEY=${GEMINI_API_KEY:-},META_SYSTEM_TOKEN=${META_SYSTEM_TOKEN:-},META_SYSTEM_USER_TOKEN=${META_SYSTEM_USER_TOKEN:-},META_APP_ID=${META_APP_ID:-},META_APP_SECRET=${META_APP_SECRET:-},CRAWL_FUNCTION_URL=${CRAWL_FUNCTION_URL:-https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog},GOOGLE_CLOUD_PROJECT=${PROJECT},GCS_BUCKET=winged-precept-443218-v8.appspot.com" \
+  --quiet
 
 echo ""
+echo "------------------------------------------------"
 echo "✅ 배포 완료!"
 echo "📝 배포된 이미지: $IMAGE"
-echo ""
-echo "💡 배포 확인:"
-echo "   gcloud run services describe $SERVICE --region=$REGION_RUN --project=$PROJECT"
-
+echo "🔗 접속 URL: $(gcloud run services describe $SERVICE --platform managed --region $REGION --project $PROJECT --format 'value(status.url)')"
+echo "------------------------------------------------"

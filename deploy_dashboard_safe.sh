@@ -43,22 +43,31 @@ fi
 echo "📋 Dockerfile 복사 중..."
 cp docker/Dockerfile-dashboard ./Dockerfile
 
-# 7. 빌드 및 푸시 (cloudbuild.yaml 무시)
+# 7. cloudbuild.yaml 임시 이름 변경 (--tag 옵션과 충돌 방지)
+if [ -f cloudbuild.yaml ]; then
+  mv cloudbuild.yaml cloudbuild.yaml.bak
+  RESTORE_CLOUDBUILD=true
+else
+  RESTORE_CLOUDBUILD=false
+fi
+
+# 8. 빌드 및 푸시
 echo "🔨 Docker 이미지 빌드 중... (몇 분 소요될 수 있습니다)"
 if ! gcloud builds submit \
   --tag "$IMAGE" \
   --project="$PROJECT" \
   --region="$REGION" \
-  --config=/dev/null \
   .; then
   echo "❌ 빌드 실패!"
   rm -f ./Dockerfile
+  [ "$RESTORE_CLOUDBUILD" = true ] && mv cloudbuild.yaml.bak cloudbuild.yaml
   exit 1
 fi
 
-# 8. 임시 파일 정리
+# 9. 임시 파일 정리
 echo "🧹 임시 파일 정리 중..."
 rm -f ./Dockerfile
+[ "$RESTORE_CLOUDBUILD" = true ] && mv cloudbuild.yaml.bak cloudbuild.yaml
 
 # 9. Cloud Run 배포
 echo "🚀 Cloud Run 서비스 배포 중..."

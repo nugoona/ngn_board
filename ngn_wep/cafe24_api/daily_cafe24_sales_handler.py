@@ -81,6 +81,7 @@ def run_query(process_date):
               MAX(o.naverpay_point) AS naverpay_point,
               MAX(CASE WHEN LOWER(o.payment_method) LIKE '%선불금%' THEN 1 ELSE 0 END) AS is_prepayment,
               MAX(CASE WHEN o.first_order = TRUE THEN 1 ELSE 0 END) AS is_first_order,
+              MAX(CASE WHEN o.paid = TRUE THEN 1 ELSE 0 END) AS is_paid,
               MAX(CASE WHEN o.canceled = TRUE THEN 1 ELSE 0 END) AS is_canceled,
               MAX(CASE WHEN o.naverpay_payment_information = 'N' THEN 1 ELSE 0 END) AS is_naverpay_payment_info
           FROM `winged-precept-443218-v8.ngn_dataset.cafe24_orders` AS o
@@ -99,16 +100,16 @@ def run_query(process_date):
               SUM(os.item_product_price) AS item_product_price,
               SUM(os.shipping_fee) AS total_shipping_fee,
               SUM(os.coupon_discount_price) AS total_coupon_discount,
-              -- ✅ 취소된 주문(canceled=TRUE)은 제외, 환불된 주문만 item_product_price 사용
+              -- ✅ 미결제 취소(canceled=TRUE, paid=FALSE)만 제외
               SUM(
                   CASE
-                      -- 취소된 주문은 결제된 적 없으므로 제외
-                      WHEN os.is_canceled = 1
+                      -- 미결제 취소 주문만 제외 (canceled=TRUE AND paid=FALSE)
+                      WHEN os.is_canceled = 1 AND os.is_paid = 0
                       THEN 0
-                      -- 환불된 주문 (canceled=FALSE, payment_amount=0)
+                      -- 환불된 주문 (paid=FALSE, payment_amount=0, 하지만 취소가 아닌 경우)
                       WHEN os.payment_amount = 0 AND os.item_product_price > 0
                       THEN os.item_product_price + os.shipping_fee - os.coupon_discount_price
-                      -- 일반 주문
+                      -- 일반 주문 또는 결제 후 취소 주문
                       ELSE os.payment_amount + os.points_spent_amount + os.naverpay_point
                   END
               ) AS total_payment,

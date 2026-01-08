@@ -1134,6 +1134,10 @@ def generate_ai_analysis(
     api_key = api_key or GEMINI_API_KEY
     if not api_key:
         raise ValueError("GEMINI_API_KEY 환경변수가 설정되지 않았거나 api_key 파라미터가 필요합니다.")
+
+    # API 키 디버깅 (앞 8자, 뒤 4자만 표시)
+    masked_key = f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "***"
+    print(f"🔑 [DEBUG] 사용 중인 API 키: {masked_key} (길이: {len(api_key)}자)", file=sys.stderr)
     
     # Google Gen AI SDK (v1.0+) Client 초기화
     try:

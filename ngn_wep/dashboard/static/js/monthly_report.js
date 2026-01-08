@@ -1292,7 +1292,8 @@ function renderSection7(data) {
   if (comparisonTableBody) {
     const rows = [];
     
-    if (section7Data) {
+    // section7Data가 있고, 비어있지 않은 객체인지 확인
+    if (section7Data && typeof section7Data === 'object' && Object.keys(section7Data).length > 0) {
       // 백엔드에서 구조화된 JSON 데이터 사용
       for (const [key, value] of Object.entries(section7Data)) {
         if (typeof value === 'object' && value !== null) {
@@ -1309,8 +1310,10 @@ function renderSection7(data) {
           `);
         }
       }
-    } else {
-      // 데이터가 없으면 기본 항목 표시
+    }
+    
+    // 데이터가 없거나 비어있으면 기본 항목 표시
+    if (rows.length === 0) {
       defaultComparisonItems.forEach(item => {
         rows.push(`
           <tr>
@@ -1408,11 +1411,10 @@ function renderSection7(data) {
     if (leftAnalysis && leftAnalysis.trim()) {
       renderAiAnalysis("section7AnalysisLeft", leftAnalysis);
     } else {
+      // 분석 데이터가 없는 경우 메시지 표시
       leftContainer.innerHTML = `
-        <div class="ai-analysis-skeleton">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
+        <div class="ai-analysis-content">
+          <p style="color: #868E96; font-style: italic;">29CM 시장 분석 데이터를 준비 중입니다.</p>
         </div>
       `;
     }
@@ -1424,11 +1426,10 @@ function renderSection7(data) {
     if (rightAnalysis && rightAnalysis.trim()) {
       renderAiAnalysis("section7AnalysisRight", rightAnalysis);
     } else {
+      // 분석 데이터가 없는 경우 메시지 표시
       rightContainer.innerHTML = `
-        <div class="ai-analysis-skeleton">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line short"></div>
+        <div class="ai-analysis-content">
+          <p style="color: #868E96; font-style: italic;">자사몰 분석 데이터를 준비 중입니다.</p>
         </div>
       `;
     }

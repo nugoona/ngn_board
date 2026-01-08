@@ -1273,8 +1273,12 @@ def generate_ai_analysis(
                 if json_data and isinstance(json_data, dict):
                     # 프론트엔드는 section_7_data를 직접 순회하므로 table_data만 저장
                     table_data = json_data.get("table_data", {})
-                    signals["section_7_data"] = table_data
-                    print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료: {len(table_data)}개 항목", file=sys.stderr)
+                    # table_data가 비어있지 않을 때만 설정
+                    if table_data and isinstance(table_data, dict) and len(table_data) > 0:
+                        signals["section_7_data"] = table_data
+                        print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료: {len(table_data)}개 항목", file=sys.stderr)
+                    else:
+                        print(f"⚠️ [WARN] 섹션 7 table_data가 비어있거나 유효하지 않음", file=sys.stderr)
                     
                     # JSON에서 card_summary의 market_analysis와 company_analysis 추출
                     card_summary = json_data.get("card_summary", {})

@@ -174,8 +174,9 @@ def update_brand_name(company_name: str, brand_id: int, brand_name: str) -> bool
     )
 
     try:
-        result = client.query(query, job_config=job_config).result()
-        if result.num_dml_affected_rows > 0:
+        job = client.query(query, job_config=job_config)
+        job.result()  # 완료 대기
+        if job.num_dml_affected_rows and job.num_dml_affected_rows > 0:
             print(f"[INFO] 브랜드명 업데이트: {brand_id} → {brand_name}")
         return True
     except Exception as e:

@@ -152,7 +152,7 @@ def get_own_brand_id(company_name: str) -> Optional[int]:
 
 
 def update_brand_name(company_name: str, brand_id: int, brand_name: str) -> bool:
-    """브랜드명 자동 업데이트 (API 응답에서 추출한 브랜드명 저장)"""
+    """브랜드명 자동 업데이트 (brand_name이 NULL인 경우에만)"""
     client = get_bigquery_client()
 
     query = f"""
@@ -160,7 +160,9 @@ def update_brand_name(company_name: str, brand_id: int, brand_name: str) -> bool
     SET brand_name = @brand_name,
         display_name = COALESCE(display_name, @brand_name),
         updated_at = CURRENT_TIMESTAMP()
-    WHERE company_name = @company_name AND brand_id = @brand_id
+    WHERE company_name = @company_name
+      AND brand_id = @brand_id
+      AND brand_name IS NULL
     """
 
     job_config = bigquery.QueryJobConfig(
@@ -172,8 +174,9 @@ def update_brand_name(company_name: str, brand_id: int, brand_name: str) -> bool
     )
 
     try:
-        client.query(query, job_config=job_config).result()
-        print(f"[INFO] 브랜드명 업데이트: {brand_id} → {brand_name}")
+        result = client.query(query, job_config=job_config).result()
+        if result.num_dml_affected_rows > 0:
+            print(f"[INFO] 브랜드명 업데이트: {brand_id} → {brand_name}")
         return True
     except Exception as e:
         print(f"[ERROR] update_brand_name 실패: {e}")

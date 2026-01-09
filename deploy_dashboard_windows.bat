@@ -53,7 +53,7 @@ gcloud run deploy "%SERVICE%" ^
   --max-instances=3 ^
   --cpu-boost ^
   --execution-environment=gen2 ^
-  --update-env-vars="CRAWL_FUNCTION_URL=https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog" ^
+  --update-env-vars="GEMINI_API_KEY=%GEMINI_API_KEY%,CRAWL_FUNCTION_URL=https://asia-northeast3-winged-precept-443218-v8.cloudfunctions.net/crawl_catalog,GOOGLE_CLOUD_PROJECT=%PROJECT%,GCS_BUCKET=winged-precept-443218-v8.appspot.com" ^
   --project="%PROJECT%"
 
 if errorlevel 1 (

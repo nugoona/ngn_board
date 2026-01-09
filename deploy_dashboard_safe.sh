@@ -7,11 +7,16 @@
 set -euo pipefail
 
 # 1. 작업 디렉토리 설정
-cd /workspaces/ngn_dashboard
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
 
-# 2. 최신 코드 동기화
-echo "📥 최신 코드 가져오는 중..."
-git pull origin main
+# 2. 최신 코드 동기화 (선택적)
+if [ -d ".git" ]; then
+  echo "📥 최신 코드 가져오는 중..."
+  git pull origin main 2>/dev/null || echo "⚠️  git pull 실패 또는 main 브랜치가 아닙니다."
+else
+  echo "⚠️  .git 디렉토리가 없습니다. git pull을 건너뜁니다."
+fi
 
 # 3. 프로젝트 설정
 PROJECT="winged-precept-443218-v8"

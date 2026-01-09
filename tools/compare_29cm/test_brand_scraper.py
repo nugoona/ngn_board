@@ -14,8 +14,8 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 
-# 29CM API 설정
-LISTING_API_URL = "https://display-bff-api.29cm.co.kr/api/v1/listing/items?colorchipVariant=treatment"
+# 29CM API 설정 - 브랜드별 상품 목록 API
+BRAND_ITEMS_API_URL = "https://display-bff-api.29cm.co.kr/api/v4/brand/{brand_id}/items"
 
 HEADERS = {
     "User-Agent": (
@@ -24,9 +24,8 @@ HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     ),
     "Accept": "application/json, text/plain, */*",
-    "Content-Type": "application/json",
-    "Origin": "https://shop.29cm.co.kr",
-    "Referer": "https://shop.29cm.co.kr/",
+    "Origin": "https://www.29cm.co.kr",
+    "Referer": "https://www.29cm.co.kr/",
 }
 
 # 브랜드 ID 설정
@@ -50,83 +49,87 @@ def safe_float(v) -> Optional[float]:
         return None
 
 
-def post_json(url: str, headers: dict, payload: dict) -> dict:
-    """POST JSON 요청"""
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = Request(url, data=body, headers=headers, method="POST")
+def get_json(url: str, headers: dict) -> dict:
+    """GET JSON 요청"""
+    req = Request(url, headers=headers, method="GET")
     with urlopen(req, timeout=40) as resp:
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
-def build_brand_payload(brand_id: int, page: int = 1, size: int = 50) -> dict:
+def build_brand_url(brand_id: int, page: int = 1, size: int = 50, sort: str = "BEST") -> str:
     """
-    브랜드 ID 기반 API payload 생성
-    - brandId: 브랜드 ID
-    - sortType: MOST_SOLD (판매순/베스트순)
+    브랜드별 상품 목록 API URL 생성
+    - sort: BEST (베스트순), NEW (신상품순), LOW_PRICE, HIGH_PRICE
     """
-    return {
-        "brandId": brand_id,
-        "pageType": "BRAND_HOME",  # 브랜드 홈 페이지 타입
-        "sortType": "MOST_SOLD",  # 판매순 정렬
-        "facets": {},
-        "pageRequest": {"page": page, "size": size},
-    }
+    base_url = BRAND_ITEMS_API_URL.format(brand_id=brand_id)
+    return f"{base_url}?sort={sort}&page={page}&size={size}"
 
 
-def extract_top20(resp: dict) -> List[dict]:
-    """API 응답에서 TOP 20 상품 추출"""
-    items = (resp.get("data") or {}).get("list") or []
+def extract_top20(resp: dict, brand_id: int) -> tuple:
+    """API 응답에서 TOP 20 상품 추출 및 브랜드명 반환"""
+    data = resp.get("data") or {}
+    items = data.get("items") or data.get("list") or []
+    brand_name = data.get("brandName") or data.get("brand_name")
+
     result = []
 
     for rank, it in enumerate(items[:20], start=1):
-        item_info = it.get("itemInfo") or {}
+        # v4 API 응답 구조
+        item_info = it.get("itemInfo") or it
         item_url = it.get("itemUrl") or {}
-        item_event = (it.get("itemEvent") or {}).get("eventProperties") or {}
 
         result.append({
             "rank": rank,
-            "item_id": safe_int(it.get("itemId")),
-            "brand_name": item_info.get("brandName") or item_event.get("brandName"),
-            "product_name": item_info.get("productName") or item_event.get("itemName"),
-            "price": safe_int(item_info.get("displayPrice") or item_event.get("price")),
-            "discount_rate": safe_int(item_info.get("saleRate") or item_event.get("discountRate")),
-            "like_count": safe_int(item_info.get("likeCount")),
-            "review_count": safe_int(item_info.get("reviewCount")),
-            "review_score": safe_float(item_info.get("reviewScore")),
-            "thumbnail_url": item_info.get("thumbnailUrl"),
-            "item_url": item_url.get("webLink") if isinstance(item_url, dict) else None,
+            "item_id": safe_int(it.get("itemId") or it.get("item_id")),
+            "brand_name": item_info.get("brandName") or brand_name,
+            "product_name": item_info.get("productName") or item_info.get("itemName") or it.get("itemName"),
+            "price": safe_int(item_info.get("displayPrice") or item_info.get("price") or it.get("price")),
+            "discount_rate": safe_int(item_info.get("saleRate") or item_info.get("discountRate")),
+            "like_count": safe_int(item_info.get("likeCount") or it.get("likeCount")),
+            "review_count": safe_int(item_info.get("reviewCount") or it.get("reviewCount")),
+            "review_score": safe_float(item_info.get("reviewScore") or it.get("reviewScore")),
+            "thumbnail_url": item_info.get("thumbnailUrl") or it.get("thumbnailUrl"),
+            "item_url": item_url.get("webLink") if isinstance(item_url, dict) else it.get("frontItemUrl"),
         })
 
-    return result
+    return result, brand_name
 
 
-def fetch_brand_products(brand_id: int) -> List[Dict]:
-    """브랜드 ID로 상품 목록 조회"""
+def fetch_brand_products(brand_id: int) -> tuple:
+    """브랜드 ID로 상품 목록 조회 (GET 방식)
+
+    Returns:
+        (products, brand_name): 상품 목록과 브랜드명
+    """
     try:
-        payload = build_brand_payload(brand_id)
-        resp = post_json(LISTING_API_URL, HEADERS, payload)
-        return extract_top20(resp)
+        url = build_brand_url(brand_id, sort="BEST")
+        headers = dict(HEADERS)
+        headers["Referer"] = f"https://www.29cm.co.kr/store/brand/{brand_id}"
+
+        resp = get_json(url, headers)
+        return extract_top20(resp, brand_id)
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")
         print(f"[ERROR] API HTTPError {e.code}: {body[:500]}")
-        return []
+        return [], None
     except URLError as e:
         print(f"[ERROR] API URLError: {e}")
-        return []
+        return [], None
     except Exception as e:
         print(f"[ERROR] API 오류: {e}")
-        return []
+        return [], None
 
 
-def print_brand_results(brand_id: int, products: List[Dict], is_own_mall: bool):
+def print_brand_results(brand_id: int, products: List[Dict], brand_name: str, is_own_mall: bool):
     """브랜드 검색 결과 출력"""
     if not products:
         print(f"[검색 결과] 브랜드ID: {brand_id} | 결과 없음")
         print("-" * 50)
         return
 
-    # 첫 번째 상품에서 브랜드명 추출
-    brand_name = products[0].get("brand_name", "알 수 없음")
+    # 브랜드명 (API 응답 또는 첫 번째 상품에서)
+    if not brand_name and products:
+        brand_name = products[0].get("brand_name", "알 수 없음")
     mall_type = "자사몰" if is_own_mall else "경쟁사"
 
     print(f"[검색 결과] 브랜드ID: {brand_id} | 브랜드명: {brand_name} ({mall_type})")
@@ -151,6 +154,7 @@ def main():
     """메인 실행 함수"""
     print("=" * 60)
     print("29CM 브랜드 ID 기반 상품 수집 테스트")
+    print(f"API: {BRAND_ITEMS_API_URL}")
     print("=" * 60)
     print()
 
@@ -163,16 +167,16 @@ def main():
         is_own_mall = (brand_id == OWN_BRAND_ID)
 
         print(f"\n[INFO] 브랜드 ID {brand_id} 수집 중...")
-        products = fetch_brand_products(brand_id)
+        products, brand_name = fetch_brand_products(brand_id)
 
         # 결과 출력
-        print_brand_results(brand_id, products, is_own_mall)
+        print_brand_results(brand_id, products, brand_name, is_own_mall)
 
         # 수집 데이터 저장 (향후 BigQuery 적재용)
         if products:
             collected_data.append({
                 "brand_id": brand_id,
-                "brand_name": products[0].get("brand_name") if products else None,
+                "brand_name": brand_name or (products[0].get("brand_name") if products else None),
                 "is_own_mall": is_own_mall,
                 "products": products,
             })

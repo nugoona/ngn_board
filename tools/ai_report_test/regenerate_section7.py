@@ -36,14 +36,17 @@ def main():
     print(f"📂 [INFO] 파일: {snapshot_path}")
     print(f"📅 [INFO] 대상: {company_name} {year}년 {month}월")
     print("")
+    print("⚠️ [참고] 이 스크립트는 섹션 7만 재생성하며, 다른 섹션(1-6, 8-9)은 기존 데이터를 유지합니다.")
+    print("")
     
     try:
         # 섹션 7만 재생성 (sections=[7] 사용)
+        # 주의: generate_ai_analysis 함수는 기존 signals를 유지하고 지정된 섹션만 업데이트합니다.
         generate_ai_analysis_from_file(
             snapshot_file=snapshot_path,
             output_file=None,  # 같은 파일에 덮어쓰기
             system_prompt_file=None,  # 자동으로 system_prompt_v44.txt 찾기
-            sections=[7]  # 섹션 7만 재생성
+            sections=[7]  # 섹션 7만 재생성 (다른 섹션은 기존 데이터 유지)
         )
         
         print("")

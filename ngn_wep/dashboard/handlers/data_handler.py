@@ -70,6 +70,8 @@ from ..services.trend_ably_service import (
 )
 from ..services.compare_29cm_service import (
     get_competitor_keywords,
+    get_competitor_brands,
+    get_own_brand_id,
     fetch_product_reviews,
     load_search_results_from_gcs,
 )
@@ -1820,14 +1822,38 @@ def get_ably_trend_tabs():
 # 📌 29CM 경쟁사 비교 페이지 API
 # ─────────────────────────────────────────────────────────────
 
-@data_blueprint.route("/compare/29cm/keywords", methods=["GET"])
-def get_compare_keywords():
-    """경쟁사 검색어 목록 조회"""
+@data_blueprint.route("/compare/29cm/brands", methods=["GET"])
+def get_compare_brands():
+    """경쟁사 브랜드 목록 조회 (brandId 기반)"""
     try:
         company_name = request.args.get("company_name")
         if not company_name:
             return jsonify({"status": "error", "message": "company_name 파라미터가 필요합니다."}), 400
-        
+
+        # 자사몰 브랜드 ID
+        own_brand_id = get_own_brand_id(company_name)
+
+        # 경쟁사 브랜드 목록
+        competitor_brands = get_competitor_brands(company_name)
+
+        return jsonify({
+            "status": "success",
+            "own_brand_id": own_brand_id,
+            "brands": competitor_brands
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] get_compare_brands 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/compare/29cm/keywords", methods=["GET"])
+def get_compare_keywords_legacy():
+    """[DEPRECATED] /compare/29cm/brands 사용 권장"""
+    try:
+        company_name = request.args.get("company_name")
+        if not company_name:
+            return jsonify({"status": "error", "message": "company_name 파라미터가 필요합니다."}), 400
+
         keywords = get_competitor_keywords(company_name)
         return jsonify({
             "status": "success",
@@ -1840,68 +1866,94 @@ def get_compare_keywords():
 
 @data_blueprint.route("/compare/29cm/search", methods=["POST"])
 def get_compare_search_results():
-    """경쟁사 검색 결과 조회"""
+    """경쟁사 검색 결과 조회 (brand_id 또는 search_keyword 지원)"""
     try:
         data = request.get_json() or {}
         company_name = data.get("company_name")
-        search_keyword = data.get("search_keyword")
+        brand_id = data.get("brand_id")  # 새로운 brandId 기반
+        search_keyword = data.get("search_keyword")  # 하위 호환성
         run_id = data.get("run_id")
         get_run_id_only = data.get("get_run_id_only", False)
-        
+
         if not company_name:
             return jsonify({"status": "error", "message": "company_name이 필요합니다."}), 400
-        
+
         # run_id만 조회하는 경우
         if get_run_id_only:
             run_id = get_current_week_info()
             if not run_id:
                 return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
             return jsonify({"status": "success", "run_id": run_id}), 200
-        
+
         # run_id가 없으면 최신 주차 사용
         if not run_id:
             run_id = get_current_week_info()
             if not run_id:
                 return jsonify({"status": "error", "message": "주차 정보를 찾을 수 없습니다."}), 404
-        
-        # 자사몰 검색인 경우 (search_keyword가 'own'인 경우)
-        # company_mapping에서 브랜드명 가져오기
+
+        # brand_id 기반 처리 (우선)
+        if brand_id is not None:
+            # brand_id를 문자열 키로 변환 (GCS 스냅샷 키 형식)
+            brand_key = str(brand_id)
+
+            # 자사몰 브랜드인 경우 (brand_id == 'own')
+            if brand_id == 'own':
+                own_brand_id = get_own_brand_id(company_name)
+                if own_brand_id:
+                    brand_key = str(own_brand_id)
+                else:
+                    return jsonify({"status": "error", "message": "자사몰 브랜드 ID를 찾을 수 없습니다."}), 404
+
+            # GCS 스냅샷에서 검색 결과 로드
+            snapshot_data = load_search_results_from_gcs(
+                company_name=company_name,
+                run_id=run_id,
+                search_keyword=brand_key
+            )
+
+            if snapshot_data is None:
+                return jsonify({"status": "error", "message": "스냅샷을 찾을 수 없습니다."}), 404
+
+            search_results = snapshot_data.get("search_results", {})
+            created_at = snapshot_data.get("created_at")
+
+            return jsonify({
+                "status": "success",
+                "run_id": run_id,
+                "brand_id": brand_id,
+                "results": search_results.get(brand_key, []),
+                "created_at": created_at
+            }), 200
+
+        # 하위 호환성: search_keyword 기반 처리
         if search_keyword == 'own':
             if COMPANY_MAPPING_AVAILABLE:
                 brands = get_company_brands(company_name)
                 if brands:
-                    # 첫 번째 브랜드명으로 검색
                     search_keyword = brands[0]
                 else:
-                    # 브랜드명이 없으면 한글명 사용
                     korean_name = get_company_korean_name(company_name)
                     if korean_name:
                         search_keyword = korean_name
                     else:
                         search_keyword = company_name
             else:
-                # 기본 매핑 (임시)
-                brand_mapping = {
-                    'piscess': '파이시스'
-                }
+                brand_mapping = {'piscess': '파이시스'}
                 search_keyword = brand_mapping.get(company_name.lower(), company_name)
-        
+
         # GCS 스냅샷에서 검색 결과 로드
-        # search_keyword가 없으면 전체 데이터 로드 (초기 로드 최적화)
         snapshot_data = load_search_results_from_gcs(
             company_name=company_name,
             run_id=run_id,
             search_keyword=search_keyword if search_keyword else None
         )
-        
+
         if snapshot_data is None:
             return jsonify({"status": "error", "message": "스냅샷을 찾을 수 없습니다."}), 404
-        
-        # 결과 추출
+
         search_results = snapshot_data.get("search_results", {})
         created_at = snapshot_data.get("created_at")
-        
-        # search_keyword가 지정된 경우 해당 키워드만 반환
+
         if search_keyword:
             return jsonify({
                 "status": "success",
@@ -1911,14 +1963,13 @@ def get_compare_search_results():
                 "created_at": created_at
             }), 200
         else:
-            # 모든 키워드 반환 (초기 로드 최적화)
             return jsonify({
                 "status": "success",
                 "run_id": run_id,
                 "results": search_results,
                 "created_at": created_at
             }), 200
-            
+
     except Exception as e:
         print(f"[ERROR] get_compare_search_results 실패: {e}")
         import traceback

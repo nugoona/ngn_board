@@ -40,54 +40,56 @@ OPTIONS(
   description="29CM 경쟁사 검색 결과 저장 테이블. 검색어별 TOP 20 상품 정보와 리뷰를 저장합니다."
 );
 
--- 2. 경쟁사 검색어 관리 테이블
+-- 2. 경쟁사 브랜드 관리 테이블 (brandId 기반)
 -- ==================================================
-CREATE TABLE IF NOT EXISTS `winged-precept-443218-v8.ngn_dataset.company_competitor_keywords` (
+CREATE TABLE IF NOT EXISTS `winged-precept-443218-v8.ngn_dataset.company_competitor_brands` (
   company_name STRING NOT NULL,                -- 자사몰 company_name
-  competitor_keyword STRING NOT NULL,          -- 경쟁사 검색어
-  display_name STRING,                         -- 탭에 표시될 이름 (한글명 등)
-  is_active BOOLEAN NOT NULL,                  -- 활성화 여부
+  brand_id INT64 NOT NULL,                     -- 29CM 브랜드 ID
+  brand_name STRING,                           -- 브랜드명 (API에서 자동 수집)
+  display_name STRING,                         -- 탭에 표시될 이름
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,     -- 활성화 여부
   sort_order INT64 NOT NULL,                   -- 정렬 순서
-  created_at TIMESTAMP NOT NULL,               -- 생성 시간
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
   updated_at TIMESTAMP                         -- 수정 시간
 )
 CLUSTER BY company_name
 OPTIONS(
-  description="자사몰별 경쟁사 검색어 관리 테이블. 각 자사몰의 경쟁사 검색어 목록을 저장합니다."
+  description="29CM 브랜드 ID 기반 경쟁사 관리 테이블. 각 자사몰의 경쟁 브랜드 ID 목록을 저장합니다."
 );
 
--- 3. 초기 데이터 삽입 (파이시스 기준) - 중복 체크 포함
+-- 3. 초기 데이터 삽입 (파이시스 경쟁사 브랜드 ID) - 중복 체크 포함
 -- ==================================================
 -- 먼저 기존 데이터 확인 (실행 전 확인용)
--- SELECT company_name, competitor_keyword 
--- FROM `winged-precept-443218-v8.ngn_dataset.company_competitor_keywords`
+-- SELECT company_name, brand_id, brand_name
+-- FROM `winged-precept-443218-v8.ngn_dataset.company_competitor_brands`
 -- WHERE company_name = 'piscess';
 
 -- 중복 없는 데이터만 삽입 (LEFT JOIN 사용)
-INSERT INTO `winged-precept-443218-v8.ngn_dataset.company_competitor_keywords`
-  (company_name, competitor_keyword, display_name, is_active, sort_order, created_at)
-SELECT 
+-- brand_name은 API 호출 시 자동으로 업데이트됨
+INSERT INTO `winged-precept-443218-v8.ngn_dataset.company_competitor_brands`
+  (company_name, brand_id, brand_name, display_name, is_active, sort_order, created_at)
+SELECT
   new_data.company_name,
-  new_data.competitor_keyword,
+  new_data.brand_id,
+  new_data.brand_name,
   new_data.display_name,
   new_data.is_active,
   new_data.sort_order,
   new_data.created_at
 FROM UNNEST([
-  STRUCT('piscess' AS company_name, '데이즈데이즈' AS competitor_keyword, '데이즈데이즈' AS display_name, TRUE AS is_active, 1 AS sort_order, CURRENT_TIMESTAMP() AS created_at),
-  STRUCT('piscess', '코랄리크', '코랄리크', TRUE, 2, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '라메레이', '라메레이', TRUE, 3, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '마딘', '마딘', TRUE, 4, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '플로움', '플로움', TRUE, 5, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '엔조블루스', '엔조블루스', TRUE, 6, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '페스토', '페스토', TRUE, 7, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '노컨텐츠', '노컨텐츠', TRUE, 8, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '오버듀플레어', '오버듀플레어', TRUE, 9, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '문달', '문달', TRUE, 10, CURRENT_TIMESTAMP()),
-  STRUCT('piscess', '글로니', '글로니', TRUE, 11, CURRENT_TIMESTAMP())
+  STRUCT('piscess' AS company_name, 1138 AS brand_id, CAST(NULL AS STRING) AS brand_name, CAST(NULL AS STRING) AS display_name, TRUE AS is_active, 1 AS sort_order, CURRENT_TIMESTAMP() AS created_at),
+  STRUCT('piscess', 9443, NULL, NULL, TRUE, 2, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 43189, NULL, NULL, TRUE, 3, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 10473, NULL, NULL, TRUE, 4, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 1549, NULL, NULL, TRUE, 5, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 16507, NULL, NULL, TRUE, 6, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 11649, NULL, NULL, TRUE, 7, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 4348, NULL, NULL, TRUE, 8, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 4349, NULL, NULL, TRUE, 9, CURRENT_TIMESTAMP()),
+  STRUCT('piscess', 16723, NULL, NULL, TRUE, 10, CURRENT_TIMESTAMP())
 ]) AS new_data
-LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_competitor_keywords` AS existing
+LEFT JOIN `winged-precept-443218-v8.ngn_dataset.company_competitor_brands` AS existing
   ON existing.company_name = new_data.company_name
-  AND existing.competitor_keyword = new_data.competitor_keyword
+  AND existing.brand_id = new_data.brand_id
 WHERE existing.company_name IS NULL;  -- 기존에 없는 데이터만 삽입
 

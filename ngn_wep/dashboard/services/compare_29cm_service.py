@@ -32,7 +32,7 @@ PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
 DATASET_ID = os.environ.get("BQ_DATASET", "ngn_dataset")
 GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
 SEARCH_RESULTS_TABLE = "platform_29cm_search_results"
-COMPETITOR_KEYWORDS_TABLE = "company_competitor_keywords"
+COMPETITOR_BRANDS_TABLE = "company_competitor_brands"  # brandId 기반 테이블
 BEST_TABLE = "platform_29cm_best"
 
 # 29CM API 설정
@@ -95,37 +95,119 @@ def get_json(url: str, headers: dict) -> dict:
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
-def get_competitor_keywords(company_name: str) -> List[Dict[str, Any]]:
-    """경쟁사 검색어 조회"""
+def get_competitor_brands(company_name: str) -> List[Dict[str, Any]]:
+    """경쟁사 브랜드 ID 조회 (brandId 기반)"""
     client = get_bigquery_client()
-    
+
     query = f"""
-    SELECT 
-      competitor_keyword,
+    SELECT
+      brand_id,
+      brand_name,
       display_name,
       sort_order
-    FROM `{PROJECT_ID}.{DATASET_ID}.{COMPETITOR_KEYWORDS_TABLE}`
+    FROM `{PROJECT_ID}.{DATASET_ID}.{COMPETITOR_BRANDS_TABLE}`
     WHERE company_name = @company_name
       AND is_active = TRUE
     ORDER BY sort_order ASC
     """
-    
+
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
             bigquery.ScalarQueryParameter("company_name", "STRING", company_name)
         ]
     )
-    
+
     try:
         rows = client.query(query, job_config=job_config).result()
         return [dict(row) for row in rows]
     except Exception as e:
-        print(f"[ERROR] get_competitor_keywords 실패: {e}")
+        print(f"[ERROR] get_competitor_brands 실패: {e}")
         return []
 
 
+def get_own_brand_id(company_name: str) -> Optional[int]:
+    """자사몰 브랜드 ID 조회 (company_info.brand_id_29cm)"""
+    client = get_bigquery_client()
+
+    query = f"""
+    SELECT brand_id_29cm
+    FROM `{PROJECT_ID}.{DATASET_ID}.company_info`
+    WHERE company_name = @company_name
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("company_name", "STRING", company_name)
+        ]
+    )
+
+    try:
+        rows = list(client.query(query, job_config=job_config).result())
+        if rows and rows[0].brand_id_29cm:
+            return int(rows[0].brand_id_29cm)
+        return None
+    except Exception as e:
+        print(f"[ERROR] get_own_brand_id 실패: {e}")
+        return None
+
+
+def update_brand_name(company_name: str, brand_id: int, brand_name: str) -> bool:
+    """브랜드명 자동 업데이트 (API 응답에서 추출한 브랜드명 저장)"""
+    client = get_bigquery_client()
+
+    query = f"""
+    UPDATE `{PROJECT_ID}.{DATASET_ID}.{COMPETITOR_BRANDS_TABLE}`
+    SET brand_name = @brand_name,
+        display_name = COALESCE(display_name, @brand_name),
+        updated_at = CURRENT_TIMESTAMP()
+    WHERE company_name = @company_name AND brand_id = @brand_id
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("brand_name", "STRING", brand_name),
+            bigquery.ScalarQueryParameter("company_name", "STRING", company_name),
+            bigquery.ScalarQueryParameter("brand_id", "INT64", brand_id),
+        ]
+    )
+
+    try:
+        client.query(query, job_config=job_config).result()
+        print(f"[INFO] 브랜드명 업데이트: {brand_id} → {brand_name}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] update_brand_name 실패: {e}")
+        return False
+
+
+def build_brand_payload(brand_id: int, page: int = 1, size: int = 50) -> dict:
+    """브랜드 ID 기반 API payload 생성"""
+    return {
+        "brandId": brand_id,
+        "pageType": "BRAND",
+        "sortType": "MOST_SOLD",  # 판매순 정렬
+        "facets": {},
+        "pageRequest": {"page": page, "size": size},
+    }
+
+
+# 하위 호환성을 위한 별칭
+def get_competitor_keywords(company_name: str) -> List[Dict[str, Any]]:
+    """[DEPRECATED] get_competitor_brands() 사용 권장"""
+    brands = get_competitor_brands(company_name)
+    # 기존 형식으로 변환
+    return [
+        {
+            "competitor_keyword": str(b["brand_id"]),
+            "display_name": b.get("display_name") or b.get("brand_name") or str(b["brand_id"]),
+            "sort_order": b["sort_order"]
+        }
+        for b in brands
+    ]
+
+
 def build_search_payload(keyword: str) -> dict:
-    """검색 API payload 생성"""
+    """[DEPRECATED] build_brand_payload() 사용 권장"""
     return {
         "keyword": keyword,
         "pageType": "SRP",
@@ -163,7 +245,7 @@ def extract_top20(resp: dict) -> List[dict]:
 
 
 def search_29cm_products(keyword: str) -> List[Dict]:
-    """29CM 검색 API 호출"""
+    """[DEPRECATED] fetch_brand_products() 사용 권장"""
     try:
         payload = build_search_payload(keyword)
         resp = post_json(SEARCH_API_URL, SEARCH_HEADERS, payload)
@@ -177,6 +259,24 @@ def search_29cm_products(keyword: str) -> List[Dict]:
         return []
     except Exception as e:
         print(f"[ERROR] 검색 API 오류: {e}")
+        return []
+
+
+def fetch_brand_products(brand_id: int) -> List[Dict]:
+    """브랜드 ID로 상품 목록 조회 (brandId 기반)"""
+    try:
+        payload = build_brand_payload(brand_id)
+        resp = post_json(SEARCH_API_URL, SEARCH_HEADERS, payload)
+        return extract_top20(resp)
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"[ERROR] 브랜드 API HTTPError {e.code}: {body[:500]}")
+        return []
+    except URLError as e:
+        print(f"[ERROR] 브랜드 API URLError: {e}")
+        return []
+    except Exception as e:
+        print(f"[ERROR] 브랜드 API 오류: {e}")
         return []
 
 
@@ -485,23 +585,31 @@ def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword:
         return None
 
 
-def collect_and_save_search_results(
+def collect_and_save_brand_results(
     company_name: str,
-    search_keyword: str,
+    brand_id: int,
     run_id: str,
-    best_dict: Dict[int, Dict]
-) -> bool:
-    """검색 결과 수집 및 저장 (전체 프로세스)"""
-    print(f"[INFO] 검색 시작: {search_keyword} (company: {company_name})")
-    
-    # 1. 검색
-    search_results = search_29cm_products(search_keyword)
+    best_dict: Dict[int, Dict],
+    is_own_mall: bool = False
+) -> Optional[str]:
+    """브랜드 ID 기반 상품 수집 및 저장 (전체 프로세스)
+
+    Returns:
+        brand_name: 수집된 브랜드명 (API 응답에서 추출) 또는 None
+    """
+    print(f"[INFO] 브랜드 수집 시작: {brand_id} (company: {company_name}, own_mall: {is_own_mall})")
+
+    # 1. 브랜드 ID로 상품 조회
+    search_results = fetch_brand_products(brand_id)
     if not search_results:
-        print(f"[WARN] 검색 결과 없음: {search_keyword}")
-        return False
-    
+        print(f"[WARN] 검색 결과 없음: brand_id={brand_id}")
+        return None
+
     print(f"[INFO] 검색 결과 {len(search_results)}개 수집")
-    
+
+    # 브랜드명 추출 (첫 번째 상품에서)
+    brand_name = search_results[0].get("brand_name") if search_results else None
+
     # 2. 리뷰 수집
     for result in search_results:
         item_id = result.get("item_id")
@@ -509,10 +617,120 @@ def collect_and_save_search_results(
             time.sleep(random.uniform(0.3, 0.5))  # API 호출 간격
             reviews = fetch_product_reviews(item_id, limit=10)
             result["reviews"] = reviews
-    
+
     # 3. 베스트 목록 매칭
     search_results = match_with_best_ranking(search_results, best_dict)
-    
+
+    # 4. 저장 (GCS 스냅샷) - brand_id를 키로 사용
+    search_date = datetime.now(timezone(timedelta(hours=9)))
+    success = save_brand_results_to_gcs(
+        company_name=company_name,
+        brand_id=brand_id,
+        run_id=run_id,
+        search_results=search_results,
+        search_date=search_date,
+        is_own_mall=is_own_mall
+    )
+
+    if success:
+        print(f"[INFO] 저장 완료: brand_id={brand_id} ({len(search_results)}개)")
+        # 브랜드명 자동 업데이트 (경쟁사만)
+        if brand_name and not is_own_mall:
+            update_brand_name(company_name, brand_id, brand_name)
+    else:
+        print(f"[ERROR] 저장 실패: brand_id={brand_id}")
+
+    return brand_name
+
+
+def save_brand_results_to_gcs(
+    company_name: str,
+    brand_id: int,
+    run_id: str,
+    search_results: List[Dict],
+    search_date: datetime,
+    is_own_mall: bool = False
+) -> bool:
+    """브랜드 ID 기반 검색 결과를 GCS 스냅샷으로 저장"""
+    if not search_results:
+        return False
+
+    try:
+        # 스냅샷 경로 생성 (company_name 포함)
+        blob_path = get_compare_snapshot_path(run_id, company_name)
+
+        # 기존 스냅샷 로드 (있다면)
+        existing_data = load_search_results_from_gcs(company_name, run_id)
+        existing_snapshot = {}
+        if existing_data and "search_results" in existing_data:
+            existing_snapshot = existing_data["search_results"]
+
+        # brand_id를 문자열 키로 사용
+        brand_key = str(brand_id)
+        existing_snapshot[brand_key] = search_results
+
+        # 스냅샷 데이터 구성
+        snapshot_data = {
+            "run_id": run_id,
+            "company_name": company_name,
+            "created_at": search_date.isoformat(),
+            "search_results": existing_snapshot
+        }
+
+        # JSON 직렬화 및 Gzip 압축
+        json_str = json.dumps(snapshot_data, ensure_ascii=False, indent=2)
+        json_bytes = json_str.encode('utf-8')
+        compressed_bytes = gzip.compress(json_bytes)
+
+        # GCS에 업로드 (덮어쓰기)
+        client = storage.Client(project=PROJECT_ID)
+        bucket = client.bucket(GCS_BUCKET)
+        blob = bucket.blob(blob_path)
+
+        if blob.exists():
+            blob.delete()
+
+        blob.upload_from_string(compressed_bytes, content_type='application/gzip')
+
+        print(f"[INFO] 스냅샷 저장 완료: {blob_path} (brand_id={brand_id}: {len(search_results)}개)")
+        return True
+
+    except Exception as e:
+        print(f"[ERROR] save_brand_results_to_gcs 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+# 하위 호환성을 위한 기존 함수 유지
+def collect_and_save_search_results(
+    company_name: str,
+    search_keyword: str,
+    run_id: str,
+    best_dict: Dict[int, Dict]
+) -> bool:
+    """[DEPRECATED] collect_and_save_brand_results() 사용 권장"""
+    print(f"[INFO] 검색 시작: {search_keyword} (company: {company_name})")
+
+    # 1. 검색
+    search_results = search_29cm_products(search_keyword)
+    if not search_results:
+        print(f"[WARN] 검색 결과 없음: {search_keyword}")
+        return False
+
+    print(f"[INFO] 검색 결과 {len(search_results)}개 수집")
+
+    # 2. 리뷰 수집
+    for result in search_results:
+        item_id = result.get("item_id")
+        if item_id:
+            time.sleep(random.uniform(0.3, 0.5))  # API 호출 간격
+            reviews = fetch_product_reviews(item_id, limit=10)
+            result["reviews"] = reviews
+
+    # 3. 베스트 목록 매칭
+    search_results = match_with_best_ranking(search_results, best_dict)
+
     # 4. 저장 (GCS 스냅샷)
     search_date = datetime.now(timezone(timedelta(hours=9)))
     success = save_search_results_to_gcs(
@@ -522,11 +740,11 @@ def collect_and_save_search_results(
         search_results=search_results,
         search_date=search_date
     )
-    
+
     if success:
         print(f"[INFO] 저장 완료: {search_keyword} ({len(search_results)}개)")
     else:
         print(f"[ERROR] 저장 실패: {search_keyword}")
-    
+
     return success
 

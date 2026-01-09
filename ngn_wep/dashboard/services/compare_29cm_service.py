@@ -56,7 +56,7 @@ REVIEW_HEADERS_BASE = {
     "Accept": "*/*",
 }
 
-REVIEW_SORT_CANDIDATES = ["RECENT", "BEST"]
+REVIEW_SORT_CANDIDATES = ["", "BEST"]  # 빈 값 = 최신순
 
 
 def get_bigquery_client():

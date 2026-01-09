@@ -7,10 +7,11 @@
     // 전역 변수
     let currentCompanyName = null;
     let currentRunId = null;
-    let currentKeyword = null;
-    let allKeywords = [];
+    let currentBrandId = null;  // brandId 기반으로 변경
+    let ownBrandId = null;  // 자사몰 브랜드 ID
+    let allBrands = [];  // 경쟁사 브랜드 목록
     let currentResults = [];
-    let allResultsCache = {};  // 모든 검색어 데이터 캐시
+    let allResultsCache = {};  // 모든 브랜드 데이터 캐시
     let snapshotCreatedAt = null;  // 스냅샷 수집 시간
     let currentPage = 1;
     const ITEMS_PER_PAGE = 10;
@@ -153,16 +154,17 @@
     async function loadCompareData() {
         try {
             showLoading();
-            
-            // 1. 경쟁사 검색어 목록 조회
-            const keywordsResponse = await fetch(`/dashboard/compare/29cm/keywords?company_name=${encodeURIComponent(currentCompanyName)}`);
-            const keywordsData = await keywordsResponse.json();
-            
-            if (keywordsData.status !== 'success') {
-                throw new Error(keywordsData.message || '검색어 목록 조회 실패');
+
+            // 1. 경쟁사 브랜드 목록 조회 (brandId 기반)
+            const brandsResponse = await fetch(`/dashboard/compare/29cm/brands?company_name=${encodeURIComponent(currentCompanyName)}`);
+            const brandsData = await brandsResponse.json();
+
+            if (brandsData.status !== 'success') {
+                throw new Error(brandsData.message || '브랜드 목록 조회 실패');
             }
-            
-            allKeywords = keywordsData.keywords || [];
+
+            ownBrandId = brandsData.own_brand_id;  // 자사몰 브랜드 ID
+            allBrands = brandsData.brands || [];  // 경쟁사 브랜드 목록
             
             // 2. run_id 조회 (최신 주차) - 최적화된 API 사용
             const runIdResponse = await fetch('/dashboard/compare/29cm/search', {
@@ -204,28 +206,28 @@
      */
     function renderTabs() {
         if (!compareTabs) return;
-        
+
         // 기존 탭 모두 제거 (중복 방지)
         compareTabs.innerHTML = '';
-        
+
         // 자사몰 탭 추가 (첫 번째)
         const companyTab = document.createElement('button');
         companyTab.className = 'compare-tab-btn active';
-        companyTab.dataset.keyword = 'own';
+        companyTab.dataset.brandId = ownBrandId || 'own';
         companyTab.textContent = getCompanyDisplayName();
         companyTab.addEventListener('click', function() {
             selectOwnCompanyTab();
         });
         compareTabs.appendChild(companyTab);
-        
-        // 경쟁사 탭 추가
-        allKeywords.forEach((keyword, index) => {
+
+        // 경쟁사 탭 추가 (brandId 기반)
+        allBrands.forEach((brand, index) => {
             const tab = document.createElement('button');
             tab.className = 'compare-tab-btn';
-            tab.dataset.keyword = keyword.competitor_keyword;
-            tab.textContent = keyword.display_name || keyword.competitor_keyword;
+            tab.dataset.brandId = brand.brand_id;
+            tab.textContent = brand.display_name || brand.brand_name || `브랜드 ${brand.brand_id}`;
             tab.addEventListener('click', function() {
-                selectTab(keyword.competitor_keyword, keyword.display_name);
+                selectTab(brand.brand_id, brand.display_name || brand.brand_name);
             });
             compareTabs.appendChild(tab);
         });
@@ -247,50 +249,40 @@
         // 탭 활성화
         const tabs = compareTabs.querySelectorAll('.compare-tab-btn');
         tabs.forEach(tab => {
-            if (tab.dataset.keyword === 'own') {
+            const tabBrandId = tab.dataset.brandId;
+            if (tabBrandId === String(ownBrandId) || tabBrandId === 'own') {
                 tab.classList.add('active');
             } else {
                 tab.classList.remove('active');
             }
         });
-        
-        currentKeyword = 'own';
+
+        currentBrandId = ownBrandId || 'own';
         currentPage = 1;
-        
-        // 자사몰 검색 (search_keyword를 'own'으로 전달하면 서버에서 브랜드명으로 변환)
-        await loadSearchResults('own');
+
+        // 자사몰 검색 (brand_id 사용)
+        await loadSearchResults(currentBrandId, true);
     }
-    
+
     /**
-     * 자사몰 브랜드명 가져오기
+     * 탭 선택 (brandId 기반)
      */
-    function getCompanyBrandName() {
-        // API에서 브랜드명을 가져오도록 수정 (임시로 기본값 사용)
-        const brandMapping = {
-            'piscess': '파이시스'
-        };
-        return brandMapping[currentCompanyName?.toLowerCase()] || currentCompanyName;
-    }
-    
-    /**
-     * 탭 선택
-     */
-    async function selectTab(keyword, displayName) {
+    async function selectTab(brandId, displayName) {
         // 탭 활성화
         const tabs = compareTabs.querySelectorAll('.compare-tab-btn');
         tabs.forEach(tab => {
-            if (tab.dataset.keyword === keyword) {
+            if (String(tab.dataset.brandId) === String(brandId)) {
                 tab.classList.add('active');
             } else {
                 tab.classList.remove('active');
             }
         });
-        
-        currentKeyword = keyword;
+
+        currentBrandId = brandId;
         currentPage = 1;
-        
+
         // 검색 결과 로드
-        await loadSearchResults(keyword);
+        await loadSearchResults(brandId, false);
     }
     
     /**
@@ -339,72 +331,65 @@
     }
     
     /**
-     * 검색 결과 로드 (캐시 우선 사용)
+     * 검색 결과 로드 (brandId 기반, 캐시 우선 사용)
      */
-    async function loadSearchResults(keyword) {
+    async function loadSearchResults(brandId, isOwnMall = false) {
         try {
             showLoading();
-            
+
             // 캐시 키 생성
             const cacheKey = `${currentCompanyName}_${currentRunId}`;
-            
+            const brandKey = String(brandId);
+
             // 캐시에서 먼저 확인
-            if (allResultsCache[cacheKey]) {
-                const allResults = allResultsCache[cacheKey];
-                
-                // 'own' 키워드 처리
-                let searchKey = keyword;
-                if (keyword === 'own') {
-                    // 자사몰 브랜드명 찾기
-                    const brandMapping = {
-                        'piscess': '파이시스'
-                    };
-                    searchKey = brandMapping[currentCompanyName?.toLowerCase()] || currentCompanyName;
-                }
-                
-                // 캐시에서 데이터 찾기
-                if (allResults[searchKey]) {
-                    currentResults = allResults[searchKey];
-                    renderCards();
-                    return;
-                }
+            if (allResultsCache[cacheKey] && allResultsCache[cacheKey][brandKey]) {
+                currentResults = allResultsCache[cacheKey][brandKey];
+                renderCards();
+                return;
             }
-            
-            // 캐시에 없으면 API 호출
+
+            // 캐시에 없으면 API 호출 (brand_id 기반)
+            const requestBody = {
+                company_name: currentCompanyName,
+                run_id: currentRunId
+            };
+
+            // brand_id 또는 'own' 전달
+            if (isOwnMall && (brandId === 'own' || !brandId)) {
+                requestBody.brand_id = 'own';
+            } else {
+                requestBody.brand_id = brandId;
+            }
+
             const response = await fetch('/dashboard/compare/29cm/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    company_name: currentCompanyName,
-                    search_keyword: keyword === 'own' ? 'own' : keyword,
-                    run_id: currentRunId
-                })
+                body: JSON.stringify(requestBody)
             });
-            
+
             const data = await response.json();
-            
+
             if (data.status !== 'success') {
                 throw new Error(data.message || '검색 결과 조회 실패');
             }
-            
+
             currentResults = data.results || [];
-            
+
             // 수집 시간 저장
             if (data.created_at) {
                 snapshotCreatedAt = data.created_at;
-                updateInfoBar();  // 수집 시간으로 정보 바 업데이트
+                updateInfoBar();
             }
-            
+
             // 캐시에 저장
             if (!allResultsCache[cacheKey]) {
                 allResultsCache[cacheKey] = {};
             }
-            const searchKey = keyword === 'own' ? (data.search_keyword || keyword) : keyword;
-            allResultsCache[cacheKey][searchKey] = currentResults;
-            
+            allResultsCache[cacheKey][brandKey] = currentResults;
+
             // 카드 렌더링
             renderCards();
-            
+
         } catch (error) {
             console.error('[Compare] 검색 결과 로드 실패:', error);
             showError(error.message || '검색 결과를 불러오는 중 오류가 발생했습니다.');

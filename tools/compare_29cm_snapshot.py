@@ -27,9 +27,10 @@ from google.cloud import storage
 
 # 서비스 모듈 임포트
 from dashboard.services.compare_29cm_service import (
-    get_competitor_keywords,
+    get_competitor_brands,
+    get_own_brand_id,
     load_best_ranking_dict,
-    collect_and_save_search_results,
+    collect_and_save_brand_results,
     load_search_results_from_gcs,
 )
 
@@ -58,16 +59,16 @@ def get_current_week_run_id() -> str:
 
 
 def get_all_companies() -> List[str]:
-    """모든 자사몰 목록 조회"""
+    """모든 자사몰 목록 조회 (brandId 기반 테이블에서)"""
     client = bigquery.Client(project=PROJECT_ID)
-    
+
     query = f"""
     SELECT DISTINCT company_name
-    FROM `{PROJECT_ID}.{DATASET}.company_competitor_keywords`
+    FROM `{PROJECT_ID}.{DATASET}.company_competitor_brands`
     WHERE is_active = TRUE
     ORDER BY company_name
     """
-    
+
     try:
         rows = client.query(query).result()
         return [row.company_name for row in rows]
@@ -114,100 +115,93 @@ def save_snapshot_to_gcs(run_id: str, snapshot_data: Dict[str, Any]) -> bool:
 
 
 def main():
-    """메인 실행 함수"""
+    """메인 실행 함수 (brandId 기반)"""
     try:
         # 1. 최신 주차 run_id 조회
         run_id = get_current_week_run_id()
         print(f"[INFO] 최신 주차 사용: {run_id}")
-        
+
         # 2. 베스트 목록 로드
         print(f"[INFO] 베스트 목록 로드 중...")
         best_dict = load_best_ranking_dict(run_id)
         print(f"[INFO] 베스트 목록 {len(best_dict)}개 로드 완료")
-        
+
         # 3. 모든 자사몰 조회
         companies = get_all_companies()
         print(f"[INFO] 자사몰 {len(companies)}개 발견")
-        
-        # 4. 각 자사몰별로 검색 결과 수집 (자사몰 + 경쟁사)
+
+        # 4. 각 자사몰별로 브랜드 데이터 수집 (자사몰 + 경쟁사)
         all_results = {}
-        
-        # company_mapping 임포트
-        try:
-            sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'tools'))
-            from config.company_mapping import get_company_brands, get_company_korean_name
-            COMPANY_MAPPING_AVAILABLE = True
-        except:
-            COMPANY_MAPPING_AVAILABLE = False
-            def get_company_brands(name): return []
-            def get_company_korean_name(name): return None
-        
+
         for company_name in companies:
             print(f"\n[INFO] === {company_name} 처리 시작 ===")
-            
-            company_results = {}
-            
-            # 1. 자사몰 검색어 수집 (company_mapping에서 브랜드명 가져오기)
-            if COMPANY_MAPPING_AVAILABLE:
-                brands = get_company_brands(company_name)
-                if brands:
-                    own_brand = brands[0]  # 첫 번째 브랜드명 사용
-                    print(f"[INFO] 자사몰 검색어: {own_brand}")
-                    
-                    success = collect_and_save_search_results(
-                        company_name=company_name,
-                        search_keyword=own_brand,
-                        run_id=run_id,
-                        best_dict=best_dict
-                    )
-                    
-                    if success:
-                        # GCS 스냅샷에서 로드
-                        keyword_results = load_search_results_from_gcs(company_name, run_id)
-                        if keyword_results and own_brand in keyword_results:
-                            # 자사몰 탭 표시명 결정
-                            korean_name = get_company_korean_name(company_name)
-                            display_name = korean_name or company_name
-                            company_results[display_name] = keyword_results[own_brand]
-            
-            # 2. 경쟁사 검색어 조회 및 수집
-            competitor_keywords = get_competitor_keywords(company_name)
-            if not competitor_keywords:
-                print(f"[WARN] {company_name}의 경쟁사 검색어 없음")
+
+            collected_brands = []
+
+            # 1. 자사몰 브랜드 ID 조회 및 수집
+            own_brand_id = get_own_brand_id(company_name)
+            if own_brand_id:
+                print(f"[INFO] 자사몰 브랜드 ID: {own_brand_id}")
+
+                brand_name = collect_and_save_brand_results(
+                    company_name=company_name,
+                    brand_id=own_brand_id,
+                    run_id=run_id,
+                    best_dict=best_dict,
+                    is_own_mall=True
+                )
+
+                if brand_name:
+                    collected_brands.append({
+                        "brand_id": own_brand_id,
+                        "brand_name": brand_name,
+                        "is_own_mall": True
+                    })
             else:
-                print(f"[INFO] 경쟁사 {len(competitor_keywords)}개 발견")
-                
-                for comp_info in competitor_keywords:
-                    keyword = comp_info["competitor_keyword"]
-                    display_name = comp_info.get("display_name", keyword)
-                    
-                    # 검색 결과 수집 및 저장
-                    success = collect_and_save_search_results(
+                print(f"[WARN] {company_name}의 자사몰 브랜드 ID 없음")
+
+            # 2. 경쟁사 브랜드 조회 및 수집
+            competitor_brands = get_competitor_brands(company_name)
+            if not competitor_brands:
+                print(f"[WARN] {company_name}의 경쟁사 브랜드 없음")
+            else:
+                print(f"[INFO] 경쟁사 브랜드 {len(competitor_brands)}개 발견")
+
+                for brand_info in competitor_brands:
+                    brand_id = brand_info["brand_id"]
+                    display_name = brand_info.get("display_name") or brand_info.get("brand_name")
+
+                    print(f"[INFO] 경쟁사 수집: brand_id={brand_id}")
+
+                    # 브랜드 ID로 상품 수집 및 저장
+                    brand_name = collect_and_save_brand_results(
                         company_name=company_name,
-                        search_keyword=keyword,
+                        brand_id=brand_id,
                         run_id=run_id,
-                        best_dict=best_dict
+                        best_dict=best_dict,
+                        is_own_mall=False
                     )
-                    
-                    if success:
-                        # GCS 스냅샷에서 로드
-                        keyword_results = load_search_results_from_gcs(company_name, run_id)
-                        if keyword_results and keyword in keyword_results:
-                            company_results[display_name] = keyword_results[keyword]
-            
-            if company_results:
-                all_results[company_name] = company_results
-        
+
+                    if brand_name:
+                        collected_brands.append({
+                            "brand_id": brand_id,
+                            "brand_name": brand_name,
+                            "is_own_mall": False
+                        })
+
+            if collected_brands:
+                all_results[company_name] = collected_brands
+
         # 5. 완료 메시지
-        # 주의: 각 검색어별로 collect_and_save_search_results가 호출될 때마다
-        # save_search_results_to_gcs가 스냅샷을 업데이트하므로, 여기서는 별도 저장 불필요
         if all_results:
             print(f"\n[INFO] ✅ 전체 수집 완료 ({len(all_results)}개 자사몰)")
-            for company_name, results in all_results.items():
-                print(f"  - {company_name}: {len(results)}개 검색어")
+            for company_name, brands in all_results.items():
+                own_count = sum(1 for b in brands if b["is_own_mall"])
+                comp_count = len(brands) - own_count
+                print(f"  - {company_name}: 자사몰 {own_count}개, 경쟁사 {comp_count}개")
         else:
             print(f"\n[WARN] 수집된 데이터 없음")
-        
+
     except Exception as e:
         print(f"[ERROR] 메인 실행 실패: {e}")
         import traceback

@@ -66,7 +66,7 @@ def build_brand_payload(brand_id: int, page: int = 1, size: int = 50) -> dict:
     """
     return {
         "brandId": brand_id,
-        "pageType": "BRAND",  # 브랜드 페이지 타입
+        "pageType": "BRAND_HOME",  # 브랜드 홈 페이지 타입
         "sortType": "MOST_SOLD",  # 판매순 정렬
         "facets": {},
         "pageRequest": {"page": page, "size": size},

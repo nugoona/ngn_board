@@ -187,7 +187,7 @@ def build_brand_payload(brand_id: int, page: int = 1, size: int = 50) -> dict:
     """브랜드 ID 기반 API payload 생성"""
     return {
         "brandId": brand_id,
-        "pageType": "BRAND",
+        "pageType": "BRAND_HOME",
         "sortType": "MOST_SOLD",  # 판매순 정렬
         "facets": {},
         "pageRequest": {"page": page, "size": size},

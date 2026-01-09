@@ -14,8 +14,8 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 
-# 29CM API 설정 - 브랜드별 상품 목록 API
-BRAND_ITEMS_API_URL = "https://display-bff-api.29cm.co.kr/api/v4/brand/{brand_id}/items"
+# 29CM API 설정
+LISTING_API_URL = "https://display-bff-api.29cm.co.kr/api/v1/listing/items?colorchipVariant=treatment"
 
 HEADERS = {
     "User-Agent": (
@@ -24,6 +24,7 @@ HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     ),
     "Accept": "application/json, text/plain, */*",
+    "Content-Type": "application/json",
     "Origin": "https://www.29cm.co.kr",
     "Referer": "https://www.29cm.co.kr/",
 }
@@ -49,20 +50,30 @@ def safe_float(v) -> Optional[float]:
         return None
 
 
-def get_json(url: str, headers: dict) -> dict:
-    """GET JSON 요청"""
-    req = Request(url, headers=headers, method="GET")
+def post_json(url: str, headers: dict, payload: dict) -> dict:
+    """POST JSON 요청"""
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = Request(url, data=body, headers=headers, method="POST")
     with urlopen(req, timeout=40) as resp:
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
-def build_brand_url(brand_id: int, page: int = 1, size: int = 50, sort: str = "BEST") -> str:
+def build_brand_payload(brand_id: int, page: int = 1, size: int = 50) -> dict:
     """
-    브랜드별 상품 목록 API URL 생성
-    - sort: BEST (베스트순), NEW (신상품순), LOW_PRICE, HIGH_PRICE
+    브랜드 ID 기반 API payload 생성
+    - frontBrandNo를 facets.brandFacetInputs 안에 설정
+    - sortType: MOST_SOLD (판매순/베스트순)
     """
-    base_url = BRAND_ITEMS_API_URL.format(brand_id=brand_id)
-    return f"{base_url}?sort={sort}&page={page}&size={size}"
+    return {
+        "pageType": "BRAND_HOME",
+        "sortType": "MOST_SOLD",
+        "facets": {
+            "brandFacetInputs": [
+                {"frontBrandNo": brand_id}
+            ]
+        },
+        "pageRequest": {"page": page, "size": size},
+    }
 
 
 def extract_top20(resp: dict, brand_id: int) -> tuple:
@@ -96,17 +107,17 @@ def extract_top20(resp: dict, brand_id: int) -> tuple:
 
 
 def fetch_brand_products(brand_id: int) -> tuple:
-    """브랜드 ID로 상품 목록 조회 (GET 방식)
+    """브랜드 ID로 상품 목록 조회 (POST 방식)
 
     Returns:
         (products, brand_name): 상품 목록과 브랜드명
     """
     try:
-        url = build_brand_url(brand_id, sort="BEST")
+        payload = build_brand_payload(brand_id)
         headers = dict(HEADERS)
         headers["Referer"] = f"https://www.29cm.co.kr/store/brand/{brand_id}"
 
-        resp = get_json(url, headers)
+        resp = post_json(LISTING_API_URL, headers, payload)
         return extract_top20(resp, brand_id)
     except HTTPError as e:
         body = e.read().decode("utf-8", errors="replace")
@@ -154,7 +165,8 @@ def main():
     """메인 실행 함수"""
     print("=" * 60)
     print("29CM 브랜드 ID 기반 상품 수집 테스트")
-    print(f"API: {BRAND_ITEMS_API_URL}")
+    print(f"API: {LISTING_API_URL}")
+    print("facets.brandFacetInputs[].frontBrandNo 사용")
     print("=" * 60)
     print()
 

@@ -437,7 +437,7 @@
             dateTimeStr = `${year}년 ${month}-${day} ${ampm} ${displayHours}시${minutes !== '00' ? minutes + '분' : ''}`;
         }
         
-        infoText.innerHTML = `<span class="compare-info-date">${dateTimeStr} 기준</span> - <span class="compare-info-type">추천순 TOP20 / 주간 베스트 상품</span>`;
+        infoText.innerHTML = `<span class="compare-info-date">${dateTimeStr} 기준</span> - <span class="compare-info-type">판매순 TOP20 / 주간 베스트 상품</span>`;
     }
     
     /**

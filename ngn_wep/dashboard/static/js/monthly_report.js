@@ -1283,12 +1283,36 @@ function renderSection7(data) {
     
     // section7Data가 있고, 비어있지 않은 객체인지 확인
     if (section7Data && typeof section7Data === 'object' && Object.keys(section7Data).length > 0) {
+      console.log("[섹션 7] section7Data 구조:", section7Data);
+      
       // 백엔드에서 구조화된 JSON 데이터 사용
       for (const [key, value] of Object.entries(section7Data)) {
         if (typeof value === 'object' && value !== null) {
-          const marketValue = value.market || value.trend || value["29cm"] || "-";
-          const companyValue = value.company || value.our || value.ours || value[companyName.toLowerCase()] || "-";
+          console.log(`[섹션 7] 키: ${key}, 값:`, value);
+          
+          // market 값 찾기 (여러 필드명 시도)
+          const marketValue = value.market || 
+                             value.trend || 
+                             value["29cm"] || 
+                             value["29CM"] ||
+                             value.market_value ||
+                             value.market_data ||
+                             (typeof value === 'string' ? value : "-");
+          
+          // company 값 찾기 (여러 필드명 시도)
+          const companyValue = value.company || 
+                              value.our || 
+                              value.ours || 
+                              value.own ||
+                              value.own_mall ||
+                              value[companyName.toLowerCase()] ||
+                              value["piscess"] ||
+                              value["demo"] ||
+                              "-";
+          
           const label = key.replace(/_/g, " ");
+          
+          console.log(`[섹션 7] 행 추가: ${label}, market=${marketValue}, company=${companyValue}`);
           
           rows.push(`
             <tr>
@@ -1297,8 +1321,22 @@ function renderSection7(data) {
               <td>${companyValue}</td>
             </tr>
           `);
+        } else if (typeof value === 'string') {
+          // 값이 문자열인 경우도 처리 (하위 호환성)
+          const label = key.replace(/_/g, " ");
+          rows.push(`
+            <tr>
+              <td>${label}</td>
+              <td>-</td>
+              <td>${value}</td>
+            </tr>
+          `);
         }
       }
+      
+      console.log(`[섹션 7] 총 ${rows.length}개 행 생성`);
+    } else {
+      console.warn("[섹션 7] section7Data가 없거나 비어있음:", section7Data);
     }
     
     // 데이터가 없거나 비어있으면 기본 항목 표시

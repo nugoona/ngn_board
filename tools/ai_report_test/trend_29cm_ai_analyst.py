@@ -14,32 +14,42 @@ from typing import Dict, Optional, Any
 # .env 파일에서 환경 변수 로드
 try:
     from dotenv import load_dotenv
+    from pathlib import Path
+    
     # 여러 경로에서 .env 파일 찾기 시도
     env_loaded = False
     
-    # 1. 현재 작업 디렉토리에서 찾기
-    cwd_env = os.path.join(os.getcwd(), ".env")
-    if os.path.exists(cwd_env):
-        load_dotenv(cwd_env, override=True)
+    # 1. ~/ngn_board/config/ngn.env (우선순위 1 - 로컬 실행용)
+    home_env = Path.home() / "ngn_board" / "config" / "ngn.env"
+    if home_env.exists():
+        load_dotenv(home_env, override=False)  # 이미 설정된 환경 변수는 덮어쓰지 않음
         env_loaded = True
-        print(f"✅ [INFO] .env 파일 로드됨: {cwd_env}", file=sys.stderr)
+        print(f"✅ [INFO] 환경 변수 파일 로드됨: {home_env}", file=sys.stderr)
     
-    # 2. 스크립트 위치 기준으로 프로젝트 루트 찾기 (ngn_board)
+    # 2. 현재 작업 디렉토리에서 찾기
+    if not env_loaded:
+        cwd_env = os.path.join(os.getcwd(), ".env")
+        if os.path.exists(cwd_env):
+            load_dotenv(cwd_env, override=False)
+            env_loaded = True
+            print(f"✅ [INFO] .env 파일 로드됨: {cwd_env}", file=sys.stderr)
+    
+    # 3. 스크립트 위치 기준으로 프로젝트 루트 찾기 (ngn_board)
     if not env_loaded:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         # tools/ai_report_test/ -> tools/ -> 프로젝트 루트 (ngn_board)
         project_root = os.path.dirname(os.path.dirname(script_dir))
         env_path = os.path.join(project_root, ".env")
         if os.path.exists(env_path):
-            load_dotenv(env_path, override=True)
+            load_dotenv(env_path, override=False)
             env_loaded = True
             print(f"✅ [INFO] .env 파일 로드됨: {env_path}", file=sys.stderr)
         else:
             print(f"⚠️ [DEBUG] .env 파일을 찾을 수 없습니다: {env_path}", file=sys.stderr)
     
-    # 3. 기본 load_dotenv() 시도 (현재 디렉토리 및 상위 디렉토리 자동 탐색)
+    # 4. 기본 load_dotenv() 시도 (현재 디렉토리 및 상위 디렉토리 자동 탐색)
     if not env_loaded:
-        load_dotenv(override=True)  # .env 파일이 없어도 에러 없이 진행
+        load_dotenv(override=False)  # .env 파일이 없어도 에러 없이 진행
         
 except ImportError:
     print("⚠️ [WARN] python-dotenv 패키지가 설치되지 않았습니다.", file=sys.stderr)
@@ -71,7 +81,22 @@ except ImportError:
     print("   설치: pip install google-genai", file=sys.stderr)
 
 # 환경 변수
+# GEMINI_API_KEY 로드 (여러 소스에서 확인)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    # 환경 변수가 없으면 ~/ngn_board/config/ngn.env에서 직접 로드 시도
+    from pathlib import Path
+    home_env = Path.home() / "ngn_board" / "config" / "ngn.env"
+    if home_env.exists():
+        with open(home_env, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('GEMINI_API_KEY=') and not line.startswith('#'):
+                    GEMINI_API_KEY = line.split('=', 1)[1].strip().strip('"').strip("'")
+                    os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
+                    print(f"✅ [INFO] GEMINI_API_KEY를 {home_env}에서 로드함", file=sys.stderr)
+                    break
+
 GEMINI_MODEL = "gemini-2.5-flash"
 
 # 핵심 6대 카테고리

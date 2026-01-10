@@ -283,29 +283,45 @@
     }
 
     .admake-guide-line-4-5 {
-      /* 4:5 비율 가이드 - 중앙 정렬 (수학적 정확도) */
+      /* 4:5 비율 가이드 - 완전한 박스 형태 */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
       height: 70.31%; /* 9:16 대비 4:5 세로 비율 */
-      border: 2px dashed rgba(255, 255, 255, 0.5);
+      border: 2px dashed rgba(255, 255, 255, 0.6);
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      /* 모든 면에 border 표시 */
+      border-top: 2px dashed rgba(255, 255, 255, 0.6);
+      border-right: 2px dashed rgba(255, 255, 255, 0.6);
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.6);
+      border-left: 2px dashed rgba(255, 255, 255, 0.6);
     }
 
     .admake-guide-line-1-1 {
-      /* 1:1 비율 가이드 - 중앙 정사각형 (수학적 정확도) */
+      /* 1:1 비율 가이드 - 완전한 박스 형태 */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
       height: 56.25%; /* 9:16 대비 1:1 세로 비율 */
-      border: 2px dashed rgba(255, 255, 255, 0.7);
+      border: 2px dashed rgba(255, 255, 255, 0.8);
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      /* 모든 면에 border 표시 */
+      border-top: 2px dashed rgba(255, 255, 255, 0.8);
+      border-right: 2px dashed rgba(255, 255, 255, 0.8);
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.8);
+      border-left: 2px dashed rgba(255, 255, 255, 0.8);
+    }
+    
+    /* 선택된 비율에 따라 가이드라인 표시/숨김 */
+    .admake-guide-line-4-5.hidden,
+    .admake-guide-line-1-1.hidden {
+      display: none;
     }
 
     /* ✅ 가이드 라벨 외부 배치 (좌측 바깥쪽) */
@@ -342,15 +358,15 @@
     }
 
     .admake-guide-label-4-5 {
-      /* 4:5 라벨 - 4:5 가이드 시작 높이 (50% - 35.155% = 14.845%) */
-      /* 가이드라인은 중앙(50%)에서 시작하므로, 상단에서 14.845% 위치 */
-      margin-top: calc(14.845% - 14px); /* 라벨 높이 절반 보정 */
+      /* 4:5 라벨 - 4:5 가이드 상단 높이 */
+      /* 가이드라인 높이 70.31%, 중앙(50%)에서 시작하므로 상단은 50% - 35.155% = 14.845% */
+      margin-top: calc(14.845% - 16px); /* 라벨 높이 보정 */
     }
 
     .admake-guide-label-1-1 {
-      /* 1:1 라벨 - 1:1 가이드 시작 높이 (50% - 28.125% = 21.875%) */
-      /* 가이드라인은 중앙(50%)에서 시작하므로, 상단에서 21.875% 위치 */
-      margin-top: calc(21.875% - 14px); /* 라벨 높이 절반 보정 */
+      /* 1:1 라벨 - 1:1 가이드 상단 높이 */
+      /* 가이드라인 높이 56.25%, 중앙(50%)에서 시작하므로 상단은 50% - 28.125% = 21.875% */
+      margin-top: calc(21.875% - 16px); /* 라벨 높이 보정 */
     }
 
     /* ✅ 크롭 컨트롤 스타일 (컨테이너와 동일한 너비) */
@@ -699,6 +715,7 @@
       <div class="admake-guide-container" id="guideContainer">
         <div class="admake-guide-preview" id="guidePreview">
           <canvas class="admake-crop-canvas" id="cropCanvas" style="display: none;"></canvas>
+          <!-- 가이드라인 (비율에 따라 표시/숨김) -->
           <div class="admake-guide-line admake-guide-line-4-5"></div>
           <div class="admake-guide-line admake-guide-line-1-1"></div>
           <div id="placeholderText" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 14px; text-align: center; z-index: 2; pointer-events: none;">
@@ -713,11 +730,24 @@
     
     <!-- 크롭 컨트롤 (이미지일 때만 표시) -->
     <div class="admake-crop-controls" id="cropControls" style="display: none;">
+      <!-- 자르기 비율 버튼 (Toggle Group) -->
+      <div class="admake-ratio-buttons">
+        <button class="admake-ratio-btn active" id="ratioBtn916" data-ratio="9/16" title="9:16 비율로 자르기">9:16</button>
+        <button class="admake-ratio-btn" id="ratioBtn45" data-ratio="4/5" title="4:5 비율로 자르기">4:5</button>
+        <button class="admake-ratio-btn" id="ratioBtn11" data-ratio="1/1" title="1:1 비율로 자르기">1:1</button>
+      </div>
+      <div style="font-size: 11px; color: #6b7280; margin-top: -8px; margin-bottom: 12px; text-align: center;">
+        비율을 선택하면 해당 비율로 자동 자르기됩니다
+      </div>
+      
+      <!-- 확대/축소 슬라이더 -->
       <div class="admake-zoom-control">
         <span class="admake-zoom-label">확대/축소</span>
         <input type="range" id="zoomSlider" class="admake-zoom-slider" min="1" max="3" step="0.1" value="1">
         <span class="admake-zoom-value" id="zoomValue">100%</span>
       </div>
+      
+      <!-- 확인 버튼 -->
       <button class="admake-btn admake-btn-primary" id="confirmBtn" style="margin-top: 16px; width: 100%;">
         이 미디어 확인 완료
       </button>
@@ -1080,7 +1110,7 @@ function endDrag() {
   }
 }
 
-// ✅ 이미지 그리기 (비율 제한 적용)
+// ✅ 이미지 그리기 (비율 제한 적용 - 실제 자르기)
 function drawImage() {
   if (!currentImage || !ctx) return;
   
@@ -1099,14 +1129,15 @@ function drawImage() {
   const maxY = Math.max(0, imgHeight - cropArea.height);
   
   // currentX, currentY를 크롭 영역 기준으로 조정
-  // currentX, currentY는 이미 크롭 영역 기준으로 저장되어 있음
-  const relativeX = currentX - cropX;
-  const relativeY = currentY - cropY;
+  // currentX, currentY는 절대 좌표로 저장되어 있음
+  let relativeX = currentX - cropX;
+  let relativeY = currentY - cropY;
   
+  // 크롭 영역 내에서만 이동 가능하도록 제한
   const finalX = Math.max(-maxX, Math.min(0, relativeX));
   const finalY = Math.max(-maxY, Math.min(0, relativeY));
   
-  // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용)
+  // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용 - 실제 자르기)
   ctx.save();
   ctx.beginPath();
   ctx.rect(cropX, cropY, cropArea.width, cropArea.height);
@@ -1122,7 +1153,7 @@ function drawImage() {
   
   ctx.restore();
   
-  // currentX, currentY 업데이트 (크롭 영역 기준)
+  // currentX, currentY 업데이트 (절대 좌표로 저장)
   currentX = cropX + finalX;
   currentY = cropY + finalY;
 }
@@ -1176,20 +1207,20 @@ function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio)
   const imgAspect = img.width / img.height;
   const cropAspect = cropArea.width / cropArea.height;
   
-  // 최소 확대 비율 계산 (빈 공간이 절대 보이지 않도록 - 더 엄격하게)
+  // 최소 확대 비율 계산 (빈 공간이 절대 보이지 않도록 - 엄격하게)
   // 이미지가 크롭 영역을 완전히 채우는 최소 배율
   minZoom = Math.max(
     cropArea.width / img.width,
     cropArea.height / img.height
   );
   
-  // 초기 배율: 너비에 맞춤 우선 (사용자 요청)
-  // 이미지가 크롭 영역 너비에 맞게 표시되도록
-  let initialZoom = cropArea.width / img.width;
+  // 초기 배율: 너비에 맞춤 우선 (사용자 요청 - 처음에 너무 크게 나오지 않도록)
+  // 이미지가 크롭 영역 너비에 딱 맞게 표시되도록 (70% 정도로 작게 시작)
+  let initialZoom = (cropArea.width / img.width) * 0.7; // 70%로 시작
   
-  // 하지만 높이가 부족하면 높이 기준으로 조정
-  if (img.height * initialZoom < cropArea.height) {
-    initialZoom = cropArea.height / img.height;
+  // 높이가 부족하면 높이 기준으로 조정하되, 여전히 70% 정도로
+  if (img.height * initialZoom < cropArea.height * 0.7) {
+    initialZoom = (cropArea.height / img.height) * 0.7;
   }
   
   // 최소값보다 작으면 최소값 사용 (여백 방지)
@@ -1273,10 +1304,34 @@ function updateRatioButtons() {
   });
 }
 
-// ✅ 비율 변경 처리
+// ✅ 가이드라인 표시/숨김 업데이트
+function updateGuideLines() {
+  const guide45 = document.querySelector('.admake-guide-line-4-5');
+  const guide11 = document.querySelector('.admake-guide-line-1-1');
+  
+  if (guide45 && guide11) {
+    // 선택된 비율에 따라 가이드라인 표시
+    if (currentAspectRatio === 4/5) {
+      guide45.classList.remove('hidden');
+      guide11.classList.add('hidden');
+    } else if (currentAspectRatio === 1/1) {
+      guide45.classList.add('hidden');
+      guide11.classList.remove('hidden');
+    } else {
+      // 9:16일 때는 둘 다 표시
+      guide45.classList.remove('hidden');
+      guide11.classList.remove('hidden');
+    }
+  }
+}
+
+// ✅ 비율 변경 처리 (실제 자르기 연동)
 function changeAspectRatio(ratio) {
   currentAspectRatio = ratio;
   updateRatioButtons();
+  updateGuideLines(); // 가이드라인 업데이트
+  
+  console.log(`[DEBUG] 비율 변경: ${ratio} (${ratio === 9/16 ? '9:16' : ratio === 4/5 ? '4:5' : '1:1'})`);
   
   if (currentImage && containerWidth > 0 && containerHeight > 0) {
     // 새로운 비율에 맞는 크롭 영역 계산
@@ -1419,6 +1474,8 @@ async function selectMedia(index) {
       loadCropState(item, img);
       // 비율 버튼 상태 업데이트
       updateRatioButtons();
+      // 가이드라인 표시 업데이트
+      updateGuideLines();
       drawImage();
     };
     img.onerror = async () => {
@@ -1824,9 +1881,24 @@ async function uploadToMeta() {
   }
 }
 
+// ✅ 비율 버튼 이벤트 등록
+function setupRatioButtons() {
+  document.querySelectorAll('.admake-ratio-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ratioStr = btn.getAttribute('data-ratio');
+      const ratio = eval(ratioStr); // "9/16" -> 0.5625, "4/5" -> 0.8, "1/1" -> 1
+      console.log(`[DEBUG] 비율 버튼 클릭: ${ratioStr} (${ratio})`);
+      changeAspectRatio(ratio);
+    });
+  });
+}
+
 // ✅ 초기화
 document.addEventListener('DOMContentLoaded', async () => {
   initCanvas();
+  
+  // 비율 버튼 이벤트 등록
+  setupRatioButtons();
   
   // Step 2 초기화 (데이터 복구 강화)
   await initStep2();
@@ -1835,6 +1907,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (mediaItems.length === 0) {
     await loadStep1Data();
   }
+  
+  // 초기 가이드라인 표시
+  updateGuideLines();
   
   updateUploadButtonState(); // 초기 버튼 상태 설정
 });

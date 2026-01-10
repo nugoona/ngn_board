@@ -2129,7 +2129,7 @@ th.sortable.desc::after {
 /* ✅ ADMAKE 버튼 (카탈로그 버튼 위에 배치) */
 .admake-toggle-btn {
   position: fixed;
-  bottom: 96px; /* 카탈로그 버튼 위 (20px + 36px*2 + 4px 간격) */
+  bottom: 192px; /* 카탈로그 버튼 위에 간격을 두고 배치 (트렌드 페이지와 동일한 간격) */
   right: 0;
   background-color: #6B46C1; /* 보라색 - 카탈로그와 다른 색상 */
   color: #ffffff;

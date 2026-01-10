@@ -98,6 +98,8 @@
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
+      position: relative;
+      z-index: 1;
     }
 
     .admake-upload-area:hover {
@@ -480,23 +482,54 @@ function setupEventListeners() {
     fileInput.value = ''; // 같은 파일 재선택 가능하도록 초기화
   });
 
-  // 드래그 앤 드롭
-  uploadArea.addEventListener('dragover', (e) => {
+  // 드래그 앤 드롭 - 업로드 영역
+  uploadArea.addEventListener('dragenter', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     uploadArea.classList.add('dragover');
   });
 
-  uploadArea.addEventListener('dragleave', () => {
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     uploadArea.classList.remove('dragover');
   });
 
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     uploadArea.classList.remove('dragover');
+    
     const files = Array.from(e.dataTransfer.files).filter(file => 
       file.type.startsWith('image/') || file.type.startsWith('video/')
     );
-    handleFiles(files);
+    
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  });
+
+  // 전체 페이지 레벨에서 드래그 앤 드롭 기본 동작 방지
+  document.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 업로드 영역 밖에 드롭된 경우 무시
   });
   
   // URL 입력 감지 (URL은 선택사항이므로 버튼 상태는 변경하지 않음)

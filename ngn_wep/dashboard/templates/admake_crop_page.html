@@ -366,7 +366,7 @@
       top: 21.875%;
     }
 
-    /* ✅ 크롭 컨트롤 스타일 (컨테이너와 동일한 너비) */
+    /* ✅ 크롭 컨트롤 스타일 (컨테이너와 동일한 너비, 화면 중앙 정렬) */
     .admake-crop-controls {
       margin-top: 24px;
       width: 100%;
@@ -374,7 +374,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center; /* 내부 요소 중앙 정렬 */
       gap: 16px;
+      margin-left: auto;
+      margin-right: auto; /* 화면 중앙 배치 */
     }
 
     /* ✅ 자르기 비율 버튼 그룹 */
@@ -422,8 +425,11 @@
     .admake-zoom-control {
       display: flex;
       align-items: center;
+      justify-content: center; /* 중앙 정렬 */
       gap: 16px;
       width: 100%;
+      max-width: 315px; /* 컨테이너와 동일 */
+      margin: 0 auto; /* 가로 중앙 */
       margin-bottom: 0;
     }
 
@@ -1098,16 +1104,19 @@ function onDrag(e) {
   drawImage();
 }
 
-// ✅ 드래그 종료
+// ✅ 드래그 종료 (상태 저장 + IndexedDB 동기화)
 function endDrag() {
   if (isDragging) {
     isDragging = false;
     canvas.style.cursor = 'move';
     saveCropState();
+
+    // IndexedDB 상태 동기화 (드래그 완료 시점에 저장)
+    syncCropStateToIndexedDB();
   }
 }
 
-// ✅ 이미지 그리기 (비율 제한 적용 - 여백 원천 차단)
+// ✅ 이미지 그리기 (restrictPosition: true 효과 - 여백 원천 차단)
 function drawImage() {
   if (!currentImage || !ctx) return;
 
@@ -1118,8 +1127,10 @@ function drawImage() {
   const cropX = (containerWidth - cropArea.width) / 2;
   const cropY = (containerHeight - cropArea.height) / 2;
 
-  // 현재 줌이 minZoom보다 작으면 강제로 minZoom으로 조정 (여백 방지)
+  // ===== restrictPosition: true 효과 - 줌 강제 보정 =====
+  // 현재 줌이 minZoom보다 작으면 강제로 minZoom으로 조정 (여백 원천 차단)
   if (currentZoom < minZoom) {
+    console.log(`[RESTRICT] 줌 강제 보정: ${currentZoom.toFixed(4)} → ${minZoom.toFixed(4)}`);
     currentZoom = minZoom;
     const zoomSlider = document.getElementById('zoomSlider');
     const zoomValue = document.getElementById('zoomValue');
@@ -1130,25 +1141,26 @@ function drawImage() {
   const imgWidth = currentImage.width * currentZoom;
   const imgHeight = currentImage.height * currentZoom;
 
-  // ===== 여백 원천 차단: 엄격한 경계 제한 =====
-  // 이미지가 크롭 영역을 벗어나지 않도록 (여백이 절대 보이지 않게)
-  // 이미지 좌상단이 크롭 영역 좌상단보다 우측/하단에 있으면 안됨 (좌측/상단 여백 방지)
-  // 이미지 우하단이 크롭 영역 우하단보다 좌측/상단에 있으면 안됨 (우측/하단 여백 방지)
+  // ===== restrictPosition: true 효과 - 엄격한 경계 제한 =====
+  // 이미지 경계가 프레임 안으로 들어오는 것을 절대 허용하지 않음
+  // 1. 이미지 좌상단이 프레임 좌상단보다 우측/하단에 있으면 안됨 (좌측/상단 여백 방지)
+  // 2. 이미지 우하단이 프레임 우하단보다 좌측/상단에 있으면 안됨 (우측/하단 여백 방지)
 
   // currentX, currentY를 크롭 영역 기준으로 조정
   let relativeX = currentX - cropX;
   let relativeY = currentY - cropY;
 
-  // 좌측/상단 경계: relativeX/Y <= 0 (이미지가 왼쪽/위로 벗어나야 함)
-  // 우측/하단 경계: relativeX/Y >= -(imgWidth/imgHeight - cropArea.width/height)
+  // 경계 계산 (이미지가 프레임보다 클 때만 이동 가능)
+  // 좌측/상단 경계: relativeX/Y <= 0
+  // 우측/하단 경계: relativeX/Y >= -(imgWidth - cropArea.width)
   const minRelativeX = Math.min(0, -(imgWidth - cropArea.width));
   const minRelativeY = Math.min(0, -(imgHeight - cropArea.height));
 
-  // 엄격한 경계 적용
+  // 엄격한 경계 적용 (clamp)
   const finalX = Math.max(minRelativeX, Math.min(0, relativeX));
   const finalY = Math.max(minRelativeY, Math.min(0, relativeY));
 
-  // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용 - 실제 자르기)
+  // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용 - 프레임 밖 잘라내기)
   ctx.save();
   ctx.beginPath();
   ctx.rect(cropX, cropY, cropArea.width, cropArea.height);
@@ -1169,7 +1181,7 @@ function drawImage() {
   currentY = cropY + finalY;
 }
 
-// ✅ 크롭 상태 저장
+// ✅ 크롭 상태 저장 (메모리 + sessionStorage)
 function saveCropState() {
   if (selectedMediaIndex >= 0 && selectedMediaIndex < mediaItems.length) {
     const item = mediaItems[selectedMediaIndex];
@@ -1180,6 +1192,64 @@ function saveCropState() {
       aspectRatio: currentAspectRatio // 비율도 저장
     };
     // 상태 저장 시 자동으로 확인 처리하지 않음 (사용자가 명시적으로 확인해야 함)
+
+    // sessionStorage에도 상태 저장 (페이지 새로고침 대비)
+    const step1Data = sessionStorage.getItem('admake_step1_state');
+    if (step1Data) {
+      try {
+        const data = JSON.parse(step1Data);
+        const mediaItemIdx = data.mediaItems.findIndex(m => m.id === item.id);
+        if (mediaItemIdx >= 0) {
+          data.mediaItems[mediaItemIdx].cropState = item.cropState;
+          data.mediaItems[mediaItemIdx].isConfirmed = item.isConfirmed;
+          sessionStorage.setItem('admake_step1_state', JSON.stringify(data));
+        }
+      } catch (e) {
+        console.warn('[SYNC] sessionStorage 동기화 실패:', e);
+      }
+    }
+  }
+}
+
+// ✅ IndexedDB 상태 동기화 (비동기 - 끊김 방지)
+async function syncCropStateToIndexedDB() {
+  if (!('indexedDB' in window) || mediaItems.length === 0) return;
+
+  try {
+    const dbName = 'admake_files';
+    const request = indexedDB.open(dbName, 1);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('files')) return;
+
+      const transaction = db.transaction(['files'], 'readwrite');
+      const store = transaction.objectStore('files');
+
+      mediaItems.forEach(item => {
+        if (item.file) {
+          store.put({
+            id: item.id,
+            file: item.file,
+            previewUrl: item.previewUrl,
+            type: item.type,
+            mediaType: item.mediaType,
+            cropState: item.cropState,
+            isConfirmed: item.isConfirmed
+          });
+        }
+      });
+
+      transaction.oncomplete = () => {
+        console.log('[SYNC] IndexedDB 상태 동기화 완료');
+      };
+    };
+
+    request.onerror = (e) => {
+      console.warn('[SYNC] IndexedDB 열기 실패:', e);
+    };
+  } catch (e) {
+    console.warn('[SYNC] IndexedDB 동기화 오류:', e);
   }
 }
 
@@ -1212,30 +1282,31 @@ function getCropAreaSize(containerWidth, containerHeight, aspectRatio) {
   return { width: cropWidth, height: cropHeight };
 }
 
-// ✅ 이미지가 선택된 비율 박스에 맞게 초기 배율 및 최소 배율 계산 (Cover Fit - 여백 없이 꽉 채움)
+// ✅ 고화질 이미지 대응: Cover Fit 최소 배율 계산 (여백 없이 프레임 꽉 채움)
 function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio) {
   const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
 
-  // Cover Fit 계산: 이미지가 크롭 영역을 완전히 채우는 최소 배율
-  // 가로/세로 중 더 큰 비율을 사용해야 빈 공간이 생기지 않음
+  // ===== Cover Fit 계산 (핵심 로직) =====
+  // 이미지 해상도에 관계없이 프레임을 여백 없이 꽉 채우는 최소 배율
+  // 공식: minZoom = Math.max(frameWidth / imageWidth, frameHeight / imageHeight)
   const coverZoom = Math.max(
     cropArea.width / img.width,
     cropArea.height / img.height
   );
 
   // 최소 확대 비율 = Cover Fit 배율 (여백 원천 차단)
-  // 이 값 이하로는 축소 불가능
+  // 이 값 이하로는 절대 축소 불가능 (restrictPosition: true 효과)
   minZoom = coverZoom;
 
-  // 초기 배율: Cover Fit으로 시작 (자동으로 프레임에 꽉 차게)
-  // 여백이 절대 보이지 않도록 Cover Fit 배율 사용
+  // 초기 배율: Cover Fit으로 시작 (자동으로 프레임에 딱 맞게)
   let initialZoom = coverZoom;
 
-  // 슬라이더 최소값도 동적으로 설정 (0.1 이상 보장)
-  minZoom = Math.max(0.1, minZoom);
+  // 고화질 이미지의 경우 minZoom이 매우 작을 수 있으므로 최소 0.01 보장
+  minZoom = Math.max(0.01, minZoom);
 
-  // 최대값은 3으로 제한
-  return Math.min(initialZoom, 3);
+  console.log(`[MASTER FIX] Cover Fit 계산: 이미지(${img.width}x${img.height}), 프레임(${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)}), minZoom=${minZoom.toFixed(4)}, initialZoom=${initialZoom.toFixed(4)}`);
+
+  return initialZoom;
 }
 
 // ✅ 크롭 상태 불러오기 (초기 화면 최적화: 9:16 디폴트, 여백 없이)
@@ -1280,15 +1351,20 @@ function loadCropState(item, img = null) {
     }
   }
   
-  // UI 업데이트
+  // UI 업데이트 (슬라이더 범위 동적 설정: min=minZoom, max=minZoom*3)
   const zoomSlider = document.getElementById('zoomSlider');
   const zoomValue = document.getElementById('zoomValue');
   if (zoomSlider) {
-    // 슬라이더 최소값 = Cover Fit 배율 (여백 원천 차단)
     if (img && containerWidth > 0 && containerHeight > 0) {
-      // minZoom은 calculateInitialZoom에서 이미 계산됨 (Cover Fit 배율)
-      zoomSlider.min = minZoom; // Cover Fit 이하로 축소 불가
-      zoomSlider.max = 3;
+      // ===== 슬라이더 범위 동적 설정 =====
+      // min: Cover Fit 배율 (이 이하로 축소 불가 - 여백 원천 차단)
+      // max: minZoom * 3 (고화질 이미지에서도 부드러운 확대/축소)
+      const maxZoom = Math.max(minZoom * 3, 1); // 최소 1 보장
+      zoomSlider.min = minZoom;
+      zoomSlider.max = maxZoom;
+      zoomSlider.step = (maxZoom - minZoom) / 100; // 100단계로 분할
+
+      console.log(`[MASTER FIX] 슬라이더 범위: ${minZoom.toFixed(4)} ~ ${maxZoom.toFixed(4)}`);
     }
     zoomSlider.value = currentZoom;
   }
@@ -1364,29 +1440,35 @@ function changeAspectRatio(ratio) {
     currentX = cropX + (cropArea.width - imgWidth) / 2;
     currentY = cropY + (cropArea.height - imgHeight) / 2;
     
-    // 슬라이더 업데이트 (Cover Fit 최소값 적용 - 여백 원천 차단)
+    // 슬라이더 업데이트 (동적 범위: min=minZoom, max=minZoom*3)
     const zoomSlider = document.getElementById('zoomSlider');
     const zoomValue = document.getElementById('zoomValue');
     if (zoomSlider) {
-      zoomSlider.min = minZoom; // Cover Fit 이하로 축소 불가
+      const maxZoom = Math.max(minZoom * 3, 1);
+      zoomSlider.min = minZoom;
+      zoomSlider.max = maxZoom;
+      zoomSlider.step = (maxZoom - minZoom) / 100;
       zoomSlider.value = currentZoom;
     }
     if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
     
     // 이미지 다시 그리기
     drawImage();
-    
+
     // 크롭 상태 저장
     saveCropState();
+
+    // IndexedDB 상태 동기화
+    syncCropStateToIndexedDB();
   }
 }
 
-// ✅ 미디어 확인 처리 (토글 기능 - 확인/취소)
+// ✅ 미디어 확인 처리 (토글 기능 - 확인/수정하기)
 function confirmMedia() {
   if (selectedMediaIndex >= 0 && selectedMediaIndex < mediaItems.length) {
     const item = mediaItems[selectedMediaIndex];
 
-    // 토글: 확인 → 취소 또는 취소 → 확인
+    // 토글: 확인 → 수정 또는 수정 → 확인
     item.isConfirmed = !item.isConfirmed;
     saveCropState(); // 현재 크롭 상태 저장
 
@@ -1394,20 +1476,25 @@ function confirmMedia() {
     const confirmBtn = document.getElementById('confirmBtn');
     if (confirmBtn) {
       if (item.isConfirmed) {
-        // 확인됨 → "수정하기" 버튼으로 변경
+        // 확인됨 → "수정하기" 버튼으로 변경 (다시 클릭하면 수정 가능)
         confirmBtn.textContent = '수정하기';
         confirmBtn.classList.add('confirmed');
         confirmBtn.style.background = '#059669'; // 녹색
+        console.log(`[CONFIRM] 미디어 ${item.id} 확인 완료 (수정하기 클릭 시 취소 가능)`);
       } else {
-        // 취소됨 → "이 미디어 확인 완료" 버튼으로 변경
+        // 수정 모드 → "이 미디어 확인 완료" 버튼으로 변경
         confirmBtn.textContent = '이 미디어 확인 완료';
         confirmBtn.classList.remove('confirmed');
         confirmBtn.style.background = '#111827'; // 기본 검정색
+        console.log(`[CONFIRM] 미디어 ${item.id} 수정 모드로 전환`);
       }
     }
 
     renderMediaList();
     updateUploadButtonState();
+
+    // IndexedDB 상태 동기화 (상태 유지 강화)
+    syncCropStateToIndexedDB();
   }
 }
 
@@ -1635,14 +1722,15 @@ document.getElementById('backBtn').addEventListener('click', async () => {
 // ✅ 업로드 버튼
 document.getElementById('uploadBtn').addEventListener('click', uploadToMeta);
 
-// ✅ 줌 슬라이더 이벤트 (minZoom 엄격 적용)
+// ✅ 줌 슬라이더 이벤트 (restrictPosition 효과 - minZoom 엄격 적용)
 const zoomSlider = document.getElementById('zoomSlider');
 if (zoomSlider) {
   zoomSlider.addEventListener('input', (e) => {
     let newZoom = parseFloat(e.target.value);
 
-    // minZoom보다 작으면 강제로 minZoom으로 조정 (여백 원천 차단)
+    // restrictPosition: true 효과 - minZoom 이하로 축소 불가
     if (newZoom < minZoom) {
+      console.log(`[RESTRICT] 슬라이더 줌 강제 보정: ${newZoom.toFixed(4)} → ${minZoom.toFixed(4)}`);
       newZoom = minZoom;
       e.target.value = minZoom;
     }
@@ -1654,6 +1742,9 @@ if (zoomSlider) {
     if (currentImage) {
       drawImage();
       saveCropState();
+
+      // IndexedDB 상태 동기화 (상태 유지 강화)
+      syncCropStateToIndexedDB();
     }
   });
 }

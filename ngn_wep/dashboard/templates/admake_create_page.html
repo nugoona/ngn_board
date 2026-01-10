@@ -614,7 +614,7 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 // ✅ 다음 버튼 클릭
-nextBtn.addEventListener('click', () => {
+nextBtn.addEventListener('click', async () => {
   if (nextBtn.disabled) return;
   
   // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
@@ -634,15 +634,57 @@ nextBtn.addEventListener('click', () => {
   
   sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
   
-  // File 객체는 IndexedDB나 별도 저장소에 저장해야 하지만,
-  // 현재는 previewUrl을 통해 접근 가능하도록 유지
-  // 실제 구현 시에는 서버에 업로드하거나 IndexedDB 사용 고려
-  
-  hasUnsavedChanges = false;
-  
-  // 다음 Step으로 이동 (현재는 임시로 alert)
-  alert('Step 2로 이동합니다. (구현 예정)');
-  // window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+  // File 객체들을 IndexedDB에 저장 (다음 Step에서 사용)
+  try {
+    // IndexedDB가 지원되는 경우에만 사용
+    if ('indexedDB' in window) {
+      const dbName = 'admake_files';
+      const request = indexedDB.open(dbName, 1);
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('files')) {
+          db.createObjectStore('files', { keyPath: 'id' });
+        }
+      };
+      
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(['files'], 'readwrite');
+        const store = transaction.objectStore('files');
+        
+        mediaItems.forEach(item => {
+          store.put({
+            id: item.id,
+            file: item.file,
+            previewUrl: item.previewUrl,
+            type: item.type,
+            mediaType: item.mediaType
+          });
+        });
+        
+        transaction.oncomplete = () => {
+          hasUnsavedChanges = false;
+          window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+        };
+      };
+      
+      request.onerror = () => {
+        // IndexedDB 실패 시 그냥 진행 (previewUrl만 사용)
+        console.warn('IndexedDB 저장 실패, previewUrl만 사용');
+        hasUnsavedChanges = false;
+        window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+      };
+    } else {
+      // IndexedDB 미지원 시 그냥 진행
+      hasUnsavedChanges = false;
+      window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+    }
+  } catch (e) {
+    console.error('IndexedDB 오류:', e);
+    hasUnsavedChanges = false;
+    window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+  }
 });
 
 // ✅ 취소 버튼 클릭

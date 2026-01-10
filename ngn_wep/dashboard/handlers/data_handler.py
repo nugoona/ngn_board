@@ -1549,6 +1549,31 @@ def create_trend_snapshot():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@data_blueprint.route("/get_meta_token", methods=["POST"])
+def get_meta_token():
+    """Meta API 액세스 토큰 반환 (클라이언트에서 직접 API 호출용)"""
+    try:
+        from ..services.meta_demo_service import load_access_token
+        
+        # 액세스 토큰 가져오기
+        access_token = load_access_token()
+        if not access_token:
+            # 세션에서 토큰 확인
+            access_token = session.get("meta_token")
+            if not access_token:
+                return jsonify({"status": "error", "message": "Meta 액세스 토큰이 없습니다"}), 401
+        
+        return jsonify({
+            "status": "success",
+            "access_token": access_token
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @data_blueprint.route("/trend/tabs", methods=["GET"])
 def get_trend_tabs():
     """사용 가능한 탭 목록 조회"""

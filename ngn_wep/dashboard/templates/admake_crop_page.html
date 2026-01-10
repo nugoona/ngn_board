@@ -324,21 +324,20 @@
       display: none;
     }
 
-    /* ✅ 가이드 라벨 외부 배치 (좌측 바깥쪽) */
+    /* ✅ 가이드 라벨 외부 배치 (좌측 바깥쪽) - 각 라벨 절대 위치 */
     .admake-guide-labels-container {
       position: absolute;
       left: -70px;
       top: 0;
       height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
+      width: 60px;
       z-index: 15;
       pointer-events: none;
     }
 
     .admake-guide-label {
+      position: absolute;
+      left: 0;
       background: rgba(17, 24, 39, 0.9);
       color: #ffffff;
       padding: 6px 10px;
@@ -348,25 +347,23 @@
       letter-spacing: 0.1em;
       white-space: nowrap;
       box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
-      margin-bottom: 4px;
     }
 
     .admake-guide-label-9-16 {
-      /* 9:16 라벨 - 컨테이너 상단 (0%) */
-      margin-top: 0;
-      transform: translateY(0);
+      /* 9:16 라벨 - 컨테이너 상단 (0%) 가이드 박스 상단 정렬 */
+      top: 0;
     }
 
     .admake-guide-label-4-5 {
-      /* 4:5 라벨 - 4:5 가이드 상단 높이 */
-      /* 가이드라인 높이 70.31%, 중앙(50%)에서 시작하므로 상단은 50% - 35.155% = 14.845% */
-      margin-top: calc(14.845% - 16px); /* 라벨 높이 보정 */
+      /* 4:5 라벨 - 4:5 가이드 상단 정렬 */
+      /* 가이드라인 높이 70.31%, 중앙 정렬이므로 상단 = (100% - 70.31%) / 2 = 14.845% */
+      top: 14.845%;
     }
 
     .admake-guide-label-1-1 {
-      /* 1:1 라벨 - 1:1 가이드 상단 높이 */
-      /* 가이드라인 높이 56.25%, 중앙(50%)에서 시작하므로 상단은 50% - 28.125% = 21.875% */
-      margin-top: calc(21.875% - 16px); /* 라벨 높이 보정 */
+      /* 1:1 라벨 - 1:1 가이드 상단 정렬 */
+      /* 가이드라인 높이 56.25%, 중앙 정렬이므로 상단 = (100% - 56.25%) / 2 = 21.875% */
+      top: 21.875%;
     }
 
     /* ✅ 크롭 컨트롤 스타일 (컨테이너와 동일한 너비) */
@@ -1110,39 +1107,53 @@ function endDrag() {
   }
 }
 
-// ✅ 이미지 그리기 (비율 제한 적용 - 실제 자르기)
+// ✅ 이미지 그리기 (비율 제한 적용 - 여백 원천 차단)
 function drawImage() {
   if (!currentImage || !ctx) return;
-  
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   // 선택된 비율에 맞는 크롭 영역 계산
   const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
   const cropX = (containerWidth - cropArea.width) / 2;
   const cropY = (containerHeight - cropArea.height) / 2;
-  
+
+  // 현재 줌이 minZoom보다 작으면 강제로 minZoom으로 조정 (여백 방지)
+  if (currentZoom < minZoom) {
+    currentZoom = minZoom;
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+    if (zoomSlider) zoomSlider.value = currentZoom;
+    if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+  }
+
   const imgWidth = currentImage.width * currentZoom;
   const imgHeight = currentImage.height * currentZoom;
-  
-  // 크롭 영역 내에서만 이미지가 보이도록 제한
-  const maxX = Math.max(0, imgWidth - cropArea.width);
-  const maxY = Math.max(0, imgHeight - cropArea.height);
-  
+
+  // ===== 여백 원천 차단: 엄격한 경계 제한 =====
+  // 이미지가 크롭 영역을 벗어나지 않도록 (여백이 절대 보이지 않게)
+  // 이미지 좌상단이 크롭 영역 좌상단보다 우측/하단에 있으면 안됨 (좌측/상단 여백 방지)
+  // 이미지 우하단이 크롭 영역 우하단보다 좌측/상단에 있으면 안됨 (우측/하단 여백 방지)
+
   // currentX, currentY를 크롭 영역 기준으로 조정
-  // currentX, currentY는 절대 좌표로 저장되어 있음
   let relativeX = currentX - cropX;
   let relativeY = currentY - cropY;
-  
-  // 크롭 영역 내에서만 이동 가능하도록 제한
-  const finalX = Math.max(-maxX, Math.min(0, relativeX));
-  const finalY = Math.max(-maxY, Math.min(0, relativeY));
-  
+
+  // 좌측/상단 경계: relativeX/Y <= 0 (이미지가 왼쪽/위로 벗어나야 함)
+  // 우측/하단 경계: relativeX/Y >= -(imgWidth/imgHeight - cropArea.width/height)
+  const minRelativeX = Math.min(0, -(imgWidth - cropArea.width));
+  const minRelativeY = Math.min(0, -(imgHeight - cropArea.height));
+
+  // 엄격한 경계 적용
+  const finalX = Math.max(minRelativeX, Math.min(0, relativeX));
+  const finalY = Math.max(minRelativeY, Math.min(0, relativeY));
+
   // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용 - 실제 자르기)
   ctx.save();
   ctx.beginPath();
   ctx.rect(cropX, cropY, cropArea.width, cropArea.height);
   ctx.clip();
-  
+
   ctx.drawImage(
     currentImage,
     cropX + finalX,
@@ -1150,9 +1161,9 @@ function drawImage() {
     imgWidth,
     imgHeight
   );
-  
+
   ctx.restore();
-  
+
   // currentX, currentY 업데이트 (절대 좌표로 저장)
   currentX = cropX + finalX;
   currentY = cropY + finalY;
@@ -1201,33 +1212,30 @@ function getCropAreaSize(containerWidth, containerHeight, aspectRatio) {
   return { width: cropWidth, height: cropHeight };
 }
 
-// ✅ 이미지가 선택된 비율 박스에 맞게 초기 배율 및 최소 배율 계산 (너비 우선, 여백 없이)
+// ✅ 이미지가 선택된 비율 박스에 맞게 초기 배율 및 최소 배율 계산 (Cover Fit - 여백 없이 꽉 채움)
 function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio) {
   const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
-  const imgAspect = img.width / img.height;
-  const cropAspect = cropArea.width / cropArea.height;
-  
-  // 최소 확대 비율 계산 (빈 공간이 절대 보이지 않도록 - 엄격하게)
-  // 이미지가 크롭 영역을 완전히 채우는 최소 배율
-  minZoom = Math.max(
+
+  // Cover Fit 계산: 이미지가 크롭 영역을 완전히 채우는 최소 배율
+  // 가로/세로 중 더 큰 비율을 사용해야 빈 공간이 생기지 않음
+  const coverZoom = Math.max(
     cropArea.width / img.width,
     cropArea.height / img.height
   );
-  
-  // 초기 배율: 너비에 맞춤 우선 (사용자 요청 - 처음에 너무 크게 나오지 않도록)
-  // 이미지가 크롭 영역 너비에 딱 맞게 표시되도록 (70% 정도로 작게 시작)
-  let initialZoom = (cropArea.width / img.width) * 0.7; // 70%로 시작
-  
-  // 높이가 부족하면 높이 기준으로 조정하되, 여전히 70% 정도로
-  if (img.height * initialZoom < cropArea.height * 0.7) {
-    initialZoom = (cropArea.height / img.height) * 0.7;
-  }
-  
-  // 최소값보다 작으면 최소값 사용 (여백 방지)
-  initialZoom = Math.max(initialZoom, minZoom);
-  
-  // 최소값은 0.3, 최대값은 3으로 제한
-  return Math.max(0.3, Math.min(initialZoom, 3));
+
+  // 최소 확대 비율 = Cover Fit 배율 (여백 원천 차단)
+  // 이 값 이하로는 축소 불가능
+  minZoom = coverZoom;
+
+  // 초기 배율: Cover Fit으로 시작 (자동으로 프레임에 꽉 차게)
+  // 여백이 절대 보이지 않도록 Cover Fit 배율 사용
+  let initialZoom = coverZoom;
+
+  // 슬라이더 최소값도 동적으로 설정 (0.1 이상 보장)
+  minZoom = Math.max(0.1, minZoom);
+
+  // 최대값은 3으로 제한
+  return Math.min(initialZoom, 3);
 }
 
 // ✅ 크롭 상태 불러오기 (초기 화면 최적화: 9:16 디폴트, 여백 없이)
@@ -1276,10 +1284,10 @@ function loadCropState(item, img = null) {
   const zoomSlider = document.getElementById('zoomSlider');
   const zoomValue = document.getElementById('zoomValue');
   if (zoomSlider) {
-    // 슬라이더 최소값 동적으로 조정 (여백 방지)
+    // 슬라이더 최소값 = Cover Fit 배율 (여백 원천 차단)
     if (img && containerWidth > 0 && containerHeight > 0) {
-      // minZoom은 calculateInitialZoom에서 이미 계산됨
-      zoomSlider.min = Math.max(0.3, minZoom); // 최소값을 엄격하게 (여백 방지)
+      // minZoom은 calculateInitialZoom에서 이미 계산됨 (Cover Fit 배율)
+      zoomSlider.min = minZoom; // Cover Fit 이하로 축소 불가
       zoomSlider.max = 3;
     }
     zoomSlider.value = currentZoom;
@@ -1356,11 +1364,11 @@ function changeAspectRatio(ratio) {
     currentX = cropX + (cropArea.width - imgWidth) / 2;
     currentY = cropY + (cropArea.height - imgHeight) / 2;
     
-    // 슬라이더 업데이트 (여백 방지 - 엄격한 최소값)
+    // 슬라이더 업데이트 (Cover Fit 최소값 적용 - 여백 원천 차단)
     const zoomSlider = document.getElementById('zoomSlider');
     const zoomValue = document.getElementById('zoomValue');
     if (zoomSlider) {
-      zoomSlider.min = Math.max(0.3, minZoom); // 최소값을 엄격하게 (여백 방지)
+      zoomSlider.min = minZoom; // Cover Fit 이하로 축소 불가
       zoomSlider.value = currentZoom;
     }
     if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
@@ -1373,20 +1381,31 @@ function changeAspectRatio(ratio) {
   }
 }
 
-// ✅ 미디어 확인 처리
+// ✅ 미디어 확인 처리 (토글 기능 - 확인/취소)
 function confirmMedia() {
   if (selectedMediaIndex >= 0 && selectedMediaIndex < mediaItems.length) {
     const item = mediaItems[selectedMediaIndex];
-    item.isConfirmed = true;
+
+    // 토글: 확인 → 취소 또는 취소 → 확인
+    item.isConfirmed = !item.isConfirmed;
     saveCropState(); // 현재 크롭 상태 저장
-    
-    // 확인 버튼 상태 업데이트
+
+    // 확인 버튼 상태 업데이트 (토글 기능)
     const confirmBtn = document.getElementById('confirmBtn');
     if (confirmBtn) {
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = '✓ 확인 완료';
+      if (item.isConfirmed) {
+        // 확인됨 → "수정하기" 버튼으로 변경
+        confirmBtn.textContent = '수정하기';
+        confirmBtn.classList.add('confirmed');
+        confirmBtn.style.background = '#059669'; // 녹색
+      } else {
+        // 취소됨 → "이 미디어 확인 완료" 버튼으로 변경
+        confirmBtn.textContent = '이 미디어 확인 완료';
+        confirmBtn.classList.remove('confirmed');
+        confirmBtn.style.background = '#111827'; // 기본 검정색
+      }
     }
-    
+
     renderMediaList();
     updateUploadButtonState();
   }
@@ -1456,12 +1475,23 @@ async function selectMedia(index) {
     // Canvas 표시
     canvas.style.display = 'block';
     
-    // 확인 버튼 표시 및 상태 업데이트
+    // 확인 버튼 표시 및 상태 업데이트 (토글 버튼)
     const confirmBtn = document.getElementById('confirmBtn');
     if (confirmBtn) {
       confirmBtn.style.display = 'block';
-      confirmBtn.disabled = item.isConfirmed;
-      confirmBtn.textContent = item.isConfirmed ? '✓ 확인 완료' : '이 미디어 확인 완료';
+      // 토글 버튼이므로 항상 활성화 상태
+      confirmBtn.disabled = false;
+      if (item.isConfirmed) {
+        // 확인됨 → "수정하기" 버튼 표시
+        confirmBtn.textContent = '수정하기';
+        confirmBtn.classList.add('confirmed');
+        confirmBtn.style.background = '#059669'; // 녹색
+      } else {
+        // 미확인 → "이 미디어 확인 완료" 버튼 표시
+        confirmBtn.textContent = '이 미디어 확인 완료';
+        confirmBtn.classList.remove('confirmed');
+        confirmBtn.style.background = '#111827'; // 기본 검정색
+      }
     }
     
     // 이미지 로드 (Blob URL 유효성 검사 포함)
@@ -1605,14 +1635,22 @@ document.getElementById('backBtn').addEventListener('click', async () => {
 // ✅ 업로드 버튼
 document.getElementById('uploadBtn').addEventListener('click', uploadToMeta);
 
-// ✅ 줌 슬라이더 이벤트
+// ✅ 줌 슬라이더 이벤트 (minZoom 엄격 적용)
 const zoomSlider = document.getElementById('zoomSlider');
 if (zoomSlider) {
   zoomSlider.addEventListener('input', (e) => {
-    currentZoom = parseFloat(e.target.value);
+    let newZoom = parseFloat(e.target.value);
+
+    // minZoom보다 작으면 강제로 minZoom으로 조정 (여백 원천 차단)
+    if (newZoom < minZoom) {
+      newZoom = minZoom;
+      e.target.value = minZoom;
+    }
+
+    currentZoom = newZoom;
     const zoomValue = document.getElementById('zoomValue');
     if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
-    
+
     if (currentImage) {
       drawImage();
       saveCropState();

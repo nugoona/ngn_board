@@ -2396,76 +2396,71 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     # -----------------------
     def build_forecast_next_month():
         next_report_month = shift_month(report_month, 1)
-        next_month_num = int(next_report_month.split("-")[1])
-        
-        # 현재 리포트 월 번호
-        current_month_num = int(report_month.split("-")[1])
-        
-        # 작년 익월 계산 (다음 달의 작년 동월)
-        next_month_next = shift_month(next_report_month, 1)
-        next_month_next_num = int(next_month_next.split("-")[1])
-        
+
+        # 정확한 연-월 문자열로 비교 (월 번호만 비교하면 여러 연도가 합쳐짐)
+        # 작년 동월: 현재 리포트 월의 정확히 1년 전 (예: 2025-12 → 2024-12)
+        last_year_same_month = shift_month(report_month, -12)
+        # 작년 익월: 다음 달의 정확히 1년 전 (예: 2026-01 → 2025-01)
+        last_year_next_month = shift_month(next_report_month, -12)
+
+        if ENABLE_DEBUG_LOGS:
+            print(f"[DEBUG] build_forecast_next_month:", file=sys.stderr)
+            print(f"   report_month: {report_month}", file=sys.stderr)
+            print(f"   next_report_month: {next_report_month}", file=sys.stderr)
+            print(f"   last_year_same_month (작년 동월): {last_year_same_month}", file=sys.stderr)
+            print(f"   last_year_next_month (작년 익월): {last_year_next_month}", file=sys.stderr)
+
         forecast = {
             "month": next_report_month,
             "mall_sales": {},
             "meta_ads": {},
             "ga4_traffic": {},
         }
-        
-        # 같은 월(month-of-year) 표본 수집
-        # 작년 동월: 현재 리포트 월의 작년 동월 (예: 2025-12 리포트 → 2024-12)
-        # 작년 익월: 다음 달의 작년 동월 (예: 2026-01의 작년 동월 → 2025-01)
-        mall_sales_same_month = []  # 현재 리포트 월의 작년 동월들
+
+        # 정확한 연-월로 데이터 수집
+        mall_sales_same_month = []  # 작년 동월 (예: 2024-12)
         meta_ads_same_month = []
         ga4_traffic_same_month = []
-        
-        # 작년 익월 표본 수집 (다음 달의 작년 동월)
-        mall_sales_next_month = []  # 다음 달의 작년 동월들
-        
+
+        mall_sales_next_month = []  # 작년 익월 (예: 2025-01)
+
         for item in monthly_13m:
             ym = item.get("ym", "")
-            ym_parts = ym.split("-")
-            if len(ym_parts) >= 2:
-                try:
-                    item_month = int(ym_parts[1])
-                    # 작년 동월: 현재 리포트 월의 작년 동월 (예: 2025-12 리포트 → 2024-12)
-                    if item_month == current_month_num:
-                        v = item.get("net_sales")
-                        if v is not None:
-                            mall_sales_same_month.append(v)
-                    # 작년 익월: 다음 달의 작년 동월 (예: 2026-01의 작년 동월 = 2025-01)
-                    elif item_month == next_month_num:
-                        v = item.get("net_sales")
-                        if v is not None:
-                            mall_sales_next_month.append(v)
-                except (ValueError, IndexError):
-                    continue
+            # 정확한 연-월 문자열로 비교
+            if ym == last_year_same_month:
+                # 작년 동월 (예: 2024-12)
+                v = item.get("net_sales")
+                if v is not None:
+                    mall_sales_same_month.append(v)
+                    if ENABLE_DEBUG_LOGS:
+                        print(f"[DEBUG] 작년 동월 매출 발견: {ym} = {v}", file=sys.stderr)
+            elif ym == last_year_next_month:
+                # 작년 익월 (예: 2025-01)
+                v = item.get("net_sales")
+                if v is not None:
+                    mall_sales_next_month.append(v)
+                    if ENABLE_DEBUG_LOGS:
+                        print(f"[DEBUG] 작년 익월 매출 발견: {ym} = {v}", file=sys.stderr)
         
+        # Meta Ads: 작년 익월 데이터 (익월 예측용)
         for item in monthly_13m_meta:
             ym = item.get("ym", "")
-            ym_parts = ym.split("-")
-            if len(ym_parts) >= 2:
-                try:
-                    item_month = int(ym_parts[1])
-                    if item_month == next_month_num:
-                        v = item.get("spend")
-                        if v is not None:
-                            meta_ads_same_month.append(v)
-                except (ValueError, IndexError):
-                    continue
-        
+            if ym == last_year_next_month:
+                v = item.get("spend")
+                if v is not None:
+                    meta_ads_same_month.append(v)
+                    if ENABLE_DEBUG_LOGS:
+                        print(f"[DEBUG] 작년 익월 Meta Ads 발견: {ym} = {v}", file=sys.stderr)
+
+        # GA4 Traffic: 작년 익월 데이터 (익월 예측용)
         for item in monthly_13m_ga4:
             ym = item.get("ym", "")
-            ym_parts = ym.split("-")
-            if len(ym_parts) >= 2:
-                try:
-                    item_month = int(ym_parts[1])
-                    if item_month == next_month_num:
-                        v = item.get("total_users")
-                        if v is not None:
-                            ga4_traffic_same_month.append(v)
-                except (ValueError, IndexError):
-                    continue
+            if ym == last_year_next_month:
+                v = item.get("total_users")
+                if v is not None:
+                    ga4_traffic_same_month.append(v)
+                    if ENABLE_DEBUG_LOGS:
+                        print(f"[DEBUG] 작년 익월 GA4 발견: {ym} = {v}", file=sys.stderr)
         
         def calc_stats(values):
             if not values:

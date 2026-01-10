@@ -171,6 +171,11 @@
       opacity: 1;
     }
 
+    .admake-media-item-checked.confirmed {
+      opacity: 1;
+      background: #059669;
+    }
+
     /* ✅ 가이드 컨테이너 스타일 */
     .admake-guide-container {
       position: relative;
@@ -404,6 +409,14 @@
       transform: none;
     }
 
+    .admake-btn-primary #uploadBtnCount {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+
     .admake-btn-primary:active:not(:disabled) {
       transform: translateY(2px);
       box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
@@ -582,6 +595,9 @@
         <input type="range" id="zoomSlider" class="admake-zoom-slider" min="1" max="3" step="0.1" value="1">
         <span class="admake-zoom-value" id="zoomValue">100%</span>
       </div>
+      <button class="admake-btn admake-btn-primary" id="confirmBtn" style="margin-top: 16px; width: 100%;">
+        이 미디어 확인 완료
+      </button>
     </div>
   </div>
 </div>
@@ -591,7 +607,10 @@
   <div></div>
   <div class="admake-action-buttons">
     <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
-    <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>메타에 업로드 하기</button>
+    <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>
+      <span id="uploadBtnText">메타에 업로드 하기</span>
+      <span id="uploadBtnCount" style="display: none; margin-left: 8px; font-size: 12px; opacity: 0.8;"></span>
+    </button>
   </div>
 </div>
 
@@ -600,6 +619,14 @@
   <div class="admake-loading-content">
     <div class="admake-loading-spinner"></div>
     <div class="admake-loading-text">메타 서버에 소재를 등록 중입니다...</div>
+    <div class="admake-progress-bar-container" style="margin-top: 24px; width: 100%; max-width: 400px;">
+      <div class="admake-progress-bar-bg" style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+        <div class="admake-progress-bar-fill" id="uploadProgressBar" style="height: 100%; background: #111827; width: 0%; transition: width 0.3s ease;"></div>
+      </div>
+      <div class="admake-progress-text" id="uploadProgressText" style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
+        0 / 0 업로드 중...
+      </div>
+    </div>
   </div>
 </div>
 
@@ -607,14 +634,10 @@
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
-// ✅ 상태 관리
-let mediaItems = [];
+// ✅ 상태 관리 - 개선된 구조
+let mediaItems = []; // [{ id, name, type, mediaType, previewUrl, cropState: { x, y, zoom }, isConfirmed }]
 let selectedMediaIndex = -1;
-let checkedMediaItems = new Set(); // 사이즈 검토 완료된 미디어 ID
 let uploadedResults = []; // 업로드 결과 { id, hash/video_id, type }
-
-// ✅ 크롭 상태 관리 (각 미디어별)
-let cropStates = {}; // { mediaId: { x: 0, y: 0, zoom: 1 } }
 
 // ✅ Canvas 관련 변수
 let canvas, ctx;
@@ -641,6 +664,7 @@ function loadStep1Data() {
     const data = JSON.parse(step1Data);
     // previewUrl을 사용하여 미디어 아이템 재구성
     // 실제로는 File 객체가 없으므로, previewUrl만 사용
+    // 각 미디어에 크롭 상태와 확인 여부 추가
     mediaItems = data.mediaItems.map(item => ({
       id: item.id,
       name: item.name,
@@ -648,7 +672,8 @@ function loadStep1Data() {
       type: item.type,
       mediaType: item.mediaType,
       previewUrl: item.previewUrl,
-      checked: false
+      cropState: { x: 0, y: 0, zoom: 1 }, // 크롭 좌표 및 확대 배율
+      isConfirmed: false // 검토 완료 여부
     }));
 
     renderMediaList();
@@ -676,12 +701,13 @@ function renderMediaList() {
       mediaElement = `<img src="${item.previewUrl}" class="admake-media-item-image" alt="${item.name}">`;
     }
 
-    const checkedIcon = checkedMediaItems.has(item.id) ? '✓' : '';
+    const checkedIcon = item.isConfirmed ? '✓' : '';
+    const confirmedClass = item.isConfirmed ? 'confirmed' : '';
     
     mediaItem.innerHTML = `
       ${mediaElement}
       <div class="admake-media-item-badge">${item.mediaType === 'video' ? 'VIDEO' : 'IMAGE'}</div>
-      <div class="admake-media-item-checked">${checkedIcon}</div>
+      <div class="admake-media-item-checked ${confirmedClass}">${checkedIcon}</div>
     `;
 
     mediaItem.addEventListener('click', () => {
@@ -820,30 +846,51 @@ function drawImage() {
 function saveCropState() {
   if (selectedMediaIndex >= 0 && selectedMediaIndex < mediaItems.length) {
     const item = mediaItems[selectedMediaIndex];
-    cropStates[item.id] = {
+    item.cropState = {
       x: currentX,
       y: currentY,
       zoom: currentZoom
     };
+    // 상태 저장 시 자동으로 확인 처리하지 않음 (사용자가 명시적으로 확인해야 함)
   }
 }
 
 // ✅ 크롭 상태 불러오기
-function loadCropState(mediaId) {
-  const state = cropStates[mediaId];
-  if (state) {
-    currentX = state.x;
-    currentY = state.y;
-    currentZoom = state.zoom;
-    document.getElementById('zoomSlider').value = currentZoom;
-    document.getElementById('zoomValue').textContent = Math.round(currentZoom * 100) + '%';
+function loadCropState(item) {
+  if (item && item.cropState) {
+    currentX = item.cropState.x;
+    currentY = item.cropState.y;
+    currentZoom = item.cropState.zoom;
   } else {
     // 초기 상태
     currentX = 0;
     currentY = 0;
     currentZoom = 1;
-    document.getElementById('zoomSlider').value = 1;
-    document.getElementById('zoomValue').textContent = '100%';
+  }
+  
+  // UI 업데이트
+  const zoomSlider = document.getElementById('zoomSlider');
+  const zoomValue = document.getElementById('zoomValue');
+  if (zoomSlider) zoomSlider.value = currentZoom;
+  if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// ✅ 미디어 확인 처리
+function confirmMedia() {
+  if (selectedMediaIndex >= 0 && selectedMediaIndex < mediaItems.length) {
+    const item = mediaItems[selectedMediaIndex];
+    item.isConfirmed = true;
+    saveCropState(); // 현재 크롭 상태 저장
+    
+    // 확인 버튼 상태 업데이트
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '✓ 확인 완료';
+    }
+    
+    renderMediaList();
+    updateUploadButtonState();
   }
 }
 
@@ -873,6 +920,19 @@ async function selectMedia(index) {
     cropControls.style.display = 'none';
     canvas.style.display = 'none';
     
+    // 확인 버튼 숨기기
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (confirmBtn) {
+      confirmBtn.style.display = 'none';
+    }
+    
+    // 동영상은 자동으로 확인 처리 (크롭 불가능하므로)
+    if (!item.isConfirmed) {
+      item.isConfirmed = true;
+      renderMediaList();
+      updateUploadButtonState();
+    }
+    
     const videoElement = document.createElement('video');
     videoElement.className = 'admake-guide-preview-video';
     videoElement.src = item.previewUrl;
@@ -898,12 +958,20 @@ async function selectMedia(index) {
     // Canvas 표시
     canvas.style.display = 'block';
     
+    // 확인 버튼 표시 및 상태 업데이트
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (confirmBtn) {
+      confirmBtn.style.display = 'block';
+      confirmBtn.disabled = item.isConfirmed;
+      confirmBtn.textContent = item.isConfirmed ? '✓ 확인 완료' : '이 미디어 확인 완료';
+    }
+    
     // 이미지 로드
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       currentImage = img;
-      loadCropState(item.id);
+      loadCropState(item);
       drawImage();
     };
     img.onerror = () => {
@@ -914,19 +982,36 @@ async function selectMedia(index) {
   }
   
   renderMediaList();
-  
-  // 사이즈 검토 완료 표시
-  if (!checkedMediaItems.has(item.id)) {
-    checkedMediaItems.add(item.id);
-    updateUploadButtonState();
-    renderMediaList();
-  }
 }
 
 // ✅ 업로드 버튼 상태 업데이트
 function updateUploadButtonState() {
-  const allChecked = mediaItems.length > 0 && checkedMediaItems.size === mediaItems.length;
-  document.getElementById('uploadBtn').disabled = !allChecked;
+  const uploadBtn = document.getElementById('uploadBtn');
+  const uploadBtnText = document.getElementById('uploadBtnText');
+  const uploadBtnCount = document.getElementById('uploadBtnCount');
+  
+  if (!uploadBtn) return;
+  
+  const confirmedCount = mediaItems.filter(item => item.isConfirmed).length;
+  const totalCount = mediaItems.length;
+  const allConfirmed = totalCount > 0 && confirmedCount === totalCount;
+  const remainingCount = totalCount - confirmedCount;
+  
+  uploadBtn.disabled = !allConfirmed;
+  
+  // 버튼 텍스트 및 미완료 개수 표시
+  if (uploadBtnText) {
+    if (allConfirmed) {
+      uploadBtnText.textContent = '메타에 업로드 하기';
+      if (uploadBtnCount) uploadBtnCount.style.display = 'none';
+    } else {
+      uploadBtnText.textContent = '메타에 업로드 하기';
+      if (uploadBtnCount) {
+        uploadBtnCount.textContent = `${remainingCount}개 더 확인 필요`;
+        uploadBtnCount.style.display = 'inline';
+      }
+    }
+  }
 }
 
 // ✅ IndexedDB에서 File 객체 가져오기
@@ -970,15 +1055,27 @@ document.getElementById('backBtn').addEventListener('click', () => {
 document.getElementById('uploadBtn').addEventListener('click', uploadToMeta);
 
 // ✅ 줌 슬라이더 이벤트
-document.getElementById('zoomSlider').addEventListener('input', (e) => {
-  currentZoom = parseFloat(e.target.value);
-  document.getElementById('zoomValue').textContent = Math.round(currentZoom * 100) + '%';
-  
-  if (currentImage) {
-    drawImage();
-    saveCropState();
-  }
-});
+const zoomSlider = document.getElementById('zoomSlider');
+if (zoomSlider) {
+  zoomSlider.addEventListener('input', (e) => {
+    currentZoom = parseFloat(e.target.value);
+    const zoomValue = document.getElementById('zoomValue');
+    if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+    
+    if (currentImage) {
+      drawImage();
+      saveCropState();
+    }
+  });
+}
+
+// ✅ 확인 버튼 이벤트
+const confirmBtn = document.getElementById('confirmBtn');
+if (confirmBtn) {
+  confirmBtn.addEventListener('click', () => {
+    confirmMedia();
+  });
+}
 
 // ✅ 크롭된 이미지 생성 (Blob)
 async function createCroppedImage(mediaItem) {
@@ -1001,7 +1098,7 @@ async function createCroppedImage(mediaItem) {
     }
     
     // 이미지는 크롭된 버전 생성
-    const state = cropStates[mediaItem.id] || { x: 0, y: 0, zoom: 1 };
+    const state = mediaItem.cropState || { x: 0, y: 0, zoom: 1 };
     
     // 이미지 로드
     const img = new Image();
@@ -1044,7 +1141,23 @@ async function createCroppedImage(mediaItem) {
   });
 }
 
-// ✅ 메타 API 업로드 (크롭된 이미지 사용)
+// ✅ 프로그레스 바 업데이트
+function updateUploadProgress(current, total, fileName) {
+  const progressBar = document.getElementById('uploadProgressBar');
+  const progressText = document.getElementById('uploadProgressText');
+  
+  const percentage = Math.round((current / total) * 100);
+  
+  if (progressBar) {
+    progressBar.style.width = percentage + '%';
+  }
+  
+  if (progressText) {
+    progressText.textContent = `${current} / ${total} 업로드 중... ${fileName ? `(${fileName})` : ''}`;
+  }
+}
+
+// ✅ 메타 API 업로드 (크롭된 이미지 사용, 순차 처리 및 프로그레스 바)
 async function uploadToMeta() {
   const uploadBtn = document.getElementById('uploadBtn');
   const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1071,10 +1184,16 @@ async function uploadToMeta() {
     
     uploadedResults = [];
     const errors = [];
+    const totalCount = mediaItems.length;
     
-    // 각 미디어 파일을 Meta API로 업로드
-    for (const item of mediaItems) {
+    // 각 미디어 파일을 순차적으로 Meta API로 업로드
+    for (let i = 0; i < mediaItems.length; i++) {
+      const item = mediaItems[i];
+      
       try {
+        // 프로그레스 바 업데이트
+        updateUploadProgress(i, totalCount, item.name);
+        
         // 크롭된 이미지 또는 원본 파일 가져오기
         let file;
         if (item.mediaType === 'image') {
@@ -1157,6 +1276,11 @@ async function uploadToMeta() {
         }
         
         uploadedResults.push(result);
+        
+        // 마지막 항목 업로드 완료 시 프로그레스 바 100%
+        if (i === mediaItems.length - 1) {
+          updateUploadProgress(totalCount, totalCount, '완료');
+        }
       } catch (error) {
         console.error(`미디어 ${item.id} 업로드 실패:`, error);
         errors.push({
@@ -1199,8 +1323,8 @@ async function uploadToMeta() {
 // ✅ 초기화
 document.addEventListener('DOMContentLoaded', () => {
   loadStep1Data();
-  updateUploadButtonState();
   initCanvas();
+  updateUploadButtonState(); // 초기 버튼 상태 설정
 });
 </script>
 

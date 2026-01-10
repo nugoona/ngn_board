@@ -447,43 +447,149 @@ let mediaItems = []; // { id, file, previewUrl, type }
 let hasUnsavedChanges = false;
 let mediaIdCounter = 0;
 
-// ✅ 파일 업로드 처리
-const uploadArea = document.getElementById('uploadArea');
-const fileInput = document.getElementById('fileInput');
-const thumbnailsGrid = document.getElementById('thumbnailsGrid');
-const landingUrlInput = document.getElementById('landingUrl');
-const nextBtn = document.getElementById('nextBtn');
-const cancelBtn = document.getElementById('cancelBtn');
+// ✅ DOM 요소 가져오기
+let uploadArea, fileInput, thumbnailsGrid, landingUrlInput, nextBtn, cancelBtn;
 
-// 업로드 영역 클릭
-uploadArea.addEventListener('click', () => {
-  fileInput.click();
-});
+// ✅ DOM 로드 후 초기화
+function initDOMElements() {
+  uploadArea = document.getElementById('uploadArea');
+  fileInput = document.getElementById('fileInput');
+  thumbnailsGrid = document.getElementById('thumbnailsGrid');
+  landingUrlInput = document.getElementById('landingUrl');
+  nextBtn = document.getElementById('nextBtn');
+  cancelBtn = document.getElementById('cancelBtn');
+  
+  if (!uploadArea || !fileInput || !thumbnailsGrid || !landingUrlInput || !nextBtn || !cancelBtn) {
+    console.error('[ERROR] 필수 DOM 요소를 찾을 수 없습니다.');
+    return false;
+  }
+  
+  return true;
+}
 
-// 파일 선택
-fileInput.addEventListener('change', (e) => {
-  handleFiles(Array.from(e.target.files));
-  fileInput.value = ''; // 같은 파일 재선택 가능하도록 초기화
-});
+// ✅ 이벤트 리스너 등록
+function setupEventListeners() {
+  // 업로드 영역 클릭
+  uploadArea.addEventListener('click', () => {
+    fileInput.click();
+  });
 
-// 드래그 앤 드롭
-uploadArea.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  uploadArea.classList.add('dragover');
-});
+  // 파일 선택
+  fileInput.addEventListener('change', (e) => {
+    handleFiles(Array.from(e.target.files));
+    fileInput.value = ''; // 같은 파일 재선택 가능하도록 초기화
+  });
 
-uploadArea.addEventListener('dragleave', () => {
-  uploadArea.classList.remove('dragover');
-});
+  // 드래그 앤 드롭
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
 
-uploadArea.addEventListener('drop', (e) => {
-  e.preventDefault();
-  uploadArea.classList.remove('dragover');
-  const files = Array.from(e.dataTransfer.files).filter(file => 
-    file.type.startsWith('image/') || file.type.startsWith('video/')
-  );
-  handleFiles(files);
-});
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    handleFiles(files);
+  });
+  
+  // URL 입력 감지 (URL은 선택사항이므로 버튼 상태는 변경하지 않음)
+  landingUrlInput.addEventListener('input', () => {
+    hasUnsavedChanges = true;
+  });
+
+  // 취소 버튼 클릭
+  cancelBtn.addEventListener('click', () => {
+    if (hasUnsavedChanges) {
+      if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
+        // 미디어 URL 해제
+        mediaItems.forEach(item => URL.revokeObjectURL(item.previewUrl));
+        window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
+      }
+    } else {
+      window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
+    }
+  });
+
+  // 다음 버튼 클릭
+  nextBtn.addEventListener('click', async () => {
+    if (nextBtn.disabled) return;
+    
+    // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
+    const stateData = {
+      accountId: accountId,
+      mediaItems: mediaItems.map(item => ({
+        id: item.id,
+        name: item.file.name,
+        size: item.file.size,
+        type: item.file.type,
+        mediaType: item.type, // 'image' or 'video'
+        previewUrl: item.previewUrl
+      })),
+      landingUrl: landingUrlInput.value.trim() || '' // URL은 선택사항
+    };
+    
+    sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
+    
+    // File 객체들을 IndexedDB에 저장 (다음 Step에서 사용)
+    try {
+      // IndexedDB가 지원되는 경우에만 사용
+      if ('indexedDB' in window) {
+        const dbName = 'admake_files';
+        const request = indexedDB.open(dbName, 1);
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('files')) {
+            db.createObjectStore('files', { keyPath: 'id' });
+          }
+        };
+        
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          const transaction = db.transaction(['files'], 'readwrite');
+          const store = transaction.objectStore('files');
+          
+          mediaItems.forEach(item => {
+            store.put({
+              id: item.id,
+              file: item.file,
+              previewUrl: item.previewUrl,
+              type: item.type,
+              mediaType: item.mediaType
+            });
+          });
+          
+          transaction.oncomplete = () => {
+            hasUnsavedChanges = false;
+            window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+          };
+        };
+        
+        request.onerror = () => {
+          // IndexedDB 실패 시 그냥 진행 (previewUrl만 사용)
+          console.warn('IndexedDB 저장 실패, previewUrl만 사용');
+          hasUnsavedChanges = false;
+          window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+        };
+      } else {
+        // IndexedDB 미지원 시 그냥 진행
+        hasUnsavedChanges = false;
+        window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+      }
+    } catch (e) {
+      console.error('IndexedDB 오류:', e);
+      hasUnsavedChanges = false;
+      window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+    }
+  });
+}
 
 // 파일 처리 함수
 function handleFiles(files) {
@@ -593,122 +699,62 @@ function deleteThumbnail(mediaId) {
 // 다음 버튼 상태 업데이트
 function updateNextButtonState() {
   const hasFiles = mediaItems.length > 0;
-  const hasUrl = landingUrlInput.value.trim().length > 0;
+  const hasUrl = landingUrlInput && landingUrlInput.value.trim().length > 0;
   
-  nextBtn.disabled = !(hasFiles && hasUrl);
+  // 파일만 있으면 활성화 (URL은 선택사항)
+  if (nextBtn) {
+    nextBtn.disabled = !hasFiles;
+    
+    // 디버깅용 콘솔 로그
+    console.log('[DEBUG] 버튼 상태 업데이트:', {
+      hasFiles: hasFiles,
+      hasUrl: hasUrl,
+      disabled: nextBtn.disabled,
+      mediaItemsCount: mediaItems.length
+    });
+  }
 }
 
-// URL 입력 감지
-landingUrlInput.addEventListener('input', () => {
-  hasUnsavedChanges = true;
-  updateNextButtonState();
-});
+}
 
-// ✅ 페이지 이탈 경고
+// ✅ 페이지 이탈 경고 및 URL 정리
 window.addEventListener('beforeunload', (e) => {
   if (hasUnsavedChanges) {
     e.preventDefault();
     e.returnValue = '작성 중인 데이터가 삭제됩니다';
     return e.returnValue;
   }
-});
-
-// ✅ 다음 버튼 클릭
-nextBtn.addEventListener('click', async () => {
-  if (nextBtn.disabled) return;
   
-  // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
-  // 개선된 데이터 구조: id, file 정보, previewUrl, type 포함
-  const stateData = {
-    accountId: accountId,
-    mediaItems: mediaItems.map(item => ({
-      id: item.id,
-      name: item.file.name,
-      size: item.file.size,
-      type: item.file.type,
-      mediaType: item.type, // 'image' or 'video'
-      previewUrl: item.previewUrl
-    })),
-    landingUrl: landingUrlInput.value.trim()
-  };
-  
-  sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
-  
-  // File 객체들을 IndexedDB에 저장 (다음 Step에서 사용)
-  try {
-    // IndexedDB가 지원되는 경우에만 사용
-    if ('indexedDB' in window) {
-      const dbName = 'admake_files';
-      const request = indexedDB.open(dbName, 1);
-      
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains('files')) {
-          db.createObjectStore('files', { keyPath: 'id' });
-        }
-      };
-      
-      request.onsuccess = (event) => {
-        const db = event.target.result;
-        const transaction = db.transaction(['files'], 'readwrite');
-        const store = transaction.objectStore('files');
-        
-        mediaItems.forEach(item => {
-          store.put({
-            id: item.id,
-            file: item.file,
-            previewUrl: item.previewUrl,
-            type: item.type,
-            mediaType: item.mediaType
-          });
-        });
-        
-        transaction.oncomplete = () => {
-          hasUnsavedChanges = false;
-          window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
-        };
-      };
-      
-      request.onerror = () => {
-        // IndexedDB 실패 시 그냥 진행 (previewUrl만 사용)
-        console.warn('IndexedDB 저장 실패, previewUrl만 사용');
-        hasUnsavedChanges = false;
-        window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
-      };
-    } else {
-      // IndexedDB 미지원 시 그냥 진행
-      hasUnsavedChanges = false;
-      window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
-    }
-  } catch (e) {
-    console.error('IndexedDB 오류:', e);
-    hasUnsavedChanges = false;
-    window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
-  }
-});
-
-// ✅ 취소 버튼 클릭
-cancelBtn.addEventListener('click', () => {
-  if (hasUnsavedChanges) {
-    if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
-      // 미디어 URL 해제
-      mediaItems.forEach(item => URL.revokeObjectURL(item.previewUrl));
-      window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
-    }
-  } else {
-    window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
-  }
-});
-
-// ✅ 페이지 언로드 시 URL 정리
-window.addEventListener('beforeunload', () => {
+  // URL 정리
   mediaItems.forEach(item => {
     try {
       URL.revokeObjectURL(item.previewUrl);
-    } catch (e) {
-      console.warn('URL revoke 실패:', e);
+    } catch (err) {
+      console.warn('URL revoke 실패:', err);
     }
   });
+});
+
+// ✅ 초기화
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[DEBUG] DOMContentLoaded 이벤트 발생');
+  
+  // DOM 요소 초기화
+  if (!initDOMElements()) {
+    console.error('[ERROR] DOM 요소 초기화 실패');
+    alert('페이지 로드 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+    return;
+  }
+  
+  console.log('[DEBUG] DOM 요소 초기화 완료');
+  
+  // 이벤트 리스너 등록
+  setupEventListeners();
+  
+  console.log('[DEBUG] 이벤트 리스너 등록 완료');
+  
+  // 초기 버튼 상태 설정
+  updateNextButtonState();
 });
 </script>
 

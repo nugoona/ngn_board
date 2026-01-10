@@ -30,8 +30,8 @@ def main():
     # GCS 버킷 정보
     gcs_bucket = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
     
-    # 회사명 목록 (환경 변수에서 가져오거나 기본값)
-    company_names = os.environ.get("COMPANY_NAMES", "piscess").split(",")
+    # 회사명 목록 (환경 변수에서 가져오거나 기본값 - demo 포함)
+    company_names = os.environ.get("COMPANY_NAMES", "piscess,demo").split(",")
     company_names = [name.strip() for name in company_names if name.strip()]
     
     print(f"📅 [INFO] 스냅샷 생성 대상: {target_year}년 {target_month}월", file=sys.stderr)

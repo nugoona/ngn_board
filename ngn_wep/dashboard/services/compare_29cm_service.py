@@ -126,8 +126,14 @@ def get_competitor_brands(company_name: str) -> List[Dict[str, Any]]:
 
 
 def get_own_brand_id(company_name: str) -> Optional[int]:
-    """자사몰 브랜드 ID 조회 (company_info.brand_id_29cm)"""
+    """자사몰 브랜드 ID 조회 (company_info.brand_id_29cm)
+
+    demo 계정의 경우 piscess의 brand_id_29cm을 반환합니다.
+    """
     client = get_bigquery_client()
+
+    # demo 계정인 경우 piscess로 대체
+    lookup_company = "piscess" if company_name.lower() == "demo" else company_name
 
     query = f"""
     SELECT brand_id_29cm
@@ -137,7 +143,7 @@ def get_own_brand_id(company_name: str) -> Optional[int]:
 
     job_config = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter("company_name", "STRING", company_name)
+            bigquery.ScalarQueryParameter("company_name", "STRING", lookup_company)
         ]
     )
 

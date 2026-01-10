@@ -264,18 +264,17 @@ def get_company_korean_name_from_bq(company_name_en: str) -> Optional[str]:
 
 def get_all_companies_from_bq() -> list:
     """
-    BigQuery company_info 테이블에서 모든 업체 목록 조회 (demo 제외)
-    
+    BigQuery company_info 테이블에서 모든 업체 목록 조회 (demo 포함)
+
     Returns:
-        업체명 리스트 (예: ["piscess", "other_company", ...])
+        업체명 리스트 (예: ["piscess", "demo", "other_company", ...])
     """
     try:
         client = bigquery.Client(project=PROJECT_ID)
         query = """
         SELECT DISTINCT company_name
         FROM `winged-precept-443218-v8.ngn_dataset.company_info`
-        WHERE LOWER(company_name) != 'demo'
-          AND korean_name IS NOT NULL
+        WHERE korean_name IS NOT NULL
         ORDER BY company_name
         """
         rows = client.query(query).result()

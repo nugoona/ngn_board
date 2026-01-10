@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>광고 만들기 - ADMAKE</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f9fafb;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ✅ Progress Bar 스타일 */
+    .admake-progress-bar {
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 24px 40px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .admake-progress-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .admake-progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.05em;
+    }
+
+    .admake-progress-step.active {
+      color: #111827;
+    }
+
+    .admake-progress-step.completed {
+      color: #059669;
+    }
+
+    .admake-progress-connector {
+      width: 40px;
+      height: 2px;
+      background: #e5e7eb;
+      margin: 0 8px;
+    }
+
+    .admake-progress-connector.completed {
+      background: #059669;
+    }
+
+    /* ✅ 메인 컨텐츠 영역 */
+    .admake-create-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    .admake-create-layout {
+      display: flex;
+      gap: 32px;
+      margin-top: 32px;
+    }
+
+    .admake-create-left {
+      flex: 6;
+      min-width: 0;
+    }
+
+    .admake-create-right {
+      flex: 4;
+      min-width: 0;
+    }
+
+    /* ✅ 업로드 영역 스타일 */
+    .admake-upload-area {
+      background: #ffffff;
+      border: 2px dashed #d1d5db;
+      border-radius: 1rem;
+      padding: 64px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
+    }
+
+    .admake-upload-area:hover {
+      border-color: #111827;
+      background: #f9fafb;
+      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.05);
+    }
+
+    .admake-upload-area.dragover {
+      border-color: #111827;
+      background: #f3f4f6;
+      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.05);
+    }
+
+    .admake-upload-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: #9ca3af;
+    }
+
+    .admake-upload-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .admake-upload-hint {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .admake-file-input {
+      display: none;
+    }
+
+    /* ✅ 썸네일 그리드 스타일 */
+    .admake-thumbnails-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .admake-thumbnail-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.03);
+    }
+
+    .admake-thumbnail-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .admake-thumbnail-delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 0, 0, 0.7);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
+    }
+
+    .admake-thumbnail-delete:hover {
+      background: rgba(220, 38, 38, 0.9);
+      transform: scale(1.1);
+    }
+
+    /* ✅ 랜딩 설정 영역 스타일 */
+    .admake-settings-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 32px;
+      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
+    }
+
+    .admake-settings-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .admake-settings-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      color: #111827;
+      transition: all 0.2s ease;
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.02);
+      letter-spacing: 0.02em;
+    }
+
+    .admake-settings-input:focus {
+      outline: none;
+      border-color: #111827;
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ✅ 하단 버튼 영역 */
+    .admake-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      padding: 20px 40px;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .admake-action-buttons {
+      display: flex;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    .admake-btn {
+      padding: 14px 32px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    .admake-btn-secondary {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .admake-btn-secondary:hover {
+      background: #e5e7eb;
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.12);
+    }
+
+    .admake-btn-primary {
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .admake-btn-primary:hover:not(:disabled) {
+      background: #1f2937;
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.15);
+    }
+
+    .admake-btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .admake-btn-primary:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ✅ 메인 컨텐츠 하단 여백 (버튼 영역 고려) */
+    .admake-create-wrapper {
+      padding-bottom: 100px;
+    }
+
+    /* ✅ 모바일 반응형 */
+    @media (max-width: 1024px) {
+      .admake-create-layout {
+        flex-direction: column;
+      }
+
+      .admake-thumbnails-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admake-create-wrapper {
+        padding: 20px;
+      }
+
+      .admake-progress-bar {
+        padding: 16px 20px;
+      }
+
+      .admake-progress-steps {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .admake-progress-connector {
+        display: none;
+      }
+
+      .admake-thumbnails-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .admake-action-bar {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .admake-action-buttons {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .admake-btn {
+        flex: 1;
+        padding: 12px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+  var accountId = "{{ account_id }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- ✅ 햄버거 메뉴 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">광고 만들기</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}" class="{% if request.path.startswith('/trend') %}active{% endif %}">TREND</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Progress Bar -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step active">STEP 1</div>
+    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-step">STEP 2</div>
+    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-step">STEP 3</div>
+    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-step">STEP 4</div>
+    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-step">STEP 5</div>
+  </div>
+</div>
+
+<!-- ✅ 메인 컨텐츠 -->
+<div class="admake-create-wrapper">
+  <div class="admake-create-layout">
+    <!-- 좌측: 미디어 업로드 영역 -->
+    <div class="admake-create-left">
+      <div class="admake-upload-area" id="uploadArea">
+        <div class="admake-upload-icon">📁</div>
+        <div class="admake-upload-text">이미지를 드래그 앤 드롭하거나 클릭하여 업로드</div>
+        <div class="admake-upload-hint">최대 10개까지 업로드 가능</div>
+        <input type="file" id="fileInput" class="admake-file-input" multiple accept="image/*">
+      </div>
+
+      <!-- 썸네일 그리드 -->
+      <div class="admake-thumbnails-grid" id="thumbnailsGrid"></div>
+    </div>
+
+    <!-- 우측: 랜딩 설정 영역 -->
+    <div class="admake-create-right">
+      <div class="admake-settings-card">
+        <label class="admake-settings-label" for="landingUrl">상세페이지 URL을 입력하세요</label>
+        <input 
+          type="url" 
+          id="landingUrl" 
+          class="admake-settings-input" 
+          placeholder="https://example.com/product?utm_source=..."
+          autocomplete="off"
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div></div>
+  <div class="admake-action-buttons">
+    <button class="admake-btn admake-btn-secondary" id="cancelBtn">취소</button>
+    <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>다음: 크롭 및 가이드</button>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+// ✅ 상태 관리
+let uploadedFiles = [];
+let fileUrls = [];
+let hasUnsavedChanges = false;
+
+// ✅ 파일 업로드 처리
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const thumbnailsGrid = document.getElementById('thumbnailsGrid');
+const landingUrlInput = document.getElementById('landingUrl');
+const nextBtn = document.getElementById('nextBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+
+// 업로드 영역 클릭
+uploadArea.addEventListener('click', () => {
+  fileInput.click();
+});
+
+// 파일 선택
+fileInput.addEventListener('change', (e) => {
+  handleFiles(Array.from(e.target.files));
+});
+
+// 드래그 앤 드롭
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+  handleFiles(files);
+});
+
+// 파일 처리 함수
+function handleFiles(files) {
+  const remainingSlots = 10 - uploadedFiles.length;
+  const filesToAdd = files.slice(0, remainingSlots);
+  
+  if (files.length > remainingSlots) {
+    alert(`최대 10개까지 업로드 가능합니다. ${remainingSlots}개만 추가됩니다.`);
+  }
+
+  filesToAdd.forEach(file => {
+    if (uploadedFiles.length >= 10) return;
+    
+    const url = URL.createObjectURL(file);
+    uploadedFiles.push(file);
+    fileUrls.push(url);
+    hasUnsavedChanges = true;
+    
+    renderThumbnail(url, uploadedFiles.length - 1);
+  });
+  
+  updateNextButtonState();
+}
+
+// 썸네일 렌더링
+function renderThumbnail(url, index) {
+  const thumbnailItem = document.createElement('div');
+  thumbnailItem.className = 'admake-thumbnail-item';
+  thumbnailItem.innerHTML = `
+    <img src="${url}" class="admake-thumbnail-image" alt="업로드된 이미지 ${index + 1}">
+    <button class="admake-thumbnail-delete" data-index="${index}">×</button>
+  `;
+  
+  thumbnailsGrid.appendChild(thumbnailItem);
+  
+  // 삭제 버튼 이벤트
+  const deleteBtn = thumbnailItem.querySelector('.admake-thumbnail-delete');
+  deleteBtn.addEventListener('click', () => {
+    deleteThumbnail(index);
+  });
+}
+
+// 썸네일 삭제
+function deleteThumbnail(index) {
+  // URL 해제
+  URL.revokeObjectURL(fileUrls[index]);
+  
+  // 배열에서 제거
+  uploadedFiles.splice(index, 1);
+  fileUrls.splice(index, 1);
+  
+  hasUnsavedChanges = true;
+  
+  // 그리드 재렌더링
+  thumbnailsGrid.innerHTML = '';
+  fileUrls.forEach((url, idx) => {
+    renderThumbnail(url, idx);
+  });
+  
+  updateNextButtonState();
+}
+
+// 다음 버튼 상태 업데이트
+function updateNextButtonState() {
+  const hasFiles = uploadedFiles.length > 0;
+  const hasUrl = landingUrlInput.value.trim().length > 0;
+  
+  nextBtn.disabled = !(hasFiles && hasUrl);
+}
+
+// URL 입력 감지
+landingUrlInput.addEventListener('input', () => {
+  hasUnsavedChanges = true;
+  updateNextButtonState();
+});
+
+// ✅ 페이지 이탈 경고
+window.addEventListener('beforeunload', (e) => {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '작성 중인 데이터가 삭제됩니다';
+    return e.returnValue;
+  }
+});
+
+// ✅ 다음 버튼 클릭
+nextBtn.addEventListener('click', () => {
+  if (nextBtn.disabled) return;
+  
+  // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
+  const state = {
+    accountId: accountId,
+    files: uploadedFiles.map((file, index) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: fileUrls[index]
+    })),
+    landingUrl: landingUrlInput.value.trim()
+  };
+  
+  // File 객체는 직렬화할 수 없으므로, URL만 저장
+  sessionStorage.setItem('admake_step1_state', JSON.stringify({
+    accountId: accountId,
+    fileUrls: fileUrls,
+    fileNames: uploadedFiles.map(f => f.name),
+    fileSizes: uploadedFiles.map(f => f.size),
+    fileTypes: uploadedFiles.map(f => f.type),
+    landingUrl: landingUrlInput.value.trim()
+  }));
+  
+  // File 객체는 별도로 저장 (Blob URL 유지)
+  sessionStorage.setItem('admake_step1_files', JSON.stringify(
+    uploadedFiles.map((file, index) => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: fileUrls[index]
+    }))
+  ));
+  
+  hasUnsavedChanges = false;
+  
+  // 다음 Step으로 이동 (현재는 임시로 alert)
+  alert('Step 2로 이동합니다. (구현 예정)');
+  // window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
+});
+
+// ✅ 취소 버튼 클릭
+cancelBtn.addEventListener('click', () => {
+  if (hasUnsavedChanges) {
+    if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
+      // 파일 URL 해제
+      fileUrls.forEach(url => URL.revokeObjectURL(url));
+      window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
+    }
+  } else {
+    window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
+  }
+});
+</script>
+
+</body>
+</html>

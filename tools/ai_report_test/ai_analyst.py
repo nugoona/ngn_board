@@ -1297,13 +1297,23 @@ def generate_ai_analysis(
                 if json_data and isinstance(json_data, dict):
                     # 프론트엔드는 section_7_data를 직접 순회하므로 table_data만 저장
                     table_data = json_data.get("table_data", {})
+
+                    # table_data가 없으면 JSON 자체가 테이블 데이터인지 확인
+                    # 시스템 프롬프트가 직접 {"주력_아이템": {...}, ...} 형식으로 생성할 수 있음
+                    expected_keys = {"주력_아이템", "평균_가격", "핵심_소재", "타겟_고객층", "가격대"}
+                    if not table_data and any(key in json_data for key in expected_keys):
+                        # JSON 자체가 테이블 데이터인 경우 (분석 텍스트 키 제외)
+                        analysis_keys = {"market_analysis", "company_analysis", "card_summary"}
+                        table_data = {k: v for k, v in json_data.items() if k not in analysis_keys}
+                        print(f"📝 [INFO] 섹션 7 JSON이 직접 테이블 데이터 형식입니다", file=sys.stderr)
+
                     # table_data가 비어있지 않을 때만 설정
                     if table_data and isinstance(table_data, dict) and len(table_data) > 0:
                         signals["section_7_data"] = table_data
                         print(f"✅ [INFO] 섹션 7 JSON 비교표 추출 완료: {len(table_data)}개 항목", file=sys.stderr)
                     else:
                         print(f"⚠️ [WARN] 섹션 7 table_data가 비어있거나 유효하지 않음", file=sys.stderr)
-                    
+
                     # JSON에서 card_summary의 market_analysis와 company_analysis 추출
                     card_summary = json_data.get("card_summary", {})
                     if "market_analysis" in card_summary:
@@ -1312,13 +1322,29 @@ def generate_ai_analysis(
                     elif "market_analysis" in json_data:  # 하위 호환성
                         signals["section_7_analysis_1"] = json_data["market_analysis"]
                         print(f"✅ [INFO] 섹션 7 시장 분석 추출 완료 (하위 호환)", file=sys.stderr)
-                    
+
                     if "company_analysis" in card_summary:
                         signals["section_7_analysis_2"] = card_summary["company_analysis"]
                         print(f"✅ [INFO] 섹션 7 자사몰 분석 추출 완료", file=sys.stderr)
                     elif "company_analysis" in json_data:  # 하위 호환성
                         signals["section_7_analysis_2"] = json_data["company_analysis"]
                         print(f"✅ [INFO] 섹션 7 자사몰 분석 추출 완료 (하위 호환)", file=sys.stderr)
+
+                    # JSON에서 분석 텍스트를 찾지 못한 경우 텍스트 분리 시도
+                    if "section_7_analysis_1" not in signals or "section_7_analysis_2" not in signals:
+                        analysis_parts = split_section_7_analysis(analysis_text)
+                        if len(analysis_parts) >= 2:
+                            if "section_7_analysis_1" not in signals:
+                                signals["section_7_analysis_1"] = analysis_parts[0]
+                            if "section_7_analysis_2" not in signals:
+                                signals["section_7_analysis_2"] = analysis_parts[1]
+                            print(f"📝 [INFO] 섹션 7 분석 텍스트 분리 (JSON 추출 후 fallback)", file=sys.stderr)
+                        elif "section_7_analysis_1" not in signals:
+                            # JSON 블록만 제거한 텍스트를 첫 번째 분석으로 사용
+                            text_without_json = re.sub(r'```json\s*[\s\S]*?\s*```', '', analysis_text, flags=re.DOTALL)
+                            signals["section_7_analysis_1"] = text_without_json.strip()
+                            signals["section_7_analysis_2"] = ""
+                            print(f"📝 [INFO] 섹션 7 JSON 제거 후 분석 텍스트 저장", file=sys.stderr)
                 else:
                     # JSON 추출 실패 시 기존 방식으로 분리 시도
                     analysis_parts = split_section_7_analysis(analysis_text)

@@ -2361,8 +2361,12 @@ function renderAiAnalysis(elementId, analysisText, isSection5 = false) {
     console.warn(`[AI 분석] 요소를 찾을 수 없습니다: ${elementId}`);
     return;
   }
-  
+
   if (analysisText && analysisText.trim()) {
+    // JSON 코드블록 제거 (섹션 7 등에서 JSON이 포함된 경우 대비)
+    const jsonBlockRegex = /```json\s*[\s\S]*?\s*```/g;
+    analysisText = analysisText.replace(jsonBlockRegex, "").trim();
+
     // 에러 메시지 감지
     if (analysisText.includes("[AI 분석 오류:") || analysisText.includes("AI 분석 오류")) {
       element.innerHTML = `

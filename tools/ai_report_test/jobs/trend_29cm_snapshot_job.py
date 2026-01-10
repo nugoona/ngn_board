@@ -25,7 +25,7 @@ from tools.trend_29cm_snapshot import (
 )
 
 def main():
-    """최신 주차 데이터로 스냅샷 생성"""
+    """최신 주차 데이터로 업체별 스냅샷 생성"""
     try:
         # 최신 주차 run_id 조회
         run_id = get_current_week_run_id()
@@ -36,7 +36,7 @@ def main():
         tabs = get_available_tabs(run_id)
         print(f"   [INFO] 찾은 탭: {', '.join(tabs)}", file=sys.stderr)
         
-        # 각 탭별 데이터 조회
+        # 각 탭별 데이터 조회 (모든 업체 공통)
         print(f"\n📊 [INFO] 데이터 조회 중...", file=sys.stderr)
         tabs_data = {}
         
@@ -51,49 +51,34 @@ def main():
             print(f"      [INFO] - 신규진입: {len(tabs_data[tab]['new_entry'])}개", file=sys.stderr)
             print(f"      [INFO] - 순위하락: {len(tabs_data[tab]['rank_drop'])}개", file=sys.stderr)
         
-        # 스냅샷 저장
-        print(f"\n💾 [INFO] 스냅샷 저장 중...", file=sys.stderr)
-        success = save_snapshot_to_gcs(run_id, tabs_data)
-        
-        if not success:
-            print(f"\n❌ [ERROR] 스냅샷 생성 실패", file=sys.stderr)
+        # 처리할 업체 목록 조회 (demo 포함)
+        companies_to_process = get_all_companies_from_bq()
+        if not companies_to_process:
+            print(f"⚠️ [WARN] 업체 목록을 찾을 수 없습니다.", file=sys.stderr)
             sys.exit(1)
+        print(f"\n📌 [INFO] 처리할 업체: {', '.join(companies_to_process)}", file=sys.stderr)
         
-        gcs_bucket = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
-        snapshot_path = f"gs://{gcs_bucket}/{get_snapshot_path(run_id)}"
-        print(f"\n✅ [SUCCESS] 스냅샷 생성 완료!", file=sys.stderr)
-        print(f"   [INFO] Run ID: {run_id}", file=sys.stderr)
-        print(f"   [INFO] 탭 개수: {len(tabs)}", file=sys.stderr)
-        print(f"   [INFO] 경로: {snapshot_path}", file=sys.stderr)
+        # 각 업체별 스냅샷 생성 및 AI 분석
+        from tools.trend_29cm_snapshot import process_single_company
         
-        # AI 분석 자동 추가 (첫 번째 업체 사용)
-        print(f"\n🤖 [INFO] AI 분석 리포트 생성 중 (첫 번째 업체 사용)...", file=sys.stderr)
-        try:
-            from tools.ai_report_test.trend_29cm_ai_analyst import generate_ai_analysis_from_file
-            
-            companies = get_all_companies_from_bq()
-            if companies:
-                first_company = companies[0]
-                print(f"   [INFO] 첫 번째 업체 사용: {first_company}", file=sys.stderr)
-                
-                target_brand = get_company_korean_name_from_bq(first_company.lower())
-                if target_brand:
-                    generate_ai_analysis_from_file(
-                        snapshot_file=snapshot_path,
-                        output_file=None,
-                        api_key=None,
-                        target_brand=target_brand
-                    )
-                    print(f"✅ [SUCCESS] AI 분석 리포트 추가 완료! (브랜드: {target_brand})", file=sys.stderr)
-                else:
-                    print(f"⚠️ [WARN] 한글명을 찾을 수 없어 AI 리포트를 생성하지 않습니다.", file=sys.stderr)
+        success_count = 0
+        fail_count = 0
+        
+        for company_name in companies_to_process:
+            if process_single_company(run_id, company_name, tabs_data, target_brand=None):
+                success_count += 1
             else:
-                print(f"⚠️ [WARN] 업체 목록을 찾을 수 없어 AI 리포트를 생성하지 않습니다.", file=sys.stderr)
-        except Exception as e:
-            print(f"⚠️ [WARN] AI 분석 리포트 생성 실패 (스냅샷은 정상 저장됨): {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            # AI 리포트 실패해도 스냅샷은 성공이므로 계속 진행
+                fail_count += 1
+        
+        # 최종 결과 출력
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"📊 [SUMMARY] 성공: {success_count}, 실패: {fail_count}", file=sys.stderr)
+        print(f"   [INFO] Run ID: {run_id}", file=sys.stderr)
+        print(f"   [INFO] 처리 업체: {', '.join(companies_to_process)}", file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        
+        if fail_count > 0:
+            sys.exit(1)
         
     except Exception as e:
         print(f"❌ [ERROR] 스냅샷 생성 중 오류 발생: {e}", file=sys.stderr)

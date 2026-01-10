@@ -6,9 +6,53 @@
 
 import os
 import sys
+from pathlib import Path
 
-# 프로젝트 루트를 Python 경로에 추가 (/app에 tools/ 디렉토리가 있음)
-sys.path.insert(0, '/app')
+# 환경 변수 로드 (로컬 실행 시 ~/ngn_board/config/ngn.env 파일에서)
+def load_env_file():
+    """로컬 환경에서 ~/ngn_board/config/ngn.env 파일에서 환경 변수 로드"""
+    if os.path.exists('/app'):
+        # Cloud Run Job 환경: 환경 변수는 이미 설정되어 있음
+        return
+    
+    env_file = Path.home() / "ngn_board" / "config" / "ngn.env"
+    if env_file.exists():
+        print(f"📄 [INFO] 환경 변수 파일 로드: {env_file}", file=sys.stderr)
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                # 주석과 빈 줄 건너뛰기
+                if not line or line.startswith('#'):
+                    continue
+                # KEY=value 형식 파싱
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # 따옴표 제거
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    # 환경 변수 설정 (이미 설정되어 있으면 덮어쓰지 않음)
+                    if key and value:
+                        os.environ.setdefault(key, value)
+        print(f"✅ [INFO] 환경 변수 로드 완료", file=sys.stderr)
+
+# 환경 변수 로드
+load_env_file()
+
+# 프로젝트 루트를 Python 경로에 추가
+# Cloud Run Job에서는 /app 사용, 로컬에서는 현재 스크립트 기준으로 찾기
+if os.path.exists('/app'):
+    # Cloud Run Job 환경
+    sys.path.insert(0, '/app')
+else:
+    # 로컬 환경: 현재 파일 기준으로 프로젝트 루트 찾기
+    current_file = Path(__file__).resolve()
+    # tools/ai_report_test/jobs/xxx.py -> 프로젝트 루트
+    project_root = current_file.parent.parent.parent.parent
+    sys.path.insert(0, str(project_root))
 
 # trend_29cm_snapshot 모듈에서 필요한 함수들을 직접 호출하기 위해
 # 메인 함수 로직을 재사용

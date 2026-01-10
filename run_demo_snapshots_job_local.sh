@@ -7,11 +7,14 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# 환경 변수 파일은 Python Job 파일 내부에서 자동으로 로드됩니다
+# (~/ngn_board/config/ngn.env)
+
 echo "=========================================="
 echo "데모 계정 스냅샷 로컬 테스트 (Job 방식)"
 echo "=========================================="
 
-# 환경 변수 설정 (필요한 경우)
+# 환경 변수 기본값 설정 (env 파일에 없을 경우)
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-winged-precept-443218-v8}"
 export GCS_BUCKET="${GCS_BUCKET:-winged-precept-443218-v8.appspot.com}"
 export COMPANY_NAMES="${COMPANY_NAMES:-piscess,demo}"

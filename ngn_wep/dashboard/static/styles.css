@@ -2126,6 +2126,38 @@ th.sortable.desc::after {
   z-index: 1;
 }
 
+/* ✅ ADMAKE 버튼 (카탈로그 버튼 위에 배치) */
+.admake-toggle-btn {
+  position: fixed;
+  bottom: 96px; /* 카탈로그 버튼 위 (20px + 36px*2 + 4px 간격) */
+  right: 0;
+  background-color: #6B46C1; /* 보라색 - 카탈로그와 다른 색상 */
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  padding: 36px 14px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  text-transform: uppercase;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  cursor: pointer;
+  z-index: 1501; /* 카탈로그 버튼보다 위에 */
+  box-shadow: -4px 4px 10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  border: none;
+  user-select: none;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.admake-toggle-btn:hover {
+  background-color: #553C9A; /* hover 시 더 진한 보라색 */
+  color: #ffffff;
+  box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);
+}
+
 /* ✅ 사이드버튼 */
 .catalog-toggle-btn {
   position: fixed;

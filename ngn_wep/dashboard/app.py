@@ -260,6 +260,15 @@ def trend_ably_page():
 def trend_page():
     return redirect(url_for("trend_selection_page"))
 
+@app.route("/admake")
+def admake_page():
+    """ADMAKE 페이지"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    
+    return render_template("admake_page.html",
+                           company_names=session.get("company_names", []))
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADMAKE - NGN 대시보드</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- ✅ 햄버거 메뉴 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">ADMAKE</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}" class="{% if request.path.startswith('/trend') %}active{% endif %}">TREND</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ 메인 컨텐츠 -->
+<div style="max-width: 1400px; margin: 80px auto; padding: 40px; text-align: center;">
+  <h1 style="font-size: 48px; font-weight: 700; color: #212529; margin-bottom: 24px;">ADMAKE</h1>
+  <p style="font-size: 18px; color: #6B7280;">이 페이지는 준비 중입니다.</p>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+
+</body>
+</html>

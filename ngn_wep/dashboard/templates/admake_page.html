@@ -43,6 +43,34 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+// ✅ ADMAKE 페이지 로드 시 광고 계정 확인
+$(document).ready(function() {
+    if (window.location.pathname === "/admake") {
+        // URL 파라미터에서 account_id 확인
+        const urlParams = new URLSearchParams(window.location.search);
+        const accountId = urlParams.get('account_id');
+        
+        // account_id가 없으면 /ads 페이지로 리다이렉트
+        if (!accountId) {
+            console.log("[DEBUG] ADMAKE 페이지 접근: 계정이 선택되지 않음, /ads로 리다이렉트");
+            if (typeof showInlinePopup === 'function') {
+                showInlinePopup("광고 계정을 선택한 후 ADMAKE 페이지에 접근해주세요.");
+            }
+            setTimeout(function() {
+                window.location.href = "/ads";
+            }, 2000);
+            return;
+        }
+        
+        console.log("[DEBUG] ADMAKE 페이지 접근: 계정 ID =", accountId);
+        // 여기서 계정 정보를 사용하여 페이지 초기화
+        // TODO: 계정 정보를 사용한 페이지 로직 구현
+    }
+});
+</script>
 
 </body>
 </html>

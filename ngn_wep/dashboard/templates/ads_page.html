@@ -133,9 +133,9 @@
 </div>
 
 <!-- ✅ ADMAKE 버튼 (카탈로그 버튼 위에 배치) -->
-<a href="{{ url_for('admake_page') }}" id="admakeToggleBtn" class="admake-toggle-btn" aria-label="ADMAKE 열기">
+<div id="admakeToggleBtn" class="admake-toggle-btn" aria-label="ADMAKE 열기">
   <span>ADMAKE</span>
-</a>
+</div>
 
 <!-- ✅ 카탈로그 사이드바 (슬라이드 방식 + 닫기 버튼 포함) -->
 {% include "components/catalog_sidebar.html" %}
@@ -192,6 +192,34 @@ $(document).ready(function() {
         if (typeof fetchData === 'function') {
             fetchData(1);
         }
+        
+        // ✅ ADMAKE 버튼 클릭 이벤트 (모듈 로드 완료 후 등록)
+        // metaAdsState가 로드될 때까지 대기한 후 이벤트 등록
+        const setupAdmakeButton = () => {
+            if (window.metaAdsState) {
+                $("#admakeToggleBtn").off("click.admake").on("click.admake", function() {
+                    const accountId = window.metaAdsState?.accountId;
+                    if (accountId) {
+                        // 계정이 선택되어 있으면 ADMAKE 페이지로 이동 (계정 ID를 URL 파라미터로 전달)
+                        window.location.href = "/admake?account_id=" + encodeURIComponent(accountId);
+                    } else {
+                        // 계정이 선택되지 않았으면 경고 메시지 표시
+                        if (typeof showInlinePopup === 'function') {
+                            showInlinePopup("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
+                        } else {
+                            alert("좌측에서 Meta 광고 계정을 먼저 선택해 주세요.");
+                        }
+                    }
+                });
+                console.log("[DEBUG] ADMAKE 버튼 클릭 이벤트 등록 완료");
+            } else {
+                // metaAdsState가 아직 로드되지 않았으면 잠시 후 재시도
+                setTimeout(setupAdmakeButton, 100);
+            }
+        };
+        
+        // 초기 시도
+        setupAdmakeButton();
     }
 });
 </script>

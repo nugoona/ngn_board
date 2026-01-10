@@ -2153,6 +2153,10 @@ th.sortable.desc::after {
 }
 
 .admake-toggle-btn:hover {
+  cursor: pointer;
+}
+
+.admake-toggle-btn:hover {
   background-color: #553C9A; /* hover 시 더 진한 보라색 */
   color: #ffffff;
   box-shadow: -5px 6px 12px rgba(0, 0, 0, 0.4);

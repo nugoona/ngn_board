@@ -35,3 +35,6 @@ complexity.txt
 credentials*.json
 *_credentials.json
 tokens.json
+
+# Test images
+ngn_wep/ad_make/test_crop/

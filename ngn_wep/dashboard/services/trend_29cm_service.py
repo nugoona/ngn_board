@@ -273,6 +273,7 @@ def get_trend_snapshot_path(run_id: str, company_name: Optional[str] = None) -> 
     """
     스냅샷 파일 경로 생성
     형식: ai-reports/trend/29cm/{company_name}/{YYYY}-{MM}-{week}/snapshot.json.gz
+    demo 계정의 경우 piscess로 매핑하여 경로 생성
     """
     import re
     
@@ -296,8 +297,10 @@ def get_trend_snapshot_path(run_id: str, company_name: Optional[str] = None) -> 
     month = week_start.month
     
     # ✅ 업체명 폴더 구조 추가
+    # demo 계정의 경우 piscess로 매핑 (GCS 스냅샷은 piscess로 저장되어 있음)
     if company_name:
-        return f"ai-reports/trend/29cm/{company_name.lower()}/{year}-{month:02d}-{week}/snapshot.json.gz"
+        snapshot_company_name = "piscess" if company_name.lower() == "demo" else company_name.lower()
+        return f"ai-reports/trend/29cm/{snapshot_company_name}/{year}-{month:02d}-{week}/snapshot.json.gz"
     else:
         # 하위 호환성: 업체명이 없으면 기존 경로 반환
         return f"ai-reports/trend/29cm/{year}-{month:02d}-{week}/snapshot.json.gz"
@@ -306,14 +309,18 @@ def get_trend_snapshot_path(run_id: str, company_name: Optional[str] = None) -> 
 def load_trend_snapshot_from_gcs(run_id: str, company_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     GCS 버킷에서 트렌드 스냅샷 로드
+    demo 계정의 경우 piscess 스냅샷을 로드합니다.
     """
     try:
         PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "winged-precept-443218-v8")
         GCS_BUCKET = os.environ.get("GCS_BUCKET", "winged-precept-443218-v8.appspot.com")
         
+        # demo를 piscess로 매핑하여 경로 생성
+        snapshot_company_name = "piscess" if company_name and company_name.lower() == "demo" else company_name
+        
         # 경로 생성 (중복 코드 제거, get_trend_snapshot_path 사용)
         try:
-            blob_path = get_trend_snapshot_path(run_id, company_name)
+            blob_path = get_trend_snapshot_path(run_id, snapshot_company_name)
         except ValueError:
             print(f"[ERROR] Invalid run_id format: {run_id}")
             return None

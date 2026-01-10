@@ -453,6 +453,7 @@ def get_compare_snapshot_path(run_id: str, company_name: Optional[str] = None) -
     """
     스냅샷 GCS 경로 생성
     company_name이 있으면 경로에 포함 (같은 run_id에 여러 company가 있을 수 있으므로)
+    demo 계정의 경우 piscess로 매핑하여 경로 생성
     """
     # run_id 형식: {year}W{week:02d}_WEEKLY_...
     week_match = re.match(r'(\d{4})W(\d{2})', run_id)
@@ -471,8 +472,11 @@ def get_compare_snapshot_path(run_id: str, company_name: Optional[str] = None) -
     month = week_start.month
     
     # company_name이 있으면 경로에 포함
+    # demo 계정의 경우 piscess로 매핑
     if company_name:
-        return f"ai-reports/compare/29cm/{company_name}/{year}-{month:02d}-{week}/search_results.json.gz"
+        # demo를 piscess로 매핑 (GCS 스냅샷은 piscess로 저장되어 있음)
+        snapshot_company_name = "piscess" if company_name.lower() == "demo" else company_name
+        return f"ai-reports/compare/29cm/{snapshot_company_name}/{year}-{month:02d}-{week}/search_results.json.gz"
     else:
         return f"ai-reports/compare/29cm/{year}-{month:02d}-{week}/search_results.json.gz"
 
@@ -543,10 +547,12 @@ def save_search_results_to_gcs(
 def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword: Optional[str] = None) -> Optional[Dict[str, List[Dict]]]:
     """
     GCS 스냅샷에서 검색 결과 로드 (캐싱 적용)
+    demo 계정의 경우 piscess 스냅샷을 로드합니다.
     """
     try:
-        # 스냅샷 경로 생성 (company_name 포함)
-        blob_path = get_compare_snapshot_path(run_id, company_name)
+        # demo를 piscess로 매핑하여 스냅샷 경로 생성
+        snapshot_company_name = "piscess" if company_name.lower() == "demo" else company_name
+        blob_path = get_compare_snapshot_path(run_id, snapshot_company_name)
         
         client = storage.Client(project=PROJECT_ID)
         bucket = client.bucket(GCS_BUCKET)
@@ -566,9 +572,10 @@ def load_search_results_from_gcs(company_name: str, run_id: str, search_keyword:
         
         snapshot_data = json.loads(snapshot_json_str)
         
-        # company_name 확인
-        if snapshot_data.get("company_name") != company_name:
-            print(f"[WARN] 스냅샷의 company_name이 일치하지 않습니다: {snapshot_data.get('company_name')} != {company_name}")
+        # company_name 확인 (demo인 경우 piscess 스냅샷이므로 검증 통과)
+        snapshot_company_in_file = snapshot_data.get("company_name")
+        if snapshot_company_in_file != snapshot_company_name and snapshot_company_in_file != company_name:
+            print(f"[WARN] 스냅샷의 company_name이 일치하지 않습니다: {snapshot_company_in_file} != {snapshot_company_name}")
             return None
         
         # search_results 추출

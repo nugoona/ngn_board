@@ -95,14 +95,10 @@ def filter_ai_report_by_company(analysis_report: str, company_name: str) -> str:
     if not analysis_report or not company_name or not COMPANY_MAPPING_AVAILABLE:
         return analysis_report
     
-    # 데모 계정인 경우 자사몰 섹션 제거 (보안)
-    if company_name.lower() == "demo":
-        # Section 1 전체 제거
-        section1_pattern = r'##\s*Section\s*1[^#]*(?=##|$)'
-        analysis_report = re.sub(section1_pattern, '', analysis_report, flags=re.IGNORECASE | re.DOTALL)
-        return analysis_report
+    # demo 계정인 경우 piscess로 매핑 (인사이트 리포트 표시를 위해)
+    filter_company_name = "piscess" if company_name.lower() == "demo" else company_name
     
-    company_ko = get_company_korean_name(company_name)
+    company_ko = get_company_korean_name(filter_company_name)
     if not company_ko:
         # 매핑되지 않은 업체인 경우, Section 1에서 자사몰 섹션 제거 또는 기본 메시지로 변경
         # Section 1의 자사몰 부분을 "자사몰 상품이 포함되지 않았습니다"로 변경

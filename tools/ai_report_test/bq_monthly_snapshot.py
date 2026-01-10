@@ -2398,6 +2398,9 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         next_report_month = shift_month(report_month, 1)
         next_month_num = int(next_report_month.split("-")[1])
         
+        # 현재 리포트 월 번호
+        current_month_num = int(report_month.split("-")[1])
+        
         # 작년 익월 계산 (다음 달의 작년 동월)
         next_month_next = shift_month(next_report_month, 1)
         next_month_next_num = int(next_month_next.split("-")[1])
@@ -2409,13 +2412,15 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             "ga4_traffic": {},
         }
         
-        # 같은 월(month-of-year) 표본 수집 (작년 동월)
-        mall_sales_same_month = []
+        # 같은 월(month-of-year) 표본 수집
+        # 작년 동월: 현재 리포트 월의 작년 동월 (예: 2025-12 리포트 → 2024-12)
+        # 작년 익월: 다음 달의 작년 동월 (예: 2026-01의 작년 동월 → 2025-01)
+        mall_sales_same_month = []  # 현재 리포트 월의 작년 동월들
         meta_ads_same_month = []
         ga4_traffic_same_month = []
         
-        # 작년 익월 표본 수집
-        mall_sales_next_month = []
+        # 작년 익월 표본 수집 (다음 달의 작년 동월)
+        mall_sales_next_month = []  # 다음 달의 작년 동월들
         
         for item in monthly_13m:
             ym = item.get("ym", "")
@@ -2423,12 +2428,13 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
             if len(ym_parts) >= 2:
                 try:
                     item_month = int(ym_parts[1])
-                    if item_month == next_month_num:
+                    # 작년 동월: 현재 리포트 월의 작년 동월 (예: 2025-12 리포트 → 2024-12)
+                    if item_month == current_month_num:
                         v = item.get("net_sales")
                         if v is not None:
                             mall_sales_same_month.append(v)
-                    elif item_month == next_month_next_num:
-                        # 작년 익월 매출
+                    # 작년 익월: 다음 달의 작년 동월 (예: 2026-01의 작년 동월 = 2025-01)
+                    elif item_month == next_month_num:
                         v = item.get("net_sales")
                         if v is not None:
                             mall_sales_next_month.append(v)

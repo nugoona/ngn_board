@@ -243,11 +243,25 @@ def get_data():
                 response_data["performance_summary"] = performance_data
                 print(f"[MOBILE] ✅ Performance Summary 성공: {len(performance_data)}개")
                 print(f"[MOBILE] 📊 Performance Summary 첫 번째 행: {performance_data[0] if performance_data else 'None'}")
+                
+                # 🔥 latest_update 추출 (웹버전과 동일)
+                latest_update = None
+                for row in performance_data:
+                    if row.get("updated_at"):
+                        # datetime 객체를 ISO 형식 문자열로 변환
+                        if hasattr(row["updated_at"], 'isoformat'):
+                            latest_update = row["updated_at"].isoformat()
+                        else:
+                            latest_update = str(row["updated_at"])
+                        break
+                response_data["latest_update"] = latest_update
             else:
                 response_data["performance_summary"] = []
+                response_data["latest_update"] = None
                 print(f"[MOBILE] ⚠️ Performance Summary 데이터 없음")
         else:
             response_data["performance_summary"] = []
+            response_data["latest_update"] = None
 
         if "cafe24_product_sales" in results_map:
             cafe24_result = results_map["cafe24_product_sales"]

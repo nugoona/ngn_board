@@ -183,7 +183,8 @@
       justify-content: center;
       align-items: center;
       min-height: calc(100vh - 200px);
-      padding: 40px 20px;
+      padding: 40px 80px 40px 20px; /* 좌측 여백 추가 (라벨 공간) */
+      position: relative;
     }
 
     /* ✅ 가이드 컨테이너 스타일 */
@@ -195,13 +196,20 @@
       background: #f3f4f6;
       border: 2px solid #111827;
       border-radius: 1rem;
-      overflow: hidden;
+      overflow: visible; /* 라벨이 보이도록 변경 */
       box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.08);
       margin: 0 auto 32px;
       cursor: move;
       user-select: none;
       box-sizing: border-box; /* 보더 포함 크기 계산 */
       padding: 0; /* 패딩 제거로 정확한 계산 */
+    }
+    
+    .admake-guide-preview {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden; /* 내부 콘텐츠만 클리핑 */
     }
 
     .admake-guide-preview {
@@ -254,12 +262,12 @@
     }
 
     .admake-guide-line-4-5 {
-      /* 4:5 비율 가이드 - 중앙 정렬 (정밀 보정) */
+      /* 4:5 비율 가이드 - 중앙 정렬 (수학적 정확도) */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
-      height: 80%;
+      height: 70.31%; /* 9:16 대비 4:5 세로 비율 */
       border: 2px dashed rgba(255, 255, 255, 0.5);
       box-sizing: border-box;
       margin: 0;
@@ -267,44 +275,58 @@
     }
 
     .admake-guide-line-1-1 {
-      /* 1:1 비율 가이드 - 중앙 정사각형 (정밀 보정) */
+      /* 1:1 비율 가이드 - 중앙 정사각형 (수학적 정확도) */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 62.5%; /* 9:16 비율에서 1:1 정사각형 */
-      height: 62.5%;
+      width: 100%;
+      height: 56.25%; /* 9:16 대비 1:1 세로 비율 */
       border: 2px dashed rgba(255, 255, 255, 0.7);
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    .admake-guide-label {
+    /* ✅ 가이드 라벨 외부 배치 (좌측 바깥쪽) */
+    .admake-guide-labels-container {
       position: absolute;
+      left: -70px;
+      top: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .admake-guide-label {
       background: rgba(17, 24, 39, 0.9);
       color: #ffffff;
-      padding: 4px 8px;
+      padding: 6px 10px;
       border-radius: 4px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.05em;
-      z-index: 13;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
+      margin-bottom: 4px;
+    }
+
+    .admake-guide-label-9-16 {
+      /* 9:16 라벨 - 컨테이너 상단 (0%) */
+      margin-top: 0;
     }
 
     .admake-guide-label-4-5 {
-      top: 50%;
-      right: 8px;
-      transform: translateY(-50%);
-      margin-top: -40%;
+      /* 4:5 라벨 - 4:5 가이드 시작 높이 (50% - 35.155% = 14.845%) */
+      margin-top: calc(14.845% - 12px); /* 라벨 높이 절반 보정 */
     }
 
     .admake-guide-label-1-1 {
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      margin-top: -31.25%;
-      z-index: 14; /* 가이드 라인 위에 표시 */
-      background: rgba(17, 24, 39, 0.95); /* 더 진한 배경으로 가독성 향상 */
+      /* 1:1 라벨 - 1:1 가이드 시작 높이 (50% - 28.125% = 21.875%) */
+      margin-top: calc(21.875% - 12px); /* 라벨 높이 절반 보정 */
     }
 
     /* ✅ 크롭 컨트롤 스타일 */
@@ -312,13 +334,60 @@
       margin-top: 24px;
       width: 100%;
       max-width: 450px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ✅ 자르기 비율 버튼 그룹 */
+    .admake-ratio-buttons {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .admake-ratio-btn {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      border: 2px solid #111827;
+      border-radius: 0.5rem;
+      background: #ffffff;
+      color: #111827;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
+    }
+
+    .admake-ratio-btn:hover {
+      background: #f3f4f6;
+      transform: translateY(-1px);
+      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.12);
+    }
+
+    .admake-ratio-btn.active {
+      background: #111827;
+      color: #ffffff;
+      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.15);
+    }
+
+    .admake-ratio-btn:active {
+      transform: translateY(1px);
+      box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.1);
     }
 
     .admake-zoom-control {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-bottom: 16px;
+      width: 100%;
+      margin-bottom: 0;
     }
 
     .admake-zoom-label {
@@ -600,8 +669,12 @@
         <canvas class="admake-crop-canvas" id="cropCanvas" style="display: none;"></canvas>
         <div class="admake-guide-line admake-guide-line-4-5"></div>
         <div class="admake-guide-line admake-guide-line-1-1"></div>
-        <div class="admake-guide-label admake-guide-label-4-5">4:5</div>
-        <div class="admake-guide-label admake-guide-label-1-1">1:1</div>
+        <!-- 가이드 라벨 외부 배치 (좌측) -->
+        <div class="admake-guide-labels-container">
+          <div class="admake-guide-label admake-guide-label-9-16">9:16</div>
+          <div class="admake-guide-label admake-guide-label-4-5">4:5</div>
+          <div class="admake-guide-label admake-guide-label-1-1">1:1</div>
+        </div>
         <div id="placeholderText" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 14px; text-align: center; z-index: 2; pointer-events: none;">
           미디어를 선택하세요
         </div>
@@ -673,6 +746,8 @@ let currentY = 0;
 let currentZoom = 1;
 let containerWidth = 0;
 let containerHeight = 0;
+let currentAspectRatio = 9/16; // 현재 선택된 비율 (9:16, 4:5, 1:1)
+let minZoom = 1; // 최소 확대 배율 (동적 계산)
 
 // ✅ IndexedDB에서 File 객체 가져오기
 async function getFileFromIndexedDB(mediaId) {
@@ -978,29 +1053,51 @@ function endDrag() {
   }
 }
 
-// ✅ 이미지 그리기
+// ✅ 이미지 그리기 (비율 제한 적용)
 function drawImage() {
   if (!currentImage || !ctx) return;
   
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
+  // 선택된 비율에 맞는 크롭 영역 계산
+  const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+  const cropX = (containerWidth - cropArea.width) / 2;
+  const cropY = (containerHeight - cropArea.height) / 2;
+  
   const imgWidth = currentImage.width * currentZoom;
   const imgHeight = currentImage.height * currentZoom;
   
-  // 이미지가 컨테이너 밖으로 나가지 않도록 제한
-  const maxX = Math.max(0, imgWidth - canvas.width);
-  const maxY = Math.max(0, imgHeight - canvas.height);
+  // 크롭 영역 내에서만 이미지가 보이도록 제한
+  const maxX = Math.max(0, imgWidth - cropArea.width);
+  const maxY = Math.max(0, imgHeight - cropArea.height);
   
-  currentX = Math.max(-maxX, Math.min(0, currentX));
-  currentY = Math.max(-maxY, Math.min(0, currentY));
+  // currentX, currentY를 크롭 영역 기준으로 조정
+  // currentX, currentY는 이미 크롭 영역 기준으로 저장되어 있음
+  const relativeX = currentX - cropX;
+  const relativeY = currentY - cropY;
+  
+  const finalX = Math.max(-maxX, Math.min(0, relativeX));
+  const finalY = Math.max(-maxY, Math.min(0, relativeY));
+  
+  // 이미지를 크롭 영역에 맞춰 그리기 (clip 사용)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cropX, cropY, cropArea.width, cropArea.height);
+  ctx.clip();
   
   ctx.drawImage(
     currentImage,
-    currentX,
-    currentY,
+    cropX + finalX,
+    cropY + finalY,
     imgWidth,
     imgHeight
   );
+  
+  ctx.restore();
+  
+  // currentX, currentY 업데이트 (크롭 영역 기준)
+  currentX = cropX + finalX;
+  currentY = cropY + finalY;
 }
 
 // ✅ 크롭 상태 저장
@@ -1010,38 +1107,69 @@ function saveCropState() {
     item.cropState = {
       x: currentX,
       y: currentY,
-      zoom: currentZoom
+      zoom: currentZoom,
+      aspectRatio: currentAspectRatio // 비율도 저장
     };
     // 상태 저장 시 자동으로 확인 처리하지 않음 (사용자가 명시적으로 확인해야 함)
   }
 }
 
-// ✅ 이미지가 9:16 박스에 맞게 초기 배율 계산
-function calculateInitialZoom(img, containerWidth, containerHeight) {
+// ✅ 선택된 비율에 맞는 크롭 영역 크기 계산
+function getCropAreaSize(containerWidth, containerHeight, aspectRatio) {
+  let cropWidth, cropHeight;
+  
+  if (aspectRatio === 9/16) {
+    // 9:16 - 전체 컨테이너 사용
+    cropWidth = containerWidth;
+    cropHeight = containerHeight;
+  } else if (aspectRatio === 4/5) {
+    // 4:5 - 컨테이너 너비에 맞춤
+    cropWidth = containerWidth;
+    cropHeight = containerWidth / (4/5);
+    if (cropHeight > containerHeight) {
+      cropHeight = containerHeight;
+      cropWidth = containerHeight * (4/5);
+    }
+  } else if (aspectRatio === 1/1) {
+    // 1:1 - 정사각형
+    const size = Math.min(containerWidth, containerHeight);
+    cropWidth = size;
+    cropHeight = size;
+  } else {
+    cropWidth = containerWidth;
+    cropHeight = containerHeight;
+  }
+  
+  return { width: cropWidth, height: cropHeight };
+}
+
+// ✅ 이미지가 선택된 비율 박스에 맞게 초기 배율 및 최소 배율 계산
+function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio) {
+  const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
   const imgAspect = img.width / img.height;
-  const containerAspect = containerWidth / containerHeight; // 9:16 = 0.5625
+  const cropAspect = cropArea.width / cropArea.height;
   
   let initialZoom = 1;
   
-  if (imgAspect > containerAspect) {
+  if (imgAspect > cropAspect) {
     // 이미지가 더 넓음 (가로형) - 높이에 맞춤
-    initialZoom = containerHeight / img.height;
+    initialZoom = cropArea.height / img.height;
   } else {
     // 이미지가 더 좁음 (세로형) - 너비에 맞춤
-    initialZoom = containerWidth / img.width;
+    initialZoom = cropArea.width / img.width;
   }
   
-  // 최소 확대 비율 제한 (빈 공간이 보이지 않도록)
-  const minZoom = Math.max(
-    containerWidth / img.width,
-    containerHeight / img.height
+  // 최소 확대 비율 계산 (빈 공간이 보이지 않도록)
+  minZoom = Math.max(
+    cropArea.width / img.width,
+    cropArea.height / img.height
   );
   
   // 최소값과 계산된 값 중 큰 값 사용
   initialZoom = Math.max(initialZoom, minZoom);
   
-  // 최소값은 1, 최대값은 3으로 제한
-  return Math.max(1, Math.min(initialZoom, 3));
+  // 최소값은 0.5, 최대값은 3으로 제한
+  return Math.max(0.5, Math.min(initialZoom, 3));
 }
 
 // ✅ 크롭 상태 불러오기
@@ -1051,14 +1179,19 @@ function loadCropState(item, img = null) {
     currentX = item.cropState.x;
     currentY = item.cropState.y;
     currentZoom = item.cropState.zoom;
+    // 저장된 비율도 복원 (있는 경우)
+    if (item.cropState.aspectRatio) {
+      currentAspectRatio = item.cropState.aspectRatio;
+      updateRatioButtons();
+    }
   } else {
-    // 초기 상태 - 이미지가 9:16 박스에 맞게 자동 계산
+    // 초기 상태 - 이미지가 선택된 비율 박스에 맞게 자동 계산
     currentX = 0;
     currentY = 0;
     
     if (img && containerWidth > 0 && containerHeight > 0) {
-      currentZoom = calculateInitialZoom(img, containerWidth, containerHeight);
-      console.log(`[DEBUG] 초기 배율 자동 계산: ${currentZoom.toFixed(2)}`);
+      currentZoom = calculateInitialZoom(img, containerWidth, containerHeight, currentAspectRatio);
+      console.log(`[DEBUG] 초기 배율 자동 계산: ${currentZoom.toFixed(2)} (비율: ${currentAspectRatio})`);
     } else {
       currentZoom = 1;
     }
@@ -1068,17 +1201,73 @@ function loadCropState(item, img = null) {
   const zoomSlider = document.getElementById('zoomSlider');
   const zoomValue = document.getElementById('zoomValue');
   if (zoomSlider) {
-    zoomSlider.value = currentZoom;
-    // 슬라이더 최소값도 동적으로 조정
+    // 슬라이더 최소값 동적으로 조정
     if (img && containerWidth > 0 && containerHeight > 0) {
-      const minZoom = Math.max(
-        containerWidth / img.width,
-        containerHeight / img.height
-      );
-      zoomSlider.min = Math.max(0.5, minZoom * 0.8); // 최소값을 약간 여유있게
+      zoomSlider.min = Math.max(0.5, minZoom * 0.9); // 최소값을 약간 여유있게
+      zoomSlider.max = 3;
     }
+    zoomSlider.value = currentZoom;
   }
   if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// ✅ 비율 버튼 상태 업데이트
+function updateRatioButtons() {
+  const buttons = document.querySelectorAll('.admake-ratio-btn');
+  buttons.forEach(btn => {
+    const ratioStr = btn.getAttribute('data-ratio');
+    const ratioValue = eval(ratioStr); // "9/16" -> 0.5625, "4/5" -> 0.8, "1/1" -> 1
+    if (Math.abs(currentAspectRatio - ratioValue) < 0.001) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+// ✅ 비율 변경 처리
+function changeAspectRatio(ratio) {
+  currentAspectRatio = ratio;
+  updateRatioButtons();
+  
+  if (currentImage && containerWidth > 0 && containerHeight > 0) {
+    // 새로운 비율에 맞는 크롭 영역 계산
+    const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+    const cropX = (containerWidth - cropArea.width) / 2;
+    const cropY = (containerHeight - cropArea.height) / 2;
+    
+    // 새로운 비율에 맞게 최소 배율 재계산
+    const newMinZoom = calculateInitialZoom(currentImage, containerWidth, containerHeight, currentAspectRatio);
+    minZoom = newMinZoom;
+    
+    // 현재 배율이 최소값보다 작으면 최소값으로 조정
+    if (currentZoom < minZoom) {
+      currentZoom = minZoom;
+    }
+    
+    // 이미지 위치를 새로운 크롭 영역 중앙으로 조정
+    const imgWidth = currentImage.width * currentZoom;
+    const imgHeight = currentImage.height * currentZoom;
+    
+    // 이미지를 크롭 영역 중앙에 배치
+    currentX = cropX + (cropArea.width - imgWidth) / 2;
+    currentY = cropY + (cropArea.height - imgHeight) / 2;
+    
+    // 슬라이더 업데이트
+    const zoomSlider = document.getElementById('zoomSlider');
+    const zoomValue = document.getElementById('zoomValue');
+    if (zoomSlider) {
+      zoomSlider.min = Math.max(0.5, minZoom * 0.9);
+      zoomSlider.value = currentZoom;
+    }
+    if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+    
+    // 이미지 다시 그리기
+    drawImage();
+    
+    // 크롭 상태 저장
+    saveCropState();
+  }
 }
 
 // ✅ 미디어 확인 처리
@@ -1180,6 +1369,8 @@ async function selectMedia(index) {
       // Canvas 크기가 설정된 후에 크롭 상태 로드
       updateCanvasSize();
       loadCropState(item, img);
+      // 비율 버튼 상태 업데이트
+      updateRatioButtons();
       drawImage();
     };
     img.onerror = async () => {
@@ -1352,26 +1543,36 @@ async function createCroppedImage(mediaItem) {
       return;
     }
     
-    // 이미지는 크롭된 버전 생성
-    const state = mediaItem.cropState || { x: 0, y: 0, zoom: 1 };
+    // 이미지는 크롭된 버전 생성 (선택된 비율에 맞게)
+    const state = mediaItem.cropState || { x: 0, y: 0, zoom: 1, aspectRatio: 9/16 };
+    const aspectRatio = state.aspectRatio || 9/16;
     
     // 이미지 로드
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // 크롭 캔버스 생성
+      // 선택된 비율에 맞는 크롭 영역 계산
+      const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
+      const cropX = (containerWidth - cropArea.width) / 2;
+      const cropY = (containerHeight - cropArea.height) / 2;
+      
+      // 크롭 캔버스 생성 (선택된 비율 크기)
       const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = containerWidth;
-      cropCanvas.height = containerHeight;
+      cropCanvas.width = cropArea.width;
+      cropCanvas.height = cropArea.height;
       const cropCtx = cropCanvas.getContext('2d');
       
       const imgWidth = img.width * state.zoom;
       const imgHeight = img.height * state.zoom;
       
+      // 크롭 영역 기준으로 이미지 위치 계산
+      const relativeX = state.x - cropX;
+      const relativeY = state.y - cropY;
+      
       cropCtx.drawImage(
         img,
-        state.x,
-        state.y,
+        relativeX,
+        relativeY,
         imgWidth,
         imgHeight
       );

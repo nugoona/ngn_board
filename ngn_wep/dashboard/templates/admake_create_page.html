@@ -448,6 +448,7 @@
 let mediaItems = []; // { id, file, previewUrl, type }
 let hasUnsavedChanges = false;
 let mediaIdCounter = 0;
+let isNavigatingToNextStep = false; // Step 2로 이동 중인지 플래그
 
 // ✅ DOM 요소 가져오기
 let uploadArea, fileInput, thumbnailsGrid, landingUrlInput, nextBtn, cancelBtn;
@@ -541,8 +542,30 @@ function setupEventListeners() {
   cancelBtn.addEventListener('click', () => {
     if (hasUnsavedChanges) {
       if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
+        // 취소 플래그 설정 (beforeunload에서 URL 정리)
+        sessionStorage.setItem('admake_cancelling', 'true');
         // 미디어 URL 해제
-        mediaItems.forEach(item => URL.revokeObjectURL(item.previewUrl));
+        mediaItems.forEach(item => {
+          try {
+            URL.revokeObjectURL(item.previewUrl);
+          } catch (e) {
+            console.warn('URL revoke 실패:', e);
+          }
+        });
+        // IndexedDB 데이터도 정리
+        if ('indexedDB' in window) {
+          const dbName = 'admake_files';
+          const request = indexedDB.open(dbName, 1);
+          request.onsuccess = (event) => {
+            const db = event.target.result;
+            if (db.objectStoreNames.contains('files')) {
+              const transaction = db.transaction(['files'], 'readwrite');
+              const store = transaction.objectStore('files');
+              store.clear();
+            }
+          };
+        }
+        sessionStorage.removeItem('admake_step1_state');
         window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
       }
     } else {
@@ -554,6 +577,8 @@ function setupEventListeners() {
   nextBtn.addEventListener('click', async () => {
     if (nextBtn.disabled) return;
     
+    isNavigatingToNextStep = true; // Step 2로 이동 플래그 설정
+    
     // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
     const stateData = {
       accountId: accountId,
@@ -563,12 +588,13 @@ function setupEventListeners() {
         size: item.file.size,
         type: item.file.type,
         mediaType: item.type, // 'image' or 'video'
-        previewUrl: item.previewUrl
+        previewUrl: item.previewUrl // Blob URL 유지 (revoke하지 않음)
       })),
       landingUrl: landingUrlInput.value.trim() || '' // URL은 선택사항
     };
     
     sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
+    console.log('[DEBUG] Step 1 상태 저장 완료:', stateData);
     
     // File 객체들을 IndexedDB에 저장 (다음 Step에서 사용)
     try {
@@ -600,7 +626,9 @@ function setupEventListeners() {
           });
           
           transaction.oncomplete = () => {
+            console.log('[DEBUG] IndexedDB 저장 완료');
             hasUnsavedChanges = false;
+            // Blob URL은 revoke하지 않고 Step 2로 이동
             window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
           };
         };
@@ -748,22 +776,117 @@ function updateNextButtonState() {
   }
 }
 
+// ✅ Step 1 데이터 복원 (페이지 로드 시)
+function restoreStep1Data() {
+  const step1Data = sessionStorage.getItem('admake_step1_state');
+  if (!step1Data) {
+    console.log('[DEBUG] 복원할 Step 1 데이터 없음');
+    return;
+  }
+
+  try {
+    const data = JSON.parse(step1Data);
+    
+    // IndexedDB에서 File 객체 복원
+    if ('indexedDB' in window) {
+      const dbName = 'admake_files';
+      const request = indexedDB.open(dbName, 1);
+      
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('files')) {
+          console.log('[DEBUG] IndexedDB에 파일 저장소 없음');
+          return;
+        }
+        
+        const transaction = db.transaction(['files'], 'readonly');
+        const store = transaction.objectStore('files');
+        
+        // 모든 미디어 항목 복원
+        const restorePromises = data.mediaItems.map(item => {
+          return new Promise((resolve) => {
+            const getRequest = store.get(item.id);
+            getRequest.onsuccess = () => {
+              if (getRequest.result && getRequest.result.file) {
+                // File 객체가 있으면 새로운 Blob URL 생성
+                const file = getRequest.result.file;
+                const previewUrl = URL.createObjectURL(file);
+                
+                mediaItems.push({
+                  id: item.id,
+                  file: file,
+                  previewUrl: previewUrl,
+                  type: item.type
+                });
+                
+                renderThumbnail({
+                  id: item.id,
+                  file: file,
+                  previewUrl: previewUrl,
+                  type: item.type
+                });
+                
+                console.log(`[DEBUG] 미디어 ${item.id} 복원 완료`);
+              }
+              resolve();
+            };
+            getRequest.onerror = () => resolve();
+          });
+        });
+        
+        Promise.all(restorePromises).then(() => {
+          // mediaIdCounter 업데이트 (복원된 항목 수만큼)
+          if (mediaItems.length > 0) {
+            const maxId = Math.max(...mediaItems.map(item => {
+              const match = item.id.match(/media_(\d+)_/);
+              return match ? parseInt(match[1]) : 0;
+            }));
+            mediaIdCounter = maxId;
+          }
+          
+          // 랜딩 URL 복원
+          if (data.landingUrl && landingUrlInput) {
+            landingUrlInput.value = data.landingUrl;
+          }
+          
+          hasUnsavedChanges = false; // 복원된 데이터는 저장된 것으로 간주
+          updateNextButtonState();
+          console.log(`[DEBUG] ${mediaItems.length}개 미디어 복원 완료`);
+        });
+      };
+    }
+  } catch (e) {
+    console.error('[ERROR] Step 1 데이터 복원 실패:', e);
+  }
+}
+
 // ✅ 페이지 이탈 경고 및 URL 정리
 window.addEventListener('beforeunload', (e) => {
+  // Step 2로 이동 중이면 Blob URL을 revoke하지 않음
+  if (isNavigatingToNextStep) {
+    console.log('[DEBUG] Step 2로 이동 중 - Blob URL 유지');
+    return;
+  }
+  
   if (hasUnsavedChanges) {
     e.preventDefault();
     e.returnValue = '작성 중인 데이터가 삭제됩니다';
     return e.returnValue;
   }
   
-  // URL 정리
-  mediaItems.forEach(item => {
-    try {
-      URL.revokeObjectURL(item.previewUrl);
-    } catch (err) {
-      console.warn('URL revoke 실패:', err);
-    }
-  });
+  // 완전히 페이지를 떠날 때만 URL 정리 (광고 제작 완료 또는 취소)
+  // 하지만 취소 버튼을 통해 명시적으로 이탈하는 경우는 제외
+  const isCancelling = sessionStorage.getItem('admake_cancelling');
+  if (isCancelling === 'true') {
+    sessionStorage.removeItem('admake_cancelling');
+    mediaItems.forEach(item => {
+      try {
+        URL.revokeObjectURL(item.previewUrl);
+      } catch (err) {
+        console.warn('URL revoke 실패:', err);
+      }
+    });
+  }
 });
 
 // ✅ 초기화
@@ -783,6 +906,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   
   console.log('[DEBUG] 이벤트 리스너 등록 완료');
+  
+  // Step 1 데이터 복원 (Step 2에서 돌아온 경우)
+  restoreStep1Data();
   
   // 초기 버튼 상태 설정
   updateNextButtonState();

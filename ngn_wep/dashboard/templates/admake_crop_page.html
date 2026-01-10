@@ -176,6 +176,16 @@
       background: #059669;
     }
 
+    /* ✅ 크롭 센터 영역 중앙 정렬 */
+    .admake-crop-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 200px);
+      padding: 40px 20px;
+    }
+
     /* ✅ 가이드 컨테이너 스타일 */
     .admake-guide-container {
       position: relative;
@@ -187,7 +197,7 @@
       border-radius: 1rem;
       overflow: hidden;
       box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.08);
-      margin-bottom: 32px;
+      margin: 0 auto 32px;
       cursor: move;
       user-select: none;
     }
@@ -242,22 +252,25 @@
     }
 
     .admake-guide-line-4-5 {
-      /* 4:5 비율 가이드 (상단 80%) */
-      top: 0;
-      left: 0;
-      right: 0;
+      /* 4:5 비율 가이드 - 중앙 정렬 */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
       height: 80%;
-      border-bottom: 2px dashed rgba(17, 24, 39, 0.3);
+      border: 2px dashed rgba(17, 24, 39, 0.5);
+      box-sizing: border-box;
     }
 
     .admake-guide-line-1-1 {
-      /* 1:1 비율 가이드 (중앙 정사각형) */
+      /* 1:1 비율 가이드 - 중앙 정사각형 */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 62.5%; /* 9:16 비율에서 1:1 정사각형 */
       height: 62.5%;
-      border: 2px dashed rgba(17, 24, 39, 0.3);
+      border: 2px dashed rgba(17, 24, 39, 0.6);
+      box-sizing: border-box;
     }
 
     .admake-guide-label {
@@ -273,8 +286,10 @@
     }
 
     .admake-guide-label-4-5 {
-      top: 78%;
+      top: 50%;
       right: 8px;
+      transform: translateY(-50%);
+      margin-top: -40%;
     }
 
     .admake-guide-label-1-1 {
@@ -651,8 +666,40 @@ let currentZoom = 1;
 let containerWidth = 0;
 let containerHeight = 0;
 
-// ✅ STEP 1에서 저장된 데이터 불러오기
-function loadStep1Data() {
+// ✅ IndexedDB에서 File 객체 가져오기
+async function getFileFromIndexedDB(mediaId) {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB를 지원하지 않습니다'));
+      return;
+    }
+
+    const dbName = 'admake_files';
+    const request = indexedDB.open(dbName, 1);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['files'], 'readonly');
+      const store = transaction.objectStore('files');
+      const getRequest = store.get(mediaId);
+
+      getRequest.onsuccess = () => {
+        if (getRequest.result && getRequest.result.file) {
+          resolve(getRequest.result.file);
+        } else {
+          reject(new Error('파일을 찾을 수 없습니다'));
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ✅ STEP 1에서 저장된 데이터 불러오기 (Blob URL 복구)
+async function loadStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (!step1Data) {
     alert('STEP 1 데이터를 찾을 수 없습니다. 처음부터 시작해주세요.');
@@ -662,24 +709,69 @@ function loadStep1Data() {
 
   try {
     const data = JSON.parse(step1Data);
-    // previewUrl을 사용하여 미디어 아이템 재구성
-    // 실제로는 File 객체가 없으므로, previewUrl만 사용
-    // 각 미디어에 크롭 상태와 확인 여부 추가
-    mediaItems = data.mediaItems.map(item => ({
-      id: item.id,
-      name: item.name,
-      size: item.size,
-      type: item.type,
-      mediaType: item.mediaType,
-      previewUrl: item.previewUrl,
-      cropState: { x: 0, y: 0, zoom: 1 }, // 크롭 좌표 및 확대 배율
-      isConfirmed: false // 검토 완료 여부
-    }));
-
+    
+    // 각 미디어에 대해 IndexedDB에서 File 객체를 가져와서 새로운 Blob URL 생성
+    const loadedItems = await Promise.all(
+      data.mediaItems.map(async (item) => {
+        let previewUrl = null;
+        let file = null;
+        
+        try {
+          // IndexedDB에서 File 객체 가져오기
+          file = await getFileFromIndexedDB(item.id);
+          // 새로운 Blob URL 생성 (만료된 URL 대체)
+          previewUrl = URL.createObjectURL(file);
+          console.log(`[DEBUG] 미디어 ${item.id} Blob URL 재생성 성공`);
+        } catch (e) {
+          console.warn(`[WARN] IndexedDB에서 ${item.id} 로드 실패, 기존 URL 시도:`, e);
+          
+          // IndexedDB 실패 시 기존 previewUrl이 유효한지 확인
+          try {
+            const response = await fetch(item.previewUrl, { method: 'HEAD' });
+            if (response.ok) {
+              previewUrl = item.previewUrl;
+              console.log(`[DEBUG] 기존 Blob URL 유효: ${item.id}`);
+            } else {
+              throw new Error('기존 URL도 유효하지 않음');
+            }
+          } catch (fetchError) {
+            console.error(`[ERROR] 미디어 ${item.id} URL 복구 실패:`, fetchError);
+            // URL 복구 실패 시 사용자에게 알림
+            alert(`미디어 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
+            throw new Error(`미디어 ${item.id} 로드 실패`);
+          }
+        }
+        
+        return {
+          id: item.id,
+          name: item.name,
+          size: item.size,
+          type: item.type,
+          mediaType: item.mediaType,
+          previewUrl: previewUrl,
+          file: file, // File 객체 저장 (나중에 업로드 시 사용)
+          cropState: { x: 0, y: 0, zoom: 1 }, // 크롭 좌표 및 확대 배율
+          isConfirmed: false // 검토 완료 여부
+        };
+      })
+    );
+    
+    mediaItems = loadedItems;
+    console.log(`[DEBUG] ${mediaItems.length}개 미디어 로드 완료`);
+    
     renderMediaList();
+    
+    // 첫 번째 미디어 자동 선택 및 즉시 표시
+    if (mediaItems.length > 0) {
+      console.log('[DEBUG] 첫 번째 미디어 자동 선택');
+      // 약간의 지연을 두어 DOM이 완전히 렌더링된 후 선택
+      setTimeout(() => {
+        selectMedia(0);
+      }, 100);
+    }
   } catch (e) {
-    console.error('STEP 1 데이터 파싱 실패:', e);
-    alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    console.error('STEP 1 데이터 로드 실패:', e);
+    alert('데이터를 불러오는 중 오류가 발생했습니다: ' + e.message);
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
   }
 }
@@ -1014,40 +1106,29 @@ function updateUploadButtonState() {
   }
 }
 
-// ✅ IndexedDB에서 File 객체 가져오기
-async function getFileFromIndexedDB(mediaId) {
-  return new Promise((resolve, reject) => {
-    if (!('indexedDB' in window)) {
-      reject(new Error('IndexedDB를 지원하지 않습니다'));
-      return;
-    }
-
-    const dbName = 'admake_files';
-    const request = indexedDB.open(dbName, 1);
-
-    request.onsuccess = (event) => {
-      const db = event.target.result;
-      const transaction = db.transaction(['files'], 'readonly');
-      const store = transaction.objectStore('files');
-      const getRequest = store.get(mediaId);
-
-      getRequest.onsuccess = () => {
-        if (getRequest.result) {
-          resolve(getRequest.result.file);
-        } else {
-          reject(new Error('파일을 찾을 수 없습니다'));
-        }
-      };
-
-      getRequest.onerror = () => reject(getRequest.error);
-    };
-
-    request.onerror = () => reject(request.error);
-  });
-}
-
-// ✅ 이전 버튼
+// ✅ 이전 버튼 (Step 1로 돌아가기 - 데이터 유지)
 document.getElementById('backBtn').addEventListener('click', () => {
+  // Step 1 상태를 sessionStorage에 다시 저장 (크롭 상태 포함)
+  const step1Data = sessionStorage.getItem('admake_step1_state');
+  if (step1Data) {
+    const data = JSON.parse(step1Data);
+    // 크롭 상태 업데이트
+    data.mediaItems = data.mediaItems.map(item => {
+      const mediaItem = mediaItems.find(m => m.id === item.id);
+      if (mediaItem) {
+        return {
+          ...item,
+          cropState: mediaItem.cropState,
+          isConfirmed: mediaItem.isConfirmed
+        };
+      }
+      return item;
+    });
+    sessionStorage.setItem('admake_step1_state', JSON.stringify(data));
+    console.log('[DEBUG] Step 1로 돌아가기 - 상태 저장 완료');
+  }
+  
+  // Blob URL은 revoke하지 않고 Step 1로 이동
   window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
 });
 
@@ -1321,9 +1402,9 @@ async function uploadToMeta() {
 }
 
 // ✅ 초기화
-document.addEventListener('DOMContentLoaded', () => {
-  loadStep1Data();
+document.addEventListener('DOMContentLoaded', async () => {
   initCanvas();
+  await loadStep1Data(); // 비동기로 데이터 로드
   updateUploadButtonState(); // 초기 버튼 상태 설정
 });
 </script>

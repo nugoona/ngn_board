@@ -51,6 +51,16 @@ rm ./Dockerfile
 
 echo ""
 echo "🚀 2단계: Cloud Run Job 배포 중..."
+# 환경 변수 파일 생성 (YAML 형식, COMPANY_NAMES에 쉼표가 있어서 파일로 전달)
+ENV_VARS_FILE=$(mktemp)
+cat > "$ENV_VARS_FILE" <<EOF
+GOOGLE_CLOUD_PROJECT: ${PROJECT}
+BQ_DATASET: ngn_dataset
+GCS_BUCKET: winged-precept-443218-v8.appspot.com
+COMPANY_NAMES: piscess,demo
+GEMINI_API_KEY: ${GEMINI_API_KEY}
+EOF
+
 # Job이 없으면 생성, 있으면 업데이트
 if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &>/dev/null; then
   echo "Job이 이미 존재합니다. 업데이트 중..."
@@ -62,11 +72,7 @@ if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT}" \
-    --update-env-vars="BQ_DATASET=ngn_dataset" \
-    --update-env-vars="GCS_BUCKET=winged-precept-443218-v8.appspot.com" \
-    --update-env-vars="COMPANY_NAMES=piscess,demo" \
-    --update-env-vars="GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --env-vars-file="$ENV_VARS_FILE" \
     --project="$PROJECT"
 else
   echo "새 Job 생성 중..."
@@ -78,9 +84,12 @@ else
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess,demo,GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --env-vars-file="$ENV_VARS_FILE" \
     --project="$PROJECT"
 fi
+
+# 임시 파일 삭제
+rm -f "$ENV_VARS_FILE"
 
 echo ""
 echo "📢 3단계: Pub/Sub 토픽 생성 중..."

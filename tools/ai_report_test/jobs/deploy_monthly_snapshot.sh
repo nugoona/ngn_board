@@ -51,14 +51,14 @@ rm ./Dockerfile
 
 echo ""
 echo "🚀 2단계: Cloud Run Job 배포 중..."
-# 환경 변수 파일 생성 (COMPANY_NAMES에 쉼표가 있어서 파일로 전달)
+# 환경 변수 파일 생성 (YAML 형식, COMPANY_NAMES에 쉼표가 있어서 파일로 전달)
 ENV_VARS_FILE=$(mktemp)
 cat > "$ENV_VARS_FILE" <<EOF
-GOOGLE_CLOUD_PROJECT=${PROJECT}
-BQ_DATASET=ngn_dataset
-GCS_BUCKET=winged-precept-443218-v8.appspot.com
-COMPANY_NAMES=piscess,demo
-GEMINI_API_KEY=${GEMINI_API_KEY}
+GOOGLE_CLOUD_PROJECT: ${PROJECT}
+BQ_DATASET: ngn_dataset
+GCS_BUCKET: winged-precept-443218-v8.appspot.com
+COMPANY_NAMES: piscess,demo
+GEMINI_API_KEY: ${GEMINI_API_KEY}
 EOF
 
 # Job이 없으면 생성, 있으면 업데이트

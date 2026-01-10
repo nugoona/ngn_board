@@ -6,7 +6,151 @@
   <title>ADMAKE - NGN 대시보드</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f9fafb; /* gray-50 */
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ✅ 메인 컨텐츠 영역 */
+    .admake-selection-wrapper {
+      min-height: calc(100vh - 60px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 80px 40px 40px 40px;
+      background: #f9fafb; /* bg-gray-50 */
+    }
+
+    .admake-selection-cards {
+      display: flex;
+      gap: 32px;
+      align-items: stretch;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 1400px;
+      width: 100%;
+    }
+
+    /* ✅ 카드 링크 스타일 */
+    .admake-card-link {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex: 1;
+      min-width: 300px;
+      max-width: 400px;
+    }
+
+    .admake-card-link.disabled {
+      pointer-events: none;
+      cursor: default;
+    }
+
+    /* ✅ 카드 스타일 - 트렌드 페이지 스타일 */
+    .admake-card {
+      position: relative;
+      width: 100%;
+      min-height: 400px;
+      border-radius: 1.5rem; /* rounded-2xl */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      cursor: pointer;
+      transition: all 0.2s ease-out;
+      user-select: none;
+      overflow: hidden;
+      background: #ffffff;
+      border: 2px solid #e5e7eb; /* border-gray-200 */
+      box-shadow: 8px 8px 0px 0px #e5e7eb; /* 하드 섀도우 */
+    }
+
+    .admake-card-link:not(.disabled):hover .admake-card {
+      transform: translateY(-8px); /* hover: lift-up 효과 */
+      box-shadow: 14px 14px 0px 0px #d1d5db; /* 그림자 더 깊게 */
+    }
+
+    .admake-card-link:not(.disabled):active .admake-card {
+      transform: translateY(4px); /* active: 눌림 효과 */
+      box-shadow: 2px 2px 0px 0px #e5e7eb; /* 그림자 거의 사라짐 */
+    }
+
+    /* 비활성 카드 스타일 */
+    .admake-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .admake-card-link.disabled:hover .admake-card.disabled {
+      transform: none;
+      box-shadow: 8px 8px 0px 0px #e5e7eb;
+    }
+
+    /* ✅ 카드 텍스트 스타일 */
+    .admake-card-title {
+      font-size: 2rem; /* text-3xl */
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.15em; /* tracking-widest - 넓은 자간 */
+      color: #111827; /* text-gray-900 */
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .admake-card-description {
+      font-size: 1rem; /* text-base */
+      font-weight: 400;
+      color: #6b7280; /* text-gray-500 */
+      text-align: center;
+      line-height: 1.6;
+      margin-top: 8px;
+    }
+
+    /* ✅ 모바일 반응형 */
+    @media (max-width: 1024px) {
+      .admake-selection-cards {
+        gap: 24px;
+      }
+      
+      .admake-card {
+        min-height: 350px;
+        padding: 40px 24px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .admake-selection-wrapper {
+        padding: 60px 20px 20px 20px;
+      }
+
+      .admake-selection-cards {
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .admake-card-link {
+        max-width: 100%;
+      }
+
+      .admake-card {
+        min-height: 300px;
+        padding: 32px 20px;
+      }
+
+      .admake-card-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -36,17 +180,40 @@
   </div>
 </div>
 
-<!-- ✅ 메인 컨텐츠 -->
-<div style="max-width: 1400px; margin: 80px auto; padding: 40px; text-align: center;">
-  <h1 style="font-size: 48px; font-weight: 700; color: #212529; margin-bottom: 24px;">ADMAKE</h1>
-  <p style="font-size: 18px; color: #6B7280;">이 페이지는 준비 중입니다.</p>
+<!-- ✅ 메인 컨텐츠 - 3개의 대형 카드 버튼 -->
+<div class="admake-selection-wrapper">
+  <div class="admake-selection-cards">
+    <!-- 박스 1: 광고 만들기 (활성) -->
+    <a href="#" id="admakeCreateCard" class="admake-card-link">
+      <div class="admake-card">
+        <div class="admake-card-title">광고 만들기</div>
+        <div class="admake-card-description">새로운 광고 소재를 생성하고 즉시 게시합니다.</div>
+      </div>
+    </a>
+
+    <!-- 박스 2: 카탈로그 광고 만들기 (비활성) -->
+    <a href="#" class="admake-card-link disabled">
+      <div class="admake-card disabled">
+        <div class="admake-card-title">카탈로그 광고 만들기</div>
+        <div class="admake-card-description">카탈로그 기반의 맞춤형 광고를 생성합니다 (준비 중).</div>
+      </div>
+    </a>
+
+    <!-- 박스 3: 내 광고 성과 확인 (비활성) -->
+    <a href="#" class="admake-card-link disabled">
+      <div class="admake-card disabled">
+        <div class="admake-card-title">내 광고 성과 확인</div>
+        <div class="admake-card-description">현재 라이브 중인 광고의 성과를 분석합니다 (준비 중).</div>
+      </div>
+    </a>
+  </div>
 </div>
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
-// ✅ ADMAKE 페이지 로드 시 광고 계정 확인
+// ✅ ADMAKE 페이지 로드 시 광고 계정 확인 및 카드 클릭 이벤트 설정
 $(document).ready(function() {
     if (window.location.pathname === "/admake") {
         // URL 파라미터에서 account_id 확인
@@ -66,8 +233,14 @@ $(document).ready(function() {
         }
         
         console.log("[DEBUG] ADMAKE 페이지 접근: 계정 ID =", accountId);
-        // 여기서 계정 정보를 사용하여 페이지 초기화
-        // TODO: 계정 정보를 사용한 페이지 로직 구현
+        
+        // ✅ 광고 만들기 카드 클릭 이벤트
+        $("#admakeCreateCard").on("click", function(e) {
+            e.preventDefault();
+            const createUrl = "/admake/create?account_id=" + encodeURIComponent(accountId);
+            console.log("[DEBUG] 광고 만들기 클릭, 이동:", createUrl);
+            window.location.href = createUrl;
+        });
     }
 });
 </script>

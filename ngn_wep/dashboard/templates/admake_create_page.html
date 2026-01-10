@@ -154,10 +154,15 @@
       box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.03);
     }
 
-    .admake-thumbnail-image {
+    .admake-thumbnail-image,
+    .admake-thumbnail-video {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    .admake-thumbnail-video {
+      background: #000000;
     }
 
     .admake-thumbnail-delete {
@@ -399,9 +404,9 @@
     <div class="admake-create-left">
       <div class="admake-upload-area" id="uploadArea">
         <div class="admake-upload-icon">📁</div>
-        <div class="admake-upload-text">이미지를 드래그 앤 드롭하거나 클릭하여 업로드</div>
-        <div class="admake-upload-hint">최대 10개까지 업로드 가능</div>
-        <input type="file" id="fileInput" class="admake-file-input" multiple accept="image/*">
+        <div class="admake-upload-text">이미지 및 동영상을 드래그 앤 드롭하거나 클릭하여 업로드</div>
+        <div class="admake-upload-hint">최대 10개까지 업로드 가능 (이미지: jpg, png, gif / 동영상: mp4, mov 등)</div>
+        <input type="file" id="fileInput" class="admake-file-input" multiple accept="image/*,video/*">
       </div>
 
       <!-- 썸네일 그리드 -->
@@ -437,10 +442,10 @@
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
-// ✅ 상태 관리
-let uploadedFiles = [];
-let fileUrls = [];
+// ✅ 상태 관리 - 개선된 데이터 구조
+let mediaItems = []; // { id, file, previewUrl, type }
 let hasUnsavedChanges = false;
+let mediaIdCounter = 0;
 
 // ✅ 파일 업로드 처리
 const uploadArea = document.getElementById('uploadArea');
@@ -458,6 +463,7 @@ uploadArea.addEventListener('click', () => {
 // 파일 선택
 fileInput.addEventListener('change', (e) => {
   handleFiles(Array.from(e.target.files));
+  fileInput.value = ''; // 같은 파일 재선택 가능하도록 초기화
 });
 
 // 드래그 앤 드롭
@@ -473,13 +479,15 @@ uploadArea.addEventListener('dragleave', () => {
 uploadArea.addEventListener('drop', (e) => {
   e.preventDefault();
   uploadArea.classList.remove('dragover');
-  const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+  const files = Array.from(e.dataTransfer.files).filter(file => 
+    file.type.startsWith('image/') || file.type.startsWith('video/')
+  );
   handleFiles(files);
 });
 
 // 파일 처리 함수
 function handleFiles(files) {
-  const remainingSlots = 10 - uploadedFiles.length;
+  const remainingSlots = 10 - mediaItems.length;
   const filesToAdd = files.slice(0, remainingSlots);
   
   if (files.length > remainingSlots) {
@@ -487,52 +495,96 @@ function handleFiles(files) {
   }
 
   filesToAdd.forEach(file => {
-    if (uploadedFiles.length >= 10) return;
+    if (mediaItems.length >= 10) return;
     
-    const url = URL.createObjectURL(file);
-    uploadedFiles.push(file);
-    fileUrls.push(url);
+    // 파일 타입 확인
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    
+    if (!isImage && !isVideo) {
+      alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다.`);
+      return;
+    }
+    
+    const previewUrl = URL.createObjectURL(file);
+    const mediaItem = {
+      id: `media_${++mediaIdCounter}_${Date.now()}`,
+      file: file,
+      previewUrl: previewUrl,
+      type: isImage ? 'image' : 'video'
+    };
+    
+    mediaItems.push(mediaItem);
     hasUnsavedChanges = true;
     
-    renderThumbnail(url, uploadedFiles.length - 1);
+    renderThumbnail(mediaItem);
   });
   
   updateNextButtonState();
 }
 
-// 썸네일 렌더링
-function renderThumbnail(url, index) {
+// 썸네일 렌더링 - 미디어 타입별 조건부 렌더링
+function renderThumbnail(mediaItem) {
   const thumbnailItem = document.createElement('div');
   thumbnailItem.className = 'admake-thumbnail-item';
+  thumbnailItem.setAttribute('data-id', mediaItem.id);
+  
+  let mediaElement = '';
+  if (mediaItem.type === 'video') {
+    mediaElement = `
+      <video 
+        src="${mediaItem.previewUrl}" 
+        class="admake-thumbnail-video"
+        muted
+        playsinline
+        loop
+        autoplay
+      ></video>
+    `;
+  } else {
+    mediaElement = `
+      <img 
+        src="${mediaItem.previewUrl}" 
+        class="admake-thumbnail-image" 
+        alt="업로드된 이미지"
+      >
+    `;
+  }
+  
   thumbnailItem.innerHTML = `
-    <img src="${url}" class="admake-thumbnail-image" alt="업로드된 이미지 ${index + 1}">
-    <button class="admake-thumbnail-delete" data-index="${index}">×</button>
+    ${mediaElement}
+    <button class="admake-thumbnail-delete" data-id="${mediaItem.id}">×</button>
   `;
   
   thumbnailsGrid.appendChild(thumbnailItem);
   
   // 삭제 버튼 이벤트
   const deleteBtn = thumbnailItem.querySelector('.admake-thumbnail-delete');
-  deleteBtn.addEventListener('click', () => {
-    deleteThumbnail(index);
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteThumbnail(mediaItem.id);
   });
 }
 
 // 썸네일 삭제
-function deleteThumbnail(index) {
+function deleteThumbnail(mediaId) {
+  const index = mediaItems.findIndex(item => item.id === mediaId);
+  if (index === -1) return;
+  
+  const mediaItem = mediaItems[index];
+  
   // URL 해제
-  URL.revokeObjectURL(fileUrls[index]);
+  URL.revokeObjectURL(mediaItem.previewUrl);
   
   // 배열에서 제거
-  uploadedFiles.splice(index, 1);
-  fileUrls.splice(index, 1);
+  mediaItems.splice(index, 1);
   
   hasUnsavedChanges = true;
   
   // 그리드 재렌더링
   thumbnailsGrid.innerHTML = '';
-  fileUrls.forEach((url, idx) => {
-    renderThumbnail(url, idx);
+  mediaItems.forEach(item => {
+    renderThumbnail(item);
   });
   
   updateNextButtonState();
@@ -540,7 +592,7 @@ function deleteThumbnail(index) {
 
 // 다음 버튼 상태 업데이트
 function updateNextButtonState() {
-  const hasFiles = uploadedFiles.length > 0;
+  const hasFiles = mediaItems.length > 0;
   const hasUrl = landingUrlInput.value.trim().length > 0;
   
   nextBtn.disabled = !(hasFiles && hasUrl);
@@ -566,36 +618,25 @@ nextBtn.addEventListener('click', () => {
   if (nextBtn.disabled) return;
   
   // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
-  const state = {
+  // 개선된 데이터 구조: id, file 정보, previewUrl, type 포함
+  const stateData = {
     accountId: accountId,
-    files: uploadedFiles.map((file, index) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: fileUrls[index]
+    mediaItems: mediaItems.map(item => ({
+      id: item.id,
+      name: item.file.name,
+      size: item.file.size,
+      type: item.file.type,
+      mediaType: item.type, // 'image' or 'video'
+      previewUrl: item.previewUrl
     })),
     landingUrl: landingUrlInput.value.trim()
   };
   
-  // File 객체는 직렬화할 수 없으므로, URL만 저장
-  sessionStorage.setItem('admake_step1_state', JSON.stringify({
-    accountId: accountId,
-    fileUrls: fileUrls,
-    fileNames: uploadedFiles.map(f => f.name),
-    fileSizes: uploadedFiles.map(f => f.size),
-    fileTypes: uploadedFiles.map(f => f.type),
-    landingUrl: landingUrlInput.value.trim()
-  }));
+  sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
   
-  // File 객체는 별도로 저장 (Blob URL 유지)
-  sessionStorage.setItem('admake_step1_files', JSON.stringify(
-    uploadedFiles.map((file, index) => ({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      url: fileUrls[index]
-    }))
-  ));
+  // File 객체는 IndexedDB나 별도 저장소에 저장해야 하지만,
+  // 현재는 previewUrl을 통해 접근 가능하도록 유지
+  // 실제 구현 시에는 서버에 업로드하거나 IndexedDB 사용 고려
   
   hasUnsavedChanges = false;
   
@@ -608,13 +649,24 @@ nextBtn.addEventListener('click', () => {
 cancelBtn.addEventListener('click', () => {
   if (hasUnsavedChanges) {
     if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
-      // 파일 URL 해제
-      fileUrls.forEach(url => URL.revokeObjectURL(url));
+      // 미디어 URL 해제
+      mediaItems.forEach(item => URL.revokeObjectURL(item.previewUrl));
       window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
     }
   } else {
     window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
   }
+});
+
+// ✅ 페이지 언로드 시 URL 정리
+window.addEventListener('beforeunload', () => {
+  mediaItems.forEach(item => {
+    try {
+      URL.revokeObjectURL(item.previewUrl);
+    } catch (e) {
+      console.warn('URL revoke 실패:', e);
+    }
+  });
 });
 </script>
 

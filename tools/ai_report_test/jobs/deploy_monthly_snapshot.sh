@@ -62,7 +62,7 @@ if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess,demo,GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess\,demo,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 else
   echo "새 Job 생성 중..."
@@ -74,7 +74,7 @@ else
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess,demo,GEMINI_API_KEY=${GEMINI_API_KEY}" \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},BQ_DATASET=ngn_dataset,GCS_BUCKET=winged-precept-443218-v8.appspot.com,COMPANY_NAMES=piscess\,demo,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 fi
 

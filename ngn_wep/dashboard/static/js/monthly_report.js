@@ -1741,6 +1741,28 @@ function renderAiAnalysisForSection7(element, analysisText) {
       } else {
         htmlContent = markdownHtml;
       }
+      
+      // ✅ 후처리: 마크다운 파싱 후 남은 ** 같은 문자 제거
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      const walker = document.createTreeWalker(
+        tempDiv,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.textContent.includes('**') || node.textContent.includes('*')) {
+          node.textContent = node.textContent
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '');
+        }
+      }
+      
+      htmlContent = tempDiv.innerHTML;
     } catch (e) {
       console.warn("[섹션 7 AI 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
       // 마크다운 변환 실패 시 일반 텍스트로 표시 (줄바꿈만 처리)
@@ -2346,6 +2368,28 @@ function renderAiAnalysis(elementId, analysisText, isSection5 = false) {
         } else {
           htmlContent = markdownHtml;
         }
+        
+        // ✅ 후처리: 마크다운 파싱 후 남은 ** 같은 문자 제거 (섹션 9와 동일)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const walker = document.createTreeWalker(
+          tempDiv,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+          if (node.textContent.includes('**') || node.textContent.includes('*')) {
+            node.textContent = node.textContent
+              .replace(/\*\*/g, '')
+              .replace(/\*/g, '');
+          }
+        }
+        
+        htmlContent = tempDiv.innerHTML;
       } catch (e) {
         console.warn("[AI 분석] 마크다운 변환 실패, 일반 텍스트로 표시:", e);
         // 마크다운 변환 실패 시 일반 텍스트로 표시 (줄바꿈만 처리)

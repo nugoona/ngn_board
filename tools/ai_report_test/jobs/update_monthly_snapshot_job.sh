@@ -55,6 +55,16 @@ echo "🚀 Cloud Run Job 업데이트 중..."
 echo "   이미지: ${IMAGE}"
 echo ""
 
+# 환경 변수 파일 생성 (YAML 형식, COMPANY_NAMES에 쉼표가 있어서 파일로 전달)
+ENV_VARS_FILE=$(mktemp)
+cat > "$ENV_VARS_FILE" <<EOF
+GOOGLE_CLOUD_PROJECT: ${PROJECT}
+BQ_DATASET: ngn_dataset
+GCS_BUCKET: winged-precept-443218-v8.appspot.com
+COMPANY_NAMES: piscess,demo
+GEMINI_API_KEY: ${GEMINI_API_KEY}
+EOF
+
 gcloud run jobs update "$JOB" \
   --image="$IMAGE" \
   --region="$REGION_RUN" \
@@ -63,12 +73,11 @@ gcloud run jobs update "$JOB" \
   --cpu=2 \
   --max-retries=3 \
   --task-timeout=3600s \
-  --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT}" \
-  --update-env-vars="BQ_DATASET=ngn_dataset" \
-  --update-env-vars="GCS_BUCKET=winged-precept-443218-v8.appspot.com" \
-  --update-env-vars="COMPANY_NAMES=piscess,demo" \
-  --update-env-vars="GEMINI_API_KEY=${GEMINI_API_KEY}" \
+  --env-vars-file="$ENV_VARS_FILE" \
   --project="$PROJECT"
+
+# 임시 파일 삭제
+rm -f "$ENV_VARS_FILE"
 
 echo ""
 echo "✅ Job 업데이트 완료!"

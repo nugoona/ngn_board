@@ -215,12 +215,13 @@ def crawl_29cm_best():
         # 트리에서 중분류 추출
         for group in tree.get("data", {}).get("categoryGroups", []):
             for large in group.get("largeCategories", []):
-                if int(large.get("categoryCode", 0)) == BEST_LARGE_ID:
+                if int(large.get("categoryCode") or 0) == BEST_LARGE_ID:
                     for mid in large.get("mediumCategories", []):
                         c_name = mid.get("categoryName", "")
-                        # 설정에 있는 카테고리만 추가
-                        if c_name in CRAWL_29CM_TARGET_TABS:
-                            tabs.append({"name": c_name, "middle_id": int(mid["categoryCode"])})
+                        mid_code = mid.get("categoryCode")
+                        # 설정에 있는 카테고리만 추가 (categoryCode가 있어야 함)
+                        if c_name in CRAWL_29CM_TARGET_TABS and mid_code is not None:
+                            tabs.append({"name": c_name, "middle_id": int(mid_code)})
         return tabs
     
     def fetch_item_reviews(item_id):
@@ -758,25 +759,26 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
         print(f"   monthly_13m 조회된 월 목록: {[item.get('ym') for item in monthly_13m]}", file=sys.stderr)
     
     # 데이터가 있으면 사용, 없으면 None (실제 수집되지 않은 경우)
+    # Note: .get() or 0 패턴 사용 - 키가 존재하지만 값이 None인 경우도 처리
     sales_this = {
-        "net_sales": float(sales_this_data.get("net_sales", 0)) if sales_this_data else None,
-        "total_orders": int(sales_this_data.get("total_orders", 0)) if sales_this_data else None,
-        "total_first_order": int(sales_this_data.get("total_first_order", 0)) if sales_this_data else None,
-        "total_canceled": int(sales_this_data.get("total_canceled", 0)) if sales_this_data else None,
+        "net_sales": float(sales_this_data.get("net_sales") or 0) if sales_this_data else None,
+        "total_orders": int(sales_this_data.get("total_orders") or 0) if sales_this_data else None,
+        "total_first_order": int(sales_this_data.get("total_first_order") or 0) if sales_this_data else None,
+        "total_canceled": int(sales_this_data.get("total_canceled") or 0) if sales_this_data else None,
     } if sales_this_data else None
-    
+
     sales_prev = {
-        "net_sales": float(sales_prev_data.get("net_sales", 0)) if sales_prev_data else None,
-        "total_orders": int(sales_prev_data.get("total_orders", 0)) if sales_prev_data else None,
-        "total_first_order": int(sales_prev_data.get("total_first_order", 0)) if sales_prev_data else None,
-        "total_canceled": int(sales_prev_data.get("total_canceled", 0)) if sales_prev_data else None,
+        "net_sales": float(sales_prev_data.get("net_sales") or 0) if sales_prev_data else None,
+        "total_orders": int(sales_prev_data.get("total_orders") or 0) if sales_prev_data else None,
+        "total_first_order": int(sales_prev_data.get("total_first_order") or 0) if sales_prev_data else None,
+        "total_canceled": int(sales_prev_data.get("total_canceled") or 0) if sales_prev_data else None,
     } if sales_prev_data else None
-    
+
     sales_yoy = {
-        "net_sales": float(sales_yoy_data.get("net_sales", 0)) if sales_yoy_data else None,
-        "total_orders": int(sales_yoy_data.get("total_orders", 0)) if sales_yoy_data else None,
-        "total_first_order": int(sales_yoy_data.get("total_first_order", 0)) if sales_yoy_data else None,
-        "total_canceled": int(sales_yoy_data.get("total_canceled", 0)) if sales_yoy_data else None,
+        "net_sales": float(sales_yoy_data.get("net_sales") or 0) if sales_yoy_data else None,
+        "total_orders": int(sales_yoy_data.get("total_orders") or 0) if sales_yoy_data else None,
+        "total_first_order": int(sales_yoy_data.get("total_first_order") or 0) if sales_yoy_data else None,
+        "total_canceled": int(sales_yoy_data.get("total_canceled") or 0) if sales_yoy_data else None,
     } if sales_yoy_data else None
     
     # ✅ 최적화: 일자별 성과 데이터를 한 번에 조회 후 Python에서 분해
@@ -970,36 +972,37 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     meta_ads_yoy_data = get_monthly_meta_from_13m(monthly_13m_meta, yoy_month)
     
     # 데이터가 있으면 사용, 없으면 None (실제 수집되지 않은 경우)
+    # Note: .get() or 0 패턴 사용 - 키가 존재하지만 값이 None인 경우도 처리
     meta_ads_this = {
-        "spend": float(meta_ads_this_data.get("spend", 0)) if meta_ads_this_data else None,
-        "impressions": int(meta_ads_this_data.get("impressions", 0)) if meta_ads_this_data else None,
-        "clicks": int(meta_ads_this_data.get("clicks", 0)) if meta_ads_this_data else None,
-        "purchases": int(meta_ads_this_data.get("purchases", 0)) if meta_ads_this_data else None,
-        "purchase_value": float(meta_ads_this_data.get("purchase_value", 0)) if meta_ads_this_data else None,
+        "spend": float(meta_ads_this_data.get("spend") or 0) if meta_ads_this_data else None,
+        "impressions": int(meta_ads_this_data.get("impressions") or 0) if meta_ads_this_data else None,
+        "clicks": int(meta_ads_this_data.get("clicks") or 0) if meta_ads_this_data else None,
+        "purchases": int(meta_ads_this_data.get("purchases") or 0) if meta_ads_this_data else None,
+        "purchase_value": float(meta_ads_this_data.get("purchase_value") or 0) if meta_ads_this_data else None,
         "roas": meta_ads_this_data.get("roas") if meta_ads_this_data else None,
         "cpc": meta_ads_this_data.get("cpc") if meta_ads_this_data else None,
         "ctr": meta_ads_this_data.get("ctr") if meta_ads_this_data else None,
         "cvr": meta_ads_this_data.get("cvr") if meta_ads_this_data else None,
     } if meta_ads_this_data else None
-    
+
     meta_ads_prev = {
-        "spend": float(meta_ads_prev_data.get("spend", 0)) if meta_ads_prev_data else None,
-        "impressions": int(meta_ads_prev_data.get("impressions", 0)) if meta_ads_prev_data else None,
-        "clicks": int(meta_ads_prev_data.get("clicks", 0)) if meta_ads_prev_data else None,
-        "purchases": int(meta_ads_prev_data.get("purchases", 0)) if meta_ads_prev_data else None,
-        "purchase_value": float(meta_ads_prev_data.get("purchase_value", 0)) if meta_ads_prev_data else None,
+        "spend": float(meta_ads_prev_data.get("spend") or 0) if meta_ads_prev_data else None,
+        "impressions": int(meta_ads_prev_data.get("impressions") or 0) if meta_ads_prev_data else None,
+        "clicks": int(meta_ads_prev_data.get("clicks") or 0) if meta_ads_prev_data else None,
+        "purchases": int(meta_ads_prev_data.get("purchases") or 0) if meta_ads_prev_data else None,
+        "purchase_value": float(meta_ads_prev_data.get("purchase_value") or 0) if meta_ads_prev_data else None,
         "roas": meta_ads_prev_data.get("roas") if meta_ads_prev_data else None,
         "cpc": meta_ads_prev_data.get("cpc") if meta_ads_prev_data else None,
         "ctr": meta_ads_prev_data.get("ctr") if meta_ads_prev_data else None,
         "cvr": meta_ads_prev_data.get("cvr") if meta_ads_prev_data else None,
     } if meta_ads_prev_data else None
-    
+
     meta_ads_yoy = {
-        "spend": float(meta_ads_yoy_data.get("spend", 0)) if meta_ads_yoy_data else None,
-        "impressions": int(meta_ads_yoy_data.get("impressions", 0)) if meta_ads_yoy_data else None,
-        "clicks": int(meta_ads_yoy_data.get("clicks", 0)) if meta_ads_yoy_data else None,
-        "purchases": int(meta_ads_yoy_data.get("purchases", 0)) if meta_ads_yoy_data else None,
-        "purchase_value": float(meta_ads_yoy_data.get("purchase_value", 0)) if meta_ads_yoy_data else None,
+        "spend": float(meta_ads_yoy_data.get("spend") or 0) if meta_ads_yoy_data else None,
+        "impressions": int(meta_ads_yoy_data.get("impressions") or 0) if meta_ads_yoy_data else None,
+        "clicks": int(meta_ads_yoy_data.get("clicks") or 0) if meta_ads_yoy_data else None,
+        "purchases": int(meta_ads_yoy_data.get("purchases") or 0) if meta_ads_yoy_data else None,
+        "purchase_value": float(meta_ads_yoy_data.get("purchase_value") or 0) if meta_ads_yoy_data else None,
         "roas": meta_ads_yoy_data.get("roas") if meta_ads_yoy_data else None,
         "cpc": meta_ads_yoy_data.get("cpc") if meta_ads_yoy_data else None,
         "ctr": meta_ads_yoy_data.get("ctr") if meta_ads_yoy_data else None,
@@ -1855,20 +1858,21 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     # ✅ 최적화: 모든 totals 데이터를 월간 집계 테이블에서 가져옴 (raw 테이블 조회 제거)
     # 데이터가 있으면 사용, 없으면 None (실제 수집되지 않은 경우)
+    # Note: .get() or 0 패턴 사용 - 키가 존재하지만 값이 None인 경우도 처리
     ga4_this_totals = {
-        "total_users": int(ga4_this_data.get("total_users", 0)) if ga4_this_data else None,
-        "screen_page_views": int(ga4_this_data.get("screen_page_views", 0)) if ga4_this_data else None,
-        "event_count": int(ga4_this_data.get("event_count", 0)) if ga4_this_data else None,
-        "add_to_cart_users": int(ga4_this_data.get("add_to_cart_users", 0)) if ga4_this_data else None,
-        "sign_up_users": int(ga4_this_data.get("sign_up_users", 0)) if ga4_this_data else None,
+        "total_users": int(ga4_this_data.get("total_users") or 0) if ga4_this_data else None,
+        "screen_page_views": int(ga4_this_data.get("screen_page_views") or 0) if ga4_this_data else None,
+        "event_count": int(ga4_this_data.get("event_count") or 0) if ga4_this_data else None,
+        "add_to_cart_users": int(ga4_this_data.get("add_to_cart_users") or 0) if ga4_this_data else None,
+        "sign_up_users": int(ga4_this_data.get("sign_up_users") or 0) if ga4_this_data else None,
     } if ga4_this_data else None
-    
+
     ga4_prev_totals = {
-        "total_users": int(ga4_prev_data.get("total_users", 0)) if ga4_prev_data else None,
-        "screen_page_views": int(ga4_prev_data.get("screen_page_views", 0)) if ga4_prev_data else None,
-        "event_count": int(ga4_prev_data.get("event_count", 0)) if ga4_prev_data else None,
-        "add_to_cart_users": int(ga4_prev_data.get("add_to_cart_users", 0)) if ga4_prev_data else None,
-        "sign_up_users": int(ga4_prev_data.get("sign_up_users", 0)) if ga4_prev_data else None,
+        "total_users": int(ga4_prev_data.get("total_users") or 0) if ga4_prev_data else None,
+        "screen_page_views": int(ga4_prev_data.get("screen_page_views") or 0) if ga4_prev_data else None,
+        "event_count": int(ga4_prev_data.get("event_count") or 0) if ga4_prev_data else None,
+        "add_to_cart_users": int(ga4_prev_data.get("add_to_cart_users") or 0) if ga4_prev_data else None,
+        "sign_up_users": int(ga4_prev_data.get("sign_up_users") or 0) if ga4_prev_data else None,
     } if ga4_prev_data else None
     
     # YoY 데이터 존재 여부 확인 (월간 집계 우선, 없으면 raw fallback)
@@ -1925,11 +1929,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
     
     if ga4_yoy_available and ga4_yoy_data:
         ga4_yoy_totals = {
-            "total_users": int(ga4_yoy_data.get("total_users", 0)),
-            "screen_page_views": int(ga4_yoy_data.get("screen_page_views", 0)),
-            "event_count": int(ga4_yoy_data.get("event_count", 0)),
-            "add_to_cart_users": int(ga4_yoy_data.get("add_to_cart_users", 0)),
-            "sign_up_users": int(ga4_yoy_data.get("sign_up_users", 0)),
+            "total_users": int(ga4_yoy_data.get("total_users") or 0),
+            "screen_page_views": int(ga4_yoy_data.get("screen_page_views") or 0),
+            "event_count": int(ga4_yoy_data.get("event_count") or 0),
+            "add_to_cart_users": int(ga4_yoy_data.get("add_to_cart_users") or 0),
+            "sign_up_users": int(ga4_yoy_data.get("sign_up_users") or 0),
         }
         ga4_yoy = {
             "totals": ga4_yoy_totals,
@@ -1996,10 +2000,11 @@ def run(company_name: str, year: int, month: int, upsert_flag: bool = False, sav
                     "product_no": int(r.product_no),
                     "product_name": r.product_name,
                     "product_url": r.product_url,
-                    "quantity": int(r.quantity),
-                    "sales": float(r.sales),
+                    "quantity": int(r.quantity or 0),
+                    "sales": float(r.sales or 0),
                 }
                 for r in rows
+                if r.product_no is not None  # product_no가 None인 경우 스킵
             ]
         
         s90, e90 = rolling_range(end_date_iso, 90)

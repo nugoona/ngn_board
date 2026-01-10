@@ -180,6 +180,7 @@ def get_monthly_platform_sales(company_names, months_back=12):
         sales_amount
       FROM `winged-precept-443218-v8.ngn_dataset.sheets_platform_sales_data`
       WHERE DATE >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL @months_back MONTH)
+        AND DATE <= CURRENT_DATE()  -- 현재 날짜까지만 포함 (미래 데이터 제외)
         AND LOWER(company_name) IN UNNEST(@company_names)
         AND sales_amount > 0
     )

@@ -192,18 +192,6 @@ async function loadAllTabsData() {
             }
         }
         
-        // 데모 계정 제한 체크 (최우선)
-        if (companyName && companyName === 'demo') {
-            const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
-            showError(message);
-            
-            // 3초 후 사이트 성과 페이지로 리다이렉트
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 3000);
-            return;
-        }
-        
         // 업체가 선택되지 않았으면 에러 표시 및 리다이렉트
         if (!companyName) {
             console.warn("[트렌드 페이지] 업체가 선택되지 않았습니다.");
@@ -295,16 +283,6 @@ function switchTab(tabName) {
         if (companyFromFilter) {
             companyName = companyFromFilter.toLowerCase();
         }
-    }
-    
-    if (companyName && companyName === 'demo') {
-        const message = "본 기능은 파트너사 보안 정책 및 권한 설정에 따라 데모 계정에서는 조회가 제한됩니다";
-        if (typeof showToast === 'function') {
-            showToast(message);
-        } else {
-            alert(message);
-        }
-        return;
     }
     
     currentTab = tabName;
@@ -1934,19 +1912,14 @@ function getCompanyProducts() {
     }
     
     const companyNameLower = companyName.toLowerCase().trim();
-    
-    // 데모 계정인 경우 자사몰 상품 반환하지 않음 (보안)
-    if (companyNameLower === 'demo') {
-        return [];
-    }
-    
-    // ⚠️ 보안 중요: 하드코딩된 매핑 사용 (백엔드 API에서 가져오는 것이 이상적이지만, 
+
+    // ⚠️ 보안 중요: 하드코딩된 매핑 사용 (백엔드 API에서 가져오는 것이 이상적이지만,
     // 프론트엔드에서 보안상 안전한 방법으로 처리)
     // 매핑에 없는 업체는 빈 배열 반환 (다른 업체 브랜드가 표시되는 것을 방지)
     const brandMapping = {
         'piscess': ['파이시스', 'PISCESS', 'piscess', 'Piscess'],
         'somewherebutter': ['썸웨어버터', 'Somewhere Butter', 'SOMEWHERE BUTTER', 'somewherebutter', 'SomewhereButter'],
-        'demo': [] // 데모는 이미 위에서 처리됨
+        'demo': ['파이시스', 'PISCESS', 'piscess', 'Piscess'] // 데모는 piscess와 동일
     };
     
     // ⚠️ 보안: 매핑에 없는 업체는 반드시 빈 배열 반환

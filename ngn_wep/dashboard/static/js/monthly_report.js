@@ -61,17 +61,6 @@ function openMonthlyReportModal() {
       return;
     }
     
-    // 데모 계정 제한 체크
-    if (companyName.toLowerCase() === 'demo') {
-      const message = "해당 리포트는 정식 파트너십 체결 후 자사 브랜드 맞춤형 데이터로 제공됩니다";
-      if (typeof showToast === 'function') {
-        showToast(message);
-      } else {
-        alert(message);
-      }
-      return;
-    }
-    
     // NEW 표시 제거
     try {
       hideMonthlyReportNewBadge();

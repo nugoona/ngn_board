@@ -10,11 +10,15 @@ cd ~/ngn_board || {
   exit 1
 }
 
-# .env 파일에서 GEMINI_API_KEY 로드 (안전한 방식)
-if [ -f .env ]; then
-  # .env 파일에서 GEMINI_API_KEY만 추출 (주석 제외, = 기준으로 분리)
+# config/ngn.env 또는 .env 파일에서 GEMINI_API_KEY 로드
+if [ -f config/ngn.env ]; then
+  GEMINI_API_KEY=$(grep -v '^#' config/ngn.env | grep "^GEMINI_API_KEY=" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+  export GEMINI_API_KEY
+  echo "✅ config/ngn.env에서 GEMINI_API_KEY 로드"
+elif [ -f .env ]; then
   GEMINI_API_KEY=$(grep -v '^#' .env | grep "^GEMINI_API_KEY=" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
   export GEMINI_API_KEY
+  echo "✅ .env에서 GEMINI_API_KEY 로드"
 fi
 
 # GEMINI_API_KEY 확인

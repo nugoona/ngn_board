@@ -10,6 +10,26 @@ cd ~/ngn_board || {
   exit 1
 }
 
+# config/ngn.env 또는 .env 파일에서 GEMINI_API_KEY 로드
+if [ -f config/ngn.env ]; then
+  GEMINI_API_KEY=$(grep -v '^#' config/ngn.env | grep "^GEMINI_API_KEY=" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+  export GEMINI_API_KEY
+  echo "✅ config/ngn.env에서 GEMINI_API_KEY 로드"
+elif [ -f .env ]; then
+  GEMINI_API_KEY=$(grep -v '^#' .env | grep "^GEMINI_API_KEY=" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+  export GEMINI_API_KEY
+  echo "✅ .env에서 GEMINI_API_KEY 로드"
+fi
+
+# GEMINI_API_KEY 확인
+if [ -z "${GEMINI_API_KEY:-}" ]; then
+  echo "❌ [ERROR] GEMINI_API_KEY가 설정되지 않았습니다."
+  echo "   config/ngn.env 또는 .env 파일에 GEMINI_API_KEY=your-key 형식으로 추가해주세요."
+  exit 1
+fi
+
+echo "✅ GEMINI_API_KEY 로드 완료 (길이: ${#GEMINI_API_KEY}자)"
+
 PROJECT="winged-precept-443218-v8"
 REGION_AR="asia-northeast1"
 REGION_RUN="asia-northeast3"
@@ -52,7 +72,7 @@ if gcloud run jobs describe "$JOB" --region="$REGION_RUN" --project="$PROJECT" &
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},GCS_BUCKET=winged-precept-443218-v8.appspot.com,RUNNING_IN_CLOUD_RUN=true" \
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},GCS_BUCKET=winged-precept-443218-v8.appspot.com,RUNNING_IN_CLOUD_RUN=true,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 else
   echo "새 Job 생성 중..."
@@ -64,7 +84,7 @@ else
     --cpu=2 \
     --max-retries=3 \
     --task-timeout=3600s \
-    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},GCS_BUCKET=winged-precept-443218-v8.appspot.com,RUNNING_IN_CLOUD_RUN=true" \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT},GCS_BUCKET=winged-precept-443218-v8.appspot.com,RUNNING_IN_CLOUD_RUN=true,GEMINI_API_KEY=${GEMINI_API_KEY}" \
     --project="$PROJECT"
 fi
 

@@ -200,6 +200,8 @@
       margin: 0 auto 32px;
       cursor: move;
       user-select: none;
+      box-sizing: border-box; /* 보더 포함 크기 계산 */
+      padding: 0; /* 패딩 제거로 정확한 계산 */
     }
 
     .admake-guide-preview {
@@ -252,25 +254,29 @@
     }
 
     .admake-guide-line-4-5 {
-      /* 4:5 비율 가이드 - 중앙 정렬 */
+      /* 4:5 비율 가이드 - 중앙 정렬 (정밀 보정) */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 100%;
       height: 80%;
-      border: 2px dashed rgba(17, 24, 39, 0.5);
+      border: 2px dashed rgba(255, 255, 255, 0.5);
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     .admake-guide-line-1-1 {
-      /* 1:1 비율 가이드 - 중앙 정사각형 */
+      /* 1:1 비율 가이드 - 중앙 정사각형 (정밀 보정) */
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       width: 62.5%; /* 9:16 비율에서 1:1 정사각형 */
       height: 62.5%;
-      border: 2px dashed rgba(17, 24, 39, 0.6);
+      border: 2px dashed rgba(255, 255, 255, 0.7);
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     .admake-guide-label {
@@ -297,6 +303,8 @@
       left: 50%;
       transform: translate(-50%, -50%);
       margin-top: -31.25%;
+      z-index: 14; /* 가이드 라인 위에 표시 */
+      background: rgba(17, 24, 39, 0.95); /* 더 진한 배경으로 가독성 향상 */
     }
 
     /* ✅ 크롭 컨트롤 스타일 */
@@ -698,6 +706,42 @@ async function getFileFromIndexedDB(mediaId) {
   });
 }
 
+// ✅ Blob URL 유효성 검사 및 복구
+async function validateAndRecoverBlobUrl(item) {
+  // 기존 previewUrl이 유효한지 확인
+  if (item.previewUrl) {
+    try {
+      const response = await fetch(item.previewUrl, { method: 'HEAD' });
+      if (response.ok) {
+        console.log(`[DEBUG] 기존 Blob URL 유효: ${item.id}`);
+        return item.previewUrl;
+      }
+    } catch (e) {
+      console.warn(`[WARN] 기존 Blob URL 유효하지 않음: ${item.id}`, e);
+    }
+  }
+  
+  // IndexedDB에서 File 객체 가져와서 새로운 Blob URL 생성
+  try {
+    const file = await getFileFromIndexedDB(item.id);
+    const newPreviewUrl = URL.createObjectURL(file);
+    console.log(`[DEBUG] 미디어 ${item.id} Blob URL 재생성 성공`);
+    return newPreviewUrl;
+  } catch (e) {
+    console.error(`[ERROR] IndexedDB에서 ${item.id} 로드 실패:`, e);
+    throw new Error(`미디어 ${item.id} 로드 실패`);
+  }
+}
+
+// ✅ STEP 2 초기화 함수 (데이터 복구 강화)
+async function initStep2() {
+  // mediaItems가 비어있으면 IndexedDB에서 복구
+  if (mediaItems.length === 0) {
+    console.log('[DEBUG] mediaItems가 비어있음 - IndexedDB에서 복구 시도');
+    await loadStep1Data();
+  }
+}
+
 // ✅ STEP 1에서 저장된 데이터 불러오기 (Blob URL 복구)
 async function loadStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
@@ -742,6 +786,10 @@ async function loadStep1Data() {
           }
         }
         
+        // 저장된 크롭 상태 복원 (있는 경우)
+        const savedCropState = item.cropState || { x: 0, y: 0, zoom: 1 };
+        const savedIsConfirmed = item.isConfirmed || false;
+        
         return {
           id: item.id,
           name: item.name,
@@ -750,8 +798,8 @@ async function loadStep1Data() {
           mediaType: item.mediaType,
           previewUrl: previewUrl,
           file: file, // File 객체 저장 (나중에 업로드 시 사용)
-          cropState: { x: 0, y: 0, zoom: 1 }, // 크롭 좌표 및 확대 배율
-          isConfirmed: false // 검토 완료 여부
+          cropState: savedCropState, // 저장된 크롭 상태 복원
+          isConfirmed: savedIsConfirmed // 저장된 확인 상태 복원
         };
       })
     );
@@ -802,7 +850,28 @@ function renderMediaList() {
       <div class="admake-media-item-checked ${confirmedClass}">${checkedIcon}</div>
     `;
 
-    mediaItem.addEventListener('click', () => {
+    mediaItem.addEventListener('click', async () => {
+      // 클릭 시 Blob URL 유효성 검사
+      const clickedItem = mediaItems[index];
+      if (clickedItem.mediaType === 'image') {
+        try {
+          // 미리 유효성 검사
+          await validateAndRecoverBlobUrl(clickedItem).then(recoveredUrl => {
+            if (recoveredUrl !== clickedItem.previewUrl) {
+              clickedItem.previewUrl = recoveredUrl;
+              // 리스트의 이미지도 업데이트
+              const imgElement = mediaItem.querySelector('img');
+              if (imgElement) {
+                imgElement.src = recoveredUrl;
+              }
+            }
+          });
+        } catch (e) {
+          console.error(`[ERROR] 미디어 ${clickedItem.id} URL 검증 실패:`, e);
+          alert(`이미지 "${clickedItem.name}"을 불러올 수 없습니다.`);
+          return;
+        }
+      }
       selectMedia(index);
     });
 
@@ -947,23 +1016,68 @@ function saveCropState() {
   }
 }
 
+// ✅ 이미지가 9:16 박스에 맞게 초기 배율 계산
+function calculateInitialZoom(img, containerWidth, containerHeight) {
+  const imgAspect = img.width / img.height;
+  const containerAspect = containerWidth / containerHeight; // 9:16 = 0.5625
+  
+  let initialZoom = 1;
+  
+  if (imgAspect > containerAspect) {
+    // 이미지가 더 넓음 (가로형) - 높이에 맞춤
+    initialZoom = containerHeight / img.height;
+  } else {
+    // 이미지가 더 좁음 (세로형) - 너비에 맞춤
+    initialZoom = containerWidth / img.width;
+  }
+  
+  // 최소 확대 비율 제한 (빈 공간이 보이지 않도록)
+  const minZoom = Math.max(
+    containerWidth / img.width,
+    containerHeight / img.height
+  );
+  
+  // 최소값과 계산된 값 중 큰 값 사용
+  initialZoom = Math.max(initialZoom, minZoom);
+  
+  // 최소값은 1, 최대값은 3으로 제한
+  return Math.max(1, Math.min(initialZoom, 3));
+}
+
 // ✅ 크롭 상태 불러오기
-function loadCropState(item) {
-  if (item && item.cropState) {
+function loadCropState(item, img = null) {
+  if (item && item.cropState && item.cropState.zoom > 0) {
+    // 저장된 크롭 상태가 있으면 사용
     currentX = item.cropState.x;
     currentY = item.cropState.y;
     currentZoom = item.cropState.zoom;
   } else {
-    // 초기 상태
+    // 초기 상태 - 이미지가 9:16 박스에 맞게 자동 계산
     currentX = 0;
     currentY = 0;
-    currentZoom = 1;
+    
+    if (img && containerWidth > 0 && containerHeight > 0) {
+      currentZoom = calculateInitialZoom(img, containerWidth, containerHeight);
+      console.log(`[DEBUG] 초기 배율 자동 계산: ${currentZoom.toFixed(2)}`);
+    } else {
+      currentZoom = 1;
+    }
   }
   
   // UI 업데이트
   const zoomSlider = document.getElementById('zoomSlider');
   const zoomValue = document.getElementById('zoomValue');
-  if (zoomSlider) zoomSlider.value = currentZoom;
+  if (zoomSlider) {
+    zoomSlider.value = currentZoom;
+    // 슬라이더 최소값도 동적으로 조정
+    if (img && containerWidth > 0 && containerHeight > 0) {
+      const minZoom = Math.max(
+        containerWidth / img.width,
+        containerHeight / img.height
+      );
+      zoomSlider.min = Math.max(0.5, minZoom * 0.8); // 최소값을 약간 여유있게
+    }
+  }
   if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
 }
 
@@ -1058,17 +1172,33 @@ async function selectMedia(index) {
       confirmBtn.textContent = item.isConfirmed ? '✓ 확인 완료' : '이 미디어 확인 완료';
     }
     
-    // 이미지 로드
+    // 이미지 로드 (Blob URL 유효성 검사 포함)
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       currentImage = img;
-      loadCropState(item);
+      // Canvas 크기가 설정된 후에 크롭 상태 로드
+      updateCanvasSize();
+      loadCropState(item, img);
       drawImage();
     };
-    img.onerror = () => {
-      alert('이미지를 불러올 수 없습니다.');
-      canvas.style.display = 'none';
+    img.onerror = async () => {
+      console.warn(`[WARN] 이미지 로드 실패, Blob URL 복구 시도: ${item.id}`);
+      // Blob URL 복구 시도
+      try {
+        const recoveredUrl = await validateAndRecoverBlobUrl(item);
+        item.previewUrl = recoveredUrl;
+        // File 객체도 업데이트
+        if (!item.file) {
+          item.file = await getFileFromIndexedDB(item.id);
+        }
+        // 다시 로드 시도
+        img.src = recoveredUrl;
+      } catch (e) {
+        console.error(`[ERROR] 이미지 복구 실패: ${item.id}`, e);
+        alert(`이미지 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
+        canvas.style.display = 'none';
+      }
     };
     img.src = item.previewUrl;
   }
@@ -1106,8 +1236,8 @@ function updateUploadButtonState() {
   }
 }
 
-// ✅ 이전 버튼 (Step 1로 돌아가기 - 데이터 유지)
-document.getElementById('backBtn').addEventListener('click', () => {
+// ✅ 이전 버튼 (Step 1로 돌아가기 - 데이터 유지 및 IndexedDB 복구)
+document.getElementById('backBtn').addEventListener('click', async () => {
   // Step 1 상태를 sessionStorage에 다시 저장 (크롭 상태 포함)
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (step1Data) {
@@ -1119,7 +1249,8 @@ document.getElementById('backBtn').addEventListener('click', () => {
         return {
           ...item,
           cropState: mediaItem.cropState,
-          isConfirmed: mediaItem.isConfirmed
+          isConfirmed: mediaItem.isConfirmed,
+          previewUrl: mediaItem.previewUrl // 최신 Blob URL 저장
         };
       }
       return item;
@@ -1128,8 +1259,51 @@ document.getElementById('backBtn').addEventListener('click', () => {
     console.log('[DEBUG] Step 1로 돌아가기 - 상태 저장 완료');
   }
   
-  // Blob URL은 revoke하지 않고 Step 1로 이동
-  window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+  // IndexedDB에 최신 상태 저장 (Step 1 복구용)
+  if ('indexedDB' in window && mediaItems.length > 0) {
+    try {
+      const dbName = 'admake_files';
+      const request = indexedDB.open(dbName, 1);
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        if (db.objectStoreNames.contains('files')) {
+          const transaction = db.transaction(['files'], 'readwrite');
+          const store = transaction.objectStore('files');
+          
+          mediaItems.forEach(item => {
+            if (item.file) {
+              store.put({
+                id: item.id,
+                file: item.file,
+                previewUrl: item.previewUrl,
+                type: item.type,
+                mediaType: item.mediaType,
+                cropState: item.cropState,
+                isConfirmed: item.isConfirmed
+              });
+            }
+          });
+          
+          transaction.oncomplete = () => {
+            console.log('[DEBUG] IndexedDB 업데이트 완료 - Step 1 복구 준비');
+            // Blob URL은 revoke하지 않고 Step 1로 이동
+            window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+          };
+        } else {
+          window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+        }
+      };
+      request.onerror = () => {
+        window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+      };
+    } catch (e) {
+      console.error('[ERROR] IndexedDB 업데이트 실패:', e);
+      window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+    }
+  } else {
+    // Blob URL은 revoke하지 않고 Step 1로 이동
+    window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+  }
 });
 
 // ✅ 업로드 버튼
@@ -1404,7 +1578,15 @@ async function uploadToMeta() {
 // ✅ 초기화
 document.addEventListener('DOMContentLoaded', async () => {
   initCanvas();
-  await loadStep1Data(); // 비동기로 데이터 로드
+  
+  // Step 2 초기화 (데이터 복구 강화)
+  await initStep2();
+  
+  // 데이터가 없으면 로드 시도
+  if (mediaItems.length === 0) {
+    await loadStep1Data();
+  }
+  
   updateUploadButtonState(); // 초기 버튼 상태 설정
 });
 </script>

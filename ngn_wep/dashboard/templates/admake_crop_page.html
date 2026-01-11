@@ -2033,7 +2033,7 @@ document.getElementById('backBtn').addEventListener('click', async () => {
 // ✅ 업로드 버튼
 document.getElementById('uploadBtn').addEventListener('click', uploadToMeta);
 
-// ✅ 줌 슬라이더 이벤트 (restrictPosition 효과 - minZoom 엄격 적용)
+// ✅ 줌 슬라이더 이벤트 (restrictPosition 효과 - minZoom 엄격 적용 + 중앙 앵커)
 const zoomSlider = document.getElementById('zoomSlider');
 if (zoomSlider) {
   zoomSlider.addEventListener('input', (e) => {
@@ -2044,6 +2044,30 @@ if (zoomSlider) {
       console.log(`[RESTRICT] 슬라이더 줌 강제 보정: ${newZoom.toFixed(4)} → ${minZoom.toFixed(4)}`);
       newZoom = minZoom;
       e.target.value = minZoom;
+    }
+
+    // ===== [중앙 앵커 고정] 줌 변경 시 크롭 영역 중심 기준으로 확대/축소 =====
+    if (currentImage && currentZoom !== newZoom) {
+      const oldZoom = currentZoom;
+
+      // 크롭 영역 계산
+      const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+      const cropX = (containerWidth - cropArea.width) / 2;
+      const cropY = (containerHeight - cropArea.height) / 2;
+
+      // 크롭 영역의 중심점 (스크린 좌표)
+      const centerScreenX = cropX + cropArea.width / 2;
+      const centerScreenY = cropY + cropArea.height / 2;
+
+      // 현재 중심에 있는 이미지의 원본 좌표 (naturalWidth/Height 기준)
+      const imagePointX = (centerScreenX - currentX) / oldZoom;
+      const imagePointY = (centerScreenY - currentY) / oldZoom;
+
+      // 새 줌에서 같은 이미지 포인트가 중심에 오도록 좌표 재계산
+      currentX = centerScreenX - (imagePointX * newZoom);
+      currentY = centerScreenY - (imagePointY * newZoom);
+
+      console.log(`[ZOOM ANCHOR] 중앙 기준 줌: ${oldZoom.toFixed(4)} → ${newZoom.toFixed(4)}, pos=(${currentX.toFixed(0)}, ${currentY.toFixed(0)})`);
     }
 
     currentZoom = newZoom;

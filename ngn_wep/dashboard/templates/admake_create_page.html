@@ -829,7 +829,7 @@ function restoreStep1Data() {
                   id: item.id,
                   file: file,
                   previewUrl: previewUrl,
-                  type: item.type
+                  type: mediaType  // 'image' or 'video' (NOT MIME type)
                 });
 
                 console.log(`[RESTORE] 미디어 ${item.id} 복원 완료`);

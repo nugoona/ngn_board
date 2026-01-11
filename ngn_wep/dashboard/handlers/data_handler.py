@@ -1692,6 +1692,24 @@ def generate_ad_preview():
             print("[PREVIEW] ERROR: page_id를 찾을 수 없음")
             return jsonify({"status": "error", "message": "연결된 Facebook 페이지가 없습니다"}), 400
 
+        # Facebook Page에서 연결된 Instagram Business Account 조회 (항상 최신 정보)
+        try:
+            ig_url = f"https://graph.facebook.com/v24.0/{page_id}"
+            ig_response = requests.get(ig_url, params={
+                "access_token": access_token,
+                "fields": "instagram_business_account"
+            }, timeout=10)
+            ig_data = ig_response.json()
+            print(f"[PREVIEW] Page Instagram 연결 조회: {json.dumps(ig_data, indent=2)}")
+
+            if 'instagram_business_account' in ig_data:
+                fetched_ig_id = ig_data['instagram_business_account'].get('id')
+                if fetched_ig_id:
+                    instagram_user_id = fetched_ig_id
+                    print(f"[PREVIEW] Page에서 Instagram ID 가져옴: {instagram_user_id}")
+        except Exception as e:
+            print(f"[PREVIEW] Instagram 계정 조회 실패: {e}")
+
         print(f"[PREVIEW] 사용할 Page ID: {page_id}, Instagram User ID: {instagram_user_id}")
 
         # creative_spec 구성

@@ -845,42 +845,22 @@ async function getFileFromIndexedDB(mediaId) {
   });
 }
 
-// ✅ Blob URL 유효성 검사 및 복구 (HEAD 메서드 제거)
-async function validateAndRecoverBlobUrl(item) {
-  // ===== [수정] File/Blob 인스턴스 직접 확인 =====
-  // item.file 객체가 File 또는 Blob 인스턴스인지 직접 확인
-  if (item.file && (item.file instanceof File || item.file instanceof Blob)) {
-    // File 객체가 유효하면 기존 previewUrl 사용 (있을 경우)
-    if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-      console.log(`[DEBUG] File 객체 유효, 기존 Blob URL 사용: ${item.id}`);
-      return item.previewUrl;
-    } else {
-      // previewUrl이 없거나 유효하지 않으면 새로 생성
-      const newPreviewUrl = URL.createObjectURL(item.file);
-      console.log(`[DEBUG] File 객체로부터 새 Blob URL 생성: ${item.id}`);
-      return newPreviewUrl;
-    }
+// ✅ [전면 재수정] Blob URL 즉시 재생성 (모든 검증 로직 폐기)
+// 핵심: file 객체가 있으면 무조건 URL.createObjectURL() 호출
+async function regenerateBlobUrl(item) {
+  // 1. item.file이 있으면 즉시 새 URL 생성
+  if (item.file) {
+    const newUrl = URL.createObjectURL(item.file);
+    console.log(`[REGEN] File 객체로 새 Blob URL 생성: ${item.id}`);
+    return newUrl;
   }
-  
-  // File 객체가 없거나 유효하지 않으면 IndexedDB에서 가져오기
-  try {
-    const file = await getFileFromIndexedDB(item.id);
-    if (file && (file instanceof File || file instanceof Blob)) {
-      // 기존 URL 해제 (메모리 누수 방지)
-      if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(item.previewUrl);
-      }
-      const newPreviewUrl = URL.createObjectURL(file);
-      item.file = file; // File 객체도 업데이트
-      console.log(`[DEBUG] IndexedDB에서 File 객체 복구 및 Blob URL 재생성: ${item.id}`);
-      return newPreviewUrl;
-    } else {
-      throw new Error('IndexedDB에서 가져온 객체가 File/Blob 인스턴스가 아님');
-    }
-  } catch (e) {
-    console.error(`[ERROR] IndexedDB에서 ${item.id} 로드 실패:`, e);
-    throw new Error(`미디어 ${item.id} 로드 실패`);
-  }
+
+  // 2. file이 없으면 IndexedDB에서 가져와서 새 URL 생성
+  const file = await getFileFromIndexedDB(item.id);
+  item.file = file; // file 객체 저장
+  const newUrl = URL.createObjectURL(file);
+  console.log(`[REGEN] IndexedDB에서 복구 후 새 Blob URL 생성: ${item.id}`);
+  return newUrl;
 }
 
 // ✅ STEP 2 초기화 함수 (데이터 복구 강화)
@@ -892,7 +872,8 @@ async function initStep2() {
   }
 }
 
-// ✅ STEP 1에서 저장된 데이터 불러오기 (Blob URL 복구)
+// ✅ [전면 재수정] STEP 1에서 저장된 데이터 불러오기
+// 핵심: IndexedDB에서 file 객체를 가져와서 무조건 새 Blob URL 생성
 async function loadStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (!step1Data) {
@@ -903,67 +884,50 @@ async function loadStep1Data() {
 
   try {
     const data = JSON.parse(step1Data);
-    
-    // 각 미디어에 대해 IndexedDB에서 File 객체를 가져와서 새로운 Blob URL 생성
-    const loadedItems = await Promise.all(
-      data.mediaItems.map(async (item) => {
-        let previewUrl = null;
-        let file = null;
-        
-        try {
-          // IndexedDB에서 File 객체 가져오기
-          file = await getFileFromIndexedDB(item.id);
-          
-          // ===== [수정] File/Blob 인스턴스 직접 확인 =====
-          if (file && (file instanceof File || file instanceof Blob)) {
-            // 새로운 Blob URL 생성 (만료된 URL 대체)
-            previewUrl = URL.createObjectURL(file);
-            console.log(`[DEBUG] 미디어 ${item.id} Blob URL 재생성 성공`);
-          } else {
-            throw new Error('IndexedDB에서 가져온 객체가 File/Blob 인스턴스가 아님');
-          }
-        } catch (e) {
-          console.warn(`[WARN] IndexedDB에서 ${item.id} 로드 실패:`, e);
-          // IndexedDB 실패 시 사용자에게 알림
-          alert(`미디어 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
-          throw new Error(`미디어 ${item.id} 로드 실패`);
-        }
-        
-        // 저장된 크롭 상태 복원 (있는 경우)
-        const savedCropState = item.cropState || { x: 0, y: 0, zoom: 1 };
-        const savedIsConfirmed = item.isConfirmed || false;
-        
-        return {
+
+    // 각 미디어에 대해 IndexedDB에서 File 객체를 가져와서 새 Blob URL 생성
+    const loadedItems = [];
+    for (const item of data.mediaItems) {
+      try {
+        // IndexedDB에서 File 객체 가져오기
+        const file = await getFileFromIndexedDB(item.id);
+        // 무조건 새 Blob URL 생성 (검증 없이)
+        const previewUrl = URL.createObjectURL(file);
+        console.log(`[LOAD] ${item.id}: 새 Blob URL 생성 완료`);
+
+        loadedItems.push({
           id: item.id,
           name: item.name,
           size: item.size,
           type: item.type,
           mediaType: item.mediaType,
           previewUrl: previewUrl,
-          file: file, // File 객체 저장 (나중에 업로드 시 사용)
-          cropState: savedCropState, // 저장된 크롭 상태 복원
-          isConfirmed: savedIsConfirmed // 저장된 확인 상태 복원
-        };
-      })
-    );
-    
-    mediaItems = loadedItems;
-    console.log(`[DEBUG] ${mediaItems.length}개 미디어 로드 완료`);
+          file: file, // File 객체 저장 (필수!)
+          cropState: item.cropState || null, // null이면 초기 자동 맞춤 적용
+          isConfirmed: item.isConfirmed || false
+        });
+      } catch (e) {
+        console.error(`[ERROR] ${item.id} 로드 실패:`, e);
+        alert(`미디어 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
+        window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+        return;
+      }
+    }
 
+    mediaItems = loadedItems;
+    console.log(`[LOAD] ${mediaItems.length}개 미디어 로드 완료`);
+
+    // 리스트 렌더링
     renderMediaList();
 
-    // ===== [수정] setTimeout 제거, 동기적 즉시 실행 =====
-    // 첫 번째 미디어 자동 선택 및 즉시 표시
+    // 첫 번째 미디어 즉시 선택 (await 후 실행되므로 DOM 준비됨)
     if (mediaItems.length > 0) {
-      console.log('[DEBUG] 첫 번째 미디어 자동 선택 - 즉시 실행');
-      // DOM이 렌더링된 후 즉시 실행 (requestAnimationFrame 사용)
-      requestAnimationFrame(() => {
-        selectMedia(0);
-      });
+      console.log('[LOAD] 첫 번째 미디어 즉시 선택');
+      selectMedia(0);
     }
   } catch (e) {
     console.error('STEP 1 데이터 로드 실패:', e);
-    alert('데이터를 불러오는 중 오류가 발생했습니다: ' + e.message);
+    alert('데이터를 불러오는 중 오류가 발생했습니다.');
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
   }
 }
@@ -994,28 +958,8 @@ function renderMediaList() {
       <div class="admake-media-item-checked ${confirmedClass}">${checkedIcon}</div>
     `;
 
-    mediaItem.addEventListener('click', async () => {
-      // 클릭 시 Blob URL 유효성 검사
-      const clickedItem = mediaItems[index];
-      if (clickedItem.mediaType === 'image') {
-        try {
-          // 미리 유효성 검사
-          await validateAndRecoverBlobUrl(clickedItem).then(recoveredUrl => {
-            if (recoveredUrl !== clickedItem.previewUrl) {
-              clickedItem.previewUrl = recoveredUrl;
-              // 리스트의 이미지도 업데이트
-              const imgElement = mediaItem.querySelector('img');
-              if (imgElement) {
-                imgElement.src = recoveredUrl;
-              }
-            }
-          });
-        } catch (e) {
-          console.error(`[ERROR] 미디어 ${clickedItem.id} URL 검증 실패:`, e);
-          alert(`이미지 "${clickedItem.name}"을 불러올 수 없습니다.`);
-          return;
-        }
-      }
+    mediaItem.addEventListener('click', () => {
+      // [전면 재수정] 검증 없이 즉시 선택
       selectMedia(index);
     });
 
@@ -1754,60 +1698,7 @@ async function selectMedia(index) {
       }
     }
     
-    // ===== [수정] 동영상 Blob URL 유효성 검사 (HEAD 메서드 제거) =====
-    const validateAndStoreVideo = async () => {
-      try {
-        // ===== [수정] File/Blob 인스턴스 직접 확인 =====
-        // item.file 객체가 File 또는 Blob 인스턴스인지 직접 확인
-        if (item.file && (item.file instanceof File || item.file instanceof Blob)) {
-          // File 객체가 유효하면 기존 previewUrl 사용 (있을 경우)
-          if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-            console.log(`[VIDEO] File 객체 유효, 기존 Blob URL 사용: ${item.id}`);
-          } else {
-            // previewUrl이 없거나 유효하지 않으면 새로 생성
-            if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-              URL.revokeObjectURL(item.previewUrl);
-            }
-            item.previewUrl = URL.createObjectURL(item.file);
-            console.log(`[VIDEO] File 객체로부터 새 Blob URL 생성: ${item.id}`);
-          }
-        } else {
-          // File 객체가 없거나 유효하지 않으면 IndexedDB에서 가져오기
-          try {
-            item.file = await getFileFromIndexedDB(item.id);
-            if (item.file && (item.file instanceof File || item.file instanceof Blob)) {
-              // 기존 URL 해제 (메모리 누수 방지)
-              if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(item.previewUrl);
-              }
-              item.previewUrl = URL.createObjectURL(item.file);
-              console.log(`[VIDEO] IndexedDB에서 File 객체 복구 및 Blob URL 재생성: ${item.id}`);
-            }
-          } catch (e) {
-            console.warn(`[VIDEO] IndexedDB에서 File 객체 가져오기 실패: ${item.id}`, e);
-          }
-        }
-        
-        // File 객체가 있으면 IndexedDB에 저장 보장
-        if (item.file && (item.file instanceof File || item.file instanceof Blob)) {
-          syncCropStateToIndexedDB();
-        }
-      } catch (e) {
-        console.error(`[VIDEO] 동영상 저장/복구 오류: ${item.id}`, e);
-      }
-    };
-    
-    // 동영상 Blob URL 검사 및 저장 보장
-    validateAndStoreVideo();
-    
-    // ===== [핵심] 동영상도 Canvas에 그려서 크롭 가능하도록 처리 =====
-    // 동영상은 자동으로 확인 처리하지 않음 (사용자가 직접 확인해야 함)
-    // if (!item.isConfirmed) {
-    //   item.isConfirmed = true;
-    //   renderMediaList();
-    //   updateUploadButtonState();
-    // }
-    
+    // ===== [전면 재수정] 모든 검증 로직 삭제, 동영상도 이미지와 동일 처리 =====
     // 동영상도 이미지처럼 Canvas에 그리기 위해 videoElement 생성
     const videoElement = document.createElement('video');
     videoElement.crossOrigin = 'anonymous';
@@ -1817,24 +1708,12 @@ async function selectMedia(index) {
     videoElement.loop = true;
     videoElement.autoplay = true;
     
-    // 동영상 로드 실패 시 Blob URL 재생성
+    // 동영상 로드 실패 시 file 객체로 즉시 재생성
     videoElement.onerror = async () => {
-      console.warn(`[VIDEO] 동영상 로드 실패, Blob URL 복구 시도: ${item.id}`);
-      try {
-        if (!item.file) {
-          item.file = await getFileFromIndexedDB(item.id);
-        }
-        if (item.file) {
-          // 기존 URL 해제
-          if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(item.previewUrl);
-          }
-          item.previewUrl = URL.createObjectURL(item.file);
-          videoElement.src = item.previewUrl;
-          console.log(`[VIDEO] Blob URL 재생성 후 재로드: ${item.id}`);
-        }
-      } catch (e) {
-        console.error(`[VIDEO] 동영상 Blob URL 복구 실패: ${item.id}`, e);
+      console.warn(`[VIDEO ERROR] 동영상 로드 실패, 즉시 재생성: ${item.id}`);
+      if (item.file) {
+        item.previewUrl = URL.createObjectURL(item.file);
+        videoElement.src = item.previewUrl;
       }
     };
     
@@ -2018,22 +1897,12 @@ async function selectMedia(index) {
       // 즉시 실행 시도
       applyInitialFit();
     };
-    img.onerror = async () => {
-      console.warn(`[WARN] 이미지 로드 실패, Blob URL 복구 시도: ${item.id}`);
-      // Blob URL 복구 시도
-      try {
-        const recoveredUrl = await validateAndRecoverBlobUrl(item);
-        item.previewUrl = recoveredUrl;
-        // File 객체도 업데이트
-        if (!item.file) {
-          item.file = await getFileFromIndexedDB(item.id);
-        }
-        // 다시 로드 시도
-        img.src = recoveredUrl;
-      } catch (e) {
-        console.error(`[ERROR] 이미지 복구 실패: ${item.id}`, e);
-        alert(`이미지 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
-        canvas.style.display = 'none';
+    // 이미지 로드 실패 시 file 객체로 즉시 재생성
+    img.onerror = () => {
+      console.warn(`[IMAGE ERROR] 이미지 로드 실패, 즉시 재생성: ${item.id}`);
+      if (item.file) {
+        item.previewUrl = URL.createObjectURL(item.file);
+        img.src = item.previewUrl;
       }
     };
     img.src = item.previewUrl;
@@ -2184,19 +2053,15 @@ if (confirmBtn) {
 async function createCroppedImage(mediaItem) {
   return new Promise((resolve, reject) => {
     if (mediaItem.mediaType === 'video') {
-      // 동영상은 원본 파일 사용
+      // 동영상은 원본 파일 사용 (file 객체 우선)
+      if (mediaItem.file) {
+        resolve(mediaItem.file);
+        return;
+      }
+      // file 객체가 없으면 IndexedDB에서 가져오기
       getFileFromIndexedDB(mediaItem.id)
         .then(file => resolve(file))
-        .catch(() => {
-          // IndexedDB 실패 시 previewUrl에서 가져오기
-          fetch(mediaItem.previewUrl)
-            .then(res => res.blob())
-            .then(blob => {
-              const file = new File([blob], mediaItem.name, { type: mediaItem.type });
-              resolve(file);
-            })
-            .catch(reject);
-        });
+        .catch(reject);
       return;
     }
     

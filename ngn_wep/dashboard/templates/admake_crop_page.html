@@ -834,6 +834,106 @@
     .admake-guide-labels-wrapper {
       display: none;
     }
+
+    /* ===== 커스텀 토스트 알림 ===== */
+    .admake-toast-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .admake-toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      pointer-events: auto;
+      animation: toastSlideIn 0.3s ease;
+      max-width: 400px;
+    }
+
+    .admake-toast.toast-out {
+      animation: toastSlideOut 0.3s ease forwards;
+    }
+
+    @keyframes toastSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes toastSlideOut {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
+
+    .admake-toast-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .admake-toast-message {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .admake-toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+      font-size: 16px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .admake-toast-close:hover {
+      color: var(--text-primary);
+    }
+
+    /* 토스트 타입별 스타일 */
+    .admake-toast.toast-info {
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .admake-toast.toast-success {
+      border-left: 3px solid var(--accent-emerald);
+    }
+
+    .admake-toast.toast-warning {
+      border-left: 3px solid var(--accent-gold);
+    }
+
+    .admake-toast.toast-error {
+      border-left: 3px solid #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -1021,10 +1121,43 @@
 
 <!-- placeholderText 제거됨 -->
 
+<!-- 토스트 알림 컨테이너 -->
+<div class="admake-toast-container" id="toastContainer"></div>
+
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
+// ===== 커스텀 토스트 알림 시스템 =====
+function showToast(message, type = 'info', duration = 3500) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `admake-toast toast-${type}`;
+
+  const icons = {
+    info: 'ℹ️',
+    success: '✓',
+    warning: '⚠',
+    error: '✕'
+  };
+
+  toast.innerHTML = `
+    <span class="admake-toast-icon">${icons[type] || icons.info}</span>
+    <span class="admake-toast-message">${message}</span>
+    <button class="admake-toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+
+  container.appendChild(toast);
+
+  // 자동 제거
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 // ✅ 상태 관리 - 개선된 구조
 let mediaItems = []; // [{ id, name, type, mediaType, previewUrl, cropState: { x, y, zoom }, isConfirmed }]
 let selectedMediaIndex = -1;
@@ -1122,7 +1255,7 @@ async function initStep2() {
 async function loadStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (!step1Data) {
-    alert('STEP 1 데이터를 찾을 수 없습니다. 처음부터 시작해주세요.');
+    showToast('STEP 1 데이터를 찾을 수 없습니다. 처음부터 시작해주세요.', 'warning');
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
     return;
   }
@@ -1157,7 +1290,7 @@ async function loadStep1Data() {
         });
       } catch (e) {
         console.error(`[ERROR] ${item.id} 로드 실패:`, e);
-        alert(`미디어 "${item.name}"을 불러올 수 없습니다. STEP 1로 돌아가서 다시 업로드해주세요.`);
+        showToast(`미디어 "${item.name}"을 불러올 수 없습니다.`, 'error');
         window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
         return;
       }
@@ -1176,7 +1309,7 @@ async function loadStep1Data() {
     }
   } catch (e) {
     console.error('STEP 1 데이터 로드 실패:', e);
-    alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    showToast('데이터를 불러오는 중 오류가 발생했습니다.', 'error');
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
   }
 }
@@ -2685,7 +2818,7 @@ function updateUploadProgress(current, total, fileName) {
 async function uploadToMeta() {
   // ===== [Fix] 미디어 로딩 중이면 업로드 차단 =====
   if (isMediaLoading) {
-    alert('미디어 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    showToast('미디어 로딩 중입니다. 잠시 후 다시 시도해주세요.', 'info');
     console.warn('[UPLOAD] 미디어 로딩 중 - 업로드 차단됨');
     return;
   }
@@ -2896,7 +3029,7 @@ async function uploadToMeta() {
       landingUrl: step1Data.landingUrl
     }));
     
-    alert('업로드 완료! STEP 3으로 이동합니다.');
+    showToast('업로드 완료! STEP 3으로 이동합니다.', 'success');
     // window.location.href = `/admake/create/ad?account_id=${encodeURIComponent(accountId)}`;
     
   } catch (error) {

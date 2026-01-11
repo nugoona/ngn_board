@@ -655,6 +655,82 @@
       box-shadow: none;
     }
 
+    /* ===== 커스텀 토스트 알림 ===== */
+    .admake-toast-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .admake-toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      pointer-events: auto;
+      animation: toastSlideIn 0.3s ease;
+      max-width: 400px;
+    }
+
+    .admake-toast.toast-out {
+      animation: toastSlideOut 0.3s ease forwards;
+    }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toastSlideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    .admake-toast-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .admake-toast-message {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .admake-toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+      font-size: 16px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .admake-toast-close:hover {
+      color: var(--text-primary);
+    }
+
+    .admake-toast.toast-info { border-left: 3px solid var(--accent-blue); }
+    .admake-toast.toast-success { border-left: 3px solid var(--accent-emerald); }
+    .admake-toast.toast-warning { border-left: 3px solid var(--accent-gold); }
+    .admake-toast.toast-error { border-left: 3px solid #ef4444; }
+
     /* 모바일 미지원 - 데스크탑 전용 */
   </style>
 </head>
@@ -819,10 +895,42 @@
   </div>
 </div>
 
+<!-- 토스트 알림 컨테이너 -->
+<div class="admake-toast-container" id="toastContainer"></div>
+
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
+// ===== 커스텀 토스트 알림 시스템 =====
+function showToast(message, type = 'info', duration = 3500) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `admake-toast toast-${type}`;
+
+  const icons = {
+    info: 'ℹ️',
+    success: '✓',
+    warning: '⚠',
+    error: '✕'
+  };
+
+  toast.innerHTML = `
+    <span class="admake-toast-icon">${icons[type] || icons.info}</span>
+    <span class="admake-toast-message">${message}</span>
+    <button class="admake-toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 // ✅ [HD Export] 메타 광고 해상도 상수
 const META_MIN_WIDTH = 600;
 const META_RECOMMENDED_WIDTH = 1080;
@@ -994,7 +1102,7 @@ function handleFiles(files) {
   const filesToAdd = files.slice(0, remainingSlots);
 
   if (files.length > remainingSlots) {
-    alert(`최대 10개까지 업로드 가능합니다. ${remainingSlots}개만 추가됩니다.`);
+    showToast(`최대 10개까지 업로드 가능합니다. ${remainingSlots}개만 추가됩니다.`, 'warning');
   }
 
   filesToAdd.forEach(file => {
@@ -1004,7 +1112,7 @@ function handleFiles(files) {
     const isVideo = file.type.startsWith('video/');
 
     if (!isImage && !isVideo) {
-      alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다.`);
+      showToast(`${file.name}은(는) 지원하지 않는 파일 형식입니다.`, 'error');
       return;
     }
 
@@ -1324,7 +1432,7 @@ window.addEventListener('beforeunload', (e) => {
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
   if (!initDOMElements()) {
-    alert('페이지 로드 중 오류가 발생했습니다.');
+    showToast('페이지 로드 중 오류가 발생했습니다.', 'error');
     return;
   }
 

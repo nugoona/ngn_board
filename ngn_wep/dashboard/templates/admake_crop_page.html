@@ -2834,6 +2834,7 @@ async function uploadToMeta() {
     const tokenResponse = await fetch('/dashboard/get_meta_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ account_id: accountId })
     });
     

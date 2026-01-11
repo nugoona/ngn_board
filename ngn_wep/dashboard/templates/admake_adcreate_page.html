@@ -1550,6 +1550,7 @@ async function generatePreview() {
     const response = await fetch('/dashboard/generate_ad_preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(requestData)
     });
 

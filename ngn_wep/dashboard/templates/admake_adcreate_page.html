@@ -660,13 +660,6 @@
       align-items: center;
       justify-content: flex-start;
       position: relative;
-      /* 스크롤바 숨김 (스크롤은 가능) */
-      scrollbar-width: none; /* Firefox */
-      -ms-overflow-style: none; /* IE/Edge */
-    }
-
-    .admake-preview-content::-webkit-scrollbar {
-      display: none; /* Chrome/Safari */
     }
 
     /* 미리보기 래퍼 - 로딩 트랜지션용 */
@@ -681,20 +674,45 @@
     .admake-preview-frame {
       background: var(--bg-card);
       border-radius: 12px;
-      overflow: visible; /* 콘텐츠 잘림 방지 */
+      overflow: auto; /* 스크롤 허용 */
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
       display: flex;
       justify-content: center; /* iframe 중앙 정렬 */
+      /* 커스텀 스크롤바 적용 */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-default) transparent;
     }
 
-    /* 포맷별 프레임 사이즈 - 높이 제한 없음 */
-    .admake-preview-frame.format-feed {
+    .admake-preview-frame::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    .admake-preview-frame::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .admake-preview-frame::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 10px;
+    }
+
+    /* 포맷별 프레임 사이즈 */
+    .admake-preview-frame.format-ig-feed {
       width: auto;
+      max-height: 650px;
+    }
+
+    .admake-preview-frame.format-fb-feed {
+      width: auto;
+      max-height: 600px;
     }
 
     .admake-preview-frame.format-reels {
-      width: auto;
+      width: 360px;
+      height: 640px; /* 9:16 비율에 맞춘 고정 높이 */
+      max-height: none;
     }
 
     /* 로딩 중 블러 효과 */
@@ -703,10 +721,22 @@
       opacity: 0.6;
     }
 
-    /* 프레임 내부 iframe 스타일 */
+    /* 프레임 내부 iframe 스타일 - 포맷별 크기 */
     .admake-preview-frame iframe {
-      border: none;
-      display: block;
+      border: none !important;
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .admake-preview-frame.format-ig-feed iframe,
+    .admake-preview-frame.format-fb-feed iframe {
+      min-height: 550px;
+    }
+
+    .admake-preview-frame.format-reels iframe {
+      width: 360px !important;
+      height: 640px !important;
     }
 
     /* 로딩 오버레이 */
@@ -1647,7 +1677,10 @@ async function generatePreview() {
 
   // 포맷에 따른 클래스 결정
   const isReels = currentPreviewFormat === 'INSTAGRAM_REELS';
-  const formatClass = isReels ? 'format-reels' : 'format-feed';
+  const isFbFeed = currentPreviewFormat === 'MOBILE_FEED_STANDARD';
+  let formatClass = 'format-ig-feed'; // 기본값: IG Feed
+  if (isReels) formatClass = 'format-reels';
+  else if (isFbFeed) formatClass = 'format-fb-feed';
 
   // 기존 미리보기가 있으면 블러 처리, 없으면 로딩 표시
   const existingFrame = previewContent.querySelector('.admake-preview-frame');
@@ -1775,14 +1808,20 @@ async function generatePreview() {
       const forceIframeStyles = (iframeEl) => {
         if (!iframeEl) return;
 
-        // iframe 스타일 적용 - 콘텐츠 전체 표시
-        iframeEl.style.cssText = `
-          border: none !important;
-          display: block !important;
-        `;
+        // 기본 스타일
+        let styleText = 'border: none !important; display: block !important;';
+
+        // Reels는 고정 크기 적용 (9:16 비율)
+        if (isReels) {
+          styleText += ' width: 360px !important; height: 640px !important;';
+        } else {
+          styleText += ' width: 100% !important; min-height: 550px !important;';
+        }
+
+        iframeEl.style.cssText = styleText;
         iframeEl.setAttribute('frameborder', '0');
 
-        console.log('[STEP3] iframe 스타일 적용 완료');
+        console.log('[STEP3] iframe 스타일 적용:', formatClass);
       };
 
       // 로딩 해제 함수

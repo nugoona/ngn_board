@@ -53,6 +53,35 @@
       color: var(--text-primary);
     }
 
+    /* ===== 전역 스크롤바 - Minimalist Style ===== */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-default) transparent;
+    }
+
     .font-inter {
       font-family: 'Inter Tight', sans-serif;
       letter-spacing: 0;
@@ -628,15 +657,92 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      position: relative;
+    }
+
+    /* 미리보기 래퍼 - 로딩 트랜지션용 */
+    .admake-preview-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .admake-preview-frame {
       width: 100%;
       max-width: 320px;
-      background: #ffffff;
+      background: var(--bg-card);
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+
+    /* 포맷별 프레임 사이즈 */
+    .admake-preview-frame.format-feed {
+      max-width: 320px;
+      aspect-ratio: auto;
+    }
+
+    .admake-preview-frame.format-reels {
+      max-width: 280px;
+      aspect-ratio: 9 / 16;
+      min-height: 500px;
+    }
+
+    /* 로딩 중 블러 효과 */
+    .admake-preview-frame.loading {
+      filter: blur(8px);
+      opacity: 0.6;
+    }
+
+    /* 프레임 내부 iframe 스타일 */
+    .admake-preview-frame iframe {
+      width: 100%;
+      border: none;
+      display: block;
+    }
+
+    .admake-preview-frame.format-feed iframe {
+      min-height: 400px;
+    }
+
+    .admake-preview-frame.format-reels iframe {
+      height: 100%;
+      min-height: 500px;
+    }
+
+    /* 로딩 오버레이 */
+    .admake-preview-loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .admake-preview-loader.active {
+      display: flex;
+    }
+
+    .admake-preview-loader-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-default);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .admake-preview-loader-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
     }
 
     .admake-preview-placeholder {
@@ -1533,6 +1639,8 @@ function triggerPreviewUpdate() {
 }
 
 // ===== Meta API 미리보기 생성 =====
+let currentPreviewHtml = null; // 현재 미리보기 HTML 캐시
+
 async function generatePreview() {
   if (selectedMediaIds.length === 0) {
     console.log('[STEP3] 선택된 미디어 없음, 미리보기 스킵');
@@ -1540,11 +1648,36 @@ async function generatePreview() {
   }
 
   const previewContent = document.getElementById('previewContent');
-  previewContent.innerHTML = `
-    <div class="admake-preview-loading">
-      <div class="admake-preview-spinner"></div>
-    </div>
-  `;
+
+  // 포맷에 따른 클래스 결정
+  const isReels = currentPreviewFormat === 'INSTAGRAM_REELS';
+  const formatClass = isReels ? 'format-reels' : 'format-feed';
+
+  // 기존 미리보기가 있으면 블러 처리, 없으면 로딩 표시
+  const existingFrame = previewContent.querySelector('.admake-preview-frame');
+  if (existingFrame) {
+    existingFrame.classList.add('loading');
+    // 로딩 오버레이 추가
+    if (!previewContent.querySelector('.admake-preview-loader')) {
+      const loader = document.createElement('div');
+      loader.className = 'admake-preview-loader active';
+      loader.innerHTML = `
+        <div class="admake-preview-loader-spinner"></div>
+        <span class="admake-preview-loader-text">Loading preview...</span>
+      `;
+      previewContent.querySelector('.admake-preview-wrapper')?.appendChild(loader);
+    } else {
+      previewContent.querySelector('.admake-preview-loader')?.classList.add('active');
+    }
+  } else {
+    previewContent.innerHTML = `
+      <div class="admake-preview-wrapper">
+        <div class="admake-preview-frame ${formatClass}" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
+          <div class="admake-preview-loader-spinner"></div>
+        </div>
+      </div>
+    `;
+  }
 
   try {
     // 첫 번째 선택된 미디어 정보
@@ -1607,11 +1740,46 @@ async function generatePreview() {
     console.log('[STEP3] API 응답:', result);
 
     if (result.status === 'success' && result.preview_html) {
+      currentPreviewHtml = result.preview_html;
+
+      // 새 프레임 생성
       previewContent.innerHTML = `
-        <div class="admake-preview-frame">
-          ${result.preview_html}
+        <div class="admake-preview-wrapper">
+          <div class="admake-preview-frame ${formatClass} loading">
+            ${result.preview_html}
+          </div>
+          <div class="admake-preview-loader active">
+            <div class="admake-preview-loader-spinner"></div>
+            <span class="admake-preview-loader-text">Rendering...</span>
+          </div>
         </div>
       `;
+
+      // iframe onload 이벤트 감지
+      const frame = previewContent.querySelector('.admake-preview-frame');
+      const loader = previewContent.querySelector('.admake-preview-loader');
+      const iframe = frame.querySelector('iframe');
+
+      if (iframe) {
+        iframe.onload = () => {
+          console.log('[STEP3] iframe 로드 완료');
+          frame.classList.remove('loading');
+          loader?.classList.remove('active');
+        };
+
+        // 타임아웃 폴백 (5초 후 자동 해제)
+        setTimeout(() => {
+          frame.classList.remove('loading');
+          loader?.classList.remove('active');
+        }, 5000);
+      } else {
+        // iframe이 없는 경우 바로 로딩 해제
+        setTimeout(() => {
+          frame.classList.remove('loading');
+          loader?.classList.remove('active');
+        }, 300);
+      }
+
     } else {
       throw new Error(result.message || '미리보기 생성 실패');
     }
@@ -1619,10 +1787,12 @@ async function generatePreview() {
   } catch (error) {
     console.error('[STEP3] 미리보기 오류:', error);
     previewContent.innerHTML = `
-      <div class="admake-preview-error">
-        <i data-lucide="alert-circle" style="width:32px;height:32px;margin-bottom:12px;opacity:0.5;"></i>
-        <p>${error.message}</p>
-        <p style="font-size:11px;opacity:0.7;margin-top:8px;">콘솔에서 상세 오류를 확인하세요</p>
+      <div class="admake-preview-wrapper">
+        <div class="admake-preview-error" style="padding:40px;text-align:center;">
+          <i data-lucide="alert-circle" style="width:32px;height:32px;margin-bottom:12px;opacity:0.5;color:var(--accent-red);"></i>
+          <p style="color:var(--accent-red);font-size:13px;margin:0 0 8px 0;">${error.message}</p>
+          <p style="font-size:11px;color:var(--text-muted);">콘솔에서 상세 오류를 확인하세요</p>
+        </div>
       </div>
     `;
     lucide.createIcons();

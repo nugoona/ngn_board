@@ -1691,6 +1691,15 @@ async function generatePreview() {
       format: currentPreviewFormat
     });
 
+    // 마스터 값 디버그
+    console.log('[MASTER] 현재 마스터 값:', {
+      url: masterValues.url,
+      primaryText: masterValues.primaryText?.substring(0, 30),
+      headline: masterValues.headline,
+      description: masterValues.description,
+      cta: masterValues.cta
+    });
+
     // API 요청 데이터 구성
     const requestData = {
       account_id: accountId,
@@ -1702,6 +1711,14 @@ async function generatePreview() {
       description: masterValues.description || '',
       cta_type: masterValues.cta || 'SHOP_NOW'
     };
+
+    console.log('[MASTER] API 전송 데이터:', {
+      link: requestData.link,
+      message: requestData.message?.substring(0, 30),
+      name: requestData.name,
+      description: requestData.description,
+      cta_type: requestData.cta_type
+    });
 
     // 미디어 타입에 따라 올바른 필드만 전송 (Meta API 규격 준수)
     if (firstMedia.mediaType === 'video') {
@@ -1846,57 +1863,45 @@ async function generatePreview() {
       // 로딩 해제 함수
       const finishLoading = (reason) => {
         console.log('[LOADING] finishLoading 호출됨, 이유:', reason);
-        console.log('[LOADING] 해제 전 - frame.loading:', frame.classList.contains('loading'));
-        console.log('[LOADING] 해제 전 - loader.active:', loader?.classList.contains('active'));
 
+        // 클래스 제거
         frame.classList.remove('loading');
         loader?.classList.remove('active');
+
+        // CSS transition 무시하고 즉시 스타일 적용
+        frame.style.filter = 'none';
+        frame.style.opacity = '1';
+
         adjustIframeSize();
 
-        console.log('[LOADING] 해제 후 - frame.loading:', frame.classList.contains('loading'));
-        console.log('[LOADING] 해제 후 - loader.active:', loader?.classList.contains('active'));
-        console.log('[LOADING] 해제 후 - frame 블러:', getComputedStyle(frame).filter);
-        console.log('[LOADING] 해제 후 - frame opacity:', getComputedStyle(frame).opacity);
-
-        // 디버그: 로딩 완료 후 크기 재확인
-        if (iframe) {
-          console.log('[DEBUG] 로딩완료 후 iframe 크기:', {
-            offsetWidth: iframe.offsetWidth,
-            offsetHeight: iframe.offsetHeight
-          });
-        }
+        console.log('[LOADING] 완료 - iframe 크기:', iframe?.offsetWidth, 'x', iframe?.offsetHeight);
         console.log('[STEP3] 미리보기 렌더링 완료');
       };
 
       if (iframe) {
-        let finished = false;  // 중복 호출 방지
-        console.log('[LOADING] iframe 발견, onload 이벤트 대기 시작');
+        let finished = false;
 
         const doFinish = (reason) => {
-          if (finished) {
-            console.log('[LOADING] 이미 완료됨, 스킵:', reason);
-            return;
-          }
+          if (finished) return;
           finished = true;
           finishLoading(reason);
         };
 
+        // onload 이벤트 - 이게 발생하면 바로 완료
         iframe.onload = () => {
-          console.log('[LOADING] iframe onload 이벤트 발생!');
-          // onload 후 500ms 대기 (Meta 콘텐츠 렌더링 시간)
-          setTimeout(() => doFinish('onload + 500ms'), 500);
+          console.log('[LOADING] iframe onload!');
+          doFinish('onload');
         };
 
-        // 타임아웃 폴백 (5초) - onload가 안 오면 강제 해제
+        // 타임아웃 폴백 (10초) - 안전장치
         setTimeout(() => {
           if (!finished) {
-            console.log('[LOADING] 5초 타임아웃 - onload 미발생');
-            doFinish('타임아웃 5초');
+            console.log('[LOADING] 10초 타임아웃');
+            doFinish('타임아웃');
           }
-        }, 5000);
+        }, 10000);
       } else {
-        console.log('[LOADING] iframe 없음! 500ms 후 해제');
-        setTimeout(() => finishLoading('iframe 없음'), 500);
+        setTimeout(() => finishLoading('iframe 없음'), 300);
       }
 
     } else {

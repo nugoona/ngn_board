@@ -1770,14 +1770,64 @@ async function generatePreview() {
       const loader = previewContent.querySelector('.admake-preview-loader');
       const iframe = frame.querySelector('iframe');
 
+      // ===== 디버그: Meta iframe 분석 =====
+      console.log('[DEBUG] ========== PREVIEW DEBUG START ==========');
+      console.log('[DEBUG] 현재 포맷:', currentPreviewFormat);
+      console.log('[DEBUG] Meta 반환 HTML:', result.preview_html.substring(0, 500));
+
+      if (iframe) {
+        console.log('[DEBUG] iframe 발견');
+        console.log('[DEBUG] iframe 원본 속성:', {
+          width: iframe.getAttribute('width'),
+          height: iframe.getAttribute('height'),
+          style: iframe.getAttribute('style'),
+          src: iframe.src?.substring(0, 100)
+        });
+        console.log('[DEBUG] iframe computed style:', {
+          width: getComputedStyle(iframe).width,
+          height: getComputedStyle(iframe).height,
+          overflow: getComputedStyle(iframe).overflow
+        });
+      }
+
+      console.log('[DEBUG] frame(.admake-preview-frame) computed:', {
+        width: getComputedStyle(frame).width,
+        height: getComputedStyle(frame).height,
+        overflow: getComputedStyle(frame).overflow,
+        display: getComputedStyle(frame).display
+      });
+
+      console.log('[DEBUG] previewContent computed:', {
+        width: getComputedStyle(previewContent).width,
+        height: getComputedStyle(previewContent).height,
+        overflow: getComputedStyle(previewContent).overflow,
+        overflowY: getComputedStyle(previewContent).overflowY
+      });
+      console.log('[DEBUG] ========== PREVIEW DEBUG END ==========');
+
       // 로딩 해제 함수
       const finishLoading = () => {
         frame.classList.remove('loading');
         loader?.classList.remove('active');
-        // iframe border만 제거, 크기는 Meta가 정한대로 유지
+        // iframe border만 제거
         if (iframe) {
           iframe.style.border = 'none';
           iframe.setAttribute('frameborder', '0');
+
+          // 디버그: 로딩 완료 후 크기 재확인
+          console.log('[DEBUG] 로딩완료 후 iframe 크기:', {
+            offsetWidth: iframe.offsetWidth,
+            offsetHeight: iframe.offsetHeight,
+            clientWidth: iframe.clientWidth,
+            clientHeight: iframe.clientHeight,
+            scrollWidth: iframe.scrollWidth,
+            scrollHeight: iframe.scrollHeight
+          });
+          console.log('[DEBUG] 로딩완료 후 frame 크기:', {
+            offsetWidth: frame.offsetWidth,
+            offsetHeight: frame.offsetHeight,
+            scrollHeight: frame.scrollHeight
+          });
         }
         console.log('[STEP3] 미리보기 렌더링 완료');
       };
@@ -1786,20 +1836,20 @@ async function generatePreview() {
         let loadComplete = false;
 
         iframe.onload = () => {
-          console.log('[STEP3] iframe 로드 완료');
+          console.log('[DEBUG] iframe onload 이벤트 발생');
           loadComplete = true;
-          // iframe 로드 후 Meta 콘텐츠 렌더링을 위해 1초 추가 대기
           setTimeout(finishLoading, 1000);
         };
 
-        // 타임아웃 폴백 (3초 후 자동 해제 - onload 실패 시)
+        // 타임아웃 폴백
         setTimeout(() => {
           if (!loadComplete) {
-            console.log('[STEP3] 타임아웃 - 강제 로딩 해제');
+            console.log('[DEBUG] 타임아웃 - onload 미발생');
             finishLoading();
           }
         }, 3000);
       } else {
+        console.log('[DEBUG] iframe 없음!');
         setTimeout(finishLoading, 500);
       }
 

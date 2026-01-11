@@ -752,7 +752,20 @@
         <input type="range" id="zoomSlider" class="admake-zoom-slider" min="0.01" max="3" step="0.01" value="1">
         <span class="admake-zoom-value" id="zoomValue">100%</span>
       </div>
-      
+
+      <!-- [HD Export] 실시간 해상도 표시 -->
+      <div id="resolutionDisplay" style="margin-top: 12px; padding: 10px; background: #f3f4f6; border-radius: 8px; text-align: center;">
+        <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">출력 해상도</div>
+        <div id="resolutionValue" style="font-size: 14px; font-weight: 700; color: #111827;">-- x --</div>
+        <div id="resolutionStatus" style="font-size: 11px; margin-top: 4px; color: #059669;">✓ 메타 광고 권장 규격</div>
+      </div>
+
+      <!-- [HD Export] 해상도 경고 -->
+      <div id="resolutionWarning" style="display: none; margin-top: 8px; padding: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; text-align: center;">
+        <div style="font-size: 12px; color: #dc2626; font-weight: 600;">⚠️ 해상도가 너무 낮습니다</div>
+        <div style="font-size: 11px; color: #991b1b; margin-top: 4px;">최소 600px 이상 필요 (권장: 1080px)</div>
+      </div>
+
       <!-- 확인 버튼 -->
       <button class="admake-btn admake-btn-primary" id="confirmBtn" style="margin-top: 16px; width: 100%;">
         이 미디어 확인 완료
@@ -813,6 +826,12 @@ let containerWidth = 0;
 let containerHeight = 0;
 let currentAspectRatio = 9/16; // 현재 선택된 비율 (9:16, 4:5, 1:1) - 디폴트 9:16
 let minZoom = 1; // 최소 확대 배율 (동적 계산)
+
+// ✅ [HD Export] 메타 광고 해상도 상수
+const META_MIN_WIDTH = 600;        // 메타 광고 최소 너비
+const META_RECOMMENDED_WIDTH = 1080; // 권장 너비
+let currentCropPixelWidth = 0;     // 현재 크롭 영역의 원본 픽셀 너비
+let currentCropPixelHeight = 0;    // 현재 크롭 영역의 원본 픽셀 높이
 
 // ✅ IndexedDB에서 File 객체 가져오기
 async function getFileFromIndexedDB(mediaId) {
@@ -1614,6 +1633,10 @@ function changeAspectRatio(ratio) {
 
     // IndexedDB 상태 동기화
     syncCropStateToIndexedDB();
+
+    // ✅ [HD Export] 실시간 해상도 표시 업데이트
+    const cropPixels = calculateCropPixelSize(currentAspectRatio, currentZoom);
+    updateResolutionDisplay(cropPixels.width, cropPixels.height);
   }
 }
 
@@ -1811,6 +1834,10 @@ async function selectMedia(index) {
         drawImage();
         isMediaLoading = false; // 동영상 로딩 완료
         console.log('[VIDEO] 미디어 로딩 완료');
+
+        // ✅ [HD Export] 실시간 해상도 표시 업데이트
+        const cropPixels = calculateCropPixelSize(currentAspectRatio, currentZoom);
+        updateResolutionDisplay(cropPixels.width, cropPixels.height);
       };
 
       // 즉시 실행 시도
@@ -1930,6 +1957,10 @@ async function selectMedia(index) {
         drawImage();
         isMediaLoading = false; // 이미지 로딩 완료
         console.log('[IMAGE] 미디어 로딩 완료');
+
+        // ✅ [HD Export] 실시간 해상도 표시 업데이트
+        const cropPixels = calculateCropPixelSize(currentAspectRatio, currentZoom);
+        updateResolutionDisplay(cropPixels.width, cropPixels.height);
       };
 
       // 즉시 실행 시도
@@ -2108,6 +2139,10 @@ if (zoomSlider) {
 
       // IndexedDB 상태 동기화 (상태 유지 강화)
       syncCropStateToIndexedDB();
+
+      // ✅ [HD Export] 실시간 해상도 표시 업데이트
+      const cropPixels = calculateCropPixelSize(currentAspectRatio, currentZoom);
+      updateResolutionDisplay(cropPixels.width, cropPixels.height);
     }
   });
 }
@@ -2120,11 +2155,69 @@ if (confirmBtn) {
   });
 }
 
-// ✅ 크롭된 이미지 생성 (Blob)
+// ✅ [HD Export] 실시간 해상도 표시 업데이트
+function updateResolutionDisplay(pixelWidth, pixelHeight) {
+  const valueEl = document.getElementById('resolutionValue');
+  const statusEl = document.getElementById('resolutionStatus');
+  const warningEl = document.getElementById('resolutionWarning');
+  const confirmBtn = document.getElementById('confirmBtn');
+
+  if (!valueEl || !statusEl || !warningEl) return;
+
+  // 전역 변수 업데이트
+  currentCropPixelWidth = Math.round(pixelWidth);
+  currentCropPixelHeight = Math.round(pixelHeight);
+
+  // 해상도 값 표시
+  valueEl.textContent = `${currentCropPixelWidth} x ${currentCropPixelHeight}`;
+
+  // 상태 판정
+  if (currentCropPixelWidth >= META_RECOMMENDED_WIDTH) {
+    // ✅ 권장 규격 이상
+    statusEl.textContent = '✓ 메타 광고 권장 규격';
+    statusEl.style.color = '#059669';
+    warningEl.style.display = 'none';
+    if (confirmBtn) confirmBtn.disabled = false;
+  } else if (currentCropPixelWidth >= META_MIN_WIDTH) {
+    // ⚠️ 최소 규격 충족 (권장 미달)
+    statusEl.textContent = '△ 최소 규격 충족 (권장: 1080px)';
+    statusEl.style.color = '#d97706';
+    warningEl.style.display = 'none';
+    if (confirmBtn) confirmBtn.disabled = false;
+  } else {
+    // ❌ 최소 규격 미달
+    statusEl.textContent = '✗ 해상도 부족';
+    statusEl.style.color = '#dc2626';
+    warningEl.style.display = 'block';
+    if (confirmBtn) confirmBtn.disabled = true;
+  }
+
+  console.log(`[HD RESOLUTION] ${currentCropPixelWidth}x${currentCropPixelHeight} (min: ${META_MIN_WIDTH}, recommended: ${META_RECOMMENDED_WIDTH})`);
+}
+
+// ✅ [HD Export] 현재 크롭 영역의 원본 픽셀 크기 계산
+function calculateCropPixelSize(aspectRatio, zoom) {
+  if (!currentImage || containerWidth <= 0 || containerHeight <= 0 || zoom <= 0) {
+    return { width: 0, height: 0 };
+  }
+
+  // UI 크롭 영역 계산
+  const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
+
+  // 원본 픽셀 크기 = UI 크롭 영역 / 줌 배율
+  // 줌이 높을수록 원본에서 작은 영역을 자르므로 해상도가 낮아짐
+  const pixelWidth = cropArea.width / zoom;
+  const pixelHeight = cropArea.height / zoom;
+
+  return { width: pixelWidth, height: pixelHeight };
+}
+
+// ✅ [HD Export] 크롭된 이미지 생성 - 원본 해상도 유지
 async function createCroppedImage(mediaItem) {
   return new Promise((resolve, reject) => {
     if (mediaItem.mediaType === 'video') {
       // 동영상은 원본 파일 사용 (file 객체 우선)
+      console.log(`[HD EXPORT] 동영상 원본 사용: ${mediaItem.id}`);
       if (mediaItem.file) {
         resolve(mediaItem.file);
         return;
@@ -2135,53 +2228,72 @@ async function createCroppedImage(mediaItem) {
         .catch(reject);
       return;
     }
-    
-    // 이미지는 크롭된 버전 생성 (선택된 비율에 맞게)
+
+    // ===== [HD Export] 이미지 고화질 크롭 =====
     const state = mediaItem.cropState || { x: 0, y: 0, zoom: 1, aspectRatio: 9/16 };
     const aspectRatio = state.aspectRatio || 9/16;
+    const zoom = state.zoom || 1;
 
     // 이미지 로드
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // ===== [핵심] 이미지/동영상 원본 크기 명시적 사용 =====
-      let imageNaturalWidth, imageNaturalHeight;
-      
-      if (img instanceof HTMLVideoElement) {
-        imageNaturalWidth = img.videoWidth || img.width || 1920;
-        imageNaturalHeight = img.videoHeight || img.height || 1080;
-      } else {
-        imageNaturalWidth = img.naturalWidth || img.width;
-        imageNaturalHeight = img.naturalHeight || img.height;
+      // 원본 이미지 크기
+      const imageNaturalWidth = img.naturalWidth || img.width;
+      const imageNaturalHeight = img.naturalHeight || img.height;
+
+      if (imageNaturalWidth <= 0 || imageNaturalHeight <= 0) {
+        reject(new Error('이미지 원본 크기를 가져올 수 없습니다'));
+        return;
       }
 
-      // 선택된 비율에 맞는 크롭 영역 계산
+      // UI 크롭 영역 계산 (containerWidth/Height는 전역 변수)
       const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);
       const cropX = (containerWidth - cropArea.width) / 2;
       const cropY = (containerHeight - cropArea.height) / 2;
 
-      // 크롭 캔버스 생성 (선택된 비율 크기)
+      // ===== [핵심] 원본 이미지 좌표로 변환 =====
+      // UI에서 크롭 영역의 시작점 (이미지 기준 상대 좌표)
+      // state.x, state.y는 이미지가 캔버스에 그려지는 위치
+      // cropX, cropY는 크롭 영역이 캔버스에서 시작되는 위치
+      // 크롭 영역 기준 이미지 오프셋 = cropX - state.x (양수면 이미지 왼쪽 잘림)
+      const offsetX = cropX - state.x;
+      const offsetY = cropY - state.y;
+
+      // 원본 이미지에서의 소스 좌표 (UI 좌표를 줌으로 나눔)
+      const sx = Math.max(0, offsetX / zoom);
+      const sy = Math.max(0, offsetY / zoom);
+      const sw = Math.min(imageNaturalWidth - sx, cropArea.width / zoom);
+      const sh = Math.min(imageNaturalHeight - sy, cropArea.height / zoom);
+
+      // 출력 캔버스 크기 = 원본 픽셀 크기 (1:1 해상도)
+      const outputWidth = Math.round(sw);
+      const outputHeight = Math.round(sh);
+
+      console.log(`[HD EXPORT] 원본: ${imageNaturalWidth}x${imageNaturalHeight}`);
+      console.log(`[HD EXPORT] 줌: ${zoom.toFixed(4)}, 소스: (${sx.toFixed(1)}, ${sy.toFixed(1)}) ${sw.toFixed(1)}x${sh.toFixed(1)}`);
+      console.log(`[HD EXPORT] 출력: ${outputWidth}x${outputHeight}`);
+
+      // ===== 고화질 캔버스 생성 =====
       const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = cropArea.width;
-      cropCanvas.height = cropArea.height;
+      cropCanvas.width = outputWidth;
+      cropCanvas.height = outputHeight;
       const cropCtx = cropCanvas.getContext('2d');
 
-      const imgWidth = imageNaturalWidth * state.zoom;
-      const imgHeight = imageNaturalHeight * state.zoom;
+      // 고화질 렌더링 설정
+      cropCtx.imageSmoothingEnabled = true;
+      cropCtx.imageSmoothingQuality = 'high';
 
-      // 크롭 영역 기준으로 이미지 위치 계산
-      const relativeX = state.x - cropX;
-      const relativeY = state.y - cropY;
-
+      // drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
+      // 원본 이미지의 (sx, sy)부터 (sw, sh) 영역을
+      // 캔버스의 (0, 0)부터 (outputWidth, outputHeight)로 그림
       cropCtx.drawImage(
         img,
-        relativeX,
-        relativeY,
-        imgWidth,
-        imgHeight
+        sx, sy, sw, sh,           // 소스 영역 (원본 픽셀)
+        0, 0, outputWidth, outputHeight  // 대상 영역 (캔버스)
       );
 
-      // Canvas를 Blob으로 변환
+      // Canvas를 Blob으로 변환 (JPEG 품질 0.95)
       cropCanvas.toBlob((blob) => {
         if (!blob) {
           reject(new Error('이미지 생성 실패'));
@@ -2189,14 +2301,15 @@ async function createCroppedImage(mediaItem) {
         }
 
         const file = new File([blob], mediaItem.name, { type: 'image/jpeg' });
+        console.log(`[HD EXPORT] ✅ 완료: ${mediaItem.name} (${outputWidth}x${outputHeight}, ${(blob.size/1024).toFixed(1)}KB)`);
         resolve(file);
       }, 'image/jpeg', 0.95);
     };
-    
+
     img.onerror = () => {
       reject(new Error('이미지를 불러올 수 없습니다'));
     };
-    
+
     img.src = mediaItem.previewUrl;
   });
 }
@@ -2282,6 +2395,10 @@ async function uploadToMeta() {
         let file;
         if (item.mediaType === 'image') {
           file = await createCroppedImage(item);
+          // ✅ [HD Export] 업로드 직전 로깅 - 이미지 해상도 확인
+          console.log(`[HD UPLOAD] 이미지 업로드 준비: ${item.name}`);
+          console.log(`[HD UPLOAD] ↳ 파일 크기: ${(file.size / 1024).toFixed(1)}KB`);
+          console.log(`[HD UPLOAD] ↳ 크롭 설정: zoom=${item.cropState?.zoom?.toFixed(4) || 'N/A'}, ratio=${item.cropState?.aspectRatio || 'N/A'}`);
         } else {
           // 동영상은 원본 사용
           try {
@@ -2291,8 +2408,11 @@ async function uploadToMeta() {
             const blob = await response.blob();
             file = new File([blob], item.name, { type: item.type });
           }
+          // ✅ [HD Export] 동영상 업로드 로깅
+          console.log(`[HD UPLOAD] 동영상 업로드 준비: ${item.name}`);
+          console.log(`[HD UPLOAD] ↳ 파일 크기: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
         }
-        
+
         let result;
         if (item.mediaType === 'image') {
           // 이미지 업로드: POST /v24.0/{ad_account_id}/adimages

@@ -444,6 +444,10 @@
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
 
 <script>
+// ✅ [HD Export] 메타 광고 해상도 상수
+const META_MIN_WIDTH = 600;        // 메타 광고 최소 너비
+const META_RECOMMENDED_WIDTH = 1080; // 권장 너비
+
 // ✅ 상태 관리 - 개선된 데이터 구조
 let mediaItems = []; // { id, file, previewUrl, type }
 let hasUnsavedChanges = false;
@@ -784,6 +788,46 @@ function renderThumbnail(mediaItem) {
     const imgEl = document.createElement('img');
     imgEl.className = 'admake-thumbnail-image';
     imgEl.alt = '업로드된 이미지';
+
+    // ✅ [HD Export] 이미지 로드 성공 시 해상도 체크
+    imgEl.onload = () => {
+      const width = imgEl.naturalWidth;
+      const height = imgEl.naturalHeight;
+
+      // 저해상도 경고 배지 추가
+      if (width < META_MIN_WIDTH) {
+        console.warn(`[LOW-RES] ${mediaItem.id}: ${width}x${height} (최소 ${META_MIN_WIDTH}px 필요)`);
+
+        // 기존 경고 배지가 있으면 제거
+        const existingBadge = thumbnailItem.querySelector('.admake-lowres-badge');
+        if (existingBadge) existingBadge.remove();
+
+        // 저해상도 경고 배지 생성
+        const lowResBadge = document.createElement('div');
+        lowResBadge.className = 'admake-lowres-badge';
+        lowResBadge.innerHTML = '⚠️ 저화질';
+        lowResBadge.title = `해상도: ${width}x${height} (최소 600px 필요)`;
+        lowResBadge.style.cssText = `
+          position: absolute;
+          bottom: 4px;
+          left: 4px;
+          background: rgba(220, 38, 38, 0.9);
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+          pointer-events: none;
+          z-index: 5;
+        `;
+        thumbnailItem.style.position = 'relative';
+        thumbnailItem.appendChild(lowResBadge);
+      } else if (width < META_RECOMMENDED_WIDTH) {
+        console.log(`[MED-RES] ${mediaItem.id}: ${width}x${height} (권장 ${META_RECOMMENDED_WIDTH}px)`);
+      } else {
+        console.log(`[HIGH-RES] ${mediaItem.id}: ${width}x${height} ✓`);
+      }
+    };
 
     // 이미지 로드 실패 시 복구 시도
     imgEl.onerror = () => {

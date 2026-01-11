@@ -1560,27 +1560,32 @@ function updateRatioButtons() {
       btn.classList.remove('active');
     }
 
-    // ✅ [Instagram Reels] 동영상일 때 4:5, 1:1 버튼 비활성화 스타일
-    if (isVideo && Math.abs(ratioValue - RATIO_9_16) > RATIO_TOLERANCE) {
-      btn.classList.add('disabled-for-video');
-      btn.style.opacity = '0.4';
-      btn.style.cursor = 'not-allowed';
-      btn.title = '🔒 인스타그램 릴스: 동영상은 9:16 비율만 지원됩니다';
+    // ✅ [UX 개선] 동영상도 모든 버튼 활성화 - 비활성화 스타일 제거
+    btn.classList.remove('disabled-for-video');
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+
+    // 툴팁은 동영상일 때 노출 위치 안내로 변경
+    if (isVideo) {
+      if (Math.abs(ratioValue - RATIO_9_16) < RATIO_TOLERANCE) {
+        btn.title = '9:16 - 릴스/스토리/피드 모두 게재 가능';
+      } else if (Math.abs(ratioValue - RATIO_4_5) < RATIO_TOLERANCE) {
+        btn.title = '4:5 - 피드 전용 (릴스/스토리 불가)';
+      } else {
+        btn.title = '1:1 - 피드 전용 (릴스/스토리 불가)';
+      }
     } else {
-      btn.classList.remove('disabled-for-video');
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
       btn.title = ratioStr === '9/16' ? '9:16 비율로 자르기' :
                   ratioStr === '4/5' ? '4:5 비율로 자르기' :
                   '1:1 비율로 자르기';
     }
   });
 
-  // ✅ [Instagram Reels] 인스타그램 호환성 배지 업데이트
+  // ✅ 플랫폼 호환성 배지 업데이트
   updateInstagramCompatibilityBadge();
 }
 
-// ✅ [Instagram Reels] 플랫폼 호환성 배지 업데이트
+// ✅ [UX 개선] 플랫폼 호환성 배지 업데이트 - 스마트 알림 방식
 function updateInstagramCompatibilityBadge() {
   const badge = document.getElementById('platformCompatBadge');
   const textEl = document.getElementById('platformCompatText');
@@ -1595,46 +1600,46 @@ function updateInstagramCompatibilityBadge() {
   const is45 = Math.abs(currentAspectRatio - RATIO_4_5) < RATIO_TOLERANCE;
   const is11 = Math.abs(currentAspectRatio - RATIO_1_1) < RATIO_TOLERANCE;
 
+  badge.style.display = 'block';
+
   if (is916) {
     // 9:16 - 모든 플랫폼 호환
-    badge.style.display = 'block';
     badge.style.background = '#ecfdf5';
     badge.style.border = '1px solid #a7f3d0';
-    textEl.innerHTML = '✅ 인스타그램 릴스 + 페이스북 호환';
+    textEl.innerHTML = '✅ 릴스 + 스토리 + 피드 모두 게재 가능';
     textEl.style.color = '#059669';
     detailEl.innerHTML = '9:16 비율 (1080×1920)';
     detailEl.style.color = '#047857';
   } else if (is45) {
-    // 4:5 - 페이스북 피드만
-    badge.style.display = 'block';
-    badge.style.background = '#fffbeb';
-    badge.style.border = '1px solid #fcd34d';
-    textEl.innerHTML = '⚠️ 페이스북 피드 전용 / 인스타그램 릴스 불가';
-    textEl.style.color = '#d97706';
-    detailEl.innerHTML = '4:5 비율 (1080×1350) - 릴스 게재 시 거부됨';
-    detailEl.style.color = '#b45309';
+    // 4:5 - 피드 전용 (부드러운 안내)
+    badge.style.background = '#f0f9ff';
+    badge.style.border = '1px solid #bae6fd';
+    textEl.innerHTML = '📱 피드 전용 (릴스/스토리 게재 불가)';
+    textEl.style.color = '#0369a1';
+    detailEl.innerHTML = '4:5 비율 (1080×1350) - 페이스북/인스타그램 피드에 최적화';
+    detailEl.style.color = '#0c4a6e';
   } else if (is11) {
-    // 1:1 - 페이스북 피드만
-    badge.style.display = 'block';
-    badge.style.background = '#fffbeb';
-    badge.style.border = '1px solid #fcd34d';
-    textEl.innerHTML = '⚠️ 페이스북 피드 전용 / 인스타그램 릴스 불가';
-    textEl.style.color = '#d97706';
-    detailEl.innerHTML = '1:1 비율 (1080×1080) - 릴스 게재 시 거부됨';
-    detailEl.style.color = '#b45309';
+    // 1:1 - 피드 전용 (부드러운 안내)
+    badge.style.background = '#f0f9ff';
+    badge.style.border = '1px solid #bae6fd';
+    textEl.innerHTML = '📱 피드 전용 (릴스/스토리 게재 불가)';
+    textEl.style.color = '#0369a1';
+    detailEl.innerHTML = '1:1 비율 (1080×1080) - 페이스북/인스타그램 피드에 최적화';
+    detailEl.style.color = '#0c4a6e';
   } else {
     badge.style.display = 'none';
   }
 
-  // 동영상이 9:16이 아닌 경우 강조 경고
+  // 동영상일 때 추가 안내 (차단 아님, 정보 제공)
   if (isVideo && !is916) {
-    badge.style.display = 'block';
-    badge.style.background = '#fef2f2';
-    badge.style.border = '1px solid #fecaca';
-    textEl.innerHTML = '🚫 동영상: 인스타그램 릴스 업로드 불가';
-    textEl.style.color = '#dc2626';
-    detailEl.innerHTML = '동영상은 반드시 9:16 비율이어야 합니다';
-    detailEl.style.color = '#991b1b';
+    badge.style.background = '#fefce8';
+    badge.style.border = '1px solid #fde047';
+    textEl.innerHTML = '📹 동영상: 피드 전용 광고로 제작됩니다';
+    textEl.style.color = '#a16207';
+    detailEl.innerHTML = is45 ? '4:5 비율 - 페이스북/인스타그램 피드 배치에 최적' :
+                         is11 ? '1:1 비율 - 페이스북/인스타그램 피드 배치에 최적' :
+                         '피드 배치 전용';
+    detailEl.style.color = '#854d0e';
   }
 }
 
@@ -1661,11 +1666,10 @@ function updateGuideLines() {
 
 // ✅ 비율 변경 처리 (실제 자르기 연동)
 function changeAspectRatio(ratio) {
-  // ✅ [Instagram Reels] 동영상은 9:16 강제
+  // ✅ [UX 개선] 동영상도 모든 비율 허용 - 강제 변환 제거
+  // 배지로 노출 위치 안내만 제공
   if (isCurrentMediaVideo() && Math.abs(ratio - RATIO_9_16) > RATIO_TOLERANCE) {
-    console.warn(`[REELS LOCK] 동영상 비율 강제 변환: ${ratio} → 9:16`);
-    ratio = RATIO_9_16;
-    showVideoRatioWarning();
+    console.log(`[FEED ONLY] 동영상 피드 전용 비율 적용: ${ratio}`);
   }
 
   currentAspectRatio = ratio;
@@ -1781,14 +1785,14 @@ async function selectMedia(index) {
   const item = mediaItems[index];
   
   // ===== [핵심] 미디어 변경 시 비율 초기화 =====
-  // ✅ [Instagram Reels] 동영상은 무조건 9:16 강제
-  if (item.mediaType === 'video') {
-    currentAspectRatio = RATIO_9_16;
-    console.log(`[REELS LOCK] 동영상 선택 - 9:16 비율 강제 적용`);
-  } else if (!item.cropState || !item.cropState.aspectRatio) {
-    currentAspectRatio = RATIO_9_16; // 이미지도 기본 9:16
+  // ===== [핵심] 미디어 변경 시 비율 초기화 =====
+  // ✅ [UX 개선] 동영상도 저장된 비율 복원 (강제 9:16 제거)
+  if (!item.cropState || !item.cropState.aspectRatio) {
+    currentAspectRatio = RATIO_9_16; // 기본값은 9:16
+    console.log(`[RATIO] 기본 비율 적용: 9:16`);
   } else {
     currentAspectRatio = item.cropState.aspectRatio;
+    console.log(`[RATIO] 저장된 비율 복원: ${item.cropState.aspectRatio}`);
   }
   
   // 가이드 프리뷰 업데이트
@@ -2593,12 +2597,25 @@ async function uploadToMeta() {
             throw new Error('이미지 해시를 받을 수 없습니다');
           }
           
+          // ✅ [UX 개선] 배치 호환성 데이터 추가
+          const imageRatio = item.cropState?.aspectRatio || RATIO_9_16;
+          const imageIs916 = Math.abs(imageRatio - RATIO_9_16) < RATIO_TOLERANCE;
+
           result = {
             id: item.id,
             type: 'image',
             hash: hash,
-            video_id: null
+            video_id: null,
+            // 배치 호환성 정보
+            aspectRatio: imageRatio,
+            placements: {
+              reels: imageIs916,        // 9:16만 릴스 가능
+              stories: imageIs916,      // 9:16만 스토리 가능
+              feed: true,               // 모든 비율 피드 가능
+              instream: imageIs916      // 9:16만 인스트림 가능
+            }
           };
+          console.log(`[PLACEMENT] 이미지 ${item.name}: reels=${imageIs916}, ratio=${imageRatio.toFixed(4)}`);
         } else {
           // 동영상 업로드: POST /v24.0/{ad_account_id}/advideos
           const formData = new FormData();
@@ -2624,14 +2641,27 @@ async function uploadToMeta() {
             throw new Error('동영상 ID를 받을 수 없습니다');
           }
           
+          // ✅ [UX 개선] 배치 호환성 데이터 추가
+          const videoRatio = item.cropState?.aspectRatio || RATIO_9_16;
+          const videoIs916 = Math.abs(videoRatio - RATIO_9_16) < RATIO_TOLERANCE;
+
           result = {
             id: item.id,
             type: 'video',
             hash: null,
-            video_id: videoId
+            video_id: videoId,
+            // 배치 호환성 정보
+            aspectRatio: videoRatio,
+            placements: {
+              reels: videoIs916,        // 9:16만 릴스 가능
+              stories: videoIs916,      // 9:16만 스토리 가능
+              feed: true,               // 모든 비율 피드 가능
+              instream: videoIs916      // 9:16만 인스트림 가능
+            }
           };
+          console.log(`[PLACEMENT] 동영상 ${item.name}: reels=${videoIs916}, ratio=${videoRatio.toFixed(4)}`);
         }
-        
+
         uploadedResults.push(result);
         
         // 마지막 항목 업로드 완료 시 프로그레스 바 100%
@@ -2729,11 +2759,10 @@ function setupRatioButtons() {
       const ratioStr = btn.getAttribute('data-ratio');
       const ratio = eval(ratioStr); // "9/16" -> 0.5625, "4/5" -> 0.8, "1/1" -> 1
 
-      // ✅ [Instagram Reels] 동영상일 때 9:16 외 비율 차단
+      // ✅ [UX 개선] 동영상도 모든 비율 허용 - 차단 없이 안내만
       if (isCurrentMediaVideo() && Math.abs(ratio - RATIO_9_16) > RATIO_TOLERANCE) {
-        console.warn(`[REELS LOCK] 동영상은 9:16 비율만 허용됩니다. 선택된 비율: ${ratioStr}`);
-        showVideoRatioWarning();
-        return; // 비율 변경 차단
+        console.log(`[FEED ONLY] 동영상 피드 전용 비율 선택: ${ratioStr}`);
+        // 차단하지 않고 비율 변경 진행 (배지로 안내)
       }
 
       console.log(`[DEBUG] 비율 버튼 클릭: ${ratioStr} (${ratio})`);

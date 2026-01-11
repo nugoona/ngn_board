@@ -1805,20 +1805,32 @@ async function generatePreview() {
       });
       console.log('[DEBUG] ========== PREVIEW DEBUG END ==========');
 
-      // Reels 포맷 감지 - Meta API가 작은 크기를 반환하므로 강제 확대 필요
-      const isReelsFormat = currentPreviewFormat === 'INSTAGRAM_REELS';
+      // 포맷별 최적 크기 설정 - Meta API 반환 크기가 부족해서 내부 스크롤 발생 문제 해결
+      const getOptimalSize = () => {
+        switch (currentPreviewFormat) {
+          case 'INSTAGRAM_REELS':
+            return { width: 360, height: 640 };  // 9:16 비율
+          case 'INSTAGRAM_STANDARD':
+            return { width: 360, height: 640 };  // IG Feed도 충분히 크게
+          case 'MOBILE_FEED_STANDARD':
+            return { width: 380, height: 680 };  // FB Feed
+          default:
+            return null;  // 기본 Meta 크기 사용
+        }
+      };
 
       // iframe 크기 조정 함수
       const adjustIframeSize = () => {
         if (!iframe) return;
 
-        if (isReelsFormat) {
-          // Reels: Meta가 274x213 같은 작은 크기를 반환하므로 9:16 비율로 강제 확대
-          iframe.setAttribute('width', '360');
-          iframe.setAttribute('height', '640');
-          iframe.style.width = '360px';
-          iframe.style.height = '640px';
-          console.log('[DEBUG] Reels iframe 크기 강제 조정: 360x640');
+        const size = getOptimalSize();
+        if (size) {
+          iframe.setAttribute('width', String(size.width));
+          iframe.setAttribute('height', String(size.height));
+          iframe.style.width = size.width + 'px';
+          iframe.style.height = size.height + 'px';
+          iframe.setAttribute('scrolling', 'no');  // 내부 스크롤 제거
+          console.log(`[DEBUG] ${currentPreviewFormat} iframe 크기 조정:`, size);
         }
         iframe.style.border = 'none';
         iframe.setAttribute('frameborder', '0');

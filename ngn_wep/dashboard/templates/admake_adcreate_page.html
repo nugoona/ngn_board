@@ -1173,6 +1173,7 @@ let currentAdType = 'single_image';  // single_image, single_video, slide
 let currentPreviewFormat = 'INSTAGRAM_STANDARD';
 let cardLocks = {};            // { mediaId: { url: true, headline: true, ... } }
 let previewDebounceTimer = null;
+let previewTimeoutId = null;  // 이전 타임아웃 취소용
 
 // 마스터 값
 let masterValues = {
@@ -1829,15 +1830,15 @@ async function generatePreview() {
       });
       console.log('[DEBUG] ========== PREVIEW DEBUG END ==========');
 
-      // 포맷별 최적 크기 설정 - 콘텐츠에 딱 맞게 (여백 최소화)
+      // 포맷별 최적 크기 설정 - 스크롤 없이 전체 콘텐츠 표시
       const getOptimalSize = () => {
         switch (currentPreviewFormat) {
           case 'INSTAGRAM_REELS':
-            return { width: 340, height: 600 };  // Reels 콘텐츠에 맞춤
+            return { width: 340, height: 620 };  // Reels
           case 'INSTAGRAM_STANDARD':
-            return { width: 320, height: 560 };  // IG Feed 콘텐츠에 맞춤
+            return { width: 340, height: 620 };  // IG Feed - 높이 증가
           case 'MOBILE_FEED_STANDARD':
-            return { width: 340, height: 520 };  // FB Feed 콘텐츠에 맞춤
+            return { width: 360, height: 580 };  // FB Feed - 높이 증가
           default:
             return null;
         }
@@ -1878,28 +1879,28 @@ async function generatePreview() {
         console.log('[STEP3] 미리보기 렌더링 완료');
       };
 
+      // 이전 타임아웃 취소
+      if (previewTimeoutId) {
+        clearTimeout(previewTimeoutId);
+        previewTimeoutId = null;
+      }
+
       if (iframe) {
-        let finished = false;
-
-        const doFinish = (reason) => {
-          if (finished) return;
-          finished = true;
-          finishLoading(reason);
-        };
-
         // onload 이벤트 - 이게 발생하면 바로 완료
         iframe.onload = () => {
           console.log('[LOADING] iframe onload!');
-          doFinish('onload');
+          if (previewTimeoutId) {
+            clearTimeout(previewTimeoutId);
+            previewTimeoutId = null;
+          }
+          finishLoading('onload');
         };
 
-        // 타임아웃 폴백 (10초) - 안전장치
-        setTimeout(() => {
-          if (!finished) {
-            console.log('[LOADING] 10초 타임아웃');
-            doFinish('타임아웃');
-          }
-        }, 10000);
+        // 타임아웃 폴백 (15초) - 안전장치
+        previewTimeoutId = setTimeout(() => {
+          console.log('[LOADING] 15초 타임아웃');
+          finishLoading('타임아웃');
+        }, 15000);
       } else {
         setTimeout(() => finishLoading('iframe 없음'), 300);
       }

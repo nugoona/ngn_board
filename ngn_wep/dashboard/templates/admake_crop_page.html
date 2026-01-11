@@ -1458,7 +1458,16 @@ function loadCropState(item, img = null) {
       const cropX = (containerWidth - cropArea.width) / 2;
       const cropY = (containerHeight - cropArea.height) / 2;
 
-      // 초기 배율 = Cover Fit 배율 (minZoom)으로 시작
+      // ===== [핵심] 초기 배율 = Cover Fit 배율 (minZoom)으로 강제 설정 =====
+      // img.onload에서 이미 계산했지만, loadCropState에서도 보장
+      if (minZoom <= 0 || !isFinite(minZoom)) {
+        // minZoom이 유효하지 않으면 재계산
+        const calculatedMinZoom = Math.max(
+          cropArea.width / imageNaturalWidth,
+          cropArea.height / imageNaturalHeight
+        );
+        minZoom = Math.max(0.001, calculatedMinZoom);
+      }
       currentZoom = minZoom;
 
       // 이미지를 크롭 영역 중앙에 배치
@@ -1631,10 +1640,18 @@ function confirmMedia() {
   }
 }
 
-// ✅ 미디어 선택
+// ✅ 미디어 선택 (미디어 변경 시 초기화 로직 포함)
 async function selectMedia(index) {
   selectedMediaIndex = index;
   const item = mediaItems[index];
+  
+  // ===== [핵심] 미디어 변경 시 비율 초기화 =====
+  // 다른 미디어를 선택할 때마다 9:16 비율로 초기화
+  if (!item.cropState || !item.cropState.aspectRatio) {
+    currentAspectRatio = 9/16;
+  } else {
+    currentAspectRatio = item.cropState.aspectRatio;
+  }
   
   // 가이드 프리뷰 업데이트
   const preview = document.getElementById('guidePreview');
@@ -1663,6 +1680,58 @@ async function selectMedia(index) {
       confirmBtn.style.display = 'none';
     }
     
+    // ===== [핵심] 동영상 Blob URL 유효성 검사 및 IndexedDB 저장 보장 =====
+    const validateAndStoreVideo = async () => {
+      try {
+        // Blob URL 유효성 검사
+        if (item.previewUrl) {
+          try {
+            const response = await fetch(item.previewUrl, { method: 'HEAD' });
+            if (!response.ok) {
+              throw new Error('Blob URL 유효하지 않음');
+            }
+          } catch (e) {
+            console.warn(`[VIDEO] Blob URL 유효하지 않음, 복구 시도: ${item.id}`, e);
+            // IndexedDB에서 File 객체 가져와서 새로운 Blob URL 생성
+            if (!item.file) {
+              item.file = await getFileFromIndexedDB(item.id);
+            }
+            if (item.file) {
+              // 기존 URL 해제 (메모리 누수 방지)
+              if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(item.previewUrl);
+              }
+              item.previewUrl = URL.createObjectURL(item.file);
+              console.log(`[VIDEO] Blob URL 재생성 성공: ${item.id}`);
+              
+              // IndexedDB에 상태 동기화 (File 객체 보존)
+              syncCropStateToIndexedDB();
+            }
+          }
+        }
+        
+        // File 객체가 없으면 IndexedDB에서 가져오기
+        if (!item.file) {
+          try {
+            item.file = await getFileFromIndexedDB(item.id);
+            console.log(`[VIDEO] IndexedDB에서 File 객체 복구: ${item.id}`);
+          } catch (e) {
+            console.warn(`[VIDEO] IndexedDB에서 File 객체 가져오기 실패: ${item.id}`, e);
+          }
+        }
+        
+        // File 객체가 있으면 IndexedDB에 저장 보장
+        if (item.file) {
+          syncCropStateToIndexedDB();
+        }
+      } catch (e) {
+        console.error(`[VIDEO] 동영상 저장/복구 오류: ${item.id}`, e);
+      }
+    };
+    
+    // 동영상 Blob URL 검사 및 저장 보장
+    validateAndStoreVideo();
+    
     // 동영상은 자동으로 확인 처리 (크롭 불가능하므로)
     if (!item.isConfirmed) {
       item.isConfirmed = true;
@@ -1684,6 +1753,27 @@ async function selectMedia(index) {
     videoElement.style.height = '100%';
     videoElement.style.objectFit = 'contain';
     videoElement.style.zIndex = '1';
+    
+    // 동영상 로드 실패 시 Blob URL 재생성
+    videoElement.onerror = async () => {
+      console.warn(`[VIDEO] 동영상 로드 실패, Blob URL 복구 시도: ${item.id}`);
+      try {
+        if (!item.file) {
+          item.file = await getFileFromIndexedDB(item.id);
+        }
+        if (item.file) {
+          // 기존 URL 해제
+          if (item.previewUrl && item.previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(item.previewUrl);
+          }
+          item.previewUrl = URL.createObjectURL(item.file);
+          videoElement.src = item.previewUrl;
+          console.log(`[VIDEO] Blob URL 재생성 후 재로드: ${item.id}`);
+        }
+      } catch (e) {
+        console.error(`[VIDEO] 동영상 Blob URL 복구 실패: ${item.id}`, e);
+      }
+    };
     
     preview.appendChild(videoElement);
     currentImage = null;
@@ -1739,6 +1829,39 @@ async function selectMedia(index) {
 
         // naturalWidth/naturalHeight 로깅
         console.log(`[IMAGE LOADED] 원본 크기: ${img.naturalWidth}x${img.naturalHeight}, 컨테이너: ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}`);
+
+        // ===== [핵심] 이미지 로드 즉시 상대 배율 계산 및 강제 적용 =====
+        // 1. 이미지가 로드되자마자 원본 해상도와 컨테이너 크기로 minZoom 계산
+        const imageNaturalWidth = img.naturalWidth || img.width;
+        const imageNaturalHeight = img.naturalHeight || img.height;
+        
+        if (imageNaturalWidth > 0 && imageNaturalHeight > 0 && containerWidth > 0 && containerHeight > 0) {
+          // 9:16 컨테이너에 빈틈없이 꽉 차는 최소 배율 계산
+          const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+          const calculatedMinZoom = Math.max(
+            cropArea.width / imageNaturalWidth,
+            cropArea.height / imageNaturalHeight
+          );
+          
+          // minZoom 값 업데이트
+          minZoom = Math.max(0.001, calculatedMinZoom);
+          
+          console.log(`[INITIAL ZOOM] 계산된 minZoom: ${minZoom.toFixed(6)} (원본: ${imageNaturalWidth}x${imageNaturalHeight}, 프레임: ${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)})`);
+          
+          // 2. 초기 상태이거나 저장된 상태가 없으면 minZoom으로 강제 적용
+          if (!item.cropState || !item.cropState.zoom || item.cropState.zoom < minZoom) {
+            currentZoom = minZoom;
+            console.log(`[INITIAL ZOOM] 초기 zoom을 minZoom(${minZoom.toFixed(6)})으로 강제 설정`);
+            
+            // 이미지 위치도 중앙으로 초기화
+            const cropX = (containerWidth - cropArea.width) / 2;
+            const cropY = (containerHeight - cropArea.height) / 2;
+            const imgWidth = imageNaturalWidth * currentZoom;
+            const imgHeight = imageNaturalHeight * currentZoom;
+            currentX = cropX + (cropArea.width - imgWidth) / 2;
+            currentY = cropY + (cropArea.height - imgHeight) / 2;
+          }
+        }
 
         // 크롭 상태 로드 (minZoom 계산 포함)
         loadCropState(item, img);

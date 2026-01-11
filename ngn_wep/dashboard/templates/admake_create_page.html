@@ -82,213 +82,304 @@
       color: var(--text-primary) !important;
     }
 
-    /* ===== Progress Bar (고정) ===== */
+    /* ===== Progress Bar (고정) - Linear Dark Style ===== */
     .admake-progress-bar {
       position: sticky;
       top: 56px;
       z-index: 100;
-      background: var(--bg-secondary);
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 17, 17, 0.95) 100%);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 16px 40px;
+      padding: 20px 40px 18px;
+      backdrop-filter: blur(12px);
     }
 
     .admake-progress-steps {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 8px;
-      max-width: 800px;
+      gap: 6px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
     .admake-progress-step {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 8px 16px;
-      border-radius: 6px;
-      transition: all 0.2s;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
     }
 
     .admake-progress-step .step-number {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--text-muted);
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
     }
 
     .admake-progress-step .step-label {
       font-family: 'Pretendard', sans-serif;
       font-size: 10px;
-      font-weight: 400;
+      font-weight: 500;
       color: var(--text-muted);
       white-space: nowrap;
+      opacity: 0.8;
     }
 
+    /* Active step with glow effect */
     .admake-progress-step.active {
       background: var(--text-primary);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 4px 16px rgba(255, 255, 255, 0.08),
+        0 8px 32px rgba(255, 255, 255, 0.04);
     }
 
     .admake-progress-step.active .step-number,
     .admake-progress-step.active .step-label {
       color: var(--bg-primary);
+      opacity: 1;
+    }
+
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.15);
     }
 
     .admake-progress-step.completed .step-number,
     .admake-progress-step.completed .step-label {
       color: var(--accent-emerald);
+      opacity: 1;
     }
 
+    /* Connector with dot accent */
     .admake-progress-connector {
-      width: 24px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+    }
+
+    .admake-progress-connector::before,
+    .admake-progress-connector::after {
+      content: '';
+      width: 12px;
       height: 1px;
       background: var(--border-subtle);
+      transition: background 0.3s;
     }
 
-    .admake-progress-connector.completed {
+    .admake-progress-connector::before {
+      background: linear-gradient(90deg, var(--border-subtle) 0%, rgba(82, 82, 82, 0.5) 100%);
+    }
+
+    .admake-progress-connector::after {
+      background: linear-gradient(90deg, rgba(82, 82, 82, 0.5) 0%, var(--border-subtle) 100%);
+    }
+
+    .admake-progress-connector-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .admake-progress-connector.completed::before,
+    .admake-progress-connector.completed::after {
       background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-dot {
+      background: var(--accent-emerald);
+      opacity: 1;
     }
 
     /* ===== 메인 레이아웃 ===== */
     .admake-create-wrapper {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 40px;
-      padding-bottom: 120px;
+      padding: 32px 40px;
+      padding-bottom: 100px;
+      min-height: calc(100vh - 160px);
+      overflow-y: auto;
     }
 
     .admake-create-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      min-height: calc(100vh - 280px);
+      gap: 40px;
+      align-items: stretch;
     }
 
     /* ===== 왼쪽 영역 ===== */
     .admake-left-panel {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 28px;
+      padding-right: 20px;
+      border-right: 1px solid rgba(39, 39, 42, 0.6);
     }
 
     /* ===== 섹션 헤더 ===== */
     .admake-section-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .admake-section-number {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      padding: 5px 10px;
       border-radius: 4px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
     }
 
     .admake-section-title {
       font-size: 14px;
       font-weight: 600;
-      color: var(--text-secondary);
+      color: var(--text-primary);
       letter-spacing: -0.01em;
     }
 
     /* ===== 업로드 영역 ===== */
     .admake-upload-section {
       flex: 1;
+      min-height: 0;
     }
 
     .admake-upload-area {
-      background: var(--bg-card);
-      border: 1px dashed var(--border-hover);
-      border-radius: 12px;
-      padding: 48px 32px;
+      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 22, 22, 0.8) 100%);
+      border: 1.5px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px 28px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      min-height: 240px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: 200px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .admake-upload-area::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.03) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
     .admake-upload-area:hover {
-      border-color: var(--border-focus);
-      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: linear-gradient(145deg, var(--bg-card-hover) 0%, rgba(26, 26, 26, 0.9) 100%);
+      transform: translateY(-1px);
+    }
+
+    .admake-upload-area:hover::before {
+      opacity: 1;
     }
 
     .admake-upload-area.dragover {
       border-color: var(--accent-blue);
-      background: rgba(59, 130, 246, 0.05);
+      border-style: solid;
+      background: rgba(59, 130, 246, 0.06);
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.1);
     }
 
     .admake-upload-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-subtle);
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      transition: all 0.3s;
+    }
+
+    .admake-upload-area:hover .admake-upload-icon {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.2);
     }
 
     .admake-upload-icon svg {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       stroke: var(--text-secondary);
       stroke-width: 1.5;
       fill: none;
+      transition: stroke 0.3s;
+    }
+
+    .admake-upload-area:hover .admake-upload-icon svg {
+      stroke: var(--accent-blue);
     }
 
     .admake-upload-text {
-      font-size: 15px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 8px;
+      letter-spacing: -0.01em;
     }
 
     .admake-upload-hint {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     .admake-file-input {
       display: none;
     }
 
-    /* ===== URL 입력 영역 ===== */
+    /* ===== URL 입력 영역 (상세페이지에서 가져오기) ===== */
     .admake-url-section {
       flex-shrink: 0;
     }
 
     .admake-url-card {
-      background: var(--bg-card);
+      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 22, 22, 0.8) 100%);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 24px;
     }
 
+    .admake-url-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
     .admake-url-input {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 14px;
+      flex: 1;
+      padding: 13px 16px;
+      font-size: 13px;
       font-family: 'Inter Tight', sans-serif;
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--text-primary);
-      transition: all 0.2s;
+      transition: all 0.25s;
       letter-spacing: 0.01em;
     }
 
@@ -298,29 +389,57 @@
 
     .admake-url-input:focus {
       outline: none;
-      border-color: var(--border-focus);
+      border-color: rgba(59, 130, 246, 0.4);
       background: var(--bg-secondary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+    }
+
+    .admake-fetch-btn {
+      padding: 13px 20px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 10px;
+      color: var(--accent-blue);
+      cursor: pointer;
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+
+    .admake-fetch-btn:hover {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .admake-fetch-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
     .admake-url-hint {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
-      margin-top: 10px;
+      margin-top: 12px;
+      line-height: 1.5;
     }
 
     /* ===== 오른쪽 영역 (썸네일) ===== */
     .admake-right-panel {
       display: flex;
       flex-direction: column;
+      padding-left: 20px;
     }
 
     .admake-thumbnails-card {
       flex: 1;
-      background: var(--bg-card);
+      background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 22, 22, 0.8) 100%);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 24px;
-      min-height: 400px;
+      min-height: 360px;
     }
 
     .admake-thumbnails-empty {
@@ -330,47 +449,54 @@
       align-items: center;
       justify-content: center;
       color: var(--text-muted);
-      min-height: 300px;
+      min-height: 280px;
     }
 
     .admake-thumbnails-empty-icon {
-      width: 64px;
-      height: 64px;
+      width: 60px;
+      height: 60px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--border-subtle);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .admake-thumbnails-empty-icon svg {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       stroke: var(--text-muted);
       stroke-width: 1.5;
       fill: none;
+      opacity: 0.6;
     }
 
     .admake-thumbnails-empty-text {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-muted);
     }
 
     .admake-thumbnails-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 10px;
     }
 
     .admake-thumbnail-item {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: hidden;
       background: var(--bg-secondary);
       border: 1px solid var(--border-subtle);
+      transition: all 0.25s;
+    }
+
+    .admake-thumbnail-item:hover {
+      border-color: var(--border-hover);
+      transform: scale(1.02);
     }
 
     .admake-thumbnail-image,
@@ -386,22 +512,23 @@
 
     .admake-thumbnail-delete {
       position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 24px;
-      height: 24px;
-      background: rgba(0, 0, 0, 0.7);
+      top: 5px;
+      right: 5px;
+      width: 22px;
+      height: 22px;
+      background: rgba(0, 0, 0, 0.75);
       color: #ffffff;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 500;
       transition: all 0.2s;
       opacity: 0;
+      backdrop-filter: blur(4px);
     }
 
     .admake-thumbnail-item:hover .admake-thumbnail-delete {
@@ -410,39 +537,43 @@
 
     .admake-thumbnail-delete:hover {
       background: var(--accent-red);
+      transform: scale(1.05);
     }
 
     .admake-lowres-badge {
       position: absolute;
-      bottom: 6px;
-      left: 6px;
+      bottom: 5px;
+      left: 5px;
       background: rgba(239, 68, 68, 0.9);
       color: white;
-      font-size: 10px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 9px;
       font-weight: 600;
-      padding: 3px 8px;
+      padding: 3px 7px;
       border-radius: 4px;
       pointer-events: none;
+      letter-spacing: 0.02em;
     }
 
     .admake-thumbnails-count {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 16px;
-      padding-top: 16px;
+      margin-top: 18px;
+      padding-top: 18px;
       border-top: 1px solid var(--border-subtle);
     }
 
     .admake-thumbnails-count-text {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
+      letter-spacing: 0.02em;
     }
 
     .admake-thumbnails-count-text span {
       color: var(--text-primary);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     /* ===== 하단 액션 바 ===== */
@@ -451,37 +582,39 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: var(--bg-secondary);
+      background: linear-gradient(180deg, rgba(17, 17, 17, 0.95) 0%, var(--bg-secondary) 100%);
       border-top: 1px solid var(--border-subtle);
-      padding: 16px 40px;
+      padding: 18px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 1000;
+      backdrop-filter: blur(12px);
     }
 
     .admake-action-left {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.06em;
+      font-weight: 500;
     }
 
     .admake-action-buttons {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
 
     .admake-btn {
       font-family: 'Inter Tight', sans-serif;
       padding: 12px 28px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       text-transform: uppercase;
     }
 
@@ -500,25 +633,45 @@
     .admake-btn-primary {
       background: var(--text-primary);
       color: var(--bg-primary);
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
     }
 
     .admake-btn-primary:hover:not(:disabled) {
-      background: #e5e5e5;
+      background: #f0f0f0;
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
     }
 
     .admake-btn-primary:disabled {
-      opacity: 0.3;
+      opacity: 0.25;
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     /* ===== 반응형 ===== */
     @media (max-width: 1024px) {
       .admake-create-layout {
         grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .admake-left-panel {
+        padding-right: 0;
+        border-right: none;
+        padding-bottom: 24px;
+        border-bottom: 1px solid rgba(39, 39, 42, 0.6);
+      }
+
+      .admake-right-panel {
+        padding-left: 0;
       }
 
       .admake-thumbnails-grid {
         grid-template-columns: repeat(4, 1fr);
+      }
+
+      .admake-progress-step .step-label {
+        font-size: 9px;
       }
     }
 
@@ -529,24 +682,40 @@
       }
 
       .admake-progress-bar {
-        padding: 12px 24px;
+        padding: 14px 20px;
       }
 
       .admake-progress-step {
-        font-size: 11px;
-        padding: 6px 12px;
+        padding: 8px 12px;
       }
 
-      .admake-progress-connector {
-        width: 12px;
+      .admake-progress-step .step-number {
+        font-size: 10px;
+      }
+
+      .admake-progress-step .step-label {
+        display: none;
+      }
+
+      .admake-progress-connector::before,
+      .admake-progress-connector::after {
+        width: 8px;
       }
 
       .admake-thumbnails-grid {
         grid-template-columns: repeat(3, 1fr);
       }
 
+      .admake-url-input-wrapper {
+        flex-direction: column;
+      }
+
+      .admake-fetch-btn {
+        width: 100%;
+      }
+
       .admake-action-bar {
-        padding: 12px 24px;
+        padding: 14px 20px;
         flex-direction: column;
         gap: 12px;
       }
@@ -561,7 +730,7 @@
 
       .admake-btn {
         flex: 1;
-        padding: 12px 20px;
+        padding: 12px 16px;
       }
     }
   </style>
@@ -595,29 +764,37 @@
   </div>
 </div>
 
-<!-- Progress Bar (고정) -->
+<!-- Progress Bar (고정) - Linear Dark Style -->
 <div class="admake-progress-bar">
   <div class="admake-progress-steps">
     <div class="admake-progress-step active">
       <span class="step-number font-inter">STEP 1</span>
       <span class="step-label">Media 업로드</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 2</span>
       <span class="step-label">정밀 크롭</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 3</span>
       <span class="step-label">AD 생성</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 4</span>
       <span class="step-label">전략 SETTING</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 5</span>
       <span class="step-label">검토 및 Publish</span>
@@ -636,7 +813,7 @@
       <div class="admake-upload-section">
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">01</span>
-          <span class="admake-section-title">소재 업로드</span>
+          <span class="admake-section-title">소재 직접 업로드</span>
         </div>
         <div class="admake-upload-area" id="uploadArea">
           <div class="admake-upload-icon">
@@ -655,21 +832,24 @@
         </div>
       </div>
 
-      <!-- URL 입력 영역 -->
+      <!-- URL 입력 영역 (상세페이지에서 가져오기) -->
       <div class="admake-url-section">
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">02</span>
-          <span class="admake-section-title">랜딩 URL</span>
+          <span class="admake-section-title">상세페이지에서 가져오기</span>
         </div>
         <div class="admake-url-card">
-          <input
-            type="url"
-            id="landingUrl"
-            class="admake-url-input font-inter"
-            placeholder="https://example.com/product"
-            autocomplete="off"
-          >
-          <div class="admake-url-hint">광고 클릭 시 이동할 상세페이지 URL (선택사항)</div>
+          <div class="admake-url-input-wrapper">
+            <input
+              type="url"
+              id="landingUrl"
+              class="admake-url-input font-inter"
+              placeholder="https://example.com/product"
+              autocomplete="off"
+            >
+            <button type="button" class="admake-fetch-btn font-inter" id="fetchBtn" disabled>FETCH</button>
+          </div>
+          <div class="admake-url-hint">상품 상세페이지 URL을 입력하면 이미지를 자동으로 가져옵니다 (Coming Soon)</div>
         </div>
       </div>
 

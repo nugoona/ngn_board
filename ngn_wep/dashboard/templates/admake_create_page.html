@@ -810,28 +810,135 @@ function renderThumbnail(mediaItem) {
   thumbnailsGrid.appendChild(thumbnailItem);
 }
 
-// 썸네일 삭제
-function deleteThumbnail(mediaId) {
+// 썸네일 삭제 (IndexedDB + sessionStorage 동기화)
+async function deleteThumbnail(mediaId) {
   const index = mediaItems.findIndex(item => item.id === mediaId);
   if (index === -1) return;
-  
+
   const mediaItem = mediaItems[index];
-  
-  // URL 해제
-  URL.revokeObjectURL(mediaItem.previewUrl);
-  
-  // 배열에서 제거
+
+  // 1. URL 해제
+  if (mediaItem.previewUrl) {
+    try { URL.revokeObjectURL(mediaItem.previewUrl); } catch (e) {}
+  }
+
+  // 2. IndexedDB에서 물리적 삭제
+  if ('indexedDB' in window) {
+    try {
+      await new Promise((resolve, reject) => {
+        const request = indexedDB.open('admake_files', 1);
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          if (db.objectStoreNames.contains('files')) {
+            const transaction = db.transaction(['files'], 'readwrite');
+            const store = transaction.objectStore('files');
+            const deleteRequest = store.delete(mediaId);
+            deleteRequest.onsuccess = () => {
+              console.log(`[DELETE] IndexedDB에서 삭제 완료: ${mediaId}`);
+              resolve();
+            };
+            deleteRequest.onerror = () => reject(deleteRequest.error);
+          } else {
+            resolve();
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.error('[DELETE] IndexedDB 삭제 실패:', e);
+    }
+  }
+
+  // 3. 배열에서 제거
   mediaItems.splice(index, 1);
-  
-  hasUnsavedChanges = true;
-  
-  // 그리드 재렌더링
+
+  // 4. sessionStorage 동기화
+  syncToSessionStorage();
+
+  hasUnsavedChanges = mediaItems.length > 0; // 전부 삭제되면 unsaved 아님
+
+  // 5. 그리드 재렌더링
   thumbnailsGrid.innerHTML = '';
   mediaItems.forEach(item => {
     renderThumbnail(item);
   });
-  
+
   updateNextButtonState();
+  console.log(`[DELETE] 삭제 완료: ${mediaId}, 남은 항목: ${mediaItems.length}`);
+}
+
+// 전체 미디어 삭제 (IndexedDB 완전 초기화)
+async function clearAllMedia() {
+  // 1. 모든 Blob URL 해제
+  mediaItems.forEach(item => {
+    if (item.previewUrl) {
+      try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
+    }
+  });
+
+  // 2. IndexedDB 전체 삭제
+  if ('indexedDB' in window) {
+    try {
+      await new Promise((resolve, reject) => {
+        const request = indexedDB.open('admake_files', 1);
+        request.onsuccess = (event) => {
+          const db = event.target.result;
+          if (db.objectStoreNames.contains('files')) {
+            const transaction = db.transaction(['files'], 'readwrite');
+            const store = transaction.objectStore('files');
+            const clearRequest = store.clear();
+            clearRequest.onsuccess = () => {
+              console.log('[CLEAR] IndexedDB 전체 삭제 완료');
+              resolve();
+            };
+            clearRequest.onerror = () => reject(clearRequest.error);
+          } else {
+            resolve();
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    } catch (e) {
+      console.error('[CLEAR] IndexedDB 삭제 실패:', e);
+    }
+  }
+
+  // 3. 배열 초기화
+  mediaItems = [];
+
+  // 4. sessionStorage 삭제
+  sessionStorage.removeItem('admake_step1_state');
+  console.log('[CLEAR] sessionStorage 삭제 완료');
+
+  // 5. UI 갱신
+  thumbnailsGrid.innerHTML = '';
+  hasUnsavedChanges = false;
+  updateNextButtonState();
+}
+
+// sessionStorage 동기화 함수
+function syncToSessionStorage() {
+  if (mediaItems.length === 0) {
+    // 미디어가 없으면 sessionStorage 삭제
+    sessionStorage.removeItem('admake_step1_state');
+    console.log('[SYNC] 미디어 없음 - sessionStorage 삭제');
+    return;
+  }
+
+  const stateData = {
+    accountId: accountId,
+    mediaItems: mediaItems.map(item => ({
+      id: item.id,
+      name: item.file ? item.file.name : item.name || 'unknown',
+      size: item.file ? item.file.size : item.size || 0,
+      type: item.file ? item.file.type : item.mimeType || '',
+      mediaType: item.type, // 'image' or 'video'
+      previewUrl: item.previewUrl
+    })),
+    landingUrl: landingUrlInput ? landingUrlInput.value.trim() : ''
+  };
+  sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
+  console.log('[SYNC] sessionStorage 동기화 완료');
 }
 
 // 다음 버튼 상태 업데이트
@@ -853,7 +960,7 @@ function updateNextButtonState() {
   }
 }
 
-// ✅ Step 1 데이터 복원 (페이지 로드 시)
+// ✅ Step 1 데이터 복원 (페이지 로드 시) - 좀비 데이터 방지 강화
 function restoreStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (!step1Data) {
@@ -863,63 +970,95 @@ function restoreStep1Data() {
 
   try {
     const data = JSON.parse(step1Data);
-    
+
+    // mediaItems가 비어있거나 없으면 sessionStorage도 정리
+    if (!data.mediaItems || data.mediaItems.length === 0) {
+      console.log('[DEBUG] sessionStorage에 미디어 없음 - 정리');
+      sessionStorage.removeItem('admake_step1_state');
+      return;
+    }
+
     // IndexedDB에서 File 객체 복원
     if ('indexedDB' in window) {
       const dbName = 'admake_files';
       const request = indexedDB.open(dbName, 1);
-      
+
       request.onsuccess = (event) => {
         const db = event.target.result;
         if (!db.objectStoreNames.contains('files')) {
-          console.log('[DEBUG] IndexedDB에 파일 저장소 없음');
+          console.log('[DEBUG] IndexedDB에 파일 저장소 없음 - sessionStorage 정리');
+          sessionStorage.removeItem('admake_step1_state');
           return;
         }
-        
+
         const transaction = db.transaction(['files'], 'readonly');
         const store = transaction.objectStore('files');
-        
+
+        // 실제 복원된 항목 수 추적
+        let restoredCount = 0;
+        const expectedCount = data.mediaItems.length;
+
         // 모든 미디어 항목 복원
         const restorePromises = data.mediaItems.map(item => {
           return new Promise((resolve) => {
             const getRequest = store.get(item.id);
-            // ===== [수정] async 함수로 변경하여 await 사용 가능 =====
             getRequest.onsuccess = () => {
               if (getRequest.result && getRequest.result.file) {
-                // ===== [Final Fix] HEAD 요청 완전 삭제, 무조건 새 Blob URL 생성 =====
                 const file = getRequest.result.file;
-                // 무조건 새로운 Blob URL 생성 (검증 없이)
                 const previewUrl = URL.createObjectURL(file);
                 const mediaType = item.mediaType || (file.type.startsWith('video/') ? 'video' : 'image');
 
-                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType}, MIME: ${file.type})`);
+                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType})`);
 
                 mediaItems.push({
                   id: item.id,
                   file: file,
                   previewUrl: previewUrl,
-                  type: mediaType,  // 'image' or 'video' (renderThumbnail이 이 값을 체크함)
+                  type: mediaType,
                   mediaType: mediaType,
-                  mimeType: file.type  // MIME 타입은 별도 저장
+                  mimeType: file.type
                 });
 
                 renderThumbnail({
                   id: item.id,
                   file: file,
                   previewUrl: previewUrl,
-                  type: mediaType  // 'image' or 'video' (NOT MIME type)
+                  type: mediaType
                 });
 
+                restoredCount++;
                 console.log(`[RESTORE] 미디어 ${item.id} 복원 완료`);
+              } else {
+                // IndexedDB에 파일이 없음 (삭제됨) - 이 항목은 건너뜀
+                console.warn(`[RESTORE] ${item.id}: IndexedDB에 파일 없음 (이미 삭제됨)`);
               }
               resolve();
             };
-            getRequest.onerror = () => resolve();
+            getRequest.onerror = () => {
+              console.warn(`[RESTORE] ${item.id}: IndexedDB 조회 실패`);
+              resolve();
+            };
           });
         });
-        
+
         Promise.all(restorePromises).then(() => {
-          // mediaIdCounter 업데이트 (복원된 항목 수만큼)
+          console.log(`[RESTORE] 복원 완료: ${restoredCount}/${expectedCount} 항목`);
+
+          // ===== [좀비 데이터 방지] 복원된 항목이 없으면 sessionStorage 정리 =====
+          if (mediaItems.length === 0) {
+            console.log('[RESTORE] 복원된 미디어 없음 - sessionStorage 정리');
+            sessionStorage.removeItem('admake_step1_state');
+            updateNextButtonState();
+            return;
+          }
+
+          // ===== [동기화] 실제 복원된 항목만 sessionStorage에 다시 저장 =====
+          if (restoredCount < expectedCount) {
+            console.log('[RESTORE] 일부 항목 누락 - sessionStorage 동기화');
+            syncToSessionStorage();
+          }
+
+          // mediaIdCounter 업데이트
           if (mediaItems.length > 0) {
             const maxId = Math.max(...mediaItems.map(item => {
               const match = item.id.match(/media_(\d+)_/);
@@ -927,20 +1066,26 @@ function restoreStep1Data() {
             }));
             mediaIdCounter = maxId;
           }
-          
+
           // 랜딩 URL 복원
           if (data.landingUrl && landingUrlInput) {
             landingUrlInput.value = data.landingUrl;
           }
-          
-          hasUnsavedChanges = false; // 복원된 데이터는 저장된 것으로 간주
+
+          hasUnsavedChanges = false;
           updateNextButtonState();
           console.log(`[DEBUG] ${mediaItems.length}개 미디어 복원 완료`);
         });
       };
+
+      request.onerror = () => {
+        console.error('[RESTORE] IndexedDB 열기 실패 - sessionStorage 정리');
+        sessionStorage.removeItem('admake_step1_state');
+      };
     }
   } catch (e) {
     console.error('[ERROR] Step 1 데이터 복원 실패:', e);
+    sessionStorage.removeItem('admake_step1_state');
   }
 }
 

@@ -503,6 +503,11 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
         if (data.status === 'success' && data.meta_ads_by_account) {
             console.log('📊 메타 광고별 성과 전체 데이터:', data.meta_ads_by_account);
             console.log('📊 메타 광고별 성과 전체 개수:', data.meta_ads_total_count);
+
+            // ✅ Meta Ads 업데이트 시간 표시
+            if (data.updated_at) {
+                updateMobileTimestamp(data.updated_at);
+            }
             
             // 전체 데이터 저장 (fetchMetaAdsByAccount에서만 전체 데이터 저장)
             metaAdsAllData = [...data.meta_ads_by_account];  // 배열 복사

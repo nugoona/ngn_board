@@ -570,22 +570,22 @@ def get_dashboard_data_route():
                 # 기존 형식 (페이지네이션 없음)
                 response_data["meta_ads_insight_table"] = rows
 
-            # ✅ 카페24 매출 수집시간 사용
+            # ✅ Meta Ads 수집시간 사용 (meta_ads_ad_level 테이블에서 조회)
             try:
                 from google.cloud import bigquery as bq_client
                 client = bq_client.Client()
-                cafe24_query = """
+                meta_query = """
                     SELECT MAX(updated_at) AS updated_at
-                    FROM `winged-precept-443218-v8.ngn_dataset.daily_cafe24_sales`
-                    WHERE payment_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+                    FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level`
+                    WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
                 """
-                result = client.query(cafe24_query).result()
+                result = client.query(meta_query).result()
                 for row in result:
                     if row.updated_at:
                         response_data["updated_at"] = row.updated_at.isoformat() if hasattr(row.updated_at, 'isoformat') else str(row.updated_at)
                         break
             except Exception as e:
-                print(f"[WARN] 카페24 updated_at 조회 실패: {e}")
+                print(f"[WARN] Meta Ads updated_at 조회 실패: {e}")
 
         # Meta Ads 계정 목록 요청 처리
         if data_type == "meta_account_list":

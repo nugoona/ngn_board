@@ -19,6 +19,27 @@ from ..services.meta_ads_preview import get_meta_ads_preview_list
 # 모바일 전용 함수 제거 - performance_summary_new.py에서 통합으로 가져옴
 
 # ─────────────────────────────────────────────
+# Meta Ads 최종 업데이트 시간 조회 함수
+# ─────────────────────────────────────────────
+def get_meta_ads_updated_at():
+    """Meta Ads 테이블의 최종 업데이트 시간 조회"""
+    try:
+        client = bigquery.Client()
+        query = """
+            SELECT MAX(updated_at) AS updated_at
+            FROM `winged-precept-443218-v8.ngn_dataset.meta_ads_ad_level`
+            WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+        """
+        result = client.query(query).result()
+        for row in result:
+            if row.updated_at:
+                return row.updated_at.isoformat() if hasattr(row.updated_at, 'isoformat') else str(row.updated_at)
+        return None
+    except Exception as e:
+        print(f"[WARN] Meta Ads updated_at 조회 실패: {e}")
+        return None
+
+# ─────────────────────────────────────────────
 # 1) 모바일 블루프린트 생성
 # ─────────────────────────────────────────────
 mobile_blueprint = Blueprint("mobile", __name__)
@@ -408,23 +429,31 @@ def get_meta_ads_by_account():
             # 모바일용 데이터 처리
             processed_ads_data = process_meta_ads_for_mobile(rows)
             
+            # Meta Ads 최종 업데이트 시간 조회
+            meta_updated_at = get_meta_ads_updated_at()
+
             return jsonify({
                 "status": "success",
                 "meta_ads_by_account": processed_ads_data,
-                "meta_ads_total_count": total_count
+                "meta_ads_total_count": total_count,
+                "updated_at": meta_updated_at
             })
         else:
             # 기존 형식 (전체 데이터)
             print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
-            
+
             # 모바일용 데이터 처리 (전체 데이터)
             processed_ads_data = process_meta_ads_for_mobile(ads_data)
             total_count = len(processed_ads_data)
-            
+
+            # Meta Ads 최종 업데이트 시간 조회
+            meta_updated_at = get_meta_ads_updated_at()
+
             return jsonify({
                 "status": "success",
                 "meta_ads_by_account": processed_ads_data,
-                "meta_ads_total_count": total_count
+                "meta_ads_total_count": total_count,
+                "updated_at": meta_updated_at
             })
         
     except Exception as e:

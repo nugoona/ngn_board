@@ -366,7 +366,7 @@
       top: 21.875%;
     }
 
-    /* ✅ 크롭 컨트롤 스타일 (컨테이너와 동일한 너비, 화면 중앙 정렬) */
+    /* ✅ 크롭 컨트롤 스타일 (하단 가로 중앙 배치) */
     .admake-crop-controls {
       margin-top: 24px;
       width: 100%;
@@ -378,6 +378,7 @@
       gap: 16px;
       margin-left: auto;
       margin-right: auto; /* 화면 중앙 배치 */
+      position: relative; /* 하단 배치를 위한 기준점 */
     }
 
     /* ✅ 자르기 비율 버튼 그룹 */
@@ -431,6 +432,7 @@
       max-width: 315px; /* 컨테이너와 동일 */
       margin: 0 auto; /* 가로 중앙 */
       margin-bottom: 0;
+      position: relative; /* 하단 중앙 배치 */
     }
 
     .admake-zoom-label {
@@ -794,6 +796,7 @@
 let mediaItems = []; // [{ id, name, type, mediaType, previewUrl, cropState: { x, y, zoom }, isConfirmed }]
 let selectedMediaIndex = -1;
 let uploadedResults = []; // 업로드 결과 { id, hash/video_id, type }
+let videoAnimationFrame = null; // 동영상 애니메이션 프레임 ID
 
 // ✅ Canvas 관련 변수
 let canvas, ctx;
@@ -1183,16 +1186,27 @@ function endDrag() {
   }
 }
 
-// ✅ 이미지 그리기 (restrictPosition: true 효과 - 여백 원천 차단)
+// ✅ 이미지/동영상 그리기 (restrictPosition: true 효과 - 여백 원천 차단)
 function drawImage() {
   if (!currentImage || !ctx) return;
 
-  // ===== [핵심] naturalWidth/naturalHeight 명시적 사용 =====
-  const imageNaturalWidth = currentImage.naturalWidth || currentImage.width;
-  const imageNaturalHeight = currentImage.naturalHeight || currentImage.height;
+  // ===== [핵심] 이미지/동영상 원본 크기 캡처 =====
+  // 이미지: naturalWidth/naturalHeight 사용
+  // 동영상: videoWidth/videoHeight 사용
+  let imageNaturalWidth, imageNaturalHeight;
+  
+  if (currentImage instanceof HTMLVideoElement) {
+    // 동영상인 경우
+    imageNaturalWidth = currentImage.videoWidth || currentImage.width || 1920;
+    imageNaturalHeight = currentImage.videoHeight || currentImage.height || 1080;
+  } else {
+    // 이미지인 경우
+    imageNaturalWidth = currentImage.naturalWidth || currentImage.width;
+    imageNaturalHeight = currentImage.naturalHeight || currentImage.height;
+  }
 
   if (imageNaturalWidth <= 0 || imageNaturalHeight <= 0) {
-    console.error('[ERROR] drawImage: 이미지 원본 크기 무효');
+    console.error('[ERROR] drawImage: 미디어 원본 크기 무효');
     return;
   }
 
@@ -1242,6 +1256,8 @@ function drawImage() {
   ctx.rect(cropX, cropY, cropArea.width, cropArea.height);
   ctx.clip();
 
+  // 이미지 또는 동영상을 Canvas에 그리기
+  // drawImage는 이미지와 동영상 모두 지원
   ctx.drawImage(
     currentImage,
     cropX + finalX,
@@ -1249,6 +1265,19 @@ function drawImage() {
     imgWidth,
     imgHeight
   );
+  
+  // 동영상인 경우 현재 프레임을 계속 그리기 (애니메이션)
+  if (currentImage instanceof HTMLVideoElement && currentImage.readyState >= 2) {
+    // 동영상이 로드되었으면 다음 프레임도 그리기 위해 requestAnimationFrame 사용
+    if (!videoAnimationFrame) {
+      videoAnimationFrame = requestAnimationFrame(() => {
+        videoAnimationFrame = null;
+        if (currentImage instanceof HTMLVideoElement) {
+          drawImage();
+        }
+      });
+    }
+  }
 
   ctx.restore();
 
@@ -1361,13 +1390,22 @@ function getCropAreaSize(containerWidth, containerHeight, aspectRatio) {
   return { width: cropWidth, height: cropHeight };
 }
 
-// ✅ 고화질 이미지 대응: Cover Fit 최소 배율 계산 (여백 없이 프레임 꽉 채움)
+// ✅ 고화질 이미지/동영상 대응: Cover Fit 최소 배율 계산 (여백 없이 프레임 꽉 채움)
 function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio) {
-  // ===== [핵심] naturalWidth/naturalHeight 명시적 사용 =====
-  // Image 객체에서 width/height는 로드 후 naturalWidth/naturalHeight와 동일하지만
-  // 명시적으로 사용하여 의도를 명확히 함
-  const imageNaturalWidth = img.naturalWidth || img.width;
-  const imageNaturalHeight = img.naturalHeight || img.height;
+  // ===== [핵심] 이미지/동영상 원본 크기 명시적 사용 =====
+  // Image 객체: naturalWidth/naturalHeight 사용
+  // Video 객체: videoWidth/videoHeight 사용
+  let imageNaturalWidth, imageNaturalHeight;
+  
+  if (img instanceof HTMLVideoElement) {
+    // 동영상인 경우
+    imageNaturalWidth = img.videoWidth || img.width || 1920;
+    imageNaturalHeight = img.videoHeight || img.height || 1080;
+  } else {
+    // 이미지인 경우
+    imageNaturalWidth = img.naturalWidth || img.width;
+    imageNaturalHeight = img.naturalHeight || img.height;
+  }
 
   // 이미지 크기가 유효하지 않으면 기본값 반환
   if (imageNaturalWidth <= 0 || imageNaturalHeight <= 0) {
@@ -1414,11 +1452,23 @@ function loadCropState(item, img = null) {
     currentAspectRatio = item.cropState.aspectRatio;
   }
 
-  // ===== [핵심] 이미지 원본 크기 캡처 =====
-  const imageNaturalWidth = img ? (img.naturalWidth || img.width) : 0;
-  const imageNaturalHeight = img ? (img.naturalHeight || img.height) : 0;
+  // ===== [핵심] 이미지/동영상 원본 크기 캡처 =====
+  let imageNaturalWidth, imageNaturalHeight;
+  
+  if (img instanceof HTMLVideoElement) {
+    // 동영상인 경우
+    imageNaturalWidth = img.videoWidth || img.width || 1920;
+    imageNaturalHeight = img.videoHeight || img.height || 1080;
+  } else if (img) {
+    // 이미지인 경우
+    imageNaturalWidth = img.naturalWidth || img.width || 0;
+    imageNaturalHeight = img.naturalHeight || img.height || 0;
+  } else {
+    imageNaturalWidth = 0;
+    imageNaturalHeight = 0;
+  }
 
-  // ===== [핵심] 이미지가 있으면 무조건 minZoom 먼저 계산 =====
+  // ===== [핵심] 이미지/동영상이 있으면 무조건 minZoom 먼저 계산 =====
   // 이렇게 해야 저장된 상태 복원 시에도 올바른 minZoom이 적용됨
   if (img && containerWidth > 0 && containerHeight > 0 && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
     // Cover Fit 최소 배율 계산 (여백 원천 차단)
@@ -1552,12 +1602,19 @@ function changeAspectRatio(ratio) {
   console.log(`[DEBUG] 비율 변경: ${ratio} (${ratio === 9/16 ? '9:16' : ratio === 4/5 ? '4:5' : '1:1'})`);
 
   if (currentImage && containerWidth > 0 && containerHeight > 0) {
-    // ===== [핵심] naturalWidth/naturalHeight 명시적 사용 =====
-    const imageNaturalWidth = currentImage.naturalWidth || currentImage.width;
-    const imageNaturalHeight = currentImage.naturalHeight || currentImage.height;
+    // ===== [핵심] 이미지/동영상 원본 크기 명시적 사용 =====
+    let imageNaturalWidth, imageNaturalHeight;
+    
+    if (currentImage instanceof HTMLVideoElement) {
+      imageNaturalWidth = currentImage.videoWidth || currentImage.width || 1920;
+      imageNaturalHeight = currentImage.videoHeight || currentImage.height || 1080;
+    } else {
+      imageNaturalWidth = currentImage.naturalWidth || currentImage.width;
+      imageNaturalHeight = currentImage.naturalHeight || currentImage.height;
+    }
 
     if (imageNaturalWidth <= 0 || imageNaturalHeight <= 0) {
-      console.error('[ERROR] changeAspectRatio: 이미지 원본 크기 무효');
+      console.error('[ERROR] changeAspectRatio: 미디어 원본 크기 무효');
       return;
     }
 
@@ -1669,15 +1726,26 @@ async function selectMedia(index) {
   }
   
   if (item.mediaType === 'video') {
-    // 동영상은 크롭 불가, 미리보기만
-    videoNotice.style.display = 'block';
-    cropControls.style.display = 'none';
-    canvas.style.display = 'none';
+    // ===== [핵심] 동영상 크롭 및 배율 조절 전면 허용 =====
+    // 동영상도 이미지와 동일하게 비율 선택 및 확대/축소 슬라이더 작동
+    videoNotice.style.display = 'block'; // 안내 툴팁만 표시
+    cropControls.style.display = 'block'; // 크롭 컨트롤 표시 (이전: 'none')
+    canvas.style.display = 'block'; // Canvas 표시 (이전: 'none')
     
-    // 확인 버튼 숨기기
+    // 확인 버튼 표시 (이전: 숨김)
     const confirmBtn = document.getElementById('confirmBtn');
     if (confirmBtn) {
-      confirmBtn.style.display = 'none';
+      confirmBtn.style.display = 'block';
+      confirmBtn.disabled = false;
+      if (item.isConfirmed) {
+        confirmBtn.textContent = '수정하기';
+        confirmBtn.classList.add('confirmed');
+        confirmBtn.style.background = '#059669';
+      } else {
+        confirmBtn.textContent = '이 미디어 확인 완료';
+        confirmBtn.classList.remove('confirmed');
+        confirmBtn.style.background = '#111827';
+      }
     }
     
     // ===== [핵심] 동영상 Blob URL 유효성 검사 및 IndexedDB 저장 보장 =====
@@ -1732,27 +1800,22 @@ async function selectMedia(index) {
     // 동영상 Blob URL 검사 및 저장 보장
     validateAndStoreVideo();
     
-    // 동영상은 자동으로 확인 처리 (크롭 불가능하므로)
-    if (!item.isConfirmed) {
-      item.isConfirmed = true;
-      renderMediaList();
-      updateUploadButtonState();
-    }
+    // ===== [핵심] 동영상도 Canvas에 그려서 크롭 가능하도록 처리 =====
+    // 동영상은 자동으로 확인 처리하지 않음 (사용자가 직접 확인해야 함)
+    // if (!item.isConfirmed) {
+    //   item.isConfirmed = true;
+    //   renderMediaList();
+    //   updateUploadButtonState();
+    // }
     
+    // 동영상도 이미지처럼 Canvas에 그리기 위해 videoElement 생성
     const videoElement = document.createElement('video');
-    videoElement.className = 'admake-guide-preview-video';
+    videoElement.crossOrigin = 'anonymous';
     videoElement.src = item.previewUrl;
     videoElement.muted = true;
     videoElement.playsInline = true;
     videoElement.loop = true;
     videoElement.autoplay = true;
-    videoElement.style.position = 'absolute';
-    videoElement.style.top = '0';
-    videoElement.style.left = '0';
-    videoElement.style.width = '100%';
-    videoElement.style.height = '100%';
-    videoElement.style.objectFit = 'contain';
-    videoElement.style.zIndex = '1';
     
     // 동영상 로드 실패 시 Blob URL 재생성
     videoElement.onerror = async () => {
@@ -1775,8 +1838,79 @@ async function selectMedia(index) {
       }
     };
     
-    preview.appendChild(videoElement);
-    currentImage = null;
+    // 동영상 로드 완료 시 Canvas에 그리기
+    videoElement.onloadedmetadata = () => {
+      currentImage = videoElement; // videoElement를 currentImage로 사용
+      
+      // 컨테이너 준비 대기
+      const waitForContainer = (retryCount = 0) => {
+        const containerReady = updateCanvasSize();
+        
+        if (!containerReady && retryCount < 10) {
+          setTimeout(() => waitForContainer(retryCount + 1), 50);
+          return;
+        }
+        
+        if (!containerReady) {
+          console.error('[ERROR] 컨테이너 크기를 가져올 수 없습니다.');
+          return;
+        }
+        
+        // 동영상도 초기 자동 맞춤 적용 (이미지와 동일한 로직)
+        const videoWidth = videoElement.videoWidth || videoElement.width || 1920;
+        const videoHeight = videoElement.videoHeight || videoElement.height || 1080;
+        
+        if (videoWidth > 0 && videoHeight > 0 && containerWidth > 0 && containerHeight > 0) {
+          // 1. 9:16 비율로 강제 설정 (초기 로딩 시)
+          if (!item.cropState || !item.cropState.aspectRatio) {
+            currentAspectRatio = 9/16;
+            updateRatioButtons();
+            updateGuideLines();
+          }
+          
+          // 2. 9:16 컨테이너에 빈틈없이 꽉 차는 최소 배율 계산
+          const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+          const calculatedMinZoom = Math.max(
+            cropArea.width / videoWidth,
+            cropArea.height / videoHeight
+          );
+          
+          // minZoom 값 업데이트
+          minZoom = Math.max(0.001, calculatedMinZoom);
+          
+          console.log(`[AUTO-FIT VIDEO] 계산된 minZoom: ${minZoom.toFixed(6)} (원본: ${videoWidth}x${videoHeight}, 프레임: ${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)})`);
+          
+          // 3. 초기 상태이거나 저장된 상태가 없으면 minZoom으로 강제 적용 및 좌표 {x: 0, y: 0} 리셋
+          if (!item.cropState || !item.cropState.zoom || item.cropState.zoom < minZoom) {
+            currentZoom = minZoom;
+            console.log(`[AUTO-FIT VIDEO] 초기 zoom을 minZoom(${minZoom.toFixed(6)})으로 강제 설정`);
+            
+            // 좌표를 {x: 0, y: 0}으로 리셋하여 중앙에 꽉 차게 표시
+            const cropX = (containerWidth - cropArea.width) / 2;
+            const cropY = (containerHeight - cropArea.height) / 2;
+            const vidWidth = videoWidth * currentZoom;
+            const vidHeight = videoHeight * currentZoom;
+            
+            // 동영상을 크롭 영역 중앙에 배치 (상대 좌표 0, 0)
+            currentX = cropX + (cropArea.width - vidWidth) / 2;
+            currentY = cropY + (cropArea.height - vidHeight) / 2;
+            
+            console.log(`[AUTO-FIT VIDEO] 좌표 리셋: x=${currentX.toFixed(0)}, y=${currentY.toFixed(0)} (중앙 배치)`);
+          }
+        }
+        
+        // 크롭 상태 로드
+        loadCropState(item, videoElement);
+        updateRatioButtons();
+        updateGuideLines();
+        drawImage();
+      };
+      
+      waitForContainer();
+    };
+    
+    // 동영상 로드 시작
+    videoElement.load();
   } else {
     // 이미지는 크롭 가능
     videoNotice.style.display = 'none';
@@ -1830,13 +1964,20 @@ async function selectMedia(index) {
         // naturalWidth/naturalHeight 로깅
         console.log(`[IMAGE LOADED] 원본 크기: ${img.naturalWidth}x${img.naturalHeight}, 컨테이너: ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}`);
 
-        // ===== [핵심] 이미지 로드 즉시 상대 배율 계산 및 강제 적용 =====
-        // 1. 이미지가 로드되자마자 원본 해상도와 컨테이너 크기로 minZoom 계산
+        // ===== [핵심] 초기 로딩 시 자동 맞춤 (Auto-Fit on Start) =====
+        // 이미지가 로드되자마자 [9:16] 버튼을 눌렀을 때와 동일한 로직 실행
         const imageNaturalWidth = img.naturalWidth || img.width;
         const imageNaturalHeight = img.naturalHeight || img.height;
         
         if (imageNaturalWidth > 0 && imageNaturalHeight > 0 && containerWidth > 0 && containerHeight > 0) {
-          // 9:16 컨테이너에 빈틈없이 꽉 차는 최소 배율 계산
+          // 1. 9:16 비율로 강제 설정 (초기 로딩 시)
+          if (!item.cropState || !item.cropState.aspectRatio) {
+            currentAspectRatio = 9/16;
+            updateRatioButtons();
+            updateGuideLines();
+          }
+          
+          // 2. 9:16 컨테이너에 빈틈없이 꽉 차는 최소 배율 계산
           const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
           const calculatedMinZoom = Math.max(
             cropArea.width / imageNaturalWidth,
@@ -1846,20 +1987,24 @@ async function selectMedia(index) {
           // minZoom 값 업데이트
           minZoom = Math.max(0.001, calculatedMinZoom);
           
-          console.log(`[INITIAL ZOOM] 계산된 minZoom: ${minZoom.toFixed(6)} (원본: ${imageNaturalWidth}x${imageNaturalHeight}, 프레임: ${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)})`);
+          console.log(`[AUTO-FIT] 계산된 minZoom: ${minZoom.toFixed(6)} (원본: ${imageNaturalWidth}x${imageNaturalHeight}, 프레임: ${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)})`);
           
-          // 2. 초기 상태이거나 저장된 상태가 없으면 minZoom으로 강제 적용
+          // 3. 초기 상태이거나 저장된 상태가 없으면 minZoom으로 강제 적용 및 좌표 {x: 0, y: 0} 리셋
           if (!item.cropState || !item.cropState.zoom || item.cropState.zoom < minZoom) {
             currentZoom = minZoom;
-            console.log(`[INITIAL ZOOM] 초기 zoom을 minZoom(${minZoom.toFixed(6)})으로 강제 설정`);
+            console.log(`[AUTO-FIT] 초기 zoom을 minZoom(${minZoom.toFixed(6)})으로 강제 설정`);
             
-            // 이미지 위치도 중앙으로 초기화
+            // 좌표를 {x: 0, y: 0}으로 리셋하여 중앙에 꽉 차게 표시
             const cropX = (containerWidth - cropArea.width) / 2;
             const cropY = (containerHeight - cropArea.height) / 2;
             const imgWidth = imageNaturalWidth * currentZoom;
             const imgHeight = imageNaturalHeight * currentZoom;
+            
+            // 이미지를 크롭 영역 중앙에 배치 (상대 좌표 0, 0)
             currentX = cropX + (cropArea.width - imgWidth) / 2;
             currentY = cropY + (cropArea.height - imgHeight) / 2;
+            
+            console.log(`[AUTO-FIT] 좌표 리셋: x=${currentX.toFixed(0)}, y=${currentY.toFixed(0)} (중앙 배치)`);
           }
         }
 
@@ -2065,9 +2210,16 @@ async function createCroppedImage(mediaItem) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      // ===== [핵심] naturalWidth/naturalHeight 명시적 사용 =====
-      const imageNaturalWidth = img.naturalWidth || img.width;
-      const imageNaturalHeight = img.naturalHeight || img.height;
+      // ===== [핵심] 이미지/동영상 원본 크기 명시적 사용 =====
+      let imageNaturalWidth, imageNaturalHeight;
+      
+      if (img instanceof HTMLVideoElement) {
+        imageNaturalWidth = img.videoWidth || img.width || 1920;
+        imageNaturalHeight = img.videoHeight || img.height || 1080;
+      } else {
+        imageNaturalWidth = img.naturalWidth || img.width;
+        imageNaturalHeight = img.naturalHeight || img.height;
+      }
 
       // 선택된 비율에 맞는 크롭 영역 계산
       const cropArea = getCropAreaSize(containerWidth, containerHeight, aspectRatio);

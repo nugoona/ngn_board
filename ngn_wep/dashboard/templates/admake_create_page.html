@@ -812,17 +812,43 @@ function restoreStep1Data() {
                 const file = getRequest.result.file;
                 const previewUrl = URL.createObjectURL(file);
                 
+                // ===== [핵심] 동영상 썸네일 유실 문제 해결 =====
+                // Step 1으로 돌아올 때 동영상의 경우 IndexedDB에서 File 객체를 다시 읽어와서 Blob URL 재발급
+                let finalPreviewUrl = previewUrl;
+                let finalFile = file;
+                
+                // 동영상인 경우 추가 검증 및 복구
+                if (item.mediaType === 'video' || item.type === 'video' || file.type.startsWith('video/')) {
+                  try {
+                    // 기존 previewUrl이 유효한지 확인
+                    const response = await fetch(previewUrl, { method: 'HEAD' });
+                    if (!response.ok) {
+                      throw new Error('Blob URL 유효하지 않음');
+                    }
+                  } catch (e) {
+                    console.warn(`[VIDEO RECOVER] Blob URL 유효하지 않음, 재생성: ${item.id}`, e);
+                    // 기존 URL 해제
+                    if (previewUrl && previewUrl.startsWith('blob:')) {
+                      URL.revokeObjectURL(previewUrl);
+                    }
+                    // 새로운 Blob URL 생성
+                    finalPreviewUrl = URL.createObjectURL(file);
+                    console.log(`[VIDEO RECOVER] Blob URL 재생성 성공: ${item.id}`);
+                  }
+                }
+                
                 mediaItems.push({
                   id: item.id,
-                  file: file,
-                  previewUrl: previewUrl,
-                  type: item.type
+                  file: finalFile,
+                  previewUrl: finalPreviewUrl,
+                  type: item.type,
+                  mediaType: item.mediaType || (item.type === 'video' || finalFile.type.startsWith('video/') ? 'video' : 'image')
                 });
                 
                 renderThumbnail({
                   id: item.id,
-                  file: file,
-                  previewUrl: previewUrl,
+                  file: finalFile,
+                  previewUrl: finalPreviewUrl,
                   type: item.type
                 });
                 

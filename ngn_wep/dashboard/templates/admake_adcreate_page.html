@@ -652,45 +652,47 @@
 
     .admake-preview-content {
       flex: 1;
-      overflow: hidden; /* 스크롤바 완전 숨김 */
-      padding: 20px;
+      overflow: hidden !important; /* 스크롤바 완전 숨김 */
+      padding: 16px !important;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       position: relative;
+      /* DEBUG: 빨간 테두리로 영역 확인 */
+      /* border: 2px solid red; */
     }
 
     /* 미리보기 래퍼 - 로딩 트랜지션용 */
     .admake-preview-wrapper {
       position: relative;
       width: 100%;
-      max-height: 100%;
+      max-height: calc(100% - 10px);
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow: hidden;
+      overflow: hidden !important;
     }
 
     .admake-preview-frame {
-      width: 100%;
-      max-width: 300px;
+      width: 100% !important;
+      max-width: 280px !important;
       background: var(--bg-card);
       border-radius: 12px;
-      overflow: hidden;
+      overflow: hidden !important;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
     }
 
     /* 포맷별 프레임 사이즈 */
     .admake-preview-frame.format-feed {
-      max-width: 300px;
-      max-height: 380px;
+      max-width: 280px !important;
+      max-height: 360px !important;
     }
 
     .admake-preview-frame.format-reels {
-      max-width: 240px;
-      max-height: 430px;
+      max-width: 220px !important;
+      max-height: 400px !important;
     }
 
     /* 로딩 중 블러 효과 */
@@ -701,19 +703,27 @@
 
     /* 프레임 내부 iframe 스타일 - 스크롤바 숨김 */
     .admake-preview-frame iframe {
-      width: 100%;
-      height: 380px;
-      border: none;
+      width: 100% !important;
+      height: 360px !important;
+      border: none !important;
       display: block;
-      overflow: hidden;
+      overflow: hidden !important;
+      scrollbar-width: none !important; /* Firefox */
+      -ms-overflow-style: none !important; /* IE/Edge */
+    }
+
+    .admake-preview-frame iframe::-webkit-scrollbar {
+      display: none !important; /* Chrome/Safari */
+      width: 0 !important;
+      height: 0 !important;
     }
 
     .admake-preview-frame.format-feed iframe {
-      height: 380px;
+      height: 360px !important;
     }
 
     .admake-preview-frame.format-reels iframe {
-      height: 430px;
+      height: 400px !important;
     }
 
     /* 로딩 오버레이 */
@@ -1778,30 +1788,59 @@ async function generatePreview() {
       const loader = previewContent.querySelector('.admake-preview-loader');
       const iframe = frame.querySelector('iframe');
 
+      // iframe 스타일 강제 적용 함수
+      const forceIframeStyles = (iframeEl) => {
+        if (!iframeEl) return;
+        const isReels = currentPreviewFormat === 'INSTAGRAM_REELS';
+        const targetHeight = isReels ? '400px' : '360px';
+        const targetWidth = isReels ? '220px' : '280px';
+
+        // iframe 직접 스타일 적용
+        iframeEl.style.cssText = `
+          width: ${targetWidth} !important;
+          height: ${targetHeight} !important;
+          max-width: ${targetWidth} !important;
+          max-height: ${targetHeight} !important;
+          border: none !important;
+          overflow: hidden !important;
+          display: block !important;
+          margin: 0 auto !important;
+        `;
+        iframeEl.setAttribute('scrolling', 'no');
+        iframeEl.setAttribute('frameborder', '0');
+
+        console.log('[STEP3] iframe 스타일 강제 적용:', targetWidth, targetHeight);
+      };
+
       // 로딩 해제 함수
       const finishLoading = () => {
         frame.classList.remove('loading');
         loader?.classList.remove('active');
+        forceIframeStyles(iframe);
         console.log('[STEP3] 미리보기 렌더링 완료');
       };
 
       if (iframe) {
         let loadComplete = false;
 
+        // 즉시 스타일 적용 시도
+        forceIframeStyles(iframe);
+
         iframe.onload = () => {
           console.log('[STEP3] iframe 로드 완료, 렌더링 대기 중...');
           loadComplete = true;
-          // iframe 로드 후 Meta 콘텐츠 렌더링을 위해 1.5초 추가 대기
-          setTimeout(finishLoading, 1500);
+          forceIframeStyles(iframe);
+          // iframe 로드 후 Meta 콘텐츠 렌더링을 위해 1초 추가 대기
+          setTimeout(finishLoading, 1000);
         };
 
-        // 타임아웃 폴백 (4초 후 자동 해제 - onload 실패 시)
+        // 타임아웃 폴백 (3초 후 자동 해제 - onload 실패 시)
         setTimeout(() => {
           if (!loadComplete) {
             console.log('[STEP3] 타임아웃 - 강제 로딩 해제');
             finishLoading();
           }
-        }, 4000);
+        }, 3000);
       } else {
         // iframe이 없는 경우 짧은 딜레이 후 해제
         setTimeout(finishLoading, 500);

@@ -206,7 +206,7 @@
     /* ===== 메인 레이아웃 - 뷰포트 고정 ===== */
     .admake-crop-wrapper {
       display: flex;
-      padding-top: 40px; /* 프로그레스바와 겹침 방지 */
+      padding-top: 65px; /* 프로그레스바와 겹침 방지 */
       height: calc(100vh - 56px - 105px - 72px); /* nav + progress + action bar */
       overflow: hidden;
       box-sizing: border-box;
@@ -656,48 +656,52 @@
       color: var(--accent-red);
     }
 
-    /* 확인 버튼 - 깔끔한 다크 모드 스타일 */
+    /* 확인 버튼 - 밝은 배경 + 선명한 그림자 */
     .admake-confirm-btn {
       width: 100%;
       padding: 14px;
       font-family: 'Inter Tight', sans-serif;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.03em;
       text-transform: uppercase;
-      background: var(--bg-card);
-      color: #ffffff;
-      border: 1px solid var(--border-hover);
+      background: #f5f5f5;
+      color: #1a1a1a;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s ease;
       margin-top: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .admake-confirm-btn:hover:not(:disabled) {
-      background: var(--bg-card-hover);
-      border-color: var(--text-secondary);
-      color: #ffffff;
+      background: #ffffff;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+      transform: translateY(-1px);
     }
 
     .admake-confirm-btn:active {
-      background: var(--bg-secondary);
+      background: #e8e8e8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transform: translateY(0);
     }
 
     .admake-confirm-btn:disabled {
       opacity: 0.3;
       cursor: not-allowed;
+      box-shadow: none;
     }
 
     .admake-confirm-btn.confirmed {
       background: var(--accent-emerald);
-      border-color: var(--accent-emerald);
       color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
     }
 
     .admake-confirm-btn.confirmed:hover:not(:disabled) {
       background: #059669;
-      border-color: #059669;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
     }
 
     /* ===== 하단 액션 바 ===== */

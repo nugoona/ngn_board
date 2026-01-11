@@ -635,7 +635,7 @@
 
     .admake-resolution-label {
       font-size: 11px;
-      color: var(--text-muted);
+      color: var(--text-secondary);
       margin-bottom: 6px;
     }
 
@@ -656,24 +656,44 @@
       color: var(--accent-red);
     }
 
-    /* 확인 버튼 */
+    /* 확인 버튼 - 입체감 있는 3D 스타일 */
     .admake-confirm-btn {
       width: 100%;
       padding: 14px;
-      font-family: 'Pretendard', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      background: var(--text-primary);
-      color: var(--bg-primary);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #e8e8e8 100%);
+      color: #1a1a1a;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
       margin-top: auto;
+      box-shadow:
+        0 2px 0 #c0c0c0,
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
     }
 
     .admake-confirm-btn:hover:not(:disabled) {
-      background: #e5e5e5;
+      background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+      transform: translateY(1px);
+      box-shadow:
+        0 1px 0 #c0c0c0,
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .admake-confirm-btn:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 0 0 #c0c0c0,
+        0 1px 2px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
     }
 
     .admake-confirm-btn:disabled {
@@ -721,7 +741,7 @@
       padding: 12px 28px;
       font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.02em;
       border: none;
       border-radius: 8px;
       cursor: pointer;
@@ -971,7 +991,7 @@
 
     <!-- 확인 버튼 -->
     <button class="admake-confirm-btn" id="confirmBtn">
-      확인 완료
+      CONFIRM
     </button>
   </div>
 </div>
@@ -980,9 +1000,9 @@
 <div class="admake-action-bar">
   <div class="admake-action-left font-inter">STEP 2 OF 5</div>
   <div class="admake-action-buttons">
-    <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
+    <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
     <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>
-      <span id="uploadBtnText">메타에 업로드</span>
+      <span id="uploadBtnText">SAVE & NEXT</span>
       <span id="uploadBtnCount" style="display: none; margin-left: 8px; font-size: 11px; opacity: 0.8;"></span>
     </button>
   </div>

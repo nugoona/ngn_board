@@ -1869,23 +1869,31 @@ async function generatePreview() {
       };
 
       if (iframe) {
-        let loadComplete = false;
+        let finished = false;  // 중복 호출 방지
         console.log('[LOADING] iframe 발견, onload 이벤트 대기 시작');
+
+        const doFinish = (reason) => {
+          if (finished) {
+            console.log('[LOADING] 이미 완료됨, 스킵:', reason);
+            return;
+          }
+          finished = true;
+          finishLoading(reason);
+        };
 
         iframe.onload = () => {
           console.log('[LOADING] iframe onload 이벤트 발생!');
-          loadComplete = true;
-          console.log('[LOADING] 1초 후 finishLoading 예약');
-          setTimeout(() => finishLoading('onload + 1초 대기'), 1000);
+          // onload 후 500ms 대기 (Meta 콘텐츠 렌더링 시간)
+          setTimeout(() => doFinish('onload + 500ms'), 500);
         };
 
-        // 타임아웃 폴백
+        // 타임아웃 폴백 (5초) - onload가 안 오면 강제 해제
         setTimeout(() => {
-          if (!loadComplete) {
-            console.log('[LOADING] 3초 타임아웃 - onload 미발생, 강제 해제');
-            finishLoading('타임아웃 3초');
+          if (!finished) {
+            console.log('[LOADING] 5초 타임아웃 - onload 미발생');
+            doFinish('타임아웃 5초');
           }
-        }, 3000);
+        }, 5000);
       } else {
         console.log('[LOADING] iframe 없음! 500ms 후 해제');
         setTimeout(() => finishLoading('iframe 없음'), 500);

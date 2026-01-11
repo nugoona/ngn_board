@@ -652,47 +652,49 @@
 
     .admake-preview-content {
       flex: 1;
-      overflow: hidden !important; /* 스크롤바 완전 숨김 */
+      overflow-y: auto !important; /* 세로 스크롤 허용 */
+      overflow-x: hidden !important; /* 가로 스크롤 숨김 */
       padding: 16px !important;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       position: relative;
-      /* DEBUG: 빨간 테두리로 영역 확인 */
-      /* border: 2px solid red; */
+      /* 스크롤바 숨김 (스크롤은 가능) */
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    .admake-preview-content::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
     }
 
     /* 미리보기 래퍼 - 로딩 트랜지션용 */
     .admake-preview-wrapper {
       position: relative;
       width: 100%;
-      max-height: calc(100% - 10px);
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow: hidden !important;
     }
 
     .admake-preview-frame {
-      width: 100% !important;
-      max-width: 280px !important;
+      width: 100%;
+      max-width: 380px;
       background: var(--bg-card);
       border-radius: 12px;
-      overflow: hidden !important;
+      overflow: hidden;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
     }
 
     /* 포맷별 프레임 사이즈 */
     .admake-preview-frame.format-feed {
-      max-width: 280px !important;
-      max-height: 360px !important;
+      max-width: 380px;
     }
 
     .admake-preview-frame.format-reels {
-      max-width: 220px !important;
-      max-height: 400px !important;
+      max-width: 320px;
     }
 
     /* 로딩 중 블러 효과 */
@@ -701,29 +703,20 @@
       opacity: 0.6;
     }
 
-    /* 프레임 내부 iframe 스타일 - 스크롤바 숨김 */
+    /* 프레임 내부 iframe 스타일 */
     .admake-preview-frame iframe {
-      width: 100% !important;
-      height: 360px !important;
-      border: none !important;
+      width: 100%;
+      min-height: 500px;
+      border: none;
       display: block;
-      overflow: hidden !important;
-      scrollbar-width: none !important; /* Firefox */
-      -ms-overflow-style: none !important; /* IE/Edge */
-    }
-
-    .admake-preview-frame iframe::-webkit-scrollbar {
-      display: none !important; /* Chrome/Safari */
-      width: 0 !important;
-      height: 0 !important;
     }
 
     .admake-preview-frame.format-feed iframe {
-      height: 360px !important;
+      min-height: 500px;
     }
 
     .admake-preview-frame.format-reels iframe {
-      height: 400px !important;
+      min-height: 600px;
     }
 
     /* 로딩 오버레이 */
@@ -1792,24 +1785,22 @@ async function generatePreview() {
       const forceIframeStyles = (iframeEl) => {
         if (!iframeEl) return;
         const isReels = currentPreviewFormat === 'INSTAGRAM_REELS';
-        const targetHeight = isReels ? '400px' : '360px';
-        const targetWidth = isReels ? '220px' : '280px';
+        const targetWidth = isReels ? '320px' : '380px';
+        const targetHeight = isReels ? '600px' : '500px';
 
-        // iframe 직접 스타일 적용
+        // iframe 직접 스타일 적용 - 전체 콘텐츠 표시
         iframeEl.style.cssText = `
           width: ${targetWidth} !important;
-          height: ${targetHeight} !important;
-          max-width: ${targetWidth} !important;
-          max-height: ${targetHeight} !important;
+          min-height: ${targetHeight} !important;
+          height: auto !important;
           border: none !important;
-          overflow: hidden !important;
           display: block !important;
           margin: 0 auto !important;
         `;
         iframeEl.setAttribute('scrolling', 'no');
         iframeEl.setAttribute('frameborder', '0');
 
-        console.log('[STEP3] iframe 스타일 강제 적용:', targetWidth, targetHeight);
+        console.log('[STEP3] iframe 스타일 적용:', targetWidth, 'min-height:', targetHeight);
       };
 
       // 로딩 해제 함수

@@ -1124,7 +1124,7 @@ function startDrag(e) {
   canvas.style.cursor = 'grabbing';
 }
 
-// ✅ 드래그 중
+// ✅ 드래그 중 (restrictPosition: true 효과 적용)
 function onDrag(e) {
   if (!isDragging || !currentImage) return;
   
@@ -1135,8 +1135,35 @@ function onDrag(e) {
   const deltaX = x - dragStartX;
   const deltaY = y - dragStartY;
   
-  currentX += deltaX;
-  currentY += deltaY;
+  // 임시로 위치 업데이트
+  let newX = currentX + deltaX;
+  let newY = currentY + deltaY;
+  
+  // restrictPosition: true 효과 - 경계 제한 적용
+  const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+  const cropX = (containerWidth - cropArea.width) / 2;
+  const cropY = (containerHeight - cropArea.height) / 2;
+  
+  const imageNaturalWidth = currentImage.naturalWidth || currentImage.width;
+  const imageNaturalHeight = currentImage.naturalHeight || currentImage.height;
+  const imgWidth = imageNaturalWidth * currentZoom;
+  const imgHeight = imageNaturalHeight * currentZoom;
+  
+  // 상대 좌표 계산
+  let relativeX = newX - cropX;
+  let relativeY = newY - cropY;
+  
+  // 경계 제한 (이미지가 프레임 안으로 들어오지 못하게)
+  const minRelativeX = Math.min(0, -(imgWidth - cropArea.width));
+  const minRelativeY = Math.min(0, -(imgHeight - cropArea.height));
+  
+  // 엄격한 경계 적용
+  relativeX = Math.max(minRelativeX, Math.min(0, relativeX));
+  relativeY = Math.max(minRelativeY, Math.min(0, relativeY));
+  
+  // 절대 좌표로 변환
+  currentX = cropX + relativeX;
+  currentY = cropY + relativeY;
   
   dragStartX = x;
   dragStartY = y;

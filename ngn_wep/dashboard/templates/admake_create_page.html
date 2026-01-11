@@ -696,50 +696,103 @@ function renderThumbnail(mediaItem) {
   thumbnailItem.className = 'admake-thumbnail-item';
   thumbnailItem.setAttribute('data-id', mediaItem.id);
 
+  // 재시도 플래그 (무한 루프 방지)
+  let hasRetried = false;
+
+  // 썸네일 복구 함수 (IndexedDB에서 file 가져와서 재생성)
+  async function recoverThumbnail(element, isVideo) {
+    if (hasRetried) {
+      console.error(`[THUMBNAIL] 복구 실패 - 이미 재시도함: ${mediaItem.id}`);
+      return;
+    }
+    hasRetried = true;
+
+    try {
+      let file = mediaItem.file;
+
+      // file이 없으면 IndexedDB에서 가져오기
+      if (!file && 'indexedDB' in window) {
+        console.log(`[THUMBNAIL] IndexedDB에서 파일 복구 시도: ${mediaItem.id}`);
+        file = await new Promise((resolve, reject) => {
+          const request = indexedDB.open('admake_files', 1);
+          request.onsuccess = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('files')) {
+              reject(new Error('files store 없음'));
+              return;
+            }
+            const transaction = db.transaction(['files'], 'readonly');
+            const store = transaction.objectStore('files');
+            const getRequest = store.get(mediaItem.id);
+            getRequest.onsuccess = () => {
+              if (getRequest.result && getRequest.result.file) {
+                resolve(getRequest.result.file);
+              } else {
+                reject(new Error('파일 없음'));
+              }
+            };
+            getRequest.onerror = () => reject(new Error('조회 실패'));
+          };
+          request.onerror = () => reject(new Error('DB 열기 실패'));
+        });
+      }
+
+      if (file) {
+        const newUrl = URL.createObjectURL(file);
+        mediaItem.previewUrl = newUrl;
+        mediaItem.file = file; // file도 저장
+
+        // 요소 src 업데이트
+        element.src = newUrl;
+
+        // mediaItems 배열에서도 업데이트
+        const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
+        if (itemInArray) {
+          itemInArray.previewUrl = newUrl;
+          itemInArray.file = file;
+        }
+
+        console.log(`[THUMBNAIL] 복구 성공: ${mediaItem.id}`);
+      } else {
+        console.error(`[THUMBNAIL] 복구 실패 - 파일 없음: ${mediaItem.id}`);
+      }
+    } catch (e) {
+      console.error(`[THUMBNAIL] 복구 실패: ${mediaItem.id}`, e);
+    }
+  }
+
   if (mediaItem.type === 'video') {
     // 비디오는 동적으로 생성하여 에러 핸들링 추가
     const videoEl = document.createElement('video');
     videoEl.className = 'admake-thumbnail-video';
-    videoEl.src = mediaItem.previewUrl;
     videoEl.muted = true;
     videoEl.playsInline = true;
     videoEl.loop = true;
     videoEl.autoplay = true;
 
-    // 비디오 로드 실패 시 file 객체로 재생성
+    // 비디오 로드 실패 시 복구 시도
     videoEl.onerror = () => {
-      console.warn(`[THUMBNAIL] 비디오 로드 실패, 재생성 시도: ${mediaItem.id}`);
-      if (mediaItem.file) {
-        const newUrl = URL.createObjectURL(mediaItem.file);
-        mediaItem.previewUrl = newUrl;
-        videoEl.src = newUrl;
-        // mediaItems 배열에서도 업데이트
-        const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
-        if (itemInArray) itemInArray.previewUrl = newUrl;
-      }
+      console.warn(`[THUMBNAIL] 비디오 로드 실패: ${mediaItem.id}`);
+      recoverThumbnail(videoEl, true);
     };
 
+    // src 설정
+    videoEl.src = mediaItem.previewUrl;
     thumbnailItem.appendChild(videoEl);
   } else {
     // 이미지
     const imgEl = document.createElement('img');
     imgEl.className = 'admake-thumbnail-image';
-    imgEl.src = mediaItem.previewUrl;
     imgEl.alt = '업로드된 이미지';
 
-    // 이미지 로드 실패 시 file 객체로 재생성
+    // 이미지 로드 실패 시 복구 시도
     imgEl.onerror = () => {
-      console.warn(`[THUMBNAIL] 이미지 로드 실패, 재생성 시도: ${mediaItem.id}`);
-      if (mediaItem.file) {
-        const newUrl = URL.createObjectURL(mediaItem.file);
-        mediaItem.previewUrl = newUrl;
-        imgEl.src = newUrl;
-        // mediaItems 배열에서도 업데이트
-        const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
-        if (itemInArray) itemInArray.previewUrl = newUrl;
-      }
+      console.warn(`[THUMBNAIL] 이미지 로드 실패: ${mediaItem.id}`);
+      recoverThumbnail(imgEl, false);
     };
 
+    // src 설정
+    imgEl.src = mediaItem.previewUrl;
     thumbnailItem.appendChild(imgEl);
   }
 
@@ -839,14 +892,15 @@ function restoreStep1Data() {
                 const previewUrl = URL.createObjectURL(file);
                 const mediaType = item.mediaType || (file.type.startsWith('video/') ? 'video' : 'image');
 
-                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType})`);
+                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType}, MIME: ${file.type})`);
 
                 mediaItems.push({
                   id: item.id,
                   file: file,
                   previewUrl: previewUrl,
-                  type: item.type,
-                  mediaType: mediaType
+                  type: mediaType,  // 'image' or 'video' (renderThumbnail이 이 값을 체크함)
+                  mediaType: mediaType,
+                  mimeType: file.type  // MIME 타입은 별도 저장
                 });
 
                 renderThumbnail({

@@ -1603,6 +1603,194 @@ def get_meta_token():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@data_blueprint.route("/generate_ad_preview", methods=["POST"])
+def generate_ad_preview():
+    """Meta API를 사용하여 광고 미리보기 생성
+
+    요청 파라미터:
+    - account_id: 광고 계정 ID
+    - ad_format: INSTAGRAM_STANDARD, INSTAGRAM_REELS, MOBILE_FEED_STANDARD
+    - media_type: image 또는 video
+    - image_hash: 이미지 해시 (이미지용)
+    - video_id: 비디오 ID (동영상용)
+    - link: 웹사이트 URL
+    - message: Primary Text
+    - name: Headline
+    - description: Description
+    - cta_type: Call to Action 타입
+    - is_carousel: 슬라이드 여부 (선택)
+    - cards: 슬라이드 카드 배열 (선택)
+    """
+    import requests
+    import json
+
+    print("[PREVIEW] ===== 광고 미리보기 생성 시작 =====")
+
+    try:
+        data = request.get_json()
+        print(f"[PREVIEW] 요청 데이터: {json.dumps(data, indent=2, ensure_ascii=False)}")
+
+        # 필수 파라미터 확인
+        account_id = data.get('account_id')
+        ad_format = data.get('ad_format', 'INSTAGRAM_STANDARD')
+        media_type = data.get('media_type', 'image')
+
+        if not account_id:
+            print("[PREVIEW] ERROR: account_id 누락")
+            return jsonify({"status": "error", "message": "account_id가 필요합니다"}), 400
+
+        # 액세스 토큰 가져오기
+        access_token = os.getenv("META_SYSTEM_USER_TOKEN") or os.getenv("META_LONG_TOKEN")
+        if not access_token:
+            print("[PREVIEW] ERROR: 액세스 토큰 없음")
+            return jsonify({"status": "error", "message": "Meta 액세스 토큰이 없습니다"}), 401
+
+        print(f"[PREVIEW] 토큰 확인: {access_token[:15]}...")
+
+        # Page ID 조회 (첫 번째 페이지 사용)
+        pages_url = "https://graph.facebook.com/v24.0/me/accounts"
+        pages_response = requests.get(pages_url, params={
+            "access_token": access_token,
+            "fields": "id,name"
+        }, timeout=10)
+        pages_data = pages_response.json()
+        print(f"[PREVIEW] Pages 응답: {json.dumps(pages_data, indent=2)}")
+
+        if 'data' not in pages_data or len(pages_data['data']) == 0:
+            print("[PREVIEW] ERROR: 연결된 페이지 없음")
+            return jsonify({"status": "error", "message": "연결된 Facebook 페이지가 없습니다"}), 400
+
+        page_id = pages_data['data'][0]['id']
+        print(f"[PREVIEW] 사용할 Page ID: {page_id}")
+
+        # creative_spec 구성
+        link = data.get('link', 'https://example.com')
+        message = data.get('message', '')
+        headline = data.get('name', '')
+        description = data.get('description', '')
+        cta_type = data.get('cta_type', 'SHOP_NOW')
+        image_hash = data.get('image_hash')
+        video_id = data.get('video_id')
+        is_carousel = data.get('is_carousel', False)
+        cards = data.get('cards', [])
+
+        creative_spec = {
+            "object_story_spec": {
+                "page_id": page_id
+            }
+        }
+
+        if is_carousel and len(cards) > 1:
+            # 슬라이드 (Carousel) 광고
+            print(f"[PREVIEW] 슬라이드 광고 생성: {len(cards)}개 카드")
+            child_attachments = []
+            for i, card in enumerate(cards):
+                attachment = {
+                    "link": card.get('link', link),
+                    "name": card.get('name', headline),
+                    "description": card.get('description', description),
+                    "call_to_action": {"type": cta_type}
+                }
+                if card.get('image_hash'):
+                    attachment["image_hash"] = card['image_hash']
+                elif card.get('video_id'):
+                    attachment["video_id"] = card['video_id']
+                child_attachments.append(attachment)
+                print(f"[PREVIEW] 카드 {i+1}: {attachment}")
+
+            creative_spec["object_story_spec"]["link_data"] = {
+                "link": link,
+                "message": message,
+                "child_attachments": child_attachments,
+                "multi_share_optimized": True
+            }
+        else:
+            # 단일 이미지/동영상 광고
+            if media_type == 'video' and video_id:
+                print(f"[PREVIEW] 단일 동영상 광고: video_id={video_id}")
+                creative_spec["object_story_spec"]["video_data"] = {
+                    "video_id": video_id,
+                    "message": message,
+                    "title": headline,
+                    "link_description": description,
+                    "call_to_action": {
+                        "type": cta_type,
+                        "value": {"link": link}
+                    }
+                }
+            elif image_hash:
+                print(f"[PREVIEW] 단일 이미지 광고: image_hash={image_hash}")
+                creative_spec["object_story_spec"]["link_data"] = {
+                    "image_hash": image_hash,
+                    "link": link,
+                    "message": message,
+                    "name": headline,
+                    "description": description,
+                    "call_to_action": {"type": cta_type}
+                }
+            else:
+                print("[PREVIEW] ERROR: image_hash 또는 video_id 필요")
+                return jsonify({"status": "error", "message": "이미지 해시 또는 비디오 ID가 필요합니다"}), 400
+
+        print(f"[PREVIEW] creative_spec: {json.dumps(creative_spec, indent=2)}")
+
+        # Meta API 호출
+        ad_account_id = f"act_{account_id}"
+        preview_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/generatepreviews"
+
+        api_params = {
+            "access_token": access_token,
+            "creative": json.dumps(creative_spec),
+            "ad_format": ad_format
+        }
+
+        print(f"[PREVIEW] API 호출: {preview_url}")
+        print(f"[PREVIEW] ad_format: {ad_format}")
+
+        response = requests.get(preview_url, params=api_params, timeout=30)
+        result = response.json()
+
+        print(f"[PREVIEW] API 응답 상태: {response.status_code}")
+        print(f"[PREVIEW] API 응답: {json.dumps(result, indent=2)}")
+
+        if 'error' in result:
+            error_msg = result['error'].get('message', '알 수 없는 오류')
+            error_code = result['error'].get('code', '')
+            print(f"[PREVIEW] ERROR: {error_code} - {error_msg}")
+            return jsonify({
+                "status": "error",
+                "message": f"Meta API 오류: {error_msg}",
+                "error_code": error_code
+            }), 400
+
+        if 'data' in result and len(result['data']) > 0:
+            preview_html = result['data'][0].get('body', '')
+            print(f"[PREVIEW] 미리보기 HTML 길이: {len(preview_html)}")
+            print("[PREVIEW] ===== 미리보기 생성 성공 =====")
+            return jsonify({
+                "status": "success",
+                "preview_html": preview_html
+            }), 200
+        else:
+            print("[PREVIEW] ERROR: 미리보기 데이터 없음")
+            return jsonify({
+                "status": "error",
+                "message": "미리보기 데이터가 없습니다"
+            }), 400
+
+    except requests.exceptions.Timeout:
+        print("[PREVIEW] ERROR: API 요청 타임아웃")
+        return jsonify({"status": "error", "message": "Meta API 요청 시간 초과"}), 504
+    except requests.exceptions.RequestException as e:
+        print(f"[PREVIEW] ERROR: 네트워크 오류 - {e}")
+        return jsonify({"status": "error", "message": f"네트워크 오류: {str(e)}"}), 500
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[PREVIEW] ERROR: 예외 발생 - {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @data_blueprint.route("/trend/tabs", methods=["GET"])
 def get_trend_tabs():
     """사용 가능한 탭 목록 조회"""

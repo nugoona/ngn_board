@@ -3023,14 +3023,24 @@ async function uploadToMeta() {
     
     // STEP 3으로 이동
     const step1Data = JSON.parse(sessionStorage.getItem('admake_step1_state'));
+
+    // Step 3에서 사용할 데이터 저장
     sessionStorage.setItem('admake_step2_results', JSON.stringify({
       accountId: accountId,
       results: uploadedResults,
       landingUrl: step1Data.landingUrl
     }));
-    
+
+    // Step 3 호환 포맷으로도 저장
+    sessionStorage.setItem('admake_uploaded_results', JSON.stringify(uploadedResults));
+
+    console.log('[UPLOAD] Step 3 데이터 저장 완료:', uploadedResults);
+
     showToast('업로드 완료! STEP 3으로 이동합니다.', 'success');
-    // window.location.href = `/admake/create/ad?account_id=${encodeURIComponent(accountId)}`;
+
+    setTimeout(() => {
+      window.location.href = `/admake/adcreate?account_id=${encodeURIComponent(accountId)}`;
+    }, 1000);
     
   } catch (error) {
     console.error('업로드 오류:', error);

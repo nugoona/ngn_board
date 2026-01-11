@@ -1700,14 +1700,21 @@ async function generatePreview() {
       account_id: accountId,
       ad_format: currentPreviewFormat,
       media_type: firstMedia.mediaType,
-      image_hash: firstMedia.hash || null,
-      video_id: firstMedia.videoId || null,
       link: masterValues.url || 'https://example.com',
       message: masterValues.primaryText || '',
       name: masterValues.headline || '',
       description: masterValues.description || '',
       cta_type: masterValues.cta || 'SHOP_NOW'
     };
+
+    // 미디어 타입에 따라 올바른 필드만 전송 (Meta API 규격 준수)
+    if (firstMedia.mediaType === 'video') {
+      requestData.video_id = firstMedia.videoId;
+      console.log('[STEP3] 동영상 모드 - video_id만 전송:', firstMedia.videoId);
+    } else {
+      requestData.image_hash = firstMedia.hash;
+      console.log('[STEP3] 이미지 모드 - image_hash만 전송:', firstMedia.hash);
+    }
 
     // 슬라이드 모드인 경우 카드 데이터 추가
     if (currentAdType === 'slide' && selectedMediaIds.length > 1) {
@@ -1717,13 +1724,21 @@ async function generatePreview() {
         const locks = cardLocks[mediaId] || {};
         const values = cardValues[mediaId] || {};
 
-        return {
-          image_hash: media?.hash || null,
-          video_id: media?.videoId || null,
+        // 기본 카드 데이터
+        const cardData = {
           link: locks.url ? masterValues.url : (values.url || masterValues.url),
           name: locks.headline ? masterValues.headline : (values.headline || masterValues.headline),
           description: locks.description ? masterValues.description : (values.description || masterValues.description)
         };
+
+        // 미디어 타입에 따라 올바른 필드만 추가
+        if (media?.mediaType === 'video') {
+          cardData.video_id = media.videoId;
+        } else {
+          cardData.image_hash = media?.hash;
+        }
+
+        return cardData;
       });
     }
 

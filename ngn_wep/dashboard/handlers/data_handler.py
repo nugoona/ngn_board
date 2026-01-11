@@ -1691,10 +1691,11 @@ def generate_ad_preview():
                     "description": card.get('description', description),
                     "call_to_action": {"type": cta_type}
                 }
-                if card.get('image_hash'):
-                    attachment["image_hash"] = card['image_hash']
-                elif card.get('video_id'):
+                # video_id를 먼저 확인 (동영상 우선)
+                if card.get('video_id'):
                     attachment["video_id"] = card['video_id']
+                elif card.get('image_hash'):
+                    attachment["image_hash"] = card['image_hash']
                 child_attachments.append(attachment)
                 print(f"[PREVIEW] 카드 {i+1}: {attachment}")
 

@@ -746,7 +746,7 @@
       <!-- 확대/축소 슬라이더 -->
       <div class="admake-zoom-control">
         <span class="admake-zoom-label">확대/축소</span>
-        <input type="range" id="zoomSlider" class="admake-zoom-slider" min="1" max="3" step="0.1" value="1">
+        <input type="range" id="zoomSlider" class="admake-zoom-slider" min="0.01" max="3" step="0.01" value="1">
         <span class="admake-zoom-value" id="zoomValue">100%</span>
       </div>
       
@@ -1189,9 +1189,12 @@ function saveCropState() {
       x: currentX,
       y: currentY,
       zoom: currentZoom,
-      aspectRatio: currentAspectRatio // 비율도 저장
+      aspectRatio: currentAspectRatio, // 비율도 저장
+      minZoom: minZoom // minZoom도 저장 (복원 시 비교용)
     };
     // 상태 저장 시 자동으로 확인 처리하지 않음 (사용자가 명시적으로 확인해야 함)
+
+    console.log(`[SAVE] 크롭 상태 저장: zoom=${currentZoom.toFixed(4)}, minZoom=${minZoom.toFixed(4)}, ratio=${currentAspectRatio}`);
 
     // sessionStorage에도 상태 저장 (페이지 새로고침 대비)
     const step1Data = sessionStorage.getItem('admake_step1_state');
@@ -1296,17 +1299,13 @@ function calculateInitialZoom(img, containerWidth, containerHeight, aspectRatio)
 
   // 최소 확대 비율 = Cover Fit 배율 (여백 원천 차단)
   // 이 값 이하로는 절대 축소 불가능 (restrictPosition: true 효과)
-  minZoom = coverZoom;
-
-  // 초기 배율: Cover Fit으로 시작 (자동으로 프레임에 딱 맞게)
-  let initialZoom = coverZoom;
-
   // 고화질 이미지의 경우 minZoom이 매우 작을 수 있으므로 최소 0.01 보장
-  minZoom = Math.max(0.01, minZoom);
+  minZoom = Math.max(0.01, coverZoom);
 
-  console.log(`[MASTER FIX] Cover Fit 계산: 이미지(${img.width}x${img.height}), 프레임(${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)}), minZoom=${minZoom.toFixed(4)}, initialZoom=${initialZoom.toFixed(4)}`);
+  console.log(`[MASTER FIX] Cover Fit 계산: 이미지(${img.width}x${img.height}), 프레임(${cropArea.width.toFixed(0)}x${cropArea.height.toFixed(0)}), minZoom=${minZoom.toFixed(4)}`);
 
-  return initialZoom;
+  // minZoom 값을 반환 (초기 배율로 사용)
+  return minZoom;
 }
 
 // ✅ 크롭 상태 불러오기 (초기 화면 최적화: 9:16 디폴트, 여백 없이)
@@ -1314,18 +1313,43 @@ function loadCropState(item, img = null) {
   // 디폴트 비율을 9:16으로 설정 (초기 화면 최적화)
   if (!item.cropState || !item.cropState.aspectRatio) {
     currentAspectRatio = 9/16;
+  } else {
+    // 저장된 비율 복원
+    currentAspectRatio = item.cropState.aspectRatio;
   }
-  
+
+  // ===== [핵심] 이미지가 있으면 무조건 minZoom 먼저 계산 =====
+  // 이렇게 해야 저장된 상태 복원 시에도 올바른 minZoom이 적용됨
+  if (img && containerWidth > 0 && containerHeight > 0) {
+    // Cover Fit 최소 배율 계산 (여백 원천 차단)
+    calculateInitialZoom(img, containerWidth, containerHeight, currentAspectRatio);
+    console.log(`[MASTER FIX] minZoom 계산 완료: ${minZoom.toFixed(4)} (이미지: ${img.width}x${img.height})`);
+  }
+
   if (item && item.cropState && item.cropState.zoom > 0) {
     // 저장된 크롭 상태가 있으면 사용
     currentX = item.cropState.x;
     currentY = item.cropState.y;
     currentZoom = item.cropState.zoom;
-    // 저장된 비율도 복원 (있는 경우)
-    if (item.cropState.aspectRatio) {
-      currentAspectRatio = item.cropState.aspectRatio;
-      updateRatioButtons();
+
+    // ===== [핵심] 저장된 zoom이 minZoom보다 작으면 강제로 minZoom으로 조정 =====
+    // 고화질 이미지의 경우 이전에 저장된 zoom 값이 현재 계산된 minZoom보다 작을 수 있음
+    if (img && currentZoom < minZoom) {
+      console.log(`[MASTER FIX] 저장된 zoom(${currentZoom.toFixed(4)})이 minZoom(${minZoom.toFixed(4)})보다 작음 → minZoom으로 강제 조정`);
+      currentZoom = minZoom;
+
+      // 위치도 중앙으로 재조정
+      const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
+      const cropX = (containerWidth - cropArea.width) / 2;
+      const cropY = (containerHeight - cropArea.height) / 2;
+      const imgWidth = img.width * currentZoom;
+      const imgHeight = img.height * currentZoom;
+      currentX = cropX + (cropArea.width - imgWidth) / 2;
+      currentY = cropY + (cropArea.height - imgHeight) / 2;
     }
+
+    // 비율 버튼 상태 업데이트
+    updateRatioButtons();
   } else {
     // 초기 상태 - 이미지가 선택된 비율 박스에 여백 없이 꽉 차게 자동 계산
     if (img && containerWidth > 0 && containerHeight > 0) {
@@ -1333,24 +1357,24 @@ function loadCropState(item, img = null) {
       const cropArea = getCropAreaSize(containerWidth, containerHeight, currentAspectRatio);
       const cropX = (containerWidth - cropArea.width) / 2;
       const cropY = (containerHeight - cropArea.height) / 2;
-      
-      // 초기 배율 계산 (여백 없이)
-      currentZoom = calculateInitialZoom(img, containerWidth, containerHeight, currentAspectRatio);
-      
+
+      // 초기 배율 = Cover Fit 배율 (minZoom)으로 시작
+      currentZoom = minZoom;
+
       // 이미지를 크롭 영역 중앙에 배치
       const imgWidth = img.width * currentZoom;
       const imgHeight = img.height * currentZoom;
       currentX = cropX + (cropArea.width - imgWidth) / 2;
       currentY = cropY + (cropArea.height - imgHeight) / 2;
-      
-      console.log(`[DEBUG] 초기 배율 자동 계산: ${currentZoom.toFixed(2)} (비율: ${currentAspectRatio}), 여백 없이`);
+
+      console.log(`[MASTER FIX] 초기 배율 자동 설정: ${currentZoom.toFixed(4)} (Cover Fit, 여백 없이)`);
     } else {
       currentX = 0;
       currentY = 0;
       currentZoom = 1;
     }
   }
-  
+
   // UI 업데이트 (슬라이더 범위 동적 설정: min=minZoom, max=minZoom*3)
   const zoomSlider = document.getElementById('zoomSlider');
   const zoomValue = document.getElementById('zoomValue');
@@ -1362,14 +1386,14 @@ function loadCropState(item, img = null) {
       const maxZoom = Math.max(minZoom * 3, 1); // 최소 1 보장
       zoomSlider.min = minZoom;
       zoomSlider.max = maxZoom;
-      zoomSlider.step = (maxZoom - minZoom) / 100; // 100단계로 분할
+      zoomSlider.step = Math.max((maxZoom - minZoom) / 100, 0.001); // 100단계로 분할, 최소 0.001
 
-      console.log(`[MASTER FIX] 슬라이더 범위: ${minZoom.toFixed(4)} ~ ${maxZoom.toFixed(4)}`);
+      console.log(`[MASTER FIX] 슬라이더 범위 설정: min=${minZoom.toFixed(4)}, max=${maxZoom.toFixed(4)}, step=${zoomSlider.step}`);
     }
     zoomSlider.value = currentZoom;
   }
   if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
-  
+
   // 비율 버튼 상태 업데이트
   updateRatioButtons();
 }

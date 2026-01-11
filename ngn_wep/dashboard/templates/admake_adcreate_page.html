@@ -652,11 +652,12 @@
 
     .admake-preview-content {
       flex: 1;
-      overflow-y: auto;
+      overflow: hidden; /* 스크롤바 완전 숨김 */
       padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       position: relative;
     }
 
@@ -664,14 +665,16 @@
     .admake-preview-wrapper {
       position: relative;
       width: 100%;
+      max-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
+      overflow: hidden;
     }
 
     .admake-preview-frame {
       width: 100%;
-      max-width: 320px;
+      max-width: 300px;
       background: var(--bg-card);
       border-radius: 12px;
       overflow: hidden;
@@ -681,14 +684,13 @@
 
     /* 포맷별 프레임 사이즈 */
     .admake-preview-frame.format-feed {
-      max-width: 320px;
-      aspect-ratio: auto;
+      max-width: 300px;
+      max-height: 380px;
     }
 
     .admake-preview-frame.format-reels {
-      max-width: 280px;
-      aspect-ratio: 9 / 16;
-      min-height: 500px;
+      max-width: 240px;
+      max-height: 430px;
     }
 
     /* 로딩 중 블러 효과 */
@@ -697,20 +699,21 @@
       opacity: 0.6;
     }
 
-    /* 프레임 내부 iframe 스타일 */
+    /* 프레임 내부 iframe 스타일 - 스크롤바 숨김 */
     .admake-preview-frame iframe {
       width: 100%;
+      height: 380px;
       border: none;
       display: block;
+      overflow: hidden;
     }
 
     .admake-preview-frame.format-feed iframe {
-      min-height: 400px;
+      height: 380px;
     }
 
     .admake-preview-frame.format-reels iframe {
-      height: 100%;
-      min-height: 500px;
+      height: 430px;
     }
 
     /* 로딩 오버레이 */
@@ -1775,24 +1778,33 @@ async function generatePreview() {
       const loader = previewContent.querySelector('.admake-preview-loader');
       const iframe = frame.querySelector('iframe');
 
+      // 로딩 해제 함수
+      const finishLoading = () => {
+        frame.classList.remove('loading');
+        loader?.classList.remove('active');
+        console.log('[STEP3] 미리보기 렌더링 완료');
+      };
+
       if (iframe) {
+        let loadComplete = false;
+
         iframe.onload = () => {
-          console.log('[STEP3] iframe 로드 완료');
-          frame.classList.remove('loading');
-          loader?.classList.remove('active');
+          console.log('[STEP3] iframe 로드 완료, 렌더링 대기 중...');
+          loadComplete = true;
+          // iframe 로드 후 Meta 콘텐츠 렌더링을 위해 1.5초 추가 대기
+          setTimeout(finishLoading, 1500);
         };
 
-        // 타임아웃 폴백 (5초 후 자동 해제)
+        // 타임아웃 폴백 (4초 후 자동 해제 - onload 실패 시)
         setTimeout(() => {
-          frame.classList.remove('loading');
-          loader?.classList.remove('active');
-        }, 5000);
+          if (!loadComplete) {
+            console.log('[STEP3] 타임아웃 - 강제 로딩 해제');
+            finishLoading();
+          }
+        }, 4000);
       } else {
-        // iframe이 없는 경우 바로 로딩 해제
-        setTimeout(() => {
-          frame.classList.remove('loading');
-          loader?.classList.remove('active');
-        }, 300);
+        // iframe이 없는 경우 짧은 딜레이 후 해제
+        setTimeout(finishLoading, 500);
       }
 
     } else {

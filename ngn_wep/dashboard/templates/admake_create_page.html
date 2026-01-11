@@ -806,7 +806,8 @@ function restoreStep1Data() {
         const restorePromises = data.mediaItems.map(item => {
           return new Promise((resolve) => {
             const getRequest = store.get(item.id);
-            getRequest.onsuccess = () => {
+            // ===== [수정] async 함수로 변경하여 await 사용 가능 =====
+            getRequest.onsuccess = async () => {
               if (getRequest.result && getRequest.result.file) {
                 // File 객체가 있으면 새로운 Blob URL 생성
                 const file = getRequest.result.file;

@@ -1823,21 +1823,21 @@ def generate_ad_preview():
 
         print(f"[PREVIEW] creative_spec: {json.dumps(creative_spec, indent=2)}")
 
-        # Meta API 호출 (POST 방식 + 재시도 로직)
+        # Meta API 호출 (GET 방식 + 재시도 로직)
         from requests.adapters import HTTPAdapter
         from urllib3.util.retry import Retry
 
         ad_account_id = f"act_{account_id}"
         preview_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/generatepreviews"
 
-        # POST 데이터 구성
-        post_data = {
+        # GET 파라미터 구성 (JSON 압축으로 URL 길이 최소화)
+        api_params = {
             "access_token": access_token,
-            "creative": json.dumps(creative_spec),
+            "creative": json.dumps(creative_spec, separators=(',', ':')),  # 공백 제거
             "ad_format": ad_format
         }
 
-        print(f"[PREVIEW] API 호출 (POST): {preview_url}")
+        print(f"[PREVIEW] API 호출 (GET): {preview_url}")
         print(f"[PREVIEW] ad_format: {ad_format}")
 
         # 재시도 전략 설정 (최대 3회, backoff factor 적용)
@@ -1845,13 +1845,13 @@ def generate_ad_preview():
             total=3,
             backoff_factor=1,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["POST"]
+            allowed_methods=["GET"]
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session = requests.Session()
         session.mount("https://", adapter)
 
-        response = session.post(preview_url, data=post_data, timeout=30)
+        response = session.get(preview_url, params=api_params, timeout=30)
         result = response.json()
 
         print(f"[PREVIEW] API 응답 상태: {response.status_code}")

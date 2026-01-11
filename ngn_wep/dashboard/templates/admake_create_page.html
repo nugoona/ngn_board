@@ -102,22 +102,42 @@
     }
 
     .admake-progress-step {
-      font-family: 'Inter Tight', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
       padding: 8px 16px;
       border-radius: 6px;
       transition: all 0.2s;
     }
 
+    .admake-progress-step .step-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .admake-progress-step .step-label {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
     .admake-progress-step.active {
       background: var(--text-primary);
+    }
+
+    .admake-progress-step.active .step-number,
+    .admake-progress-step.active .step-label {
       color: var(--bg-primary);
     }
 
-    .admake-progress-step.completed {
+    .admake-progress-step.completed .step-number,
+    .admake-progress-step.completed .step-label {
       color: var(--accent-emerald);
     }
 
@@ -578,15 +598,30 @@
 <!-- Progress Bar (고정) -->
 <div class="admake-progress-bar">
   <div class="admake-progress-steps">
-    <div class="admake-progress-step active font-inter">STEP 1</div>
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">STEP 1</span>
+      <span class="step-label">Media 업로드</span>
+    </div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step font-inter">STEP 2</div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">STEP 2</span>
+      <span class="step-label">정밀 크롭</span>
+    </div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step font-inter">STEP 3</div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">STEP 3</span>
+      <span class="step-label">AD 생성</span>
+    </div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step font-inter">STEP 4</div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">STEP 4</span>
+      <span class="step-label">전략 SETTING</span>
+    </div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step font-inter">STEP 5</div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">STEP 5</span>
+      <span class="step-label">검토 및 Publish</span>
+    </div>
   </div>
 </div>
 

@@ -1805,17 +1805,17 @@ async function generatePreview() {
       });
       console.log('[DEBUG] ========== PREVIEW DEBUG END ==========');
 
-      // 포맷별 최적 크기 설정 - Meta API 반환 크기가 부족해서 내부 스크롤 발생 문제 해결
+      // 포맷별 최적 크기 설정 - 콘텐츠에 딱 맞게 (여백 최소화)
       const getOptimalSize = () => {
         switch (currentPreviewFormat) {
           case 'INSTAGRAM_REELS':
-            return { width: 360, height: 640 };  // 9:16 비율
+            return { width: 340, height: 600 };  // Reels 콘텐츠에 맞춤
           case 'INSTAGRAM_STANDARD':
-            return { width: 360, height: 640 };  // IG Feed도 충분히 크게
+            return { width: 320, height: 560 };  // IG Feed 콘텐츠에 맞춤
           case 'MOBILE_FEED_STANDARD':
-            return { width: 380, height: 680 };  // FB Feed
+            return { width: 340, height: 520 };  // FB Feed 콘텐츠에 맞춤
           default:
-            return null;  // 기본 Meta 크기 사용
+            return null;
         }
       };
 

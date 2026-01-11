@@ -1,0 +1,22 @@
+# ─────────────────────────────────────────────────────────────
+# GA4 Pipeline - 통합 Job (traffic + viewitem)
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 의존성 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 필요한 파일 복사
+COPY ngn_wep/GA4_API/ga4_traffic_today.py /app/ga4_traffic_today.py
+COPY ngn_wep/GA4_API/ga4_viewitem_today.py /app/ga4_viewitem_today.py
+COPY jobs/pipelines/ga4_pipeline.py /app/ga4_pipeline.py
+
+# 환경변수
+ENV PYTHONUNBUFFERED=1
+
+# 실행 (기본: today)
+ENTRYPOINT ["python", "/app/ga4_pipeline.py"]
+CMD ["today"]

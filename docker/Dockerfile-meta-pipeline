@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────
+# Meta Pipeline - 통합 Job (ngn-meta-ads + ngn-meta-query)
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 의존성 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir python-dotenv
+
+# 필요한 파일 복사
+COPY ngn_wep/meta_api/meta_ads_handler.py /app/meta_api/meta_ads_handler.py
+COPY ngn_wep/meta_api/Merge_Meta_Ads_Summary.py /app/meta_api/Merge_Meta_Ads_Summary.py
+COPY jobs/pipelines/meta_pipeline.py /app/meta_pipeline.py
+
+# __init__.py 생성
+RUN touch /app/meta_api/__init__.py
+
+# 환경변수
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# 실행 (기본: today)
+ENTRYPOINT ["python", "/app/meta_pipeline.py"]
+CMD ["today"]

@@ -10,7 +10,9 @@
       "Bash(curl:*)",
       "Bash(bash -s:*)",
       "Bash(export PATH=\"$HOME/google-cloud-sdk/bin:$PATH\")",
-      "Bash(gcloud:*)"
+      "Bash(gcloud:*)",
+      "Bash(find:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

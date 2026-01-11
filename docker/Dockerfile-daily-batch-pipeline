@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────
+# Daily Batch Pipeline - Yesterday 전체 통합 (8개 Job → 1개)
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 의존성 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir python-dotenv
+
+# Cafe24 파일
+COPY ngn_wep/cafe24_api/orders_handler.py /app/orders_handler.py
+COPY ngn_wep/cafe24_api/daily_cafe24_sales_handler.py /app/daily_cafe24_sales_handler.py
+COPY ngn_wep/cafe24_api/daily_cafe24_items_handler.py /app/daily_cafe24_items_handler.py
+
+# Meta 파일
+COPY ngn_wep/meta_api/meta_ads_handler.py /app/meta_ads_handler.py
+COPY ngn_wep/meta_api/Merge_Meta_Ads_Summary.py /app/Merge_Meta_Ads_Summary.py
+
+# GA4 파일
+COPY ngn_wep/GA4_API/ga4_traffic_today.py /app/ga4_traffic_today.py
+COPY ngn_wep/GA4_API/ga4_viewitem_today.py /app/ga4_viewitem_today.py
+
+# Performance Summary 파일
+COPY ngn_wep/dashboard/services/insert_performance_summary.py /app/insert_performance_summary.py
+
+# 파이프라인 스크립트
+COPY jobs/pipelines/daily_batch_pipeline.py /app/daily_batch_pipeline.py
+
+# 환경변수
+ENV PYTHONUNBUFFERED=1
+
+# 실행
+ENTRYPOINT ["python", "/app/daily_batch_pipeline.py"]

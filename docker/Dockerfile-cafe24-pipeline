@@ -1,0 +1,23 @@
+# ─────────────────────────────────────────────────────────────
+# Cafe24 Pipeline - 통합 Job (orders + sales + items)
+# ─────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 의존성 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 필요한 파일 복사
+COPY ngn_wep/cafe24_api/orders_handler.py /app/orders_handler.py
+COPY ngn_wep/cafe24_api/daily_cafe24_sales_handler.py /app/daily_cafe24_sales_handler.py
+COPY ngn_wep/cafe24_api/daily_cafe24_items_handler.py /app/daily_cafe24_items_handler.py
+COPY jobs/pipelines/cafe24_pipeline.py /app/cafe24_pipeline.py
+
+# 환경변수
+ENV PYTHONUNBUFFERED=1
+
+# 실행 (기본: today)
+ENTRYPOINT ["python", "/app/cafe24_pipeline.py"]
+CMD ["today"]

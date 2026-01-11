@@ -1960,8 +1960,10 @@ function updateUploadButtonState() {
   }
 }
 
-// ✅ 이전 버튼 (Step 1로 돌아가기 - 데이터 유지 및 IndexedDB 복구)
-document.getElementById('backBtn').addEventListener('click', async () => {
+// ✅ 이전 버튼 핸들러 함수
+function handleBackButton() {
+  console.log('[DEBUG] 이전 버튼 클릭됨');
+
   // Step 1 상태를 sessionStorage에 다시 저장 (크롭 상태 포함)
   const step1Data = sessionStorage.getItem('admake_step1_state');
   if (step1Data) {
@@ -1982,7 +1984,7 @@ document.getElementById('backBtn').addEventListener('click', async () => {
     sessionStorage.setItem('admake_step1_state', JSON.stringify(data));
     console.log('[DEBUG] Step 1로 돌아가기 - 상태 저장 완료');
   }
-  
+
   // IndexedDB에 최신 상태 저장 (Step 1 복구용)
   if ('indexedDB' in window && mediaItems.length > 0) {
     try {
@@ -1993,7 +1995,7 @@ document.getElementById('backBtn').addEventListener('click', async () => {
         if (db.objectStoreNames.contains('files')) {
           const transaction = db.transaction(['files'], 'readwrite');
           const store = transaction.objectStore('files');
-          
+
           mediaItems.forEach(item => {
             if (item.file) {
               store.put({
@@ -2007,10 +2009,9 @@ document.getElementById('backBtn').addEventListener('click', async () => {
               });
             }
           });
-          
+
           transaction.oncomplete = () => {
             console.log('[DEBUG] IndexedDB 업데이트 완료 - Step 1 복구 준비');
-            // Blob URL은 revoke하지 않고 Step 1로 이동
             window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
           };
         } else {
@@ -2025,10 +2026,9 @@ document.getElementById('backBtn').addEventListener('click', async () => {
       window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
     }
   } else {
-    // Blob URL은 revoke하지 않고 Step 1로 이동
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
   }
-});
+}
 
 // ✅ 업로드 버튼
 document.getElementById('uploadBtn').addEventListener('click', uploadToMeta);
@@ -2367,21 +2367,30 @@ function setupRatioButtons() {
 // ✅ 초기화
 document.addEventListener('DOMContentLoaded', async () => {
   initCanvas();
-  
+
   // 비율 버튼 이벤트 등록
   setupRatioButtons();
-  
+
+  // ✅ 이전 버튼 이벤트 등록 (DOMContentLoaded 내부에서 확실하게 등록)
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', handleBackButton);
+    console.log('[DEBUG] 이전 버튼 이벤트 등록 완료');
+  } else {
+    console.error('[ERROR] backBtn 요소를 찾을 수 없음');
+  }
+
   // Step 2 초기화 (데이터 복구 강화)
   await initStep2();
-  
+
   // 데이터가 없으면 로드 시도
   if (mediaItems.length === 0) {
     await loadStep1Data();
   }
-  
+
   // 초기 가이드라인 표시
   updateGuideLines();
-  
+
   updateUploadButtonState(); // 초기 버튼 상태 설정
 });
 </script>

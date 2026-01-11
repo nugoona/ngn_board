@@ -692,12 +692,11 @@
     }
 
     .admake-preview-frame {
-      background: var(--bg-card);
+      background: #000; /* 검정 배경 - iframe 여백과 동일하게 */
       border-radius: 12px;
-      overflow: visible; /* 스크롤은 외부 컨테이너에서 처리 */
+      overflow: hidden;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
-      /* iframe 자연 크기에 맞춤 */
       display: inline-block;
     }
 
@@ -707,10 +706,11 @@
       opacity: 0.6;
     }
 
-    /* iframe - Meta가 반환한 자연 크기 그대로 사용 */
+    /* iframe 스타일 */
     .admake-preview-frame iframe {
       border: none;
       display: block;
+      background: #000; /* 검정 배경 */
     }
 
     /* 로딩 오버레이 */

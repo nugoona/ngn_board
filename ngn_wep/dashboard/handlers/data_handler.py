@@ -1551,23 +1551,52 @@ def create_trend_snapshot():
 
 @data_blueprint.route("/get_meta_token", methods=["POST"])
 def get_meta_token():
-    """Meta API 액세스 토큰 반환 (클라이언트에서 직접 API 호출용)"""
+    """Meta API 액세스 토큰 반환 (클라이언트에서 직접 API 호출용)
+
+    토큰 조회 우선순위:
+    1. 환경 변수 META_SYSTEM_USER_TOKEN (마케팅 대행사 마스터 권한)
+    2. 환경 변수 META_LONG_TOKEN (기존 방식)
+    3. 세션에서 meta_token
+    """
     try:
+        # 개발 환경 체크 (FLASK_ENV=development 시 인증 스킵)
+        is_dev = os.getenv("FLASK_ENV") == "development"
+
+        # 1순위: 환경 변수 META_SYSTEM_USER_TOKEN (마케팅 대행사 마스터 권한)
+        access_token = os.getenv("META_SYSTEM_USER_TOKEN")
+        if access_token:
+            print(f"[INFO] META_SYSTEM_USER_TOKEN 환경 변수에서 토큰 발견")
+            print(f"[INFO] 토큰 반환 성공: {access_token[:10]}...")
+            return jsonify({
+                "status": "success",
+                "access_token": access_token
+            }), 200
+
+        # 2순위: 기존 load_access_token (META_LONG_TOKEN)
         from ..services.meta_demo_service import load_access_token
-        
-        # 액세스 토큰 가져오기
         access_token = load_access_token()
-        if not access_token:
-            # 세션에서 토큰 확인
-            access_token = session.get("meta_token")
-            if not access_token:
-                return jsonify({"status": "error", "message": "Meta 액세스 토큰이 없습니다"}), 401
-        
-        return jsonify({
-            "status": "success",
-            "access_token": access_token
-        }), 200
-        
+        if access_token:
+            print(f"[INFO] META_LONG_TOKEN 환경 변수에서 토큰 발견")
+            print(f"[INFO] 토큰 반환 성공: {access_token[:10]}...")
+            return jsonify({
+                "status": "success",
+                "access_token": access_token
+            }), 200
+
+        # 3순위: 세션에서 토큰 확인
+        access_token = session.get("meta_token")
+        if access_token:
+            print(f"[INFO] 세션에서 토큰 발견")
+            print(f"[INFO] 토큰 반환 성공: {access_token[:10]}...")
+            return jsonify({
+                "status": "success",
+                "access_token": access_token
+            }), 200
+
+        # 토큰 없음
+        print("[ERROR] Meta 액세스 토큰을 찾을 수 없습니다 (모든 소스 확인 완료)")
+        return jsonify({"status": "error", "message": "Meta 액세스 토큰이 없습니다"}), 401
+
     except Exception as e:
         import traceback
         traceback.print_exc()

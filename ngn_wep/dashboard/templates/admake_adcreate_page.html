@@ -681,7 +681,7 @@
     .admake-preview-frame {
       background: var(--bg-card);
       border-radius: 12px;
-      overflow: visible; /* iframe 콘텐츠가 잘리지 않도록 */
+      overflow: hidden; /* 스크롤바 숨김 */
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
       display: flex;
@@ -691,10 +691,12 @@
     /* 포맷별 프레임 사이즈 */
     .admake-preview-frame.format-feed {
       width: auto;
+      max-height: 600px; /* 세로 제한으로 스크롤바 방지 */
     }
 
     .admake-preview-frame.format-reels {
       width: auto;
+      max-height: 700px; /* 릴스 세로 제한 */
     }
 
     /* 로딩 중 블러 효과 */
@@ -703,10 +705,19 @@
       opacity: 0.6;
     }
 
-    /* 프레임 내부 iframe 스타일 - 자연스러운 크기 */
+    /* 프레임 내부 iframe 스타일 */
     .admake-preview-frame iframe {
       border: none;
       display: block;
+      /* iframe 내부 스크롤바 숨김 시도 */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .admake-preview-frame iframe::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     /* 로딩 오버레이 */
@@ -1771,19 +1782,20 @@ async function generatePreview() {
       const loader = previewContent.querySelector('.admake-preview-loader');
       const iframe = frame.querySelector('iframe');
 
-      // iframe 스타일 조정 함수 - Meta 콘텐츠 자연스럽게 표시
+      // iframe 스타일 조정 함수 - 스크롤바 숨김
       const forceIframeStyles = (iframeEl) => {
         if (!iframeEl) return;
 
-        // iframe 기본 스타일만 적용 (크기는 Meta 콘텐츠에 맡김)
+        // iframe 스타일 적용 - 스크롤바 숨김
         iframeEl.style.cssText = `
           border: none !important;
           display: block !important;
+          overflow: hidden !important;
         `;
-        iframeEl.removeAttribute('scrolling'); // 스크롤 허용
+        iframeEl.setAttribute('scrolling', 'no'); // 스크롤바 숨김
         iframeEl.setAttribute('frameborder', '0');
 
-        console.log('[STEP3] iframe 스타일 적용 완료 (자연 크기)');
+        console.log('[STEP3] iframe 스타일 적용 완료 (스크롤바 숨김)');
       };
 
       // 로딩 해제 함수

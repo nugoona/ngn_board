@@ -1729,11 +1729,11 @@ def generate_ad_preview():
             }
         }
 
-        # Instagram 포맷인 경우 instagram_actor_id 추가
+        # Instagram 포맷인 경우 instagram_user_id 추가 (Meta API v24.0 규격)
         is_instagram_format = ad_format in ['INSTAGRAM_STANDARD', 'INSTAGRAM_REELS', 'INSTAGRAM_STORY']
         if is_instagram_format and instagram_user_id:
-            creative_spec["object_story_spec"]["instagram_actor_id"] = instagram_user_id
-            print(f"[PREVIEW] Instagram 포맷 - instagram_actor_id 추가: {instagram_user_id}")
+            creative_spec["object_story_spec"]["instagram_user_id"] = instagram_user_id
+            print(f"[PREVIEW] Instagram 포맷 - instagram_user_id 추가: {instagram_user_id}")
 
         if is_carousel and len(cards) > 1:
             # 슬라이드 (Carousel) 광고

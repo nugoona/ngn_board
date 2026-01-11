@@ -1805,28 +1805,37 @@ async function generatePreview() {
       });
       console.log('[DEBUG] ========== PREVIEW DEBUG END ==========');
 
+      // Reels 포맷 감지 - Meta API가 작은 크기를 반환하므로 강제 확대 필요
+      const isReelsFormat = currentPreviewFormat === 'INSTAGRAM_REELS';
+
+      // iframe 크기 조정 함수
+      const adjustIframeSize = () => {
+        if (!iframe) return;
+
+        if (isReelsFormat) {
+          // Reels: Meta가 274x213 같은 작은 크기를 반환하므로 9:16 비율로 강제 확대
+          iframe.setAttribute('width', '360');
+          iframe.setAttribute('height', '640');
+          iframe.style.width = '360px';
+          iframe.style.height = '640px';
+          console.log('[DEBUG] Reels iframe 크기 강제 조정: 360x640');
+        }
+        iframe.style.border = 'none';
+        iframe.setAttribute('frameborder', '0');
+      };
+
       // 로딩 해제 함수
       const finishLoading = () => {
         frame.classList.remove('loading');
         loader?.classList.remove('active');
-        // iframe border만 제거
-        if (iframe) {
-          iframe.style.border = 'none';
-          iframe.setAttribute('frameborder', '0');
+        adjustIframeSize();
 
-          // 디버그: 로딩 완료 후 크기 재확인
+        // 디버그: 로딩 완료 후 크기 재확인
+        if (iframe) {
           console.log('[DEBUG] 로딩완료 후 iframe 크기:', {
             offsetWidth: iframe.offsetWidth,
             offsetHeight: iframe.offsetHeight,
-            clientWidth: iframe.clientWidth,
-            clientHeight: iframe.clientHeight,
-            scrollWidth: iframe.scrollWidth,
-            scrollHeight: iframe.scrollHeight
-          });
-          console.log('[DEBUG] 로딩완료 후 frame 크기:', {
-            offsetWidth: frame.offsetWidth,
-            offsetHeight: frame.offsetHeight,
-            scrollHeight: frame.scrollHeight
+            getAttribute: { width: iframe.getAttribute('width'), height: iframe.getAttribute('height') }
           });
         }
         console.log('[STEP3] 미리보기 렌더링 완료');

@@ -1717,27 +1717,32 @@ async function selectMedia(index) {
       }
     };
     
-    // 동영상 로드 완료 시 Canvas에 그리기
-    videoElement.onloadedmetadata = () => {
+    // ===== [Final Fix] 동영상 재생 준비 완료 시 Canvas에 그리기 =====
+    // onloadedmetadata 대신 oncanplay 사용 (실제 프레임 그리기 가능 시점)
+    videoElement.oncanplay = () => {
       currentImage = videoElement; // videoElement를 currentImage로 사용
 
-      // ===== [수정] 컨테이너 준비 대기 + 즉시 강제 적용 =====
+      // 동영상 재생 시작 (Canvas에 프레임을 그리려면 재생 중이어야 함)
+      videoElement.play().catch(e => {
+        console.warn('[VIDEO] 자동 재생 실패 (사용자 상호작용 필요할 수 있음):', e);
+      });
+
+      // 컨테이너 준비 대기 + 즉시 강제 적용
       const applyVideoInitialFit = () => {
         // 컨테이너 크기 업데이트
         const containerReady = updateCanvasSize();
 
         if (!containerReady) {
-          // 컨테이너가 아직 준비되지 않았으면 다음 프레임에서 재시도
           console.warn('[WAIT VIDEO] 컨테이너 준비 대기 중...');
           requestAnimationFrame(applyVideoInitialFit);
           return;
         }
 
         // 동영상 원본 크기
-        const videoWidth = videoElement.videoWidth || videoElement.width || 1920;
-        const videoHeight = videoElement.videoHeight || videoElement.height || 1080;
+        const videoWidth = videoElement.videoWidth || 1920;
+        const videoHeight = videoElement.videoHeight || 1080;
 
-        console.log(`[VIDEO LOADED] 원본 크기: ${videoWidth}x${videoHeight}, 컨테이너: ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}`);
+        console.log(`[VIDEO CANPLAY] 원본 크기: ${videoWidth}x${videoHeight}, 컨테이너: ${containerWidth.toFixed(0)}x${containerHeight.toFixed(0)}`);
 
         if (videoWidth > 0 && videoHeight > 0 && containerWidth > 0 && containerHeight > 0) {
           // 1. 9:16 비율로 강제 설정 (초기 로딩 시)
@@ -1761,7 +1766,7 @@ async function selectMedia(index) {
 
           // 3. 초기 상태이거나 저장된 상태가 없으면 minZoom으로 강제 적용 및 좌표 리셋
           if (!item.cropState || !item.cropState.zoom || item.cropState.zoom < minZoom) {
-            currentZoom = minZoom; // 즉시 적용
+            currentZoom = minZoom;
             console.log(`[AUTO-FIT VIDEO] 초기 zoom을 minZoom(${minZoom.toFixed(6)})으로 즉시 강제 설정`);
 
             // 좌표를 중앙에 꽉 차게 배치
@@ -1778,18 +1783,32 @@ async function selectMedia(index) {
           }
         }
 
-        // 크롭 상태 로드 - 즉시 실행
+        // 크롭 상태 로드 및 슬라이더 업데이트
         loadCropState(item, videoElement);
         updateRatioButtons();
         updateGuideLines();
+
+        // 슬라이더 범위 업데이트
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        if (zoomSlider && minZoom > 0) {
+          const maxZoom = Math.max(minZoom * 3, 1);
+          zoomSlider.min = minZoom;
+          zoomSlider.max = maxZoom;
+          zoomSlider.step = Math.max((maxZoom - minZoom) / 100, 0.0001);
+          zoomSlider.value = currentZoom;
+        }
+        if (zoomValue) zoomValue.textContent = Math.round(currentZoom * 100) + '%';
+
         // 동영상 그리기 - 즉시 실행
+        console.log(`[VIDEO DRAW] 동영상 Canvas 그리기 시작`);
         drawImage();
       };
 
       // 즉시 실행 시도
       applyVideoInitialFit();
     };
-    
+
     // 동영상 로드 시작
     videoElement.load();
   } else {

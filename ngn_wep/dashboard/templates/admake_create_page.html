@@ -807,53 +807,32 @@ function restoreStep1Data() {
           return new Promise((resolve) => {
             const getRequest = store.get(item.id);
             // ===== [수정] async 함수로 변경하여 await 사용 가능 =====
-            getRequest.onsuccess = async () => {
+            getRequest.onsuccess = () => {
               if (getRequest.result && getRequest.result.file) {
-                // File 객체가 있으면 새로운 Blob URL 생성
+                // ===== [Final Fix] HEAD 요청 완전 삭제, 무조건 새 Blob URL 생성 =====
                 const file = getRequest.result.file;
+                // 무조건 새로운 Blob URL 생성 (검증 없이)
                 const previewUrl = URL.createObjectURL(file);
-                
-                // ===== [핵심] 동영상 썸네일 유실 문제 해결 =====
-                // Step 1으로 돌아올 때 동영상의 경우 IndexedDB에서 File 객체를 다시 읽어와서 Blob URL 재발급
-                let finalPreviewUrl = previewUrl;
-                let finalFile = file;
-                
-                // 동영상인 경우 추가 검증 및 복구
-                if (item.mediaType === 'video' || item.type === 'video' || file.type.startsWith('video/')) {
-                  try {
-                    // 기존 previewUrl이 유효한지 확인
-                    const response = await fetch(previewUrl, { method: 'HEAD' });
-                    if (!response.ok) {
-                      throw new Error('Blob URL 유효하지 않음');
-                    }
-                  } catch (e) {
-                    console.warn(`[VIDEO RECOVER] Blob URL 유효하지 않음, 재생성: ${item.id}`, e);
-                    // 기존 URL 해제
-                    if (previewUrl && previewUrl.startsWith('blob:')) {
-                      URL.revokeObjectURL(previewUrl);
-                    }
-                    // 새로운 Blob URL 생성
-                    finalPreviewUrl = URL.createObjectURL(file);
-                    console.log(`[VIDEO RECOVER] Blob URL 재생성 성공: ${item.id}`);
-                  }
-                }
-                
+                const mediaType = item.mediaType || (file.type.startsWith('video/') ? 'video' : 'image');
+
+                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType})`);
+
                 mediaItems.push({
                   id: item.id,
-                  file: finalFile,
-                  previewUrl: finalPreviewUrl,
+                  file: file,
+                  previewUrl: previewUrl,
                   type: item.type,
-                  mediaType: item.mediaType || (item.type === 'video' || finalFile.type.startsWith('video/') ? 'video' : 'image')
+                  mediaType: mediaType
                 });
-                
+
                 renderThumbnail({
                   id: item.id,
-                  file: finalFile,
-                  previewUrl: finalPreviewUrl,
+                  file: file,
+                  previewUrl: previewUrl,
                   type: item.type
                 });
-                
-                console.log(`[DEBUG] 미디어 ${item.id} 복원 완료`);
+
+                console.log(`[RESTORE] 미디어 ${item.id} 복원 완료`);
               }
               resolve();
             };

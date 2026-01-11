@@ -116,15 +116,15 @@
 
     .admake-progress-step .step-number {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text-muted);
-      letter-spacing: 0.08em;
+      letter-spacing: 0.02em;
     }
 
     .admake-progress-step .step-label {
       font-family: 'Pretendard', sans-serif;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--text-muted);
       white-space: nowrap;
@@ -205,17 +205,15 @@
     .admake-create-wrapper {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 32px 40px;
+      padding: 40px;
       padding-bottom: 100px;
-      min-height: calc(100vh - 160px);
-      overflow-y: auto;
     }
 
     .admake-create-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 40px;
-      align-items: stretch;
+      align-items: start;
     }
 
     /* ===== 왼쪽 영역 ===== */
@@ -648,91 +646,7 @@
       box-shadow: none;
     }
 
-    /* ===== 반응형 ===== */
-    @media (max-width: 1024px) {
-      .admake-create-layout {
-        grid-template-columns: 1fr;
-        gap: 32px;
-      }
-
-      .admake-left-panel {
-        padding-right: 0;
-        border-right: none;
-        padding-bottom: 24px;
-        border-bottom: 1px solid rgba(39, 39, 42, 0.6);
-      }
-
-      .admake-right-panel {
-        padding-left: 0;
-      }
-
-      .admake-thumbnails-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .admake-progress-step .step-label {
-        font-size: 9px;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .admake-create-wrapper {
-        padding: 24px;
-        padding-bottom: 100px;
-      }
-
-      .admake-progress-bar {
-        padding: 14px 20px;
-      }
-
-      .admake-progress-step {
-        padding: 8px 12px;
-      }
-
-      .admake-progress-step .step-number {
-        font-size: 10px;
-      }
-
-      .admake-progress-step .step-label {
-        display: none;
-      }
-
-      .admake-progress-connector::before,
-      .admake-progress-connector::after {
-        width: 8px;
-      }
-
-      .admake-thumbnails-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .admake-url-input-wrapper {
-        flex-direction: column;
-      }
-
-      .admake-fetch-btn {
-        width: 100%;
-      }
-
-      .admake-action-bar {
-        padding: 14px 20px;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .admake-action-left {
-        display: none;
-      }
-
-      .admake-action-buttons {
-        width: 100%;
-      }
-
-      .admake-btn {
-        flex: 1;
-        padding: 12px 16px;
-      }
-    }
+    /* 모바일 미지원 - 데스크탑 전용 */
   </style>
 </head>
 <body>
@@ -847,7 +761,7 @@
               placeholder="https://example.com/product"
               autocomplete="off"
             >
-            <button type="button" class="admake-fetch-btn font-inter" id="fetchBtn" disabled>FETCH</button>
+            <button type="button" class="admake-fetch-btn" id="fetchBtn" disabled>가져오기</button>
           </div>
           <div class="admake-url-hint">상품 상세페이지 URL을 입력하면 이미지를 자동으로 가져옵니다 (Coming Soon)</div>
         </div>

@@ -1670,9 +1670,10 @@ def generate_ad_preview():
         instagram_user_id = None
 
         if mapping_row:
-            page_id = mapping_row.page_id
-            instagram_user_id = mapping_row.instagram_user_id
-            print(f"[PREVIEW] BigQuery에서 조회 - page_id: {page_id}, instagram_user_id: {instagram_user_id}")
+            # 값 trim 및 유효성 검사
+            page_id = str(mapping_row.page_id).strip() if mapping_row.page_id else None
+            instagram_user_id = str(mapping_row.instagram_user_id).strip() if mapping_row.instagram_user_id else None
+            print(f"[PREVIEW] BigQuery에서 조회 - page_id: '{page_id}', instagram_user_id: '{instagram_user_id}'")
         else:
             print(f"[PREVIEW] BigQuery에 account_id={account_id} 매핑 없음, Meta API로 폴백")
             # 폴백: Meta API에서 Page ID 조회

@@ -798,6 +798,7 @@ let mediaItems = []; // [{ id, name, type, mediaType, previewUrl, cropState: { x
 let selectedMediaIndex = -1;
 let uploadedResults = []; // 업로드 결과 { id, hash/video_id, type }
 let videoAnimationFrame = null; // 동영상 애니메이션 프레임 ID
+let isMediaLoading = false; // 미디어 로딩 중 플래그 (업로드 버튼 차단용)
 
 // ✅ Canvas 관련 변수
 let canvas, ctx;
@@ -895,12 +896,16 @@ async function loadStep1Data() {
         const previewUrl = URL.createObjectURL(file);
         console.log(`[LOAD] ${item.id}: 새 Blob URL 생성 완료`);
 
+        // ===== [Fix] mediaType 폴백: 없거나 잘못된 경우 file.type으로 판단 =====
+        const resolvedMediaType = item.mediaType || (file.type.startsWith('video/') ? 'video' : 'image');
+        console.log(`[LOAD] ${item.id}: mediaType=${item.mediaType} → resolved=${resolvedMediaType} (file.type=${file.type})`);
+
         loadedItems.push({
           id: item.id,
           name: item.name,
           size: item.size,
           type: item.type,
-          mediaType: item.mediaType,
+          mediaType: resolvedMediaType,
           previewUrl: previewUrl,
           file: file, // File 객체 저장 (필수!)
           cropState: item.cropState || null, // null이면 초기 자동 맞춤 적용
@@ -1650,6 +1655,7 @@ function confirmMedia() {
 // ✅ 미디어 선택 (미디어 변경 시 초기화 로직 포함)
 async function selectMedia(index) {
   selectedMediaIndex = index;
+  isMediaLoading = true; // 미디어 로딩 시작
   const item = mediaItems[index];
   
   // ===== [핵심] 미디어 변경 시 비율 초기화 =====
@@ -1803,6 +1809,8 @@ async function selectMedia(index) {
         // 동영상 그리기 - 즉시 실행
         console.log(`[VIDEO DRAW] 동영상 Canvas 그리기 시작`);
         drawImage();
+        isMediaLoading = false; // 동영상 로딩 완료
+        console.log('[VIDEO] 미디어 로딩 완료');
       };
 
       // 즉시 실행 시도
@@ -1812,6 +1820,15 @@ async function selectMedia(index) {
     // 동영상 로드 시작
     videoElement.load();
   } else {
+    // ===== [안전장치] 타입 재검증 - file.type으로 video 여부 확인 =====
+    const isActuallyVideo = item.file && item.file.type.startsWith('video/');
+    if (isActuallyVideo) {
+      console.warn(`[TYPE MISMATCH] mediaType=${item.mediaType}이지만 file.type=${item.file.type}. 동영상 분기로 강제 이동.`);
+      item.mediaType = 'video';
+      selectMedia(index); // 재호출하여 올바른 분기로 진입
+      return;
+    }
+
     // 이미지는 크롭 가능
     videoNotice.style.display = 'none';
     cropControls.style.display = 'block';
@@ -1911,6 +1928,8 @@ async function selectMedia(index) {
         updateGuideLines();
         // 이미지 그리기 - 즉시 실행
         drawImage();
+        isMediaLoading = false; // 이미지 로딩 완료
+        console.log('[IMAGE] 미디어 로딩 완료');
       };
 
       // 즉시 실행 시도
@@ -1918,6 +1937,15 @@ async function selectMedia(index) {
     };
     // 이미지 로드 실패 시 file 객체로 즉시 재생성
     img.onerror = () => {
+      // ===== [Fix] 동영상인데 이미지 분기로 잘못 들어온 경우 감지 - 무한 루프 방지 =====
+      if (item.file && item.file.type.startsWith('video/')) {
+        console.error(`[TYPE ERROR] ${item.id}는 동영상인데 이미지로 처리됨. mediaType=${item.mediaType}, file.type=${item.file.type}`);
+        item.mediaType = 'video';
+        // 무한 루프 방지 - 이미지 재로드 시도하지 않고 selectMedia 재호출
+        selectMedia(selectedMediaIndex);
+        return;
+      }
+
       console.warn(`[IMAGE ERROR] 이미지 로드 실패, 즉시 재생성: ${item.id}`);
       if (item.file) {
         item.previewUrl = URL.createObjectURL(item.file);
@@ -2191,9 +2219,16 @@ function updateUploadProgress(current, total, fileName) {
 
 // ✅ 메타 API 업로드 (크롭된 이미지 사용, 순차 처리 및 프로그레스 바)
 async function uploadToMeta() {
+  // ===== [Fix] 미디어 로딩 중이면 업로드 차단 =====
+  if (isMediaLoading) {
+    alert('미디어 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    console.warn('[UPLOAD] 미디어 로딩 중 - 업로드 차단됨');
+    return;
+  }
+
   const uploadBtn = document.getElementById('uploadBtn');
   const loadingOverlay = document.getElementById('loadingOverlay');
-  
+
   uploadBtn.disabled = true;
   loadingOverlay.classList.add('active');
 
@@ -2217,7 +2252,24 @@ async function uploadToMeta() {
     uploadedResults = [];
     const errors = [];
     const totalCount = mediaItems.length;
-    
+
+    // ===== [Fix] 업로드 전 모든 미디어의 mediaType 검증 및 previewUrl 갱신 =====
+    for (const item of mediaItems) {
+      if (item.file) {
+        const expectedType = item.file.type.startsWith('video/') ? 'video' : 'image';
+        if (item.mediaType !== expectedType) {
+          console.warn(`[UPLOAD FIX] ${item.id} 타입 수정: ${item.mediaType} → ${expectedType}`);
+          item.mediaType = expectedType;
+        }
+        // previewUrl 갱신 (blob: URL은 페이지 이동 시 무효화될 수 있음)
+        if (item.previewUrl) {
+          try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
+        }
+        item.previewUrl = URL.createObjectURL(item.file);
+        console.log(`[UPLOAD] ${item.id}: previewUrl 갱신 완료, mediaType=${item.mediaType}`);
+      }
+    }
+
     // 각 미디어 파일을 순차적으로 Meta API로 업로드
     for (let i = 0; i < mediaItems.length; i++) {
       const item = mediaItems[i];

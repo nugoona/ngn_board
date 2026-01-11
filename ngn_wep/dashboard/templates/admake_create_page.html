@@ -3,157 +3,354 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>광고 만들기 - ADMAKE</title>
+  <title>STEP 1 - ADMAKE</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts: Inter Tight (영문/숫자) + Pretendard (한글) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
   <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0d0d0d;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1a1;
+      --text-muted: #525252;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
-      background: #f9fafb;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
     }
 
-    /* ✅ Progress Bar 스타일 */
+    .font-inter {
+      font-family: 'Inter Tight', sans-serif;
+    }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-subtle) !important;
+    }
+
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.1em !important;
+    }
+
+    .hamburger-icon div {
+      background: var(--text-primary) !important;
+    }
+
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+
+    .hamburger-dropdown a {
+      color: var(--text-secondary) !important;
+    }
+
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar (고정) ===== */
     .admake-progress-bar {
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 24px 40px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 40px;
     }
 
     .admake-progress-steps {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 16px;
-      max-width: 1200px;
+      gap: 8px;
+      max-width: 800px;
       margin: 0 auto;
     }
 
     .admake-progress-step {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
       font-weight: 600;
-      color: #6b7280;
-      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
 
     .admake-progress-step.active {
-      color: #111827;
+      background: var(--text-primary);
+      color: var(--bg-primary);
     }
 
     .admake-progress-step.completed {
-      color: #059669;
+      color: var(--accent-emerald);
     }
 
     .admake-progress-connector {
-      width: 40px;
-      height: 2px;
-      background: #e5e7eb;
-      margin: 0 8px;
+      width: 24px;
+      height: 1px;
+      background: var(--border-subtle);
     }
 
     .admake-progress-connector.completed {
-      background: #059669;
+      background: var(--accent-emerald);
     }
 
-    /* ✅ 메인 컨텐츠 영역 */
+    /* ===== 메인 레이아웃 ===== */
     .admake-create-wrapper {
       max-width: 1400px;
       margin: 0 auto;
       padding: 40px;
+      padding-bottom: 120px;
     }
 
     .admake-create-layout {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 32px;
-      margin-top: 32px;
+      min-height: calc(100vh - 280px);
     }
 
-    .admake-create-left {
-      flex: 6;
-      min-width: 0;
+    /* ===== 왼쪽 영역 ===== */
+    .admake-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
-    .admake-create-right {
-      flex: 4;
-      min-width: 0;
+    /* ===== 섹션 헤더 ===== */
+    .admake-section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
-    /* ✅ 업로드 영역 스타일 */
+    .admake-section-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .admake-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    /* ===== 업로드 영역 ===== */
+    .admake-upload-section {
+      flex: 1;
+    }
+
     .admake-upload-area {
-      background: #ffffff;
-      border: 2px dashed #d1d5db;
-      border-radius: 1rem;
-      padding: 64px 32px;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-hover);
+      border-radius: 12px;
+      padding: 48px 32px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
-      position: relative;
-      z-index: 1;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
     .admake-upload-area:hover {
-      border-color: #111827;
-      background: #f9fafb;
-      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.05);
+      border-color: var(--border-focus);
+      background: var(--bg-card-hover);
     }
 
     .admake-upload-area.dragover {
-      border-color: #111827;
-      background: #f3f4f6;
-      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.05);
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.05);
     }
 
     .admake-upload-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      color: #9ca3af;
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .admake-upload-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--text-secondary);
+      stroke-width: 1.5;
+      fill: none;
     }
 
     .admake-upload-text {
-      font-size: 16px;
-      font-weight: 600;
-      color: #111827;
-      letter-spacing: 0.05em;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
       margin-bottom: 8px;
     }
 
     .admake-upload-hint {
-      font-size: 14px;
-      color: #6b7280;
-      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
 
     .admake-file-input {
       display: none;
     }
 
-    /* ✅ 썸네일 그리드 스타일 */
+    /* ===== URL 입력 영역 ===== */
+    .admake-url-section {
+      flex-shrink: 0;
+    }
+
+    .admake-url-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .admake-url-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-family: 'Inter Tight', sans-serif;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .admake-url-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .admake-url-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      background: var(--bg-secondary);
+    }
+
+    .admake-url-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* ===== 오른쪽 영역 (썸네일) ===== */
+    .admake-right-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .admake-thumbnails-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 24px;
+      min-height: 400px;
+    }
+
+    .admake-thumbnails-empty {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      min-height: 300px;
+    }
+
+    .admake-thumbnails-empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .admake-thumbnails-empty-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke: var(--text-muted);
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .admake-thumbnails-empty-text {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
     .admake-thumbnails-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-top: 32px;
+      gap: 12px;
     }
 
     .admake-thumbnail-item {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 0.75rem;
+      border-radius: 8px;
       overflow: hidden;
-      background: #f3f4f6;
-      border: 1px solid #e5e7eb;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.03);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
     }
 
     .admake-thumbnail-image,
@@ -169,188 +366,182 @@
 
     .admake-thumbnail-delete {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 28px;
-      height: 28px;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
       background: rgba(0, 0, 0, 0.7);
       color: #ffffff;
       border: none;
-      border-radius: 50%;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      font-weight: 700;
-      transition: all 0.2s ease;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      opacity: 0;
+    }
+
+    .admake-thumbnail-item:hover .admake-thumbnail-delete {
+      opacity: 1;
     }
 
     .admake-thumbnail-delete:hover {
-      background: rgba(220, 38, 38, 0.9);
-      transform: scale(1.1);
+      background: var(--accent-red);
     }
 
-    /* ✅ 랜딩 설정 영역 스타일 */
-    .admake-settings-card {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 1rem;
-      padding: 32px;
-      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
+    .admake-lowres-badge {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      pointer-events: none;
     }
 
-    .admake-settings-label {
-      font-size: 14px;
-      font-weight: 700;
-      color: #111827;
-      letter-spacing: 0.1em;
-      margin-bottom: 12px;
-      display: block;
+    .admake-thumbnails-count {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
     }
 
-    .admake-settings-input {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
-      background: #ffffff;
-      color: #111827;
-      transition: all 0.2s ease;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.02);
-      letter-spacing: 0.02em;
+    .admake-thumbnails-count-text {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      color: var(--text-muted);
     }
 
-    .admake-settings-input:focus {
-      outline: none;
-      border-color: #111827;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.05);
+    .admake-thumbnails-count-text span {
+      color: var(--text-primary);
+      font-weight: 600;
     }
 
-    /* ✅ 하단 버튼 영역 */
+    /* ===== 하단 액션 바 ===== */
     .admake-action-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: #ffffff;
-      border-top: 1px solid #e5e7eb;
-      padding: 20px 40px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      padding: 16px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 1000;
     }
 
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
     .admake-action-buttons {
       display: flex;
-      gap: 16px;
-      margin-left: auto;
+      gap: 12px;
     }
 
     .admake-btn {
-      padding: 14px 32px;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
+      font-family: 'Inter Tight', sans-serif;
+      padding: 12px 28px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
       border: none;
-      border-radius: 0.5rem;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s;
       text-transform: uppercase;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
     }
 
     .admake-btn-secondary {
-      background: #f3f4f6;
-      color: #6b7280;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
     }
 
     .admake-btn-secondary:hover {
-      background: #e5e7eb;
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.12);
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
     }
 
     .admake-btn-primary {
-      background: #111827;
-      color: #ffffff;
+      background: var(--text-primary);
+      color: var(--bg-primary);
     }
 
     .admake-btn-primary:hover:not(:disabled) {
-      background: #1f2937;
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.15);
+      background: #e5e5e5;
     }
 
     .admake-btn-primary:disabled {
-      opacity: 0.4;
+      opacity: 0.3;
       cursor: not-allowed;
-      transform: none;
     }
 
-    .admake-btn-primary:active:not(:disabled) {
-      transform: translateY(2px);
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
-    }
-
-    /* ✅ 메인 컨텐츠 하단 여백 (버튼 영역 고려) */
-    .admake-create-wrapper {
-      padding-bottom: 100px;
-    }
-
-    /* ✅ 모바일 반응형 */
+    /* ===== 반응형 ===== */
     @media (max-width: 1024px) {
       .admake-create-layout {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
       .admake-thumbnails-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
       }
     }
 
     @media (max-width: 768px) {
       .admake-create-wrapper {
-        padding: 20px;
+        padding: 24px;
+        padding-bottom: 100px;
       }
 
       .admake-progress-bar {
-        padding: 16px 20px;
+        padding: 12px 24px;
       }
 
-      .admake-progress-steps {
-        flex-wrap: wrap;
-        gap: 8px;
+      .admake-progress-step {
+        font-size: 11px;
+        padding: 6px 12px;
       }
 
       .admake-progress-connector {
-        display: none;
+        width: 12px;
       }
 
       .admake-thumbnails-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
+        grid-template-columns: repeat(3, 1fr);
       }
 
       .admake-action-bar {
-        padding: 16px 20px;
+        padding: 12px 24px;
         flex-direction: column;
         gap: 12px;
       }
 
+      .admake-action-left {
+        display: none;
+      }
+
       .admake-action-buttons {
         width: 100%;
-        margin-left: 0;
       }
 
       .admake-btn {
         flex: 1;
-        padding: 12px 24px;
+        padding: 12px 20px;
       }
     }
   </style>
@@ -364,10 +555,10 @@
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
-<!-- ✅ 햄버거 메뉴 -->
+<!-- 네비게이션 -->
 <div class="nav-buttons">
   <div class="nav-left">
-    <div id="updatedAtText" class="updated-at-text">광고 만들기</div>
+    <div id="updatedAtText" class="updated-at-text">ADMAKE</div>
   </div>
   <div class="nav-right">
     <div class="hamburger-menu-wrapper">
@@ -375,68 +566,118 @@
         <div></div><div></div><div></div>
       </div>
       <div class="hamburger-dropdown" id="hamburgerDropdown">
-        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
-        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
-        <a href="{{ url_for('trend_selection_page') }}" class="{% if request.path.startswith('/trend') %}active{% endif %}">TREND</a>
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}">TREND</a>
         <a href="{{ url_for('auth.logout') }}">로그아웃</a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ✅ Progress Bar -->
+<!-- Progress Bar (고정) -->
 <div class="admake-progress-bar">
   <div class="admake-progress-steps">
-    <div class="admake-progress-step active">STEP 1</div>
+    <div class="admake-progress-step active font-inter">STEP 1</div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step">STEP 2</div>
+    <div class="admake-progress-step font-inter">STEP 2</div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step">STEP 3</div>
+    <div class="admake-progress-step font-inter">STEP 3</div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step">STEP 4</div>
+    <div class="admake-progress-step font-inter">STEP 4</div>
     <div class="admake-progress-connector"></div>
-    <div class="admake-progress-step">STEP 5</div>
+    <div class="admake-progress-step font-inter">STEP 5</div>
   </div>
 </div>
 
-<!-- ✅ 메인 컨텐츠 -->
+<!-- 메인 컨텐츠 -->
 <div class="admake-create-wrapper">
   <div class="admake-create-layout">
-    <!-- 좌측: 미디어 업로드 영역 -->
-    <div class="admake-create-left">
-      <div class="admake-upload-area" id="uploadArea">
-        <div class="admake-upload-icon">📁</div>
-        <div class="admake-upload-text">이미지 및 동영상을 드래그 앤 드롭하거나 클릭하여 업로드</div>
-        <div class="admake-upload-hint">최대 10개까지 업로드 가능 (이미지: jpg, png, gif / 동영상: mp4, mov 등)</div>
-        <input type="file" id="fileInput" class="admake-file-input" multiple accept="image/*,video/*">
+
+    <!-- 왼쪽: 업로드 + URL -->
+    <div class="admake-left-panel">
+
+      <!-- 업로드 영역 -->
+      <div class="admake-upload-section">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">01</span>
+          <span class="admake-section-title">소재 업로드</span>
+        </div>
+        <div class="admake-upload-area" id="uploadArea">
+          <div class="admake-upload-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="admake-upload-text">클릭하거나 파일을 드래그하세요</div>
+          <div class="admake-upload-hint">
+            이미지 (jpg, png, gif) 또는 동영상 (mp4, mov)<br>
+            최대 10개까지 업로드 가능
+          </div>
+          <input type="file" id="fileInput" class="admake-file-input" multiple accept="image/*,video/*">
+        </div>
       </div>
 
-      <!-- 썸네일 그리드 -->
-      <div class="admake-thumbnails-grid" id="thumbnailsGrid"></div>
+      <!-- URL 입력 영역 -->
+      <div class="admake-url-section">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">02</span>
+          <span class="admake-section-title">랜딩 URL</span>
+        </div>
+        <div class="admake-url-card">
+          <input
+            type="url"
+            id="landingUrl"
+            class="admake-url-input font-inter"
+            placeholder="https://example.com/product"
+            autocomplete="off"
+          >
+          <div class="admake-url-hint">광고 클릭 시 이동할 상세페이지 URL (선택사항)</div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 우측: 랜딩 설정 영역 -->
-    <div class="admake-create-right">
-      <div class="admake-settings-card">
-        <label class="admake-settings-label" for="landingUrl">상세페이지 URL을 입력하세요</label>
-        <input 
-          type="url" 
-          id="landingUrl" 
-          class="admake-settings-input" 
-          placeholder="https://example.com/product?utm_source=..."
-          autocomplete="off"
-        >
+    <!-- 오른쪽: 썸네일 프리뷰 -->
+    <div class="admake-right-panel">
+      <div class="admake-section-header">
+        <span class="admake-section-number font-inter">PREVIEW</span>
+        <span class="admake-section-title">업로드된 소재</span>
+      </div>
+      <div class="admake-thumbnails-card">
+        <!-- 빈 상태 -->
+        <div class="admake-thumbnails-empty" id="thumbnailsEmpty">
+          <div class="admake-thumbnails-empty-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <div class="admake-thumbnails-empty-text">업로드된 소재가 없습니다</div>
+        </div>
+
+        <!-- 썸네일 그리드 -->
+        <div class="admake-thumbnails-grid" id="thumbnailsGrid" style="display: none;"></div>
+
+        <!-- 카운트 -->
+        <div class="admake-thumbnails-count" id="thumbnailsCount" style="display: none;">
+          <span class="admake-thumbnails-count-text font-inter"><span id="mediaCount">0</span> / 10</span>
+        </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- ✅ 하단 액션 바 -->
+<!-- 하단 액션 바 -->
 <div class="admake-action-bar">
-  <div></div>
+  <div class="admake-action-left font-inter">STEP 1 OF 5</div>
   <div class="admake-action-buttons">
-    <button class="admake-btn admake-btn-secondary" id="cancelBtn">취소</button>
-    <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>다음: 크롭 및 가이드</button>
+    <button class="admake-btn admake-btn-secondary" id="cancelBtn">CANCEL</button>
+    <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>NEXT</button>
   </div>
 </div>
 
@@ -445,127 +686,91 @@
 
 <script>
 // ✅ [HD Export] 메타 광고 해상도 상수
-const META_MIN_WIDTH = 600;        // 메타 광고 최소 너비
-const META_RECOMMENDED_WIDTH = 1080; // 권장 너비
+const META_MIN_WIDTH = 600;
+const META_RECOMMENDED_WIDTH = 1080;
 
-// ✅ 상태 관리 - 개선된 데이터 구조
-let mediaItems = []; // { id, file, previewUrl, type }
+// ✅ 상태 관리
+let mediaItems = [];
 let hasUnsavedChanges = false;
 let mediaIdCounter = 0;
-let isNavigatingToNextStep = false; // Step 2로 이동 중인지 플래그
+let isNavigatingToNextStep = false;
 
-// ✅ DOM 요소 가져오기
-let uploadArea, fileInput, thumbnailsGrid, landingUrlInput, nextBtn, cancelBtn;
+// ✅ DOM 요소
+let uploadArea, fileInput, thumbnailsGrid, thumbnailsEmpty, thumbnailsCount, mediaCountEl, landingUrlInput, nextBtn, cancelBtn;
 
-// ✅ DOM 로드 후 초기화
+// ✅ DOM 초기화
 function initDOMElements() {
   uploadArea = document.getElementById('uploadArea');
   fileInput = document.getElementById('fileInput');
   thumbnailsGrid = document.getElementById('thumbnailsGrid');
+  thumbnailsEmpty = document.getElementById('thumbnailsEmpty');
+  thumbnailsCount = document.getElementById('thumbnailsCount');
+  mediaCountEl = document.getElementById('mediaCount');
   landingUrlInput = document.getElementById('landingUrl');
   nextBtn = document.getElementById('nextBtn');
   cancelBtn = document.getElementById('cancelBtn');
-  
-  if (!uploadArea || !fileInput || !thumbnailsGrid || !landingUrlInput || !nextBtn || !cancelBtn) {
-    console.error('[ERROR] 필수 DOM 요소를 찾을 수 없습니다.');
-    return false;
-  }
-  
-  return true;
+
+  return !!(uploadArea && fileInput && thumbnailsGrid && landingUrlInput && nextBtn && cancelBtn);
 }
 
-// ✅ 이벤트 리스너 등록
+// ✅ 이벤트 리스너
 function setupEventListeners() {
-  // 업로드 영역 클릭
-  uploadArea.addEventListener('click', () => {
-    fileInput.click();
-  });
+  uploadArea.addEventListener('click', () => fileInput.click());
 
-  // 파일 선택
   fileInput.addEventListener('change', (e) => {
     handleFiles(Array.from(e.target.files));
-    fileInput.value = ''; // 같은 파일 재선택 가능하도록 초기화
+    fileInput.value = '';
   });
 
-  // 드래그 앤 드롭 - 업로드 영역
+  // 드래그 앤 드롭
   uploadArea.addEventListener('dragenter', (e) => {
     e.preventDefault();
-    e.stopPropagation();
     uploadArea.classList.add('dragover');
   });
 
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
-    e.stopPropagation();
     uploadArea.classList.add('dragover');
   });
 
   uploadArea.addEventListener('dragleave', (e) => {
     e.preventDefault();
-    e.stopPropagation();
     uploadArea.classList.remove('dragover');
   });
 
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    e.stopPropagation();
     uploadArea.classList.remove('dragover');
-    
-    const files = Array.from(e.dataTransfer.files).filter(file => 
+    const files = Array.from(e.dataTransfer.files).filter(file =>
       file.type.startsWith('image/') || file.type.startsWith('video/')
     );
-    
-    if (files.length > 0) {
-      handleFiles(files);
-    }
+    if (files.length > 0) handleFiles(files);
   });
 
-  // 전체 페이지 레벨에서 드래그 앤 드롭 기본 동작 방지
-  document.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
+  // 전체 페이지 드롭 방지
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => e.preventDefault());
 
-  document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-  document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // 업로드 영역 밖에 드롭된 경우 무시
-  });
-  
-  // URL 입력 감지 (URL은 선택사항이므로 버튼 상태는 변경하지 않음)
+  // URL 입력
   landingUrlInput.addEventListener('input', () => {
     hasUnsavedChanges = true;
   });
 
-  // 취소 버튼 클릭
+  // 취소 버튼
   cancelBtn.addEventListener('click', () => {
     if (hasUnsavedChanges) {
-      if (confirm('작성 중인 내용이 삭제됩니다. 정말 취소하시겠습니까?')) {
-        // 취소 플래그 설정 (beforeunload에서 URL 정리)
+      if (confirm('작성 중인 내용이 삭제됩니다. 취소하시겠습니까?')) {
         sessionStorage.setItem('admake_cancelling', 'true');
-        // 미디어 URL 해제
         mediaItems.forEach(item => {
-          try {
-            URL.revokeObjectURL(item.previewUrl);
-          } catch (e) {
-            console.warn('URL revoke 실패:', e);
-          }
+          try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
         });
-        // IndexedDB 데이터도 정리
         if ('indexedDB' in window) {
-          const dbName = 'admake_files';
-          const request = indexedDB.open(dbName, 1);
+          const request = indexedDB.open('admake_files', 1);
           request.onsuccess = (event) => {
             const db = event.target.result;
             if (db.objectStoreNames.contains('files')) {
               const transaction = db.transaction(['files'], 'readwrite');
-              const store = transaction.objectStore('files');
-              store.clear();
+              transaction.objectStore('files').clear();
             }
           };
         }
@@ -577,13 +782,12 @@ function setupEventListeners() {
     }
   });
 
-  // 다음 버튼 클릭
+  // 다음 버튼
   nextBtn.addEventListener('click', async () => {
     if (nextBtn.disabled) return;
-    
-    isNavigatingToNextStep = true; // Step 2로 이동 플래그 설정
-    
-    // 상태를 sessionStorage에 저장 (다음 Step에서 사용)
+
+    isNavigatingToNextStep = true;
+
     const stateData = {
       accountId: accountId,
       mediaItems: mediaItems.map(item => ({
@@ -591,34 +795,30 @@ function setupEventListeners() {
         name: item.file.name,
         size: item.file.size,
         type: item.file.type,
-        mediaType: item.type, // 'image' or 'video'
-        previewUrl: item.previewUrl // Blob URL 유지 (revoke하지 않음)
+        mediaType: item.type,
+        previewUrl: item.previewUrl
       })),
-      landingUrl: landingUrlInput.value.trim() || '' // URL은 선택사항
+      landingUrl: landingUrlInput.value.trim() || ''
     };
-    
+
     sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
-    console.log('[DEBUG] Step 1 상태 저장 완료:', stateData);
-    
-    // File 객체들을 IndexedDB에 저장 (다음 Step에서 사용)
+
     try {
-      // IndexedDB가 지원되는 경우에만 사용
       if ('indexedDB' in window) {
-        const dbName = 'admake_files';
-        const request = indexedDB.open(dbName, 1);
-        
+        const request = indexedDB.open('admake_files', 1);
+
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains('files')) {
             db.createObjectStore('files', { keyPath: 'id' });
           }
         };
-        
+
         request.onsuccess = (event) => {
           const db = event.target.result;
           const transaction = db.transaction(['files'], 'readwrite');
           const store = transaction.objectStore('files');
-          
+
           mediaItems.forEach(item => {
             store.put({
               id: item.id,
@@ -628,55 +828,48 @@ function setupEventListeners() {
               mediaType: item.mediaType
             });
           });
-          
+
           transaction.oncomplete = () => {
-            console.log('[DEBUG] IndexedDB 저장 완료');
             hasUnsavedChanges = false;
-            // Blob URL은 revoke하지 않고 Step 2로 이동
             window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
           };
         };
-        
+
         request.onerror = () => {
-          // IndexedDB 실패 시 그냥 진행 (previewUrl만 사용)
-          console.warn('IndexedDB 저장 실패, previewUrl만 사용');
           hasUnsavedChanges = false;
           window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
         };
       } else {
-        // IndexedDB 미지원 시 그냥 진행
         hasUnsavedChanges = false;
         window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
       }
     } catch (e) {
-      console.error('IndexedDB 오류:', e);
       hasUnsavedChanges = false;
       window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
     }
   });
 }
 
-// 파일 처리 함수
+// 파일 처리
 function handleFiles(files) {
   const remainingSlots = 10 - mediaItems.length;
   const filesToAdd = files.slice(0, remainingSlots);
-  
+
   if (files.length > remainingSlots) {
     alert(`최대 10개까지 업로드 가능합니다. ${remainingSlots}개만 추가됩니다.`);
   }
 
   filesToAdd.forEach(file => {
     if (mediaItems.length >= 10) return;
-    
-    // 파일 타입 확인
+
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
-    
+
     if (!isImage && !isVideo) {
       alert(`${file.name}은(는) 지원하지 않는 파일 형식입니다.`);
       return;
     }
-    
+
     const previewUrl = URL.createObjectURL(file);
     const mediaItem = {
       id: `media_${++mediaIdCounter}_${Date.now()}`,
@@ -684,39 +877,30 @@ function handleFiles(files) {
       previewUrl: previewUrl,
       type: isImage ? 'image' : 'video'
     };
-    
+
     mediaItems.push(mediaItem);
     hasUnsavedChanges = true;
-    
     renderThumbnail(mediaItem);
   });
-  
-  updateNextButtonState();
+
+  updateUI();
 }
 
-// 썸네일 렌더링 - 미디어 타입별 조건부 렌더링
+// 썸네일 렌더링
 function renderThumbnail(mediaItem) {
   const thumbnailItem = document.createElement('div');
   thumbnailItem.className = 'admake-thumbnail-item';
   thumbnailItem.setAttribute('data-id', mediaItem.id);
 
-  // 재시도 플래그 (무한 루프 방지)
   let hasRetried = false;
 
-  // 썸네일 복구 함수 (IndexedDB에서 file 가져와서 재생성)
   async function recoverThumbnail(element, isVideo) {
-    if (hasRetried) {
-      console.error(`[THUMBNAIL] 복구 실패 - 이미 재시도함: ${mediaItem.id}`);
-      return;
-    }
+    if (hasRetried) return;
     hasRetried = true;
 
     try {
       let file = mediaItem.file;
-
-      // file이 없으면 IndexedDB에서 가져오기
       if (!file && 'indexedDB' in window) {
-        console.log(`[THUMBNAIL] IndexedDB에서 파일 복구 시도: ${mediaItem.id}`);
         file = await new Promise((resolve, reject) => {
           const request = indexedDB.open('admake_files', 1);
           request.onsuccess = (event) => {
@@ -744,21 +928,13 @@ function renderThumbnail(mediaItem) {
       if (file) {
         const newUrl = URL.createObjectURL(file);
         mediaItem.previewUrl = newUrl;
-        mediaItem.file = file; // file도 저장
-
-        // 요소 src 업데이트
+        mediaItem.file = file;
         element.src = newUrl;
-
-        // mediaItems 배열에서도 업데이트
         const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
         if (itemInArray) {
           itemInArray.previewUrl = newUrl;
           itemInArray.file = file;
         }
-
-        console.log(`[THUMBNAIL] 복구 성공: ${mediaItem.id}`);
-      } else {
-        console.error(`[THUMBNAIL] 복구 실패 - 파일 없음: ${mediaItem.id}`);
       }
     } catch (e) {
       console.error(`[THUMBNAIL] 복구 실패: ${mediaItem.id}`, e);
@@ -766,84 +942,43 @@ function renderThumbnail(mediaItem) {
   }
 
   if (mediaItem.type === 'video') {
-    // 비디오는 동적으로 생성하여 에러 핸들링 추가
     const videoEl = document.createElement('video');
     videoEl.className = 'admake-thumbnail-video';
     videoEl.muted = true;
     videoEl.playsInline = true;
     videoEl.loop = true;
     videoEl.autoplay = true;
-
-    // 비디오 로드 실패 시 복구 시도
-    videoEl.onerror = () => {
-      console.warn(`[THUMBNAIL] 비디오 로드 실패: ${mediaItem.id}`);
-      recoverThumbnail(videoEl, true);
-    };
-
-    // src 설정
+    videoEl.onerror = () => recoverThumbnail(videoEl, true);
     videoEl.src = mediaItem.previewUrl;
     thumbnailItem.appendChild(videoEl);
   } else {
-    // 이미지
     const imgEl = document.createElement('img');
     imgEl.className = 'admake-thumbnail-image';
     imgEl.alt = '업로드된 이미지';
 
-    // ✅ [HD Export] 이미지 로드 성공 시 해상도 체크
     imgEl.onload = () => {
       const width = imgEl.naturalWidth;
       const height = imgEl.naturalHeight;
 
-      // 저해상도 경고 배지 추가
       if (width < META_MIN_WIDTH) {
-        console.warn(`[LOW-RES] ${mediaItem.id}: ${width}x${height} (최소 ${META_MIN_WIDTH}px 필요)`);
-
-        // 기존 경고 배지가 있으면 제거
         const existingBadge = thumbnailItem.querySelector('.admake-lowres-badge');
         if (existingBadge) existingBadge.remove();
 
-        // 저해상도 경고 배지 생성
         const lowResBadge = document.createElement('div');
         lowResBadge.className = 'admake-lowres-badge';
-        lowResBadge.innerHTML = '⚠️ 저화질';
-        lowResBadge.title = `해상도: ${width}x${height} (최소 600px 필요)`;
-        lowResBadge.style.cssText = `
-          position: absolute;
-          bottom: 4px;
-          left: 4px;
-          background: rgba(220, 38, 38, 0.9);
-          color: white;
-          font-size: 10px;
-          font-weight: 600;
-          padding: 2px 6px;
-          border-radius: 4px;
-          pointer-events: none;
-          z-index: 5;
-        `;
-        thumbnailItem.style.position = 'relative';
+        lowResBadge.innerHTML = '저화질';
+        lowResBadge.title = `${width}x${height} (최소 600px 필요)`;
         thumbnailItem.appendChild(lowResBadge);
-      } else if (width < META_RECOMMENDED_WIDTH) {
-        console.log(`[MED-RES] ${mediaItem.id}: ${width}x${height} (권장 ${META_RECOMMENDED_WIDTH}px)`);
-      } else {
-        console.log(`[HIGH-RES] ${mediaItem.id}: ${width}x${height} ✓`);
       }
     };
 
-    // 이미지 로드 실패 시 복구 시도
-    imgEl.onerror = () => {
-      console.warn(`[THUMBNAIL] 이미지 로드 실패: ${mediaItem.id}`);
-      recoverThumbnail(imgEl, false);
-    };
-
-    // src 설정
+    imgEl.onerror = () => recoverThumbnail(imgEl, false);
     imgEl.src = mediaItem.previewUrl;
     thumbnailItem.appendChild(imgEl);
   }
 
-  // 삭제 버튼 추가
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'admake-thumbnail-delete';
-  deleteBtn.setAttribute('data-id', mediaItem.id);
   deleteBtn.textContent = '×';
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -854,19 +989,17 @@ function renderThumbnail(mediaItem) {
   thumbnailsGrid.appendChild(thumbnailItem);
 }
 
-// 썸네일 삭제 (IndexedDB + sessionStorage 동기화)
+// 썸네일 삭제
 async function deleteThumbnail(mediaId) {
   const index = mediaItems.findIndex(item => item.id === mediaId);
   if (index === -1) return;
 
   const mediaItem = mediaItems[index];
 
-  // 1. URL 해제
   if (mediaItem.previewUrl) {
     try { URL.revokeObjectURL(mediaItem.previewUrl); } catch (e) {}
   }
 
-  // 2. IndexedDB에서 물리적 삭제
   if ('indexedDB' in window) {
     try {
       await new Promise((resolve, reject) => {
@@ -876,96 +1009,28 @@ async function deleteThumbnail(mediaId) {
           if (db.objectStoreNames.contains('files')) {
             const transaction = db.transaction(['files'], 'readwrite');
             const store = transaction.objectStore('files');
-            const deleteRequest = store.delete(mediaId);
-            deleteRequest.onsuccess = () => {
-              console.log(`[DELETE] IndexedDB에서 삭제 완료: ${mediaId}`);
-              resolve();
-            };
-            deleteRequest.onerror = () => reject(deleteRequest.error);
-          } else {
-            resolve();
+            store.delete(mediaId);
           }
+          resolve();
         };
-        request.onerror = () => reject(request.error);
+        request.onerror = () => resolve();
       });
-    } catch (e) {
-      console.error('[DELETE] IndexedDB 삭제 실패:', e);
-    }
+    } catch (e) {}
   }
 
-  // 3. 배열에서 제거
   mediaItems.splice(index, 1);
-
-  // 4. sessionStorage 동기화
   syncToSessionStorage();
+  hasUnsavedChanges = mediaItems.length > 0;
 
-  hasUnsavedChanges = mediaItems.length > 0; // 전부 삭제되면 unsaved 아님
-
-  // 5. 그리드 재렌더링
   thumbnailsGrid.innerHTML = '';
-  mediaItems.forEach(item => {
-    renderThumbnail(item);
-  });
-
-  updateNextButtonState();
-  console.log(`[DELETE] 삭제 완료: ${mediaId}, 남은 항목: ${mediaItems.length}`);
+  mediaItems.forEach(item => renderThumbnail(item));
+  updateUI();
 }
 
-// 전체 미디어 삭제 (IndexedDB 완전 초기화)
-async function clearAllMedia() {
-  // 1. 모든 Blob URL 해제
-  mediaItems.forEach(item => {
-    if (item.previewUrl) {
-      try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
-    }
-  });
-
-  // 2. IndexedDB 전체 삭제
-  if ('indexedDB' in window) {
-    try {
-      await new Promise((resolve, reject) => {
-        const request = indexedDB.open('admake_files', 1);
-        request.onsuccess = (event) => {
-          const db = event.target.result;
-          if (db.objectStoreNames.contains('files')) {
-            const transaction = db.transaction(['files'], 'readwrite');
-            const store = transaction.objectStore('files');
-            const clearRequest = store.clear();
-            clearRequest.onsuccess = () => {
-              console.log('[CLEAR] IndexedDB 전체 삭제 완료');
-              resolve();
-            };
-            clearRequest.onerror = () => reject(clearRequest.error);
-          } else {
-            resolve();
-          }
-        };
-        request.onerror = () => reject(request.error);
-      });
-    } catch (e) {
-      console.error('[CLEAR] IndexedDB 삭제 실패:', e);
-    }
-  }
-
-  // 3. 배열 초기화
-  mediaItems = [];
-
-  // 4. sessionStorage 삭제
-  sessionStorage.removeItem('admake_step1_state');
-  console.log('[CLEAR] sessionStorage 삭제 완료');
-
-  // 5. UI 갱신
-  thumbnailsGrid.innerHTML = '';
-  hasUnsavedChanges = false;
-  updateNextButtonState();
-}
-
-// sessionStorage 동기화 함수
+// sessionStorage 동기화
 function syncToSessionStorage() {
   if (mediaItems.length === 0) {
-    // 미디어가 없으면 sessionStorage 삭제
     sessionStorage.removeItem('admake_step1_state');
-    console.log('[SYNC] 미디어 없음 - sessionStorage 삭제');
     return;
   }
 
@@ -976,61 +1041,50 @@ function syncToSessionStorage() {
       name: item.file ? item.file.name : item.name || 'unknown',
       size: item.file ? item.file.size : item.size || 0,
       type: item.file ? item.file.type : item.mimeType || '',
-      mediaType: item.type, // 'image' or 'video'
+      mediaType: item.type,
       previewUrl: item.previewUrl
     })),
     landingUrl: landingUrlInput ? landingUrlInput.value.trim() : ''
   };
   sessionStorage.setItem('admake_step1_state', JSON.stringify(stateData));
-  console.log('[SYNC] sessionStorage 동기화 완료');
 }
 
-// 다음 버튼 상태 업데이트
-function updateNextButtonState() {
+// UI 업데이트
+function updateUI() {
   const hasFiles = mediaItems.length > 0;
-  const hasUrl = landingUrlInput && landingUrlInput.value.trim().length > 0;
-  
-  // 파일만 있으면 활성화 (URL은 선택사항)
-  if (nextBtn) {
-    nextBtn.disabled = !hasFiles;
-    
-    // 디버깅용 콘솔 로그
-    console.log('[DEBUG] 버튼 상태 업데이트:', {
-      hasFiles: hasFiles,
-      hasUrl: hasUrl,
-      disabled: nextBtn.disabled,
-      mediaItemsCount: mediaItems.length
-    });
+
+  if (hasFiles) {
+    thumbnailsEmpty.style.display = 'none';
+    thumbnailsGrid.style.display = 'grid';
+    thumbnailsCount.style.display = 'flex';
+    mediaCountEl.textContent = mediaItems.length;
+  } else {
+    thumbnailsEmpty.style.display = 'flex';
+    thumbnailsGrid.style.display = 'none';
+    thumbnailsCount.style.display = 'none';
   }
+
+  nextBtn.disabled = !hasFiles;
 }
 
-// ✅ Step 1 데이터 복원 (페이지 로드 시) - 좀비 데이터 방지 강화
+// Step 1 데이터 복원
 function restoreStep1Data() {
   const step1Data = sessionStorage.getItem('admake_step1_state');
-  if (!step1Data) {
-    console.log('[DEBUG] 복원할 Step 1 데이터 없음');
-    return;
-  }
+  if (!step1Data) return;
 
   try {
     const data = JSON.parse(step1Data);
-
-    // mediaItems가 비어있거나 없으면 sessionStorage도 정리
     if (!data.mediaItems || data.mediaItems.length === 0) {
-      console.log('[DEBUG] sessionStorage에 미디어 없음 - 정리');
       sessionStorage.removeItem('admake_step1_state');
       return;
     }
 
-    // IndexedDB에서 File 객체 복원
     if ('indexedDB' in window) {
-      const dbName = 'admake_files';
-      const request = indexedDB.open(dbName, 1);
+      const request = indexedDB.open('admake_files', 1);
 
       request.onsuccess = (event) => {
         const db = event.target.result;
         if (!db.objectStoreNames.contains('files')) {
-          console.log('[DEBUG] IndexedDB에 파일 저장소 없음 - sessionStorage 정리');
           sessionStorage.removeItem('admake_step1_state');
           return;
         }
@@ -1038,11 +1092,8 @@ function restoreStep1Data() {
         const transaction = db.transaction(['files'], 'readonly');
         const store = transaction.objectStore('files');
 
-        // 실제 복원된 항목 수 추적
         let restoredCount = 0;
-        const expectedCount = data.mediaItems.length;
 
-        // 모든 미디어 항목 복원
         const restorePromises = data.mediaItems.map(item => {
           return new Promise((resolve) => {
             const getRequest = store.get(item.id);
@@ -1051,8 +1102,6 @@ function restoreStep1Data() {
                 const file = getRequest.result.file;
                 const previewUrl = URL.createObjectURL(file);
                 const mediaType = item.mediaType || (file.type.startsWith('video/') ? 'video' : 'image');
-
-                console.log(`[RESTORE] ${item.id}: 새 Blob URL 생성 (타입: ${mediaType})`);
 
                 mediaItems.push({
                   id: item.id,
@@ -1071,38 +1120,24 @@ function restoreStep1Data() {
                 });
 
                 restoredCount++;
-                console.log(`[RESTORE] 미디어 ${item.id} 복원 완료`);
-              } else {
-                // IndexedDB에 파일이 없음 (삭제됨) - 이 항목은 건너뜀
-                console.warn(`[RESTORE] ${item.id}: IndexedDB에 파일 없음 (이미 삭제됨)`);
               }
               resolve();
             };
-            getRequest.onerror = () => {
-              console.warn(`[RESTORE] ${item.id}: IndexedDB 조회 실패`);
-              resolve();
-            };
+            getRequest.onerror = () => resolve();
           });
         });
 
         Promise.all(restorePromises).then(() => {
-          console.log(`[RESTORE] 복원 완료: ${restoredCount}/${expectedCount} 항목`);
-
-          // ===== [좀비 데이터 방지] 복원된 항목이 없으면 sessionStorage 정리 =====
           if (mediaItems.length === 0) {
-            console.log('[RESTORE] 복원된 미디어 없음 - sessionStorage 정리');
             sessionStorage.removeItem('admake_step1_state');
-            updateNextButtonState();
+            updateUI();
             return;
           }
 
-          // ===== [동기화] 실제 복원된 항목만 sessionStorage에 다시 저장 =====
-          if (restoredCount < expectedCount) {
-            console.log('[RESTORE] 일부 항목 누락 - sessionStorage 동기화');
+          if (restoredCount < data.mediaItems.length) {
             syncToSessionStorage();
           }
 
-          // mediaIdCounter 업데이트
           if (mediaItems.length > 0) {
             const maxId = Math.max(...mediaItems.map(item => {
               const match = item.id.match(/media_(\d+)_/);
@@ -1111,80 +1146,53 @@ function restoreStep1Data() {
             mediaIdCounter = maxId;
           }
 
-          // 랜딩 URL 복원
           if (data.landingUrl && landingUrlInput) {
             landingUrlInput.value = data.landingUrl;
           }
 
           hasUnsavedChanges = false;
-          updateNextButtonState();
-          console.log(`[DEBUG] ${mediaItems.length}개 미디어 복원 완료`);
+          updateUI();
         });
       };
 
       request.onerror = () => {
-        console.error('[RESTORE] IndexedDB 열기 실패 - sessionStorage 정리');
         sessionStorage.removeItem('admake_step1_state');
       };
     }
   } catch (e) {
-    console.error('[ERROR] Step 1 데이터 복원 실패:', e);
     sessionStorage.removeItem('admake_step1_state');
   }
 }
 
-// ✅ 페이지 이탈 경고 및 URL 정리
+// 페이지 이탈 경고
 window.addEventListener('beforeunload', (e) => {
-  // Step 2로 이동 중이면 Blob URL을 revoke하지 않음
-  if (isNavigatingToNextStep) {
-    console.log('[DEBUG] Step 2로 이동 중 - Blob URL 유지');
-    return;
-  }
-  
+  if (isNavigatingToNextStep) return;
+
   if (hasUnsavedChanges) {
     e.preventDefault();
     e.returnValue = '작성 중인 데이터가 삭제됩니다';
     return e.returnValue;
   }
-  
-  // 완전히 페이지를 떠날 때만 URL 정리 (광고 제작 완료 또는 취소)
-  // 하지만 취소 버튼을 통해 명시적으로 이탈하는 경우는 제외
+
   const isCancelling = sessionStorage.getItem('admake_cancelling');
   if (isCancelling === 'true') {
     sessionStorage.removeItem('admake_cancelling');
     mediaItems.forEach(item => {
-      try {
-        URL.revokeObjectURL(item.previewUrl);
-      } catch (err) {
-        console.warn('URL revoke 실패:', err);
-      }
+      try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
     });
   }
 });
 
-// ✅ 초기화
+// 초기화
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('[DEBUG] DOMContentLoaded 이벤트 발생');
-  
-  // DOM 요소 초기화
   if (!initDOMElements()) {
-    console.error('[ERROR] DOM 요소 초기화 실패');
-    alert('페이지 로드 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+    alert('페이지 로드 중 오류가 발생했습니다.');
     return;
   }
-  
-  console.log('[DEBUG] DOM 요소 초기화 완료');
-  
-  // 이벤트 리스너 등록
+
   setupEventListeners();
-  
-  console.log('[DEBUG] 이벤트 리스너 등록 완료');
-  
-  // Step 1 데이터 복원 (Step 2에서 돌아온 경우)
   restoreStep1Data();
-  
-  // 초기 버튼 상태 설정
-  updateNextButtonState();
+  updateUI();
 });
 </script>
 

@@ -1838,16 +1838,40 @@ async function generatePreview() {
 
   } catch (error) {
     console.error('[STEP3] 미리보기 오류:', error);
+
+    // 네트워크 오류 감지
+    const isNetworkError = error.message.includes('네트워크') ||
+                           error.message.includes('Connection') ||
+                           error.message.includes('timeout');
+
+    const errorTitle = isNetworkError
+      ? '일시적인 네트워크 오류입니다'
+      : '미리보기 생성 실패';
+    const errorDesc = isNetworkError
+      ? '잠시 후 다시 시도됩니다...'
+      : error.message;
+
     previewContent.innerHTML = `
       <div class="admake-preview-wrapper">
         <div class="admake-preview-error" style="padding:40px;text-align:center;">
-          <i data-lucide="alert-circle" style="width:32px;height:32px;margin-bottom:12px;opacity:0.5;color:var(--accent-red);"></i>
-          <p style="color:var(--accent-red);font-size:13px;margin:0 0 8px 0;">${error.message}</p>
-          <p style="font-size:11px;color:var(--text-muted);">콘솔에서 상세 오류를 확인하세요</p>
+          <i data-lucide="${isNetworkError ? 'wifi-off' : 'alert-circle'}" style="width:32px;height:32px;margin-bottom:12px;opacity:0.5;color:${isNetworkError ? 'var(--accent-gold)' : 'var(--accent-red)'}"></i>
+          <p style="color:${isNetworkError ? 'var(--accent-gold)' : 'var(--accent-red)'};font-size:13px;margin:0 0 8px 0;font-weight:500;">${errorTitle}</p>
+          <p style="font-size:11px;color:var(--text-muted);margin:0 0 16px 0;">${errorDesc}</p>
+          <button onclick="generatePreview()" style="padding:8px 16px;background:var(--bg-card);border:1px solid var(--border-default);border-radius:6px;color:var(--text-primary);cursor:pointer;font-size:12px;">
+            다시 시도
+          </button>
         </div>
       </div>
     `;
     lucide.createIcons();
+
+    // 네트워크 오류 시 3초 후 자동 재시도
+    if (isNetworkError) {
+      setTimeout(() => {
+        console.log('[STEP3] 네트워크 오류 자동 재시도...');
+        generatePreview();
+      }, 3000);
+    }
   }
 }
 
@@ -1860,7 +1884,13 @@ function handlePreviewTabChange(format) {
     tab.classList.toggle('active', tab.dataset.format === format);
   });
 
-  generatePreview();
+  // 디바운싱 적용 (500ms)
+  if (previewDebounceTimer) {
+    clearTimeout(previewDebounceTimer);
+  }
+  previewDebounceTimer = setTimeout(() => {
+    generatePreview();
+  }, 300);
 }
 
 // ===== 이전/다음 버튼 =====

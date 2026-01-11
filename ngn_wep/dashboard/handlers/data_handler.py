@@ -1709,7 +1709,30 @@ def generate_ad_preview():
             # 단일 이미지/동영상 광고
             if media_type == 'video' and video_id:
                 print(f"[PREVIEW] 단일 동영상 광고: video_id={video_id}")
-                creative_spec["object_story_spec"]["video_data"] = {
+
+                # 동영상 썸네일 URL 가져오기 (Meta API 필수 요구사항)
+                thumbnail_url = None
+                try:
+                    thumb_response = requests.get(
+                        f"https://graph.facebook.com/v24.0/{video_id}",
+                        params={
+                            "access_token": access_token,
+                            "fields": "thumbnails"
+                        },
+                        timeout=10
+                    )
+                    thumb_data = thumb_response.json()
+                    print(f"[PREVIEW] 썸네일 응답: {json.dumps(thumb_data, indent=2)}")
+
+                    if 'thumbnails' in thumb_data and 'data' in thumb_data['thumbnails']:
+                        thumbnails = thumb_data['thumbnails']['data']
+                        if thumbnails:
+                            thumbnail_url = thumbnails[0].get('uri')
+                            print(f"[PREVIEW] 썸네일 URL: {thumbnail_url}")
+                except Exception as e:
+                    print(f"[PREVIEW] 썸네일 조회 실패: {e}")
+
+                video_data = {
                     "video_id": video_id,
                     "message": message,
                     "title": headline,
@@ -1719,6 +1742,16 @@ def generate_ad_preview():
                         "value": {"link": link}
                     }
                 }
+
+                # 썸네일 URL 추가 (필수)
+                if thumbnail_url:
+                    video_data["image_url"] = thumbnail_url
+                else:
+                    # 폴백: 투명 1x1 픽셀 또는 기본 이미지
+                    video_data["image_url"] = "https://via.placeholder.com/1080x1920/000000/000000?text=+"
+                    print("[PREVIEW] 썸네일 없음, 플레이스홀더 사용")
+
+                creative_spec["object_story_spec"]["video_data"] = video_data
             elif image_hash:
                 print(f"[PREVIEW] 단일 이미지 광고: image_hash={image_hash}")
                 creative_spec["object_story_spec"]["link_data"] = {

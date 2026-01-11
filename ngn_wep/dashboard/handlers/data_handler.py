@@ -1647,21 +1647,51 @@ def generate_ad_preview():
 
         print(f"[PREVIEW] 토큰 확인: {access_token[:15]}...")
 
-        # Page ID 조회 (첫 번째 페이지 사용)
-        pages_url = "https://graph.facebook.com/v24.0/me/accounts"
-        pages_response = requests.get(pages_url, params={
-            "access_token": access_token,
-            "fields": "id,name"
-        }, timeout=10)
-        pages_data = pages_response.json()
-        print(f"[PREVIEW] Pages 응답: {json.dumps(pages_data, indent=2)}")
+        # BigQuery에서 page_id, instagram_user_id 조회
+        bq_client = bigquery.Client()
+        mapping_query = """
+            SELECT page_id, instagram_user_id
+            FROM `ngn_dataset.meta_account_mapping`
+            WHERE account_id = @account_id
+            LIMIT 1
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+            ]
+        )
+        mapping_result = bq_client.query(mapping_query, job_config=job_config).result()
+        mapping_row = None
+        for row in mapping_result:
+            mapping_row = row
+            break
 
-        if 'data' not in pages_data or len(pages_data['data']) == 0:
-            print("[PREVIEW] ERROR: 연결된 페이지 없음")
+        page_id = None
+        instagram_user_id = None
+
+        if mapping_row:
+            page_id = mapping_row.page_id
+            instagram_user_id = mapping_row.instagram_user_id
+            print(f"[PREVIEW] BigQuery에서 조회 - page_id: {page_id}, instagram_user_id: {instagram_user_id}")
+        else:
+            print(f"[PREVIEW] BigQuery에 account_id={account_id} 매핑 없음, Meta API로 폴백")
+            # 폴백: Meta API에서 Page ID 조회
+            pages_url = "https://graph.facebook.com/v24.0/me/accounts"
+            pages_response = requests.get(pages_url, params={
+                "access_token": access_token,
+                "fields": "id,name"
+            }, timeout=10)
+            pages_data = pages_response.json()
+            print(f"[PREVIEW] Pages 응답: {json.dumps(pages_data, indent=2)}")
+
+            if 'data' in pages_data and len(pages_data['data']) > 0:
+                page_id = pages_data['data'][0]['id']
+
+        if not page_id:
+            print("[PREVIEW] ERROR: page_id를 찾을 수 없음")
             return jsonify({"status": "error", "message": "연결된 Facebook 페이지가 없습니다"}), 400
 
-        page_id = pages_data['data'][0]['id']
-        print(f"[PREVIEW] 사용할 Page ID: {page_id}")
+        print(f"[PREVIEW] 사용할 Page ID: {page_id}, Instagram User ID: {instagram_user_id}")
 
         # creative_spec 구성
         link = data.get('link', 'https://example.com')
@@ -1679,6 +1709,12 @@ def generate_ad_preview():
                 "page_id": page_id
             }
         }
+
+        # Instagram 포맷인 경우 instagram_actor_id 추가
+        is_instagram_format = ad_format in ['INSTAGRAM_STANDARD', 'INSTAGRAM_REELS', 'INSTAGRAM_STORY']
+        if is_instagram_format and instagram_user_id:
+            creative_spec["object_story_spec"]["instagram_actor_id"] = instagram_user_id
+            print(f"[PREVIEW] Instagram 포맷 - instagram_actor_id 추가: {instagram_user_id}")
 
         if is_carousel and len(cards) > 1:
             # 슬라이드 (Carousel) 광고

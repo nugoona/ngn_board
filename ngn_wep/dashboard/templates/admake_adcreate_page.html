@@ -652,14 +652,34 @@
 
     .admake-preview-content {
       flex: 1;
-      overflow-y: auto; /* 세로 스크롤 허용 */
-      overflow-x: hidden; /* 가로 스크롤 숨김 */
+      overflow-y: auto;
+      overflow-x: hidden;
       padding: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       position: relative;
+      /* 커스텀 스크롤바 */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-default) transparent;
+    }
+
+    .admake-preview-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .admake-preview-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .admake-preview-content::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 3px;
+    }
+
+    .admake-preview-content::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
     }
 
     /* 미리보기 래퍼 - 로딩 트랜지션용 */
@@ -674,45 +694,11 @@
     .admake-preview-frame {
       background: var(--bg-card);
       border-radius: 12px;
-      overflow: auto; /* 스크롤 허용 */
+      overflow: visible; /* 스크롤은 외부 컨테이너에서 처리 */
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       transition: filter 0.3s ease, opacity 0.3s ease;
-      display: flex;
-      justify-content: center; /* iframe 중앙 정렬 */
-      /* 커스텀 스크롤바 적용 */
-      scrollbar-width: thin;
-      scrollbar-color: var(--border-default) transparent;
-    }
-
-    .admake-preview-frame::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-
-    .admake-preview-frame::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .admake-preview-frame::-webkit-scrollbar-thumb {
-      background: var(--border-default);
-      border-radius: 10px;
-    }
-
-    /* 포맷별 프레임 사이즈 */
-    .admake-preview-frame.format-ig-feed {
-      width: auto;
-      max-height: 650px;
-    }
-
-    .admake-preview-frame.format-fb-feed {
-      width: auto;
-      max-height: 600px;
-    }
-
-    .admake-preview-frame.format-reels {
-      width: 360px;
-      height: 640px; /* 9:16 비율에 맞춘 고정 높이 */
-      max-height: none;
+      /* iframe 자연 크기에 맞춤 */
+      display: inline-block;
     }
 
     /* 로딩 중 블러 효과 */
@@ -721,22 +707,10 @@
       opacity: 0.6;
     }
 
-    /* 프레임 내부 iframe 스타일 - 포맷별 크기 */
+    /* iframe - Meta가 반환한 자연 크기 그대로 사용 */
     .admake-preview-frame iframe {
-      border: none !important;
-      display: block !important;
-      width: 100% !important;
-      height: 100% !important;
-    }
-
-    .admake-preview-frame.format-ig-feed iframe,
-    .admake-preview-frame.format-fb-feed iframe {
-      min-height: 550px;
-    }
-
-    .admake-preview-frame.format-reels iframe {
-      width: 360px !important;
-      height: 640px !important;
+      border: none;
+      display: block;
     }
 
     /* 로딩 오버레이 */
@@ -1675,13 +1649,6 @@ async function generatePreview() {
 
   const previewContent = document.getElementById('previewContent');
 
-  // 포맷에 따른 클래스 결정
-  const isReels = currentPreviewFormat === 'INSTAGRAM_REELS';
-  const isFbFeed = currentPreviewFormat === 'MOBILE_FEED_STANDARD';
-  let formatClass = 'format-ig-feed'; // 기본값: IG Feed
-  if (isReels) formatClass = 'format-reels';
-  else if (isFbFeed) formatClass = 'format-fb-feed';
-
   // 기존 미리보기가 있으면 블러 처리, 없으면 로딩 표시
   const existingFrame = previewContent.querySelector('.admake-preview-frame');
   if (existingFrame) {
@@ -1701,7 +1668,7 @@ async function generatePreview() {
   } else {
     previewContent.innerHTML = `
       <div class="admake-preview-wrapper">
-        <div class="admake-preview-frame ${formatClass}" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
+        <div class="admake-preview-frame" style="min-height:300px;display:flex;align-items:center;justify-content:center;">
           <div class="admake-preview-loader-spinner"></div>
         </div>
       </div>
@@ -1786,10 +1753,10 @@ async function generatePreview() {
     if (result.status === 'success' && result.preview_html) {
       currentPreviewHtml = result.preview_html;
 
-      // 새 프레임 생성
+      // 새 프레임 생성 - Meta iframe의 자연 크기를 그대로 사용
       previewContent.innerHTML = `
         <div class="admake-preview-wrapper">
-          <div class="admake-preview-frame ${formatClass} loading">
+          <div class="admake-preview-frame loading">
             ${result.preview_html}
           </div>
           <div class="admake-preview-loader active">
@@ -1799,49 +1766,28 @@ async function generatePreview() {
         </div>
       `;
 
-      // iframe onload 이벤트 감지
       const frame = previewContent.querySelector('.admake-preview-frame');
       const loader = previewContent.querySelector('.admake-preview-loader');
       const iframe = frame.querySelector('iframe');
-
-      // iframe 스타일 조정 함수 - 전체 콘텐츠 표시
-      const forceIframeStyles = (iframeEl) => {
-        if (!iframeEl) return;
-
-        // 기본 스타일
-        let styleText = 'border: none !important; display: block !important;';
-
-        // Reels는 고정 크기 적용 (9:16 비율)
-        if (isReels) {
-          styleText += ' width: 360px !important; height: 640px !important;';
-        } else {
-          styleText += ' width: 100% !important; min-height: 550px !important;';
-        }
-
-        iframeEl.style.cssText = styleText;
-        iframeEl.setAttribute('frameborder', '0');
-
-        console.log('[STEP3] iframe 스타일 적용:', formatClass);
-      };
 
       // 로딩 해제 함수
       const finishLoading = () => {
         frame.classList.remove('loading');
         loader?.classList.remove('active');
-        forceIframeStyles(iframe);
+        // iframe border만 제거, 크기는 Meta가 정한대로 유지
+        if (iframe) {
+          iframe.style.border = 'none';
+          iframe.setAttribute('frameborder', '0');
+        }
         console.log('[STEP3] 미리보기 렌더링 완료');
       };
 
       if (iframe) {
         let loadComplete = false;
 
-        // 즉시 스타일 적용 시도
-        forceIframeStyles(iframe);
-
         iframe.onload = () => {
-          console.log('[STEP3] iframe 로드 완료, 렌더링 대기 중...');
+          console.log('[STEP3] iframe 로드 완료');
           loadComplete = true;
-          forceIframeStyles(iframe);
           // iframe 로드 후 Meta 콘텐츠 렌더링을 위해 1초 추가 대기
           setTimeout(finishLoading, 1000);
         };
@@ -1854,7 +1800,6 @@ async function generatePreview() {
           }
         }, 3000);
       } else {
-        // iframe이 없는 경우 짧은 딜레이 후 해제
         setTimeout(finishLoading, 500);
       }
 

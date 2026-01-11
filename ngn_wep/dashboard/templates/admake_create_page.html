@@ -206,6 +206,7 @@
       max-width: 1400px;
       margin: 0 auto;
       padding: 40px;
+      padding-top: 80px; /* Progress Bar(105px) 아래로 콘텐츠 배치 */
       padding-bottom: 100px;
     }
 
@@ -1314,58 +1315,6 @@ window.addEventListener('beforeunload', (e) => {
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
-  // ===== [DEBUG] 레이아웃 디버깅 로그 =====
-  const navBar = document.querySelector('.nav-buttons');
-  const progressBar = document.querySelector('.admake-progress-bar');
-  const wrapper = document.querySelector('.admake-create-wrapper');
-  const sectionHeader = document.querySelector('.admake-section-header');
-
-  console.log('========== [LAYOUT DEBUG] ==========');
-  console.log('뷰포트 높이:', window.innerHeight + 'px');
-  console.log('문서 전체 높이:', document.documentElement.scrollHeight + 'px');
-
-  if (navBar) {
-    const navRect = navBar.getBoundingClientRect();
-    console.log('네비게이션 바:', {
-      height: navRect.height + 'px',
-      top: navRect.top + 'px',
-      bottom: navRect.bottom + 'px'
-    });
-  }
-
-  if (progressBar) {
-    const progRect = progressBar.getBoundingClientRect();
-    const progStyle = window.getComputedStyle(progressBar);
-    console.log('Progress Bar:', {
-      height: progRect.height + 'px',
-      top: progRect.top + 'px',
-      bottom: progRect.bottom + 'px',
-      position: progStyle.position,
-      stickyTop: progStyle.top
-    });
-  }
-
-  if (wrapper) {
-    const wrapRect = wrapper.getBoundingClientRect();
-    const wrapStyle = window.getComputedStyle(wrapper);
-    console.log('메인 Wrapper:', {
-      top: wrapRect.top + 'px',
-      paddingTop: wrapStyle.paddingTop,
-      marginTop: wrapStyle.marginTop
-    });
-  }
-
-  if (sectionHeader) {
-    const secRect = sectionHeader.getBoundingClientRect();
-    console.log('01 섹션 헤더:', {
-      top: secRect.top + 'px',
-      visible: secRect.top >= 0 ? '화면에 보임' : '화면 위로 잘림 (' + secRect.top + 'px)'
-    });
-  }
-
-  console.log('=====================================');
-  // ===== [DEBUG] 끝 =====
-
   if (!initDOMElements()) {
     alert('페이지 로드 중 오류가 발생했습니다.');
     return;

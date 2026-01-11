@@ -1083,6 +1083,38 @@ let cardValues = {}; // { mediaId: { url, headline, description } }
 
 console.log('[STEP3] 페이지 초기화 시작');
 
+// ===== IndexedDB에서 File 객체 가져오기 =====
+async function getFileFromIndexedDB(mediaId) {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB를 지원하지 않습니다'));
+      return;
+    }
+
+    const dbName = 'admake_files';
+    const request = indexedDB.open(dbName, 1);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['files'], 'readonly');
+      const store = transaction.objectStore('files');
+      const getRequest = store.get(mediaId);
+
+      getRequest.onsuccess = () => {
+        if (getRequest.result && getRequest.result.file) {
+          resolve(getRequest.result.file);
+        } else {
+          reject(new Error('파일을 찾을 수 없습니다'));
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
 // ===== Step 2 데이터 로드 =====
 async function loadStep2Data() {
   console.log('[STEP3] Step 2 데이터 로드 시작');
@@ -1130,22 +1162,39 @@ async function loadStep2Data() {
       console.log('[STEP3] Step 1 미디어 아이템:', step1Items.length);
     }
 
-    // 미디어 아이템 구성
-    mediaItems = uploaded.map((item, index) => {
+    // 미디어 아이템 구성 (IndexedDB에서 파일 가져와서 새 Blob URL 생성)
+    mediaItems = [];
+    for (let i = 0; i < uploaded.length; i++) {
+      const item = uploaded[i];
       const step1Item = step1Items.find(s => s.id === item.id) || {};
-      return {
+
+      let previewUrl = null;
+      let file = null;
+
+      // IndexedDB에서 File 객체 가져와서 새 Blob URL 생성
+      try {
+        file = await getFileFromIndexedDB(item.id);
+        previewUrl = URL.createObjectURL(file);
+        console.log(`[STEP3] ${item.id}: IndexedDB에서 File 로드 및 Blob URL 생성 완료`);
+      } catch (e) {
+        console.warn(`[STEP3] ${item.id}: IndexedDB 로드 실패, placeholder 사용`, e);
+        previewUrl = null;
+      }
+
+      mediaItems.push({
         id: item.id,
-        name: step1Item.name || `Media_${index + 1}`,
+        name: step1Item.name || `Media_${i + 1}`,
         mediaType: item.type, // 'image' or 'video'
         hash: item.hash,      // 이미지용
         videoId: item.video_id, // 동영상용
-        previewUrl: step1Item.previewUrl || null,
+        previewUrl: previewUrl,
+        file: file, // File 객체 저장
         // 개별 카드 값 초기화
         url: '',
         headline: '',
         description: ''
-      };
-    });
+      });
+    }
 
     console.log('[STEP3] 미디어 아이템 구성 완료:', mediaItems.length);
 

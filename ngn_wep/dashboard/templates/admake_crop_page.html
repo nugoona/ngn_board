@@ -3,149 +3,297 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>크롭 및 가이드 - ADMAKE</title>
+  <title>STEP 2 - ADMAKE</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts: Inter Tight (영문/숫자) + Pretendard (한글) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f9fafb;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh;
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0d0d0d;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1a1;
+      --text-muted: #525252;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-gold: #f59e0b;
+      --accent-red: #ef4444;
+      /* 비율별 컬러 */
+      --ratio-916: #3b82f6;    /* 딥블루 */
+      --ratio-45: #10b981;     /* 에메랄드 */
+      --ratio-11: #f59e0b;     /* 소프트 골드 */
     }
 
-    /* ✅ Progress Bar 스타일 */
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+      height: 100vh;
+      overflow: hidden; /* 페이지 스크롤 방지 */
+      color: var(--text-primary);
+    }
+
+    .font-inter {
+      font-family: 'Inter Tight', sans-serif;
+    }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-subtle) !important;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.1em !important;
+    }
+
+    .hamburger-icon div {
+      background: var(--text-primary) !important;
+    }
+
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+
+    .hamburger-dropdown a {
+      color: var(--text-secondary) !important;
+    }
+
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar - Step 1과 동일 ===== */
     .admake-progress-bar {
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 24px 40px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 17, 17, 0.95) 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 40px 18px;
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
     }
 
     .admake-progress-steps {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 16px;
-      max-width: 1200px;
+      gap: 6px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
     .admake-progress-step {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      padding: 8px 16px;
-      border-radius: 6px;
-      transition: all 0.2s;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
     }
 
     .admake-progress-step .step-number {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-      letter-spacing: 0.05em;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
     }
 
     .admake-progress-step .step-label {
-      font-size: 10px;
-      font-weight: 400;
-      color: #6b7280;
+      font-family: 'Pretendard', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
       white-space: nowrap;
+      opacity: 0.7;
     }
 
     .admake-progress-step.active {
-      background: #111827;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.12);
     }
 
-    .admake-progress-step.active .step-number,
+    .admake-progress-step.active .step-number {
+      font-size: 14px;
+      color: #1a1a1a;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 1px rgba(0, 0, 0, 0.15);
+    }
+
     .admake-progress-step.active .step-label {
-      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2a2a2a;
+      opacity: 1;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 -1px 1px rgba(0, 0, 0, 0.1);
+    }
+
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.15);
     }
 
     .admake-progress-step.completed .step-number,
     .admake-progress-step.completed .step-label {
-      color: #059669;
+      color: var(--accent-emerald);
+      opacity: 1;
     }
 
     .admake-progress-connector {
-      width: 40px;
-      height: 2px;
-      background: #e5e7eb;
-      margin: 0 8px;
-    }
-
-    .admake-progress-connector.completed {
-      background: #059669;
-    }
-
-    /* ✅ 메인 컨텐츠 영역 */
-    .admake-crop-wrapper {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 40px;
       display: flex;
-      gap: 32px;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
     }
 
+    .admake-progress-connector::before,
+    .admake-progress-connector::after {
+      content: '';
+      width: 12px;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .admake-progress-connector-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .admake-progress-connector.completed::before,
+    .admake-progress-connector.completed::after {
+      background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-dot {
+      background: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    /* ===== 메인 레이아웃 - 뷰포트 고정 ===== */
+    .admake-crop-wrapper {
+      display: flex;
+      height: calc(100vh - 56px - 105px - 72px); /* nav + progress + action bar */
+      overflow: hidden;
+    }
+
+    /* ===== 좌측: 미디어 리스트 ===== */
     .admake-crop-left {
-      flex: 0 0 280px;
-    }
-
-    .admake-crop-center {
-      flex: 1;
+      width: 200px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
     }
 
-    /* ✅ 미디어 리스트 스타일 */
     .admake-media-list {
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
       padding: 16px;
-      box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.03);
+    }
+
+    .admake-media-list-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-shrink: 0;
+    }
+
+    .admake-media-list-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
     }
 
     .admake-media-list-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #111827;
-      letter-spacing: 0.1em;
-      margin-bottom: 16px;
-      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .admake-media-list-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
+    }
+
+    /* 스크롤바 스타일링 */
+    .admake-media-list-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .admake-media-list-container::-webkit-scrollbar-track {
+      background: var(--bg-card);
+      border-radius: 2px;
+    }
+
+    .admake-media-list-container::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 2px;
     }
 
     .admake-media-item {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 0.75rem;
+      border-radius: 6px;
       overflow: hidden;
-      background: #f3f4f6;
-      border: 2px solid #e5e7eb;
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
       cursor: pointer;
       transition: all 0.2s ease;
-      margin-bottom: 12px;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.02);
+      margin-bottom: 10px;
     }
 
     .admake-media-item:hover {
-      border-color: #111827;
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.04);
+      border-color: var(--border-hover);
     }
 
     .admake-media-item.selected {
-      border-color: #111827;
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.08);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 1px var(--accent-blue);
     }
 
     .admake-media-item-image,
@@ -157,100 +305,132 @@
 
     .admake-media-item-badge {
       position: absolute;
-      top: 8px;
-      left: 8px;
+      top: 4px;
+      left: 4px;
       background: rgba(0, 0, 0, 0.7);
-      color: #ffffff;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 700;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
     .admake-media-item-checked {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 24px;
-      height: 24px;
-      background: #111827;
-      color: #ffffff;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      background: var(--bg-primary);
+      color: #fff;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 11px;
       opacity: 0;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.2s;
     }
 
     .admake-media-item.selected .admake-media-item-checked {
       opacity: 1;
+      background: var(--accent-blue);
     }
 
     .admake-media-item-checked.confirmed {
       opacity: 1;
-      background: #059669;
+      background: var(--accent-emerald);
     }
 
-    /* ✅ 크롭 센터 영역 중앙 정렬 */
+    /* ===== 중앙: 크롭 캔버스 ===== */
     .admake-crop-center {
+      flex: 1;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      min-height: calc(100vh - 200px);
-      padding: 40px 20px;
+      justify-content: center;
+      padding: 24px;
       position: relative;
-    }
-    
-    /* ✅ 가이드 라벨 외부 배치 (컨테이너 좌측 바깥) */
-    .admake-guide-labels-wrapper {
-      position: relative;
-      width: 100%;
-      max-width: 315px;
-      margin: 0 auto;
-    }
-    
-    .admake-guide-labels-container {
-      position: absolute;
-      left: -70px;
-      top: 0;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: flex-start;
-      z-index: 15;
-      pointer-events: none;
+      background: var(--bg-primary);
     }
 
-    /* ✅ 가이드 컨테이너 스타일 (크기 70%로 축소) */
+    .admake-canvas-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    /* 비율 버튼 - 그리드 좌측에 밀착 */
+    .admake-ratio-buttons-vertical {
+      position: absolute;
+      left: -50px;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      z-index: 20;
+    }
+
+    .admake-ratio-btn-v {
+      width: 44px;
+      padding: 8px 4px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border: none;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+
+    .admake-ratio-btn-v:first-child {
+      border-radius: 6px 0 0 0;
+    }
+
+    .admake-ratio-btn-v:last-child {
+      border-radius: 0 0 0 6px;
+    }
+
+    .admake-ratio-btn-v:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-secondary);
+    }
+
+    .admake-ratio-btn-v.active-916 {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--ratio-916);
+      border-left-color: var(--ratio-916);
+    }
+
+    .admake-ratio-btn-v.active-45 {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--ratio-45);
+      border-left-color: var(--ratio-45);
+    }
+
+    .admake-ratio-btn-v.active-11 {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--ratio-11);
+      border-left-color: var(--ratio-11);
+    }
+
+    /* 크롭 컨테이너 - Sharp Edge */
     .admake-guide-container {
       position: relative;
-      width: 100%;
-      max-width: 315px; /* 450px의 70% */
+      width: 320px;
       aspect-ratio: 9 / 16;
-      background: #f3f4f6;
-      border: 2px solid #111827;
-      border-radius: 1rem;
-      overflow: hidden; /* 내부 콘텐츠 클리핑 */
-      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.08);
-      margin: 0 auto 32px;
+      background: #000;
+      border: none;
+      border-radius: 0; /* Sharp Edge */
+      overflow: hidden;
       cursor: move;
       user-select: none;
-      box-sizing: border-box; /* 보더 포함 크기 계산 */
-      padding: 0; /* 패딩 제거로 정확한 계산 */
-    }
-    
-    .admake-guide-preview {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden; /* 내부 콘텐츠만 클리핑 */
+      box-shadow: none; /* 그림자 제거 */
     }
 
     .admake-guide-preview {
@@ -271,11 +451,51 @@
       z-index: 1;
     }
 
-    .admake-guide-preview-image,
-    .admake-guide-preview-video {
+    /* 가이드 라인 - 비율별 컬러 */
+    .admake-guide-line {
+      position: absolute;
+      pointer-events: none;
+      z-index: 12;
+      box-sizing: border-box;
+    }
+
+    .admake-guide-line-4-5 {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: 70.31%;
+      border: 2px solid var(--ratio-45);
+    }
+
+    .admake-guide-line-1-1 {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      height: 56.25%;
+      border: 2px solid var(--ratio-11);
+    }
+
+    .admake-guide-line-4-5.hidden,
+    .admake-guide-line-1-1.hidden {
+      display: none;
+    }
+
+    /* 9:16 외곽선 (선택 시) */
+    .admake-guide-container.ratio-916 {
+      outline: 2px solid var(--ratio-916);
+      outline-offset: -2px;
+    }
+
+    .admake-guide-container.ratio-45 .admake-guide-line-4-5 {
+      border-width: 3px;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .admake-guide-container.ratio-11 .admake-guide-line-1-1 {
+      border-width: 3px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
     }
 
     .admake-video-notice {
@@ -283,193 +503,101 @@
       bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(17, 24, 39, 0.9);
-      color: #ffffff;
-      padding: 12px 24px;
-      border-radius: 0.5rem;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
       font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-weight: 500;
       z-index: 20;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(8px);
     }
 
-    /* ✅ 가이드 라인 스타일 */
-    .admake-guide-line {
-      position: absolute;
-      border: 2px dashed rgba(17, 24, 39, 0.4);
-      pointer-events: none;
-      z-index: 12;
-    }
-
-    .admake-guide-line-4-5 {
-      /* 4:5 비율 가이드 - 완전한 박스 형태 */
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      height: 70.31%; /* 9:16 대비 4:5 세로 비율 */
-      border: 2px dashed rgba(255, 255, 255, 0.6);
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      /* 모든 면에 border 표시 */
-      border-top: 2px dashed rgba(255, 255, 255, 0.6);
-      border-right: 2px dashed rgba(255, 255, 255, 0.6);
-      border-bottom: 2px dashed rgba(255, 255, 255, 0.6);
-      border-left: 2px dashed rgba(255, 255, 255, 0.6);
-    }
-
-    .admake-guide-line-1-1 {
-      /* 1:1 비율 가이드 - 완전한 박스 형태 */
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      height: 56.25%; /* 9:16 대비 1:1 세로 비율 */
-      border: 2px dashed rgba(255, 255, 255, 0.8);
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      /* 모든 면에 border 표시 */
-      border-top: 2px dashed rgba(255, 255, 255, 0.8);
-      border-right: 2px dashed rgba(255, 255, 255, 0.8);
-      border-bottom: 2px dashed rgba(255, 255, 255, 0.8);
-      border-left: 2px dashed rgba(255, 255, 255, 0.8);
-    }
-    
-    /* 선택된 비율에 따라 가이드라인 표시/숨김 */
-    .admake-guide-line-4-5.hidden,
-    .admake-guide-line-1-1.hidden {
-      display: none;
-    }
-
-    /* ✅ 가이드 라벨 외부 배치 (프레임 좌측 외곽 끝에 바짝 붙임) */
-    .admake-guide-labels-container {
-      position: absolute;
-      left: -70px; /* 프레임 좌측 외곽 끝에 배치 */
-      top: 0;
-      height: 100%;
-      width: 60px;
-      z-index: 15;
-      pointer-events: none;
-    }
-
-    .admake-guide-label {
-      position: absolute;
-      left: 0;
-      background: rgba(17, 24, 39, 0.9);
-      color: #ffffff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      white-space: nowrap;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
-    }
-
-    .admake-guide-label-9-16 {
-      /* 9:16 라벨 - 컨테이너 상단 (0%) 가이드 박스 상단 정렬 */
-      top: 0;
-    }
-
-    .admake-guide-label-4-5 {
-      /* 4:5 라벨 - 4:5 가이드 상단 정렬 */
-      /* 가이드라인 높이 70.31%, 중앙 정렬이므로 상단 = (100% - 70.31%) / 2 = 14.845% */
-      top: 14.845%;
-    }
-
-    .admake-guide-label-1-1 {
-      /* 1:1 라벨 - 1:1 가이드 상단 정렬 */
-      /* 가이드라인 높이 56.25%, 중앙 정렬이므로 상단 = (100% - 56.25%) / 2 = 21.875% */
-      top: 21.875%;
-    }
-
-    /* ✅ 크롭 컨트롤 스타일 (하단 가로 중앙 배치) */
-    .admake-crop-controls {
-      margin-top: 24px;
-      width: 100%;
-      max-width: 315px; /* 컨테이너와 동일 */
+    /* ===== 우측: 컨트롤 패널 ===== */
+    .admake-crop-right {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center; /* 내부 요소 중앙 정렬 */
-      gap: 16px;
-      margin-left: auto;
-      margin-right: auto; /* 화면 중앙 배치 */
-      position: relative; /* 하단 배치를 위한 기준점 */
+      padding: 24px 20px;
+      overflow-y: auto;
     }
 
-    /* ✅ 자르기 비율 버튼 그룹 */
+    .admake-control-section {
+      margin-bottom: 28px;
+    }
+
+    .admake-control-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .admake-control-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      padding: 3px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+    }
+
+    .admake-control-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* 비율 버튼 그룹 */
     .admake-ratio-buttons {
       display: flex;
       gap: 8px;
-      width: 100%;
-      justify-content: center;
-      margin-bottom: 8px;
     }
 
     .admake-ratio-btn {
       flex: 1;
-      padding: 10px 16px;
+      padding: 12px 8px;
+      font-family: 'Inter Tight', sans-serif;
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.1em;
-      border: 2px solid #111827;
-      border-radius: 0.5rem;
-      background: #ffffff;
-      color: #111827;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-secondary);
       cursor: pointer;
-      transition: all 0.2s ease;
-      text-transform: uppercase;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s;
     }
 
     .admake-ratio-btn:hover {
-      background: #f3f4f6;
-      transform: translateY(-1px);
-      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.12);
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
     }
 
     .admake-ratio-btn.active {
-      background: #111827;
-      color: #ffffff;
-      box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 0.15);
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border-color: var(--text-primary);
     }
 
-    .admake-ratio-btn:active {
-      transform: translateY(1px);
-      box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 0.1);
-    }
-
+    /* 줌 컨트롤 */
     .admake-zoom-control {
       display: flex;
       align-items: center;
-      justify-content: center; /* 중앙 정렬 */
-      gap: 16px;
-      width: 100%;
-      max-width: 315px; /* 컨테이너와 동일 */
-      margin-left: auto; /* mx-auto: 가로 중앙 배치 */
-      margin-right: auto; /* mx-auto: 가로 중앙 배치 */
-      margin-bottom: 0;
-      position: relative;
-    }
-
-    .admake-zoom-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #111827;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      min-width: 60px;
+      gap: 12px;
     }
 
     .admake-zoom-slider {
       flex: 1;
-      height: 6px;
-      background: #e5e7eb;
-      border-radius: 3px;
+      height: 4px;
+      background: var(--bg-card);
+      border-radius: 2px;
       outline: none;
       -webkit-appearance: none;
       appearance: none;
@@ -477,121 +605,170 @@
 
     .admake-zoom-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      appearance: none;
-      width: 20px;
-      height: 20px;
-      background: #111827;
+      width: 16px;
+      height: 16px;
+      background: var(--text-primary);
       border-radius: 50%;
       cursor: pointer;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
-    }
-
-    .admake-zoom-slider::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      background: #111827;
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
     .admake-zoom-value {
-      font-size: 12px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
       font-weight: 600;
-      color: #6b7280;
-      min-width: 40px;
+      color: var(--text-primary);
+      min-width: 48px;
       text-align: right;
     }
 
-    /* ✅ 하단 액션 바 */
+    /* 해상도 표시 */
+    .admake-resolution-display {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .admake-resolution-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .admake-resolution-value {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .admake-resolution-status {
+      font-size: 11px;
+      margin-top: 6px;
+      color: var(--accent-emerald);
+    }
+
+    .admake-resolution-status.warning {
+      color: var(--accent-red);
+    }
+
+    /* 확인 버튼 */
+    .admake-confirm-btn {
+      width: 100%;
+      padding: 14px;
+      font-family: 'Pretendard', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: auto;
+    }
+
+    .admake-confirm-btn:hover:not(:disabled) {
+      background: #e5e5e5;
+    }
+
+    .admake-confirm-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .admake-confirm-btn.confirmed {
+      background: var(--accent-emerald);
+      color: #fff;
+    }
+
+    /* ===== 하단 액션 바 ===== */
     .admake-action-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: #ffffff;
-      border-top: 1px solid #e5e7eb;
-      padding: 20px 40px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      height: 72px;
+      background: linear-gradient(180deg, rgba(17, 17, 17, 0.95) 0%, var(--bg-secondary) 100%);
+      border-top: 1px solid var(--border-subtle);
+      padding: 0 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 1000;
+      backdrop-filter: blur(12px);
+    }
+
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      font-weight: 500;
     }
 
     .admake-action-buttons {
       display: flex;
-      gap: 16px;
-      margin-left: auto;
+      gap: 10px;
     }
 
     .admake-btn {
-      padding: 14px 32px;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
+      font-family: 'Inter Tight', sans-serif;
+      padding: 12px 28px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       border: none;
-      border-radius: 0.5rem;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.25s;
       text-transform: uppercase;
-      box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
     }
 
     .admake-btn-secondary {
-      background: #f3f4f6;
-      color: #6b7280;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
     }
 
     .admake-btn-secondary:hover {
-      background: #e5e7eb;
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.12);
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
     }
 
     .admake-btn-primary {
-      background: #111827;
-      color: #ffffff;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
     }
 
     .admake-btn-primary:hover:not(:disabled) {
-      background: #1f2937;
-      transform: translateY(-2px);
-      box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.15);
+      background: #f0f0f0;
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
     }
 
     .admake-btn-primary:disabled {
-      opacity: 0.4;
+      opacity: 0.25;
       cursor: not-allowed;
-      transform: none;
+      box-shadow: none;
     }
 
-    .admake-btn-primary #uploadBtnCount {
-      display: inline-block;
-      margin-left: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      opacity: 0.8;
-    }
-
-    .admake-btn-primary:active:not(:disabled) {
-      transform: translateY(2px);
-      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
-    }
-
-    /* ✅ 로딩 오버레이 */
+    /* ===== 로딩 오버레이 ===== */
     .admake-loading-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.85);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 2000;
+      backdrop-filter: blur(8px);
     }
 
     .admake-loading-overlay.active {
@@ -599,18 +776,18 @@
     }
 
     .admake-loading-content {
-      background: #ffffff;
+      background: var(--bg-secondary);
       padding: 40px;
-      border-radius: 1rem;
+      border-radius: 16px;
       text-align: center;
-      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-subtle);
     }
 
     .admake-loading-spinner {
       width: 48px;
       height: 48px;
-      border: 4px solid #f3f4f6;
-      border-top: 4px solid #111827;
+      border: 3px solid var(--bg-card);
+      border-top: 3px solid var(--text-primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
@@ -622,55 +799,20 @@
     }
 
     .admake-loading-text {
-      font-size: 16px;
-      font-weight: 600;
-      color: #111827;
-      letter-spacing: 0.05em;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
     }
 
-    /* ✅ 메인 컨텐츠 하단 여백 */
-    .admake-crop-wrapper {
-      padding-bottom: 100px;
+    /* 숨김 클래스 */
+    .hidden {
+      display: none !important;
     }
 
-    /* ✅ 모바일 반응형 */
-    @media (max-width: 1024px) {
-      .admake-crop-wrapper {
-        flex-direction: column;
-        padding: 20px;
-      }
-
-      .admake-crop-left {
-        flex: 1;
-      }
-
-      .admake-media-list {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-      }
-
-      .admake-media-item {
-        margin-bottom: 0;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .admake-action-bar {
-        padding: 16px 20px;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .admake-action-buttons {
-        width: 100%;
-        margin-left: 0;
-      }
-
-      .admake-btn {
-        flex: 1;
-        padding: 12px 24px;
-      }
+    /* 가이드 라벨 - 제거됨 (비율 버튼으로 대체) */
+    .admake-guide-labels-container,
+    .admake-guide-labels-wrapper {
+      display: none;
     }
   </style>
 </head>
@@ -683,10 +825,10 @@
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
-<!-- ✅ 햄버거 메뉴 -->
+<!-- 네비게이션 -->
 <div class="nav-buttons">
   <div class="nav-left">
-    <div id="updatedAtText" class="updated-at-text">크롭 및 가이드</div>
+    <div id="updatedAtText" class="updated-at-text">ADMAKE</div>
   </div>
   <div class="nav-right">
     <div class="hamburger-menu-wrapper">
@@ -694,154 +836,173 @@
         <div></div><div></div><div></div>
       </div>
       <div class="hamburger-dropdown" id="hamburgerDropdown">
-        <a href="/" class="{% if request.path == '/' %}active{% endif %}">사이트 성과</a>
-        <a href="{{ url_for('ads_page') }}" class="{% if request.path == '/ads' %}active{% endif %}">광고 성과</a>
-        <a href="{{ url_for('trend_selection_page') }}" class="{% if request.path.startswith('/trend') %}active{% endif %}">TREND</a>
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}">TREND</a>
         <a href="{{ url_for('auth.logout') }}">로그아웃</a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ✅ Progress Bar -->
+<!-- Progress Bar - Step 1과 동일한 스타일 -->
 <div class="admake-progress-bar">
   <div class="admake-progress-steps">
     <div class="admake-progress-step completed">
-      <span class="step-number">STEP 1</span>
+      <span class="step-number font-inter">STEP 1</span>
       <span class="step-label">Media 업로드</span>
     </div>
-    <div class="admake-progress-connector completed"></div>
+    <div class="admake-progress-connector completed">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step active">
-      <span class="step-number">STEP 2</span>
+      <span class="step-number font-inter">STEP 2</span>
       <span class="step-label">정밀 크롭</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
-      <span class="step-number">STEP 3</span>
+      <span class="step-number font-inter">STEP 3</span>
       <span class="step-label">AD 생성</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
-      <span class="step-number">STEP 4</span>
+      <span class="step-number font-inter">STEP 4</span>
       <span class="step-label">전략 SETTING</span>
     </div>
-    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-connector">
+      <span class="admake-progress-connector-dot"></span>
+    </div>
     <div class="admake-progress-step">
-      <span class="step-number">STEP 5</span>
+      <span class="step-number font-inter">STEP 5</span>
       <span class="step-label">검토 및 Publish</span>
     </div>
   </div>
 </div>
 
-<!-- ✅ 메인 컨텐츠 -->
+<!-- 메인 컨텐츠 - 3열 레이아웃 -->
 <div class="admake-crop-wrapper">
+
   <!-- 좌측: 미디어 리스트 -->
   <div class="admake-crop-left">
     <div class="admake-media-list">
-      <div class="admake-media-list-title">미디어 목록</div>
-      <div id="mediaListContainer"></div>
+      <div class="admake-media-list-header">
+        <span class="admake-media-list-number font-inter">01</span>
+        <span class="admake-media-list-title">미디어 목록</span>
+      </div>
+      <div class="admake-media-list-container" id="mediaListContainer"></div>
     </div>
   </div>
 
-  <!-- 중앙: 가이드 컨테이너 -->
+  <!-- 중앙: 크롭 캔버스 -->
   <div class="admake-crop-center">
-    <div class="admake-guide-labels-wrapper">
-      <!-- 가이드 라벨 외부 배치 (좌측) -->
-      <div class="admake-guide-labels-container">
-        <div class="admake-guide-label admake-guide-label-9-16">9:16</div>
-        <div class="admake-guide-label admake-guide-label-4-5">4:5</div>
-        <div class="admake-guide-label admake-guide-label-1-1">1:1</div>
+    <div class="admake-canvas-wrapper">
+      <!-- 비율 버튼 - 그리드 좌측에 밀착 -->
+      <div class="admake-ratio-buttons-vertical" id="ratioButtonsVertical">
+        <button class="admake-ratio-btn-v active-916" id="ratioBtn916v" data-ratio="9/16">9:16</button>
+        <button class="admake-ratio-btn-v" id="ratioBtn45v" data-ratio="4/5">4:5</button>
+        <button class="admake-ratio-btn-v" id="ratioBtn11v" data-ratio="1/1">1:1</button>
       </div>
-      
-      <div class="admake-guide-container" id="guideContainer">
+
+      <div class="admake-guide-container ratio-916" id="guideContainer">
         <div class="admake-guide-preview" id="guidePreview">
           <canvas class="admake-crop-canvas" id="cropCanvas" style="display: none;"></canvas>
           <!-- 가이드라인 (비율에 따라 표시/숨김) -->
           <div class="admake-guide-line admake-guide-line-4-5"></div>
           <div class="admake-guide-line admake-guide-line-1-1"></div>
-          <div id="placeholderText" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 14px; text-align: center; z-index: 2; pointer-events: none;">
-            미디어를 선택하세요
-          </div>
           <div id="videoNotice" class="admake-video-notice" style="display: none;">
             동영상은 9:16 권장 비율입니다
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- 크롭 컨트롤 (이미지일 때만 표시) -->
-    <div class="admake-crop-controls" id="cropControls" style="display: none;">
-      <!-- 자르기 비율 버튼 (Toggle Group) -->
-      <div class="admake-ratio-buttons">
-        <button class="admake-ratio-btn active" id="ratioBtn916" data-ratio="9/16" title="9:16 비율로 자르기">9:16</button>
-        <button class="admake-ratio-btn" id="ratioBtn45" data-ratio="4/5" title="4:5 비율로 자르기">4:5</button>
-        <button class="admake-ratio-btn" id="ratioBtn11" data-ratio="1/1" title="1:1 비율로 자르기">1:1</button>
-      </div>
-      <div style="font-size: 11px; color: #6b7280; margin-top: -8px; margin-bottom: 12px; text-align: center;">
-        비율을 선택하면 해당 비율로 자동 자르기됩니다
-      </div>
-      
-      <!-- 확대/축소 슬라이더 -->
-      <div class="admake-zoom-control">
-        <span class="admake-zoom-label">확대/축소</span>
-        <input type="range" id="zoomSlider" class="admake-zoom-slider" min="0.01" max="3" step="0.01" value="1">
-        <span class="admake-zoom-value" id="zoomValue">100%</span>
-      </div>
-
-      <!-- [HD Export] 실시간 해상도 표시 -->
-      <div id="resolutionDisplay" style="margin-top: 12px; padding: 10px; background: #f3f4f6; border-radius: 8px; text-align: center;">
-        <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">출력 해상도</div>
-        <div id="resolutionValue" style="font-size: 14px; font-weight: 700; color: #111827;">-- x --</div>
-        <div id="resolutionStatus" style="font-size: 11px; margin-top: 4px; color: #059669;">✓ 메타 광고 권장 규격</div>
-      </div>
-
-      <!-- [HD Export] 해상도 경고 -->
-      <div id="resolutionWarning" style="display: none; margin-top: 8px; padding: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; text-align: center;">
-        <div style="font-size: 12px; color: #dc2626; font-weight: 600;">⚠️ 해상도가 너무 낮습니다</div>
-        <div style="font-size: 11px; color: #991b1b; margin-top: 4px;">최소 600px 이상 필요 (권장: 1080px)</div>
-      </div>
-
-      <!-- [Instagram Reels] 플랫폼 호환성 배지 -->
-      <div id="platformCompatBadge" style="display: none; margin-top: 8px; padding: 10px; border-radius: 8px; text-align: center;">
-        <div id="platformCompatText" style="font-size: 12px; font-weight: 600;"></div>
-        <div id="platformCompatDetail" style="font-size: 11px; margin-top: 4px;"></div>
-      </div>
-
-      <!-- 확인 버튼 -->
-      <button class="admake-btn admake-btn-primary" id="confirmBtn" style="margin-top: 16px; width: 100%;">
-        이 미디어 확인 완료
-      </button>
-    </div>
   </div>
-</div>
 
-<!-- ✅ 하단 액션 바 -->
-<div class="admake-action-bar">
-  <div></div>
-  <div class="admake-action-buttons">
-    <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
-    <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>
-      <span id="uploadBtnText">메타에 업로드 하기</span>
-      <span id="uploadBtnCount" style="display: none; margin-left: 8px; font-size: 12px; opacity: 0.8;"></span>
+  <!-- 우측: 컨트롤 패널 -->
+  <div class="admake-crop-right" id="cropControls">
+    <!-- 원본 사이즈 선택 -->
+    <div class="admake-control-section">
+      <div class="admake-control-header">
+        <span class="admake-control-number font-inter">01</span>
+        <span class="admake-control-title">원본 사이즈 선택</span>
+      </div>
+      <div class="admake-ratio-buttons">
+        <button class="admake-ratio-btn active" id="ratioBtn916" data-ratio="9/16">9:16</button>
+        <button class="admake-ratio-btn" id="ratioBtn45" data-ratio="4/5">4:5</button>
+        <button class="admake-ratio-btn" id="ratioBtn11" data-ratio="1/1">1:1</button>
+      </div>
+    </div>
+
+    <!-- 확대 축소 -->
+    <div class="admake-control-section">
+      <div class="admake-control-header">
+        <span class="admake-control-number font-inter">02</span>
+        <span class="admake-control-title">확대 축소</span>
+      </div>
+      <div class="admake-zoom-control">
+        <input type="range" id="zoomSlider" class="admake-zoom-slider" min="0.01" max="3" step="0.01" value="1">
+        <span class="admake-zoom-value font-inter" id="zoomValue">100%</span>
+      </div>
+    </div>
+
+    <!-- 해상도 표시 -->
+    <div class="admake-control-section">
+      <div class="admake-resolution-display" id="resolutionDisplay">
+        <div class="admake-resolution-label">출력 해상도</div>
+        <div class="admake-resolution-value font-inter" id="resolutionValue">-- x --</div>
+        <div class="admake-resolution-status" id="resolutionStatus">✓ 메타 광고 권장 규격</div>
+      </div>
+      <div id="resolutionWarning" class="hidden" style="margin-top: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; text-align: center;">
+        <div style="font-size: 12px; color: var(--accent-red); font-weight: 600;">해상도가 너무 낮습니다</div>
+        <div style="font-size: 11px; color: var(--accent-red); margin-top: 4px; opacity: 0.8;">최소 600px 이상 필요</div>
+      </div>
+    </div>
+
+    <!-- 플랫폼 호환성 배지 -->
+    <div id="platformCompatBadge" class="hidden" style="padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 16px;">
+      <div id="platformCompatText" style="font-size: 12px; font-weight: 600;"></div>
+      <div id="platformCompatDetail" style="font-size: 11px; margin-top: 4px;"></div>
+    </div>
+
+    <!-- 확인 버튼 -->
+    <button class="admake-confirm-btn" id="confirmBtn">
+      확인 완료
     </button>
   </div>
 </div>
 
-<!-- ✅ 로딩 오버레이 -->
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-left font-inter">STEP 2 OF 5</div>
+  <div class="admake-action-buttons">
+    <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
+    <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>
+      <span id="uploadBtnText">메타에 업로드</span>
+      <span id="uploadBtnCount" style="display: none; margin-left: 8px; font-size: 11px; opacity: 0.8;"></span>
+    </button>
+  </div>
+</div>
+
+<!-- 로딩 오버레이 -->
 <div class="admake-loading-overlay" id="loadingOverlay">
   <div class="admake-loading-content">
     <div class="admake-loading-spinner"></div>
     <div class="admake-loading-text">메타 서버에 소재를 등록 중입니다...</div>
-    <div class="admake-progress-bar-container" style="margin-top: 24px; width: 100%; max-width: 400px;">
-      <div class="admake-progress-bar-bg" style="width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
-        <div class="admake-progress-bar-fill" id="uploadProgressBar" style="height: 100%; background: #111827; width: 0%; transition: width 0.3s ease;"></div>
+    <div style="margin-top: 24px; width: 100%; max-width: 300px;">
+      <div style="width: 100%; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden;">
+        <div id="uploadProgressBar" style="height: 100%; background: var(--text-primary); width: 0%; transition: width 0.3s;"></div>
       </div>
-      <div class="admake-progress-text" id="uploadProgressText" style="margin-top: 8px; font-size: 12px; color: #6b7280; text-align: center;">
+      <div id="uploadProgressText" style="margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">
         0 / 0 업로드 중...
       </div>
     </div>
   </div>
 </div>
+
+<!-- placeholderText 제거됨 -->
 
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
@@ -2787,9 +2948,12 @@ function isCurrentMediaVideo() {
   return false;
 }
 
-// ✅ 비율 버튼 이벤트 등록
+// ✅ 비율 버튼 이벤트 등록 (가로 + 세로 버튼 동기화)
 function setupRatioButtons() {
-  document.querySelectorAll('.admake-ratio-btn').forEach(btn => {
+  // 모든 비율 버튼에 클릭 이벤트 등록 (가로, 세로 모두)
+  const allRatioButtons = document.querySelectorAll('.admake-ratio-btn, .admake-ratio-btn-v');
+
+  allRatioButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const ratioStr = btn.getAttribute('data-ratio');
       const ratio = eval(ratioStr); // "9/16" -> 0.5625, "4/5" -> 0.8, "1/1" -> 1
@@ -2797,13 +2961,46 @@ function setupRatioButtons() {
       // ✅ [UX 개선] 동영상도 모든 비율 허용 - 차단 없이 안내만
       if (isCurrentMediaVideo() && Math.abs(ratio - RATIO_9_16) > RATIO_TOLERANCE) {
         console.log(`[FEED ONLY] 동영상 피드 전용 비율 선택: ${ratioStr}`);
-        // 차단하지 않고 비율 변경 진행 (배지로 안내)
       }
 
       console.log(`[DEBUG] 비율 버튼 클릭: ${ratioStr} (${ratio})`);
       changeAspectRatio(ratio);
+
+      // 모든 버튼 상태 동기화
+      syncRatioButtonStates(ratioStr);
     });
   });
+}
+
+// ✅ 비율 버튼 상태 동기화 (가로/세로 버튼 + 캔버스 테두리)
+function syncRatioButtonStates(ratioStr) {
+  const guideContainer = document.getElementById('guideContainer');
+
+  // 가로 버튼 업데이트
+  document.querySelectorAll('.admake-ratio-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-ratio') === ratioStr) {
+      btn.classList.add('active');
+    }
+  });
+
+  // 세로 버튼 업데이트
+  document.querySelectorAll('.admake-ratio-btn-v').forEach(btn => {
+    btn.classList.remove('active-916', 'active-45', 'active-11');
+    if (btn.getAttribute('data-ratio') === ratioStr) {
+      if (ratioStr === '9/16') btn.classList.add('active-916');
+      else if (ratioStr === '4/5') btn.classList.add('active-45');
+      else if (ratioStr === '1/1') btn.classList.add('active-11');
+    }
+  });
+
+  // 캔버스 테두리 색상 업데이트
+  if (guideContainer) {
+    guideContainer.classList.remove('ratio-916', 'ratio-45', 'ratio-11');
+    if (ratioStr === '9/16') guideContainer.classList.add('ratio-916');
+    else if (ratioStr === '4/5') guideContainer.classList.add('ratio-45');
+    else if (ratioStr === '1/1') guideContainer.classList.add('ratio-11');
+  }
 }
 
 // ✅ 초기화

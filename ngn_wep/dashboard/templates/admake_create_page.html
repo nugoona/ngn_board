@@ -695,42 +695,66 @@ function renderThumbnail(mediaItem) {
   const thumbnailItem = document.createElement('div');
   thumbnailItem.className = 'admake-thumbnail-item';
   thumbnailItem.setAttribute('data-id', mediaItem.id);
-  
-  let mediaElement = '';
+
   if (mediaItem.type === 'video') {
-    mediaElement = `
-      <video 
-        src="${mediaItem.previewUrl}" 
-        class="admake-thumbnail-video"
-        muted
-        playsinline
-        loop
-        autoplay
-      ></video>
-    `;
+    // 비디오는 동적으로 생성하여 에러 핸들링 추가
+    const videoEl = document.createElement('video');
+    videoEl.className = 'admake-thumbnail-video';
+    videoEl.src = mediaItem.previewUrl;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.loop = true;
+    videoEl.autoplay = true;
+
+    // 비디오 로드 실패 시 file 객체로 재생성
+    videoEl.onerror = () => {
+      console.warn(`[THUMBNAIL] 비디오 로드 실패, 재생성 시도: ${mediaItem.id}`);
+      if (mediaItem.file) {
+        const newUrl = URL.createObjectURL(mediaItem.file);
+        mediaItem.previewUrl = newUrl;
+        videoEl.src = newUrl;
+        // mediaItems 배열에서도 업데이트
+        const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
+        if (itemInArray) itemInArray.previewUrl = newUrl;
+      }
+    };
+
+    thumbnailItem.appendChild(videoEl);
   } else {
-    mediaElement = `
-      <img 
-        src="${mediaItem.previewUrl}" 
-        class="admake-thumbnail-image" 
-        alt="업로드된 이미지"
-      >
-    `;
+    // 이미지
+    const imgEl = document.createElement('img');
+    imgEl.className = 'admake-thumbnail-image';
+    imgEl.src = mediaItem.previewUrl;
+    imgEl.alt = '업로드된 이미지';
+
+    // 이미지 로드 실패 시 file 객체로 재생성
+    imgEl.onerror = () => {
+      console.warn(`[THUMBNAIL] 이미지 로드 실패, 재생성 시도: ${mediaItem.id}`);
+      if (mediaItem.file) {
+        const newUrl = URL.createObjectURL(mediaItem.file);
+        mediaItem.previewUrl = newUrl;
+        imgEl.src = newUrl;
+        // mediaItems 배열에서도 업데이트
+        const itemInArray = mediaItems.find(m => m.id === mediaItem.id);
+        if (itemInArray) itemInArray.previewUrl = newUrl;
+      }
+    };
+
+    thumbnailItem.appendChild(imgEl);
   }
-  
-  thumbnailItem.innerHTML = `
-    ${mediaElement}
-    <button class="admake-thumbnail-delete" data-id="${mediaItem.id}">×</button>
-  `;
-  
-  thumbnailsGrid.appendChild(thumbnailItem);
-  
-  // 삭제 버튼 이벤트
-  const deleteBtn = thumbnailItem.querySelector('.admake-thumbnail-delete');
+
+  // 삭제 버튼 추가
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'admake-thumbnail-delete';
+  deleteBtn.setAttribute('data-id', mediaItem.id);
+  deleteBtn.textContent = '×';
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     deleteThumbnail(mediaItem.id);
   });
+
+  thumbnailItem.appendChild(deleteBtn);
+  thumbnailsGrid.appendChild(thumbnailItem);
 }
 
 // 썸네일 삭제

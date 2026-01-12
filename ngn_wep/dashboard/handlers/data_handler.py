@@ -2336,7 +2336,7 @@ def get_compare_reviews():
 
 @data_blueprint.route("/get_active_ads", methods=["GET"])
 def get_active_ads():
-    """Meta API에서 활성(ON) 상태인 광고 목록 조회"""
+    """Meta API에서 활성(ON) 상태인 광고 목록 조회 (BigQuery에서 세트 ID 참조)"""
     try:
         account_id = request.args.get("account_id")
         if not account_id:
@@ -2347,29 +2347,92 @@ def get_active_ads():
         if not access_token:
             return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
 
+        # BigQuery에서 캠페인/세트 ID 조회
+        bq_client = bigquery.Client()
+        mapping_query = """
+            SELECT conv_campaign_id, conv_adset_id, traffic_campaign_id, traffic_adset_id
+            FROM `ngn_dataset.meta_account_mapping`
+            WHERE account_id = @account_id
+            LIMIT 1
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+            ]
+        )
+        mapping_result = bq_client.query(mapping_query, job_config=job_config).result()
+        mapping_row = None
+        for row in mapping_result:
+            mapping_row = row
+            break
+
+        # 세트 ID 목록 수집
+        adset_ids = []
+        if mapping_row:
+            if mapping_row.conv_adset_id:
+                adset_ids.append(mapping_row.conv_adset_id.strip())
+            if mapping_row.traffic_adset_id:
+                adset_ids.append(mapping_row.traffic_adset_id.strip())
+
+        print(f"[STEP4] BigQuery에서 조회된 세트 ID: {adset_ids}")
+
         # ad_account_id 형식 맞추기
         ad_account_id = f"act_{account_id}" if not account_id.startswith("act_") else account_id
 
-        # Meta API로 ACTIVE 상태 광고 조회
-        ads_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/ads"
-        params = {
-            "access_token": access_token,
-            "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec}",
-            "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
-            "limit": 100
-        }
+        all_ads = []
 
-        print(f"[STEP4] 활성 광고 조회: {ad_account_id}")
-        response = requests.get(ads_url, params=params, timeout=30)
-        result = response.json()
+        if adset_ids:
+            # 각 세트별로 광고 조회
+            for adset_id in adset_ids:
+                ads_url = f"https://graph.facebook.com/v24.0/{adset_id}/ads"
+                params = {
+                    "access_token": access_token,
+                    "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id",
+                    "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
+                    "limit": 50
+                }
 
-        if "error" in result:
-            error_msg = result["error"].get("message", "Unknown error")
-            print(f"[STEP4] Meta API 오류: {error_msg}")
-            return jsonify({"status": "error", "message": f"Meta API 오류: {error_msg}"}), 400
+                print(f"[STEP4] 세트 {adset_id}의 활성 광고 조회")
+                response = requests.get(ads_url, params=params, timeout=30)
+                result = response.json()
 
-        ads_data = result.get("data", [])
-        print(f"[STEP4] 조회된 활성 광고 수: {len(ads_data)}")
+                if "error" not in result:
+                    ads_data = result.get("data", [])
+                    all_ads.extend(ads_data)
+                    print(f"[STEP4] 세트 {adset_id}: {len(ads_data)}개 광고")
+                else:
+                    print(f"[STEP4] 세트 {adset_id} 조회 오류: {result.get('error', {}).get('message')}")
+        else:
+            # 세트 ID가 없으면 계정 전체에서 조회 (폴백)
+            ads_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/ads"
+            params = {
+                "access_token": access_token,
+                "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id",
+                "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
+                "limit": 100
+            }
+
+            print(f"[STEP4] 계정 전체 활성 광고 조회 (폴백): {ad_account_id}")
+            response = requests.get(ads_url, params=params, timeout=30)
+            result = response.json()
+
+            if "error" in result:
+                error_msg = result["error"].get("message", "Unknown error")
+                print(f"[STEP4] Meta API 오류: {error_msg}")
+                return jsonify({"status": "error", "message": f"Meta API 오류: {error_msg}"}), 400
+
+            all_ads = result.get("data", [])
+
+        # 중복 제거 (같은 광고가 여러 세트에 있을 수 있음)
+        seen_ids = set()
+        unique_ads = []
+        for ad in all_ads:
+            if ad.get("id") not in seen_ids:
+                seen_ids.add(ad.get("id"))
+                unique_ads.append(ad)
+
+        ads_data = unique_ads
+        print(f"[STEP4] 총 조회된 활성 광고 수: {len(ads_data)}")
 
         # 광고 데이터 가공
         processed_ads = []

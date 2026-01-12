@@ -442,6 +442,16 @@
       color: var(--text-muted);
     }
 
+    .admake-status-processing {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .admake-status-issues {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
     .admake-effective-status {
       font-size: 10px;
       color: var(--text-muted);
@@ -1001,11 +1011,42 @@
   function renderTable() {
     const tbody = document.getElementById('adsTableBody');
     tbody.innerHTML = ads.map(ad => {
-      // effective_status에 따른 실제 노출 상태
+      // configured_status: 사용자가 설정한 상태 (ON/OFF)
+      // effective_status: 실제 노출 상태 (ACTIVE, PAUSED, PENDING_REVIEW, etc.)
+      const configuredStatus = ad.configured_status || 'PAUSED';
       const effectiveStatus = ad.effective_status || 'UNKNOWN';
-      const isLive = effectiveStatus === 'ACTIVE';
-      const statusClass = isLive ? 'admake-status-on' : 'admake-status-inactive';
-      const statusText = isLive ? 'LIVE' : getEffectiveStatusText(effectiveStatus);
+
+      // 상태 표시 로직:
+      // 1. configured_status == 'ACTIVE' → ON 배지 (사용자가 켬)
+      // 2. configured_status == 'PAUSED' → OFF 배지 (사용자가 끔)
+      // 3. effective_status가 PENDING_REVIEW/IN_PROCESS → 처리 중 표시
+      // 4. effective_status가 WITH_ISSUES → 이슈 표시
+
+      let statusClass, statusText;
+
+      if (effectiveStatus === 'PENDING_REVIEW' || effectiveStatus === 'IN_PROCESS') {
+        // 검토 중 / 처리 중
+        statusClass = 'admake-status-processing';
+        statusText = effectiveStatus === 'PENDING_REVIEW' ? '검토 중' : '처리 중';
+      } else if (effectiveStatus === 'WITH_ISSUES') {
+        // 이슈 있음
+        statusClass = 'admake-status-issues';
+        statusText = '이슈';
+      } else if (configuredStatus === 'ACTIVE') {
+        // 사용자가 ON으로 설정 + 정상 상태
+        if (effectiveStatus === 'ACTIVE') {
+          statusClass = 'admake-status-on';
+          statusText = 'ON';
+        } else {
+          // ON 설정이지만 다른 이유로 노출 안됨
+          statusClass = 'admake-status-paused';
+          statusText = getEffectiveStatusText(effectiveStatus);
+        }
+      } else {
+        // 사용자가 OFF로 설정
+        statusClass = 'admake-status-inactive';
+        statusText = 'OFF';
+      }
 
       return `
         <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">

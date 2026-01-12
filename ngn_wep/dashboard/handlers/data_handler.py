@@ -2399,11 +2399,16 @@ def get_active_ads():
 
         print(f"[STEP4] adset_ids: {adset_ids}, campaign_ids: {campaign_ids}")
 
-        # Meta API 필드 정의 (썸네일 포함)
-        fields = "id,name,status,effective_status,preview_shareable_link,creative{id,thumbnail_url,image_url},adcreatives{image_url,thumbnail_url}"
+        # Meta API 필드 정의 (썸네일 + configured_status 포함)
+        fields = "id,name,status,effective_status,configured_status,preview_shareable_link,creative{id,thumbnail_url,image_url},adcreatives{image_url,thumbnail_url}"
 
-        # effective_status=ACTIVE 필터링 (Meta API 지원됨)
-        filtering = '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]'
+        # effective_status 필터링 확장 (DELETED, ARCHIVED 제외)
+        # ACTIVE: 현재 라이브 중
+        # PAUSED: 일시정지 (사용자가 멈춤)
+        # PENDING_REVIEW: 검토 대기 중
+        # IN_PROCESS: 처리 중
+        # WITH_ISSUES: 이슈 있음
+        filtering = '[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED","PENDING_REVIEW","IN_PROCESS","WITH_ISSUES"]}]'
 
         all_ads = []
 
@@ -2425,7 +2430,7 @@ def get_active_ads():
                     if "error" not in result:
                         ads_data = result.get("data", [])
                         all_ads.extend(ads_data)
-                        print(f"[STEP4] AdSet {adset_id}: {len(ads_data)}개 ACTIVE 광고")
+                        print(f"[STEP4] AdSet {adset_id}: {len(ads_data)}개 광고")
                     else:
                         print(f"[STEP4] AdSet {adset_id} 오류: {result.get('error', {}).get('message')}")
                 except Exception as e:
@@ -2450,7 +2455,7 @@ def get_active_ads():
                     if "error" not in result:
                         ads_data = result.get("data", [])
                         all_ads.extend(ads_data)
-                        print(f"[STEP4] Campaign {campaign_id}: {len(ads_data)}개 ACTIVE 광고")
+                        print(f"[STEP4] Campaign {campaign_id}: {len(ads_data)}개 광고")
                     else:
                         print(f"[STEP4] Campaign {campaign_id} 오류: {result.get('error', {}).get('message')}")
                 except Exception as e:
@@ -2473,7 +2478,7 @@ def get_active_ads():
 
                 if "error" not in result:
                     all_ads = result.get("data", [])
-                    print(f"[STEP4] Account 전체: {len(all_ads)}개 ACTIVE 광고")
+                    print(f"[STEP4] Account 전체: {len(all_ads)}개 광고")
                 else:
                     print(f"[STEP4] Account 전체 조회 오류: {result.get('error', {}).get('message')}")
             except Exception as e:
@@ -2509,6 +2514,7 @@ def get_active_ads():
                 "name": ad.get("name", "이름 없음"),
                 "status": ad.get("status"),
                 "effective_status": ad.get("effective_status"),
+                "configured_status": ad.get("configured_status"),  # 사용자 설정 상태 (ON/OFF 배지용)
                 "thumbnail_url": thumbnail_url,
                 "preview_link": ad.get("preview_shareable_link", "")
             })

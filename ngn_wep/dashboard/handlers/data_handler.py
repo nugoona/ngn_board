@@ -2384,18 +2384,25 @@ def get_active_ads():
         except Exception as bq_err:
             print(f"[STEP4] BigQuery 조회 실패: {bq_err}")
 
-        # ID 목록 수집
-        adset_ids = []
-        campaign_ids = []
+        # ID 목록 수집 (캠페인 유형별로 구분)
+        conv_adset_ids = set()
+        traffic_adset_ids = set()
+        conv_campaign_ids = set()
+        traffic_campaign_ids = set()
+
         if mapping_row:
             if mapping_row.conv_adset_id and mapping_row.conv_adset_id.strip():
-                adset_ids.append(mapping_row.conv_adset_id.strip())
+                conv_adset_ids.add(mapping_row.conv_adset_id.strip())
             if mapping_row.traffic_adset_id and mapping_row.traffic_adset_id.strip():
-                adset_ids.append(mapping_row.traffic_adset_id.strip())
+                traffic_adset_ids.add(mapping_row.traffic_adset_id.strip())
             if mapping_row.conv_campaign_id and mapping_row.conv_campaign_id.strip():
-                campaign_ids.append(mapping_row.conv_campaign_id.strip())
+                conv_campaign_ids.add(mapping_row.conv_campaign_id.strip())
             if mapping_row.traffic_campaign_id and mapping_row.traffic_campaign_id.strip():
-                campaign_ids.append(mapping_row.traffic_campaign_id.strip())
+                traffic_campaign_ids.add(mapping_row.traffic_campaign_id.strip())
+
+        # 통합 리스트 (조회용)
+        adset_ids = list(conv_adset_ids | traffic_adset_ids)
+        campaign_ids = list(conv_campaign_ids | traffic_campaign_ids)
 
         print(f"[STEP4] adset_ids: {adset_ids}, campaign_ids: {campaign_ids}")
 
@@ -2416,9 +2423,20 @@ def get_active_ads():
         import time
         cache_buster = int(time.time() * 1000)
 
+        # 광고 ID → 캠페인 유형 매핑
+        ad_campaign_type = {}
+
         # 1단계: AdSet 기준 조회
         if adset_ids:
             for adset_id in adset_ids:
+                # 캠페인 유형 결정
+                if adset_id in conv_adset_ids:
+                    campaign_type = "전환"
+                elif adset_id in traffic_adset_ids:
+                    campaign_type = "유입"
+                else:
+                    campaign_type = "-"
+
                 try:
                     ads_url = f"https://graph.facebook.com/v24.0/{adset_id}/ads"
                     params = {
@@ -2427,12 +2445,15 @@ def get_active_ads():
                         "limit": 100,
                         "_ts": cache_buster
                     }
-                    print(f"[STEP4] AdSet {adset_id} 조회 중...")
+                    print(f"[STEP4] AdSet {adset_id} ({campaign_type}) 조회 중...")
                     response = requests.get(ads_url, params=params, headers=headers, timeout=30)
                     result = response.json()
 
                     if "error" not in result:
                         ads_data = result.get("data", [])
+                        # 각 광고에 캠페인 유형 태깅
+                        for ad in ads_data:
+                            ad_campaign_type[ad.get("id")] = campaign_type
                         all_ads.extend(ads_data)
                         print(f"[STEP4] AdSet {adset_id}: {len(ads_data)}개 광고")
                         for ad in ads_data:
@@ -2446,6 +2467,14 @@ def get_active_ads():
         if not all_ads and campaign_ids:
             print(f"[STEP4] AdSet 조회 결과 없음, Campaign 폴백 시도")
             for campaign_id in campaign_ids:
+                # 캠페인 유형 결정
+                if campaign_id in conv_campaign_ids:
+                    campaign_type = "전환"
+                elif campaign_id in traffic_campaign_ids:
+                    campaign_type = "유입"
+                else:
+                    campaign_type = "-"
+
                 try:
                     ads_url = f"https://graph.facebook.com/v24.0/{campaign_id}/ads"
                     params = {
@@ -2454,12 +2483,15 @@ def get_active_ads():
                         "limit": 100,
                         "_ts": cache_buster
                     }
-                    print(f"[STEP4] Campaign {campaign_id} 조회 중...")
+                    print(f"[STEP4] Campaign {campaign_id} ({campaign_type}) 조회 중...")
                     response = requests.get(ads_url, params=params, headers=headers, timeout=30)
                     result = response.json()
 
                     if "error" not in result:
                         ads_data = result.get("data", [])
+                        # 각 광고에 캠페인 유형 태깅
+                        for ad in ads_data:
+                            ad_campaign_type[ad.get("id")] = campaign_type
                         all_ads.extend(ads_data)
                         print(f"[STEP4] Campaign {campaign_id}: {len(ads_data)}개 광고")
                         for ad in ads_data:
@@ -2530,6 +2562,7 @@ def get_active_ads():
                 "status": ad.get("status"),
                 "effective_status": ad.get("effective_status"),
                 "configured_status": ad.get("configured_status"),  # 사용자 설정 상태 (ON/OFF 배지용)
+                "campaign_type": ad_campaign_type.get(ad.get("id"), "-"),  # 전환/유입
                 "thumbnail_url": thumbnail_url,
                 "preview_link": ad.get("preview_shareable_link", "")
             })

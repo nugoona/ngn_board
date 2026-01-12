@@ -839,6 +839,7 @@
                 </th>
                 <th style="width:64px;">썸네일</th>
                 <th>광고 이름</th>
+                <th style="width:60px;">캠페인</th>
                 <th style="width:80px;">상태</th>
               </tr>
             </thead>
@@ -1086,6 +1087,7 @@
             }
           </td>
           <td>${escapeHtml(ad.name)}</td>
+          <td style="font-size:12px;color:var(--text-secondary);">${ad.campaign_type || '-'}</td>
           <td>
             <span class="admake-status-badge ${statusClass}">
               <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>

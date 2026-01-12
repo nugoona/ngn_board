@@ -1161,10 +1161,17 @@
 
 <!-- 하단 액션 바 -->
 <div class="admake-action-bar">
-  <div class="admake-action-left font-inter">STEP 3 OF 5</div>
+  <div class="admake-action-left">
+    <span class="font-inter">STEP 3 OF 5</span>
+    <span class="pending-ads-count" id="pendingAdsCount" style="display: none; margin-left: 12px; padding: 4px 10px; background: var(--accent-emerald); color: #fff; border-radius: 12px; font-size: 12px; font-weight: 600;"></span>
+  </div>
   <div class="admake-action-buttons">
     <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
-    <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>NEXT</button>
+    <button class="admake-btn admake-btn-secondary" id="addMoreBtn" disabled style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      광고 추가하기
+    </button>
+    <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>다음 단계로</button>
   </div>
 </div>
 
@@ -1499,9 +1506,10 @@ function updateSelectionHint() {
   }
 }
 
-// ===== NEXT 버튼 상태 업데이트 =====
+// ===== 버튼 상태 업데이트 (NEXT + 광고 추가하기) =====
 function updateNextButton() {
   const nextBtn = document.getElementById('nextBtn');
+  const addMoreBtn = document.getElementById('addMoreBtn');
   let isValid = false;
 
   if (currentAdType === 'slide') {
@@ -1514,8 +1522,11 @@ function updateNextButton() {
   const hasUrl = masterValues.url.trim() !== '';
   const hasPrimaryText = masterValues.primaryText.trim() !== '';
 
-  nextBtn.disabled = !(isValid && hasUrl && hasPrimaryText);
-  console.log(`[STEP3] NEXT 버튼 상태: ${!nextBtn.disabled}, 선택: ${selectedMediaIds.length}, URL: ${hasUrl}, 텍스트: ${hasPrimaryText}`);
+  const canProceed = isValid && hasUrl && hasPrimaryText;
+  nextBtn.disabled = !canProceed;
+  addMoreBtn.disabled = !canProceed;
+
+  console.log(`[STEP3] 버튼 상태: ${canProceed}, 선택: ${selectedMediaIds.length}, URL: ${hasUrl}, 텍스트: ${hasPrimaryText}`);
 }
 
 // ===== 개별 카드 리스트 렌더링 =====
@@ -1997,31 +2008,151 @@ function handlePreviewTabChange(format) {
   }, 300);
 }
 
-// ===== 이전/다음 버튼 =====
+// ===== 이전/다음/광고추가 버튼 =====
 function handleBackButton() {
   console.log('[STEP3] 이전 버튼 클릭 - Step 2로 이동');
   window.location.href = `/admake/crop?account_id=${encodeURIComponent(accountId)}`;
 }
 
-function handleNextButton() {
-  console.log('[STEP3] 다음 버튼 클릭 - Step 4로 이동');
+// 현재 광고 데이터를 서버 세션(pending_ads)에 추가
+async function addToPendingAds() {
+  // 선택된 미디어 정보 수집
+  const selectedMedia = mediaItems.filter(m => selectedMediaIds.includes(m.id));
+  const firstMedia = selectedMedia[0];
 
-  // 데이터 저장
-  const step3Data = {
-    adType: currentAdType,
-    selectedMediaIds: selectedMediaIds,
-    masterValues: masterValues,
-    cardLocks: cardLocks,
-    cardValues: cardValues
+  // is_carousel 판단
+  const isCarousel = currentAdType === 'slide';
+
+  // 카드 데이터 구성 (캐러셀인 경우)
+  let cards = [];
+  if (isCarousel) {
+    cards = selectedMedia.map(media => ({
+      media_type: media.mediaType,
+      video_id: media.videoId || null,
+      image_hash: media.hash || null,
+      thumbnail_url: media.previewUrl || null
+    }));
+  }
+
+  // 광고 데이터 구성
+  const adData = {
+    media_type: firstMedia?.mediaType || 'image',
+    video_id: firstMedia?.videoId || null,
+    image_hash: firstMedia?.hash || null,
+    thumbnail_url: firstMedia?.previewUrl || null,
+    message: masterValues.primaryText || '',
+    headline: masterValues.headline || '',
+    description: masterValues.description || '',
+    link: masterValues.url || '',
+    cta_type: masterValues.cta || 'SHOP_NOW',
+    ad_name: masterValues.adName || `AD_${Date.now()}`,
+    is_carousel: isCarousel,
+    cards: cards
   };
 
-  sessionStorage.setItem('admake_step3_state', JSON.stringify(step3Data));
-  console.log('[STEP3] Step 3 데이터 저장 완료');
+  console.log('[STEP3] pending_ads에 추가할 데이터:', adData);
 
-  showToast('Step 4로 이동합니다.', 'success');
+  try {
+    const response = await fetch('/dashboard/add_pending_ad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(adData)
+    });
 
-  // Step 4로 이동
-  window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
+    const result = await response.json();
+    console.log('[STEP3] pending_ad 추가 결과:', result);
+
+    if (result.status === 'success') {
+      return result;
+    } else {
+      throw new Error(result.message || '광고 추가 실패');
+    }
+  } catch (error) {
+    console.error('[STEP3] pending_ads 추가 오류:', error);
+    throw error;
+  }
+}
+
+// 광고 추가하기 버튼 클릭 핸들러
+async function handleAddMoreButton() {
+  console.log('[STEP3] 광고 추가하기 클릭 - pending_ads에 추가 후 Step 1로 이동');
+
+  try {
+    showToast('광고를 저장하고 있습니다...', 'info', 2000);
+
+    // 현재 광고 데이터를 서버 세션에 추가
+    const result = await addToPendingAds();
+    showToast(`광고가 추가되었습니다. (총 ${result.total_count}개)`, 'success', 2000);
+
+    // Step 1으로 이동 (소재 입력 초기화, 계정 정보 유지)
+    setTimeout(() => {
+      // sessionStorage에서 소재 관련 데이터만 삭제
+      sessionStorage.removeItem('admake_step2_results');
+      sessionStorage.removeItem('admake_uploaded_results');
+      sessionStorage.removeItem('admake_step3_state');
+
+      // Step 1에서 미디어 파일도 초기화되어야 함
+      // IndexedDB 초기화는 Step 1에서 처리
+
+      window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}&add_more=true`;
+    }, 1500);
+
+  } catch (error) {
+    showToast(`오류: ${error.message}`, 'error');
+  }
+}
+
+// 다음 단계로 버튼 클릭 핸들러
+async function handleNextButton() {
+  console.log('[STEP3] 다음 단계로 클릭 - pending_ads에 추가 후 Step 4로 이동');
+
+  try {
+    showToast('광고를 저장하고 있습니다...', 'info', 1500);
+
+    // 현재 광고 데이터를 서버 세션에 추가
+    const result = await addToPendingAds();
+
+    // sessionStorage에도 저장 (호환성)
+    const step3Data = {
+      adType: currentAdType,
+      selectedMediaIds: selectedMediaIds,
+      masterValues: masterValues,
+      cardLocks: cardLocks,
+      cardValues: cardValues
+    };
+    sessionStorage.setItem('admake_step3_state', JSON.stringify(step3Data));
+    console.log('[STEP3] Step 3 데이터 저장 완료');
+
+    showToast(`Step 4로 이동합니다. (총 ${result.total_count}개 광고)`, 'success', 1500);
+
+    // Step 4로 이동
+    setTimeout(() => {
+      window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
+    }, 1000);
+
+  } catch (error) {
+    showToast(`오류: ${error.message}`, 'error');
+  }
+}
+
+// pending_ads 카운트 표시
+async function updatePendingAdsCount() {
+  try {
+    const response = await fetch('/dashboard/get_pending_ads', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const result = await response.json();
+
+    if (result.status === 'success' && result.total_count > 0) {
+      const countEl = document.getElementById('pendingAdsCount');
+      countEl.textContent = `대기 중 ${result.total_count}개`;
+      countEl.style.display = 'inline-block';
+    }
+  } catch (error) {
+    console.log('[STEP3] pending_ads 카운트 조회 실패:', error);
+  }
 }
 
 // ===== 초기화 =====
@@ -2052,9 +2183,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     tab.addEventListener('click', () => handlePreviewTabChange(tab.dataset.format));
   });
 
-  // 이전/다음 버튼
+  // 이전/다음/광고추가 버튼
   document.getElementById('backBtn').addEventListener('click', handleBackButton);
+  document.getElementById('addMoreBtn').addEventListener('click', handleAddMoreButton);
   document.getElementById('nextBtn').addEventListener('click', handleNextButton);
+
+  // pending_ads 카운트 표시
+  updatePendingAdsCount();
 
   // Step 2에서 Landing URL 가져오기
   const step1Data = sessionStorage.getItem('admake_step1_state');

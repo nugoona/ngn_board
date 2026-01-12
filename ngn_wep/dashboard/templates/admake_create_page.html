@@ -1693,6 +1693,46 @@ function checkPreserveMode() {
   return false;
 }
 
+// add_more 모드: 광고 추가하기로 돌아온 경우
+async function checkAddMoreMode() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const addMoreMode = urlParams.get('add_more') === 'true';
+
+  if (addMoreMode) {
+    console.log('[STEP1] Add More 모드: 새 소재 추가를 위한 초기화');
+
+    // Step 1 미디어 데이터 초기화
+    sessionStorage.removeItem('admake_step1_state');
+    mediaItems = [];
+
+    // IndexedDB 초기화
+    await clearAllAdmakeData();
+
+    // URL에서 add_more 파라미터 제거
+    const url = new URL(window.location.href);
+    url.searchParams.delete('add_more');
+    window.history.replaceState({}, '', url);
+
+    // pending_ads 카운트 조회 및 표시
+    try {
+      const response = await fetch('/dashboard/get_pending_ads', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      const result = await response.json();
+      if (result.status === 'success' && result.total_count > 0) {
+        showToast(`${result.total_count}개의 광고가 대기 중입니다. 새 소재를 추가해주세요.`, 'info', 3000);
+      }
+    } catch (e) {
+      console.log('[STEP1] pending_ads 조회 실패:', e);
+    }
+
+    updateUI();
+    return true;
+  }
+  return false;
+}
+
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
   if (!initDOMElements()) {
@@ -1702,11 +1742,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupEventListeners();
   setupPreserveModalHandlers();
-  restoreStep1Data();
-  updateUI();
 
-  // Preserve 모드 확인 (URL에 preserve=true가 있고 기존 데이터가 있으면 모달 표시)
-  checkPreserveMode();
+  // Add More 모드 확인 (광고 추가하기로 돌아온 경우)
+  const isAddMoreMode = await checkAddMoreMode();
+
+  if (!isAddMoreMode) {
+    restoreStep1Data();
+    // Preserve 모드 확인 (URL에 preserve=true가 있고 기존 데이터가 있으면 모달 표시)
+    checkPreserveMode();
+  }
+
+  updateUI();
 });
 </script>
 

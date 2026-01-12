@@ -2718,6 +2718,126 @@ def translate_meta_error(error_message: str) -> str:
     return f"알 수 없는 오류: {error_message}"
 
 
+# ─────────────────────────────────────────────────────────────
+# 📌 ADMAKE: Pending Ads 세션 관리 API
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/add_pending_ad", methods=["POST"])
+def add_pending_ad():
+    """
+    Step 3에서 '광고 추가하기' 클릭 시 pending_ads 세션에 광고 데이터 추가
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "광고 데이터가 필요합니다."}), 400
+
+        # 세션에 pending_ads 리스트 초기화
+        if "pending_ads" not in session:
+            session["pending_ads"] = []
+
+        # 고유 ID 생성
+        import uuid
+        ad_data = {
+            "id": str(uuid.uuid4()),
+            "media_type": data.get("media_type", "image"),
+            "video_id": data.get("video_id"),
+            "image_hash": data.get("image_hash"),
+            "thumbnail_url": data.get("thumbnail_url"),
+            "message": data.get("message", ""),
+            "headline": data.get("headline", ""),
+            "description": data.get("description", ""),
+            "link": data.get("link", ""),
+            "cta_type": data.get("cta_type", "SHOP_NOW"),
+            "ad_name": data.get("ad_name", f"AD_{len(session['pending_ads']) + 1}"),
+            "is_carousel": data.get("is_carousel", False),
+            "cards": data.get("cards", [])
+        }
+
+        session["pending_ads"].append(ad_data)
+        session.modified = True
+
+        print(f"[ADMAKE] 광고 추가됨: {ad_data['ad_name']}, 총 {len(session['pending_ads'])}개")
+
+        return jsonify({
+            "status": "success",
+            "message": "광고가 추가되었습니다.",
+            "ad_id": ad_data["id"],
+            "total_count": len(session["pending_ads"])
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] add_pending_ad 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/get_pending_ads", methods=["GET"])
+def get_pending_ads():
+    """
+    세션에 저장된 pending_ads 리스트 조회
+    """
+    try:
+        pending_ads = session.get("pending_ads", [])
+        print(f"[ADMAKE] pending_ads 조회: {len(pending_ads)}개")
+
+        return jsonify({
+            "status": "success",
+            "pending_ads": pending_ads,
+            "total_count": len(pending_ads)
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_pending_ads 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/clear_pending_ads", methods=["DELETE"])
+def clear_pending_ads():
+    """
+    pending_ads 세션 초기화
+    """
+    try:
+        session["pending_ads"] = []
+        session.modified = True
+        print("[ADMAKE] pending_ads 초기화됨")
+
+        return jsonify({
+            "status": "success",
+            "message": "광고 목록이 초기화되었습니다."
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] clear_pending_ads 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/remove_pending_ad/<ad_id>", methods=["DELETE"])
+def remove_pending_ad(ad_id):
+    """
+    특정 pending_ad 삭제
+    """
+    try:
+        pending_ads = session.get("pending_ads", [])
+        original_count = len(pending_ads)
+
+        session["pending_ads"] = [ad for ad in pending_ads if ad.get("id") != ad_id]
+        session.modified = True
+
+        removed = original_count - len(session["pending_ads"])
+        print(f"[ADMAKE] 광고 삭제: {ad_id}, 삭제됨: {removed}개")
+
+        return jsonify({
+            "status": "success",
+            "message": "광고가 삭제되었습니다.",
+            "removed_count": removed,
+            "total_count": len(session["pending_ads"])
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] remove_pending_ad 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @data_blueprint.route("/publish_ads_batch", methods=["POST"])
 def publish_ads_batch():
     """
@@ -2838,18 +2958,23 @@ def publish_ads_batch():
 
 
 def get_account_info(account_id: str, access_token: str) -> dict:
-    """광고 계정에 연결된 페이지/Instagram/AdSet 정보 조회 (BigQuery 우선, Meta API 폴백)"""
+    """광고 계정에 연결된 페이지/Instagram/AdSet/UTM/Pixel 정보 조회 (BigQuery 우선, Meta API 폴백)"""
     try:
         page_id = None
         instagram_user_id = None
         conv_adset_id = None
         traffic_adset_id = None
+        utm_params = None
+        pixel_id = None
 
-        # 1. BigQuery에서 page_id, instagram_user_id, adset_id 조회
+        # 기본 UTM 템플릿 (fallback)
+        DEFAULT_UTM = "utm_source=meta&utm_medium=prospecting&utm_campaign={{campaign.name}}&utm_content={{ad.name}}"
+
+        # 1. BigQuery에서 page_id, instagram_user_id, adset_id, utm_params, pixel_id 조회
         try:
             bq_client = bigquery.Client()
             mapping_query = """
-                SELECT page_id, instagram_user_id, conv_adset_id, traffic_adset_id
+                SELECT page_id, instagram_user_id, conv_adset_id, traffic_adset_id, utm_params, pixel_id
                 FROM `ngn_dataset.meta_account_mapping`
                 WHERE account_id = @account_id
                 LIMIT 1
@@ -2866,11 +2991,19 @@ def get_account_info(account_id: str, access_token: str) -> dict:
                 instagram_user_id = str(row.instagram_user_id).strip() if row.instagram_user_id else None
                 conv_adset_id = str(row.conv_adset_id).strip() if row.conv_adset_id else None
                 traffic_adset_id = str(row.traffic_adset_id).strip() if row.traffic_adset_id else None
+                utm_params = str(row.utm_params).strip() if row.utm_params else None
+                pixel_id = str(row.pixel_id).strip() if row.pixel_id else None
                 print(f"[STEP5] BigQuery에서 조회 - page_id: '{page_id}', instagram_user_id: '{instagram_user_id}'")
                 print(f"[STEP5] BigQuery에서 조회 - conv_adset_id: '{conv_adset_id}', traffic_adset_id: '{traffic_adset_id}'")
+                print(f"[STEP5] BigQuery에서 조회 - utm_params: '{utm_params}', pixel_id: '{pixel_id}'")
                 break
         except Exception as bq_err:
             print(f"[STEP5] BigQuery 조회 실패: {bq_err}")
+
+        # UTM fallback 적용
+        if not utm_params:
+            utm_params = DEFAULT_UTM
+            print(f"[STEP5] UTM 기본값 적용: {utm_params}")
 
         # 2. BigQuery에 없으면 Meta API로 폴백
         if not page_id:
@@ -2904,11 +3037,14 @@ def get_account_info(account_id: str, access_token: str) -> dict:
 
         print(f"[STEP5] 최종 계정 정보: page_id={page_id}, instagram_user_id={instagram_user_id}")
         print(f"[STEP5] AdSet 정보: conv_adset_id={conv_adset_id}, traffic_adset_id={traffic_adset_id}")
+        print(f"[STEP5] 추적 정보: utm_params={utm_params[:50] if utm_params else None}..., pixel_id={pixel_id}")
         return {
             "page_id": page_id,
             "instagram_user_id": instagram_user_id,
             "conv_adset_id": conv_adset_id,
-            "traffic_adset_id": traffic_adset_id
+            "traffic_adset_id": traffic_adset_id,
+            "utm_params": utm_params,
+            "pixel_id": pixel_id
         }
 
     except Exception as e:

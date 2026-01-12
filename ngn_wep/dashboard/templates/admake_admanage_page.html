@@ -544,7 +544,27 @@
   </style>
 </head>
 <body>
-  {% include 'nav.html' %}
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- 네비게이션 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">ADMAKE</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}">TREND</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
 
   <div class="admake-container">
     <!-- 헤더 -->

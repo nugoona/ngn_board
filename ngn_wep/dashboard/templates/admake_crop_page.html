@@ -3046,23 +3046,39 @@ let uploadFileStatuses = [];
 
 // 업로드 UI 초기화
 function initUploadProgress(files) {
-  uploadStartTime = Date.now();
-  uploadFileStatuses = files.map((f, idx) => ({
-    id: f.id,
-    name: f.name || `파일 ${idx + 1}`,
-    type: f.mediaType || 'image',
-    status: 'waiting' // waiting, progress, done, error
-  }));
+  console.log('[UPLOAD DEBUG] initUploadProgress 시작, files:', files);
+  try {
+    uploadStartTime = Date.now();
+    uploadFileStatuses = files.map((f, idx) => ({
+      id: f.id,
+      name: f.name || `파일 ${idx + 1}`,
+      type: f.mediaType || 'image',
+      status: 'waiting' // waiting, progress, done, error
+    }));
+    console.log('[UPLOAD DEBUG] uploadFileStatuses 생성됨:', uploadFileStatuses);
 
-  renderUploadFileList();
-  updateProgressCircle(0);
-  updateUploadStage('준비 중...', '파일 정보를 확인하고 있습니다');
+    renderUploadFileList();
+    console.log('[UPLOAD DEBUG] renderUploadFileList 완료');
+
+    updateProgressCircle(0);
+    console.log('[UPLOAD DEBUG] updateProgressCircle 완료');
+
+    updateUploadStage('준비 중...', '파일 정보를 확인하고 있습니다');
+    console.log('[UPLOAD DEBUG] initUploadProgress 완료');
+  } catch (e) {
+    console.error('[UPLOAD DEBUG] initUploadProgress 에러:', e);
+  }
 }
 
 // 파일 리스트 렌더링
 function renderUploadFileList() {
+  console.log('[UPLOAD DEBUG] renderUploadFileList 시작');
   const container = document.getElementById('uploadFileList');
-  if (!container) return;
+  console.log('[UPLOAD DEBUG] uploadFileList 컨테이너:', container);
+  if (!container) {
+    console.warn('[UPLOAD DEBUG] uploadFileList 컨테이너를 찾을 수 없음!');
+    return;
+  }
 
   container.innerHTML = uploadFileStatuses.map((file, idx) => {
     const iconMap = {
@@ -3110,8 +3126,10 @@ function updateProgressCircle(percent) {
 
 // 상태 메시지 업데이트
 function updateUploadStage(title, subtitle) {
+  console.log('[UPLOAD DEBUG] updateUploadStage:', title, subtitle);
   const titleEl = document.getElementById('uploadStageTitle');
   const subtitleEl = document.getElementById('uploadStageSubtitle');
+  console.log('[UPLOAD DEBUG] titleEl:', titleEl, 'subtitleEl:', subtitleEl);
 
   if (titleEl) titleEl.textContent = title;
   if (subtitleEl) subtitleEl.textContent = subtitle;
@@ -3184,6 +3202,8 @@ function updateUploadProgress(current, total, fileName, fileId) {
 
 // ✅ 메타 API 업로드 (크롭된 이미지 사용, 순차 처리 및 프로그레스 바)
 async function uploadToMeta() {
+  console.log('[UPLOAD DEBUG] ========== uploadToMeta 함수 시작 ==========');
+
   // ===== [Fix] 미디어 로딩 중이면 업로드 차단 =====
   if (isMediaLoading) {
     showToast('미디어 로딩 중입니다. 잠시 후 다시 시도해주세요.', 'info');
@@ -3194,17 +3214,35 @@ async function uploadToMeta() {
   const uploadBtn = document.getElementById('uploadBtn');
   const loadingOverlay = document.getElementById('loadingOverlay');
 
+  console.log('[UPLOAD DEBUG] uploadBtn 존재:', !!uploadBtn);
+  console.log('[UPLOAD DEBUG] loadingOverlay 존재:', !!loadingOverlay);
+  console.log('[UPLOAD DEBUG] loadingOverlay 현재 클래스:', loadingOverlay?.className);
+  console.log('[UPLOAD DEBUG] loadingOverlay 현재 display:', loadingOverlay ? window.getComputedStyle(loadingOverlay).display : 'N/A');
+
   uploadBtn.disabled = true;
   loadingOverlay.classList.add('active');
 
+  console.log('[UPLOAD DEBUG] active 클래스 추가 후 className:', loadingOverlay?.className);
+  console.log('[UPLOAD DEBUG] active 추가 후 display:', loadingOverlay ? window.getComputedStyle(loadingOverlay).display : 'N/A');
+
   // 업로드 UI 초기화
+  console.log('[UPLOAD DEBUG] initUploadProgress 호출, mediaItems 개수:', mediaItems?.length);
   initUploadProgress(mediaItems);
+  console.log('[UPLOAD DEBUG] initUploadProgress 완료');
+
   updateUploadStage('메타 서버에 연결 중...', '인증 정보를 확인하고 있습니다');
+  console.log('[UPLOAD DEBUG] updateUploadStage 완료');
 
   // 브라우저가 UI를 렌더링할 시간 확보 (로딩 팝업 즉시 표시)
+  console.log('[UPLOAD DEBUG] requestAnimationFrame 대기 시작...');
   await new Promise(resolve => requestAnimationFrame(() => {
-    requestAnimationFrame(resolve);
+    console.log('[UPLOAD DEBUG] 첫번째 RAF 콜백');
+    requestAnimationFrame(() => {
+      console.log('[UPLOAD DEBUG] 두번째 RAF 콜백 - resolve');
+      resolve();
+    });
   }));
+  console.log('[UPLOAD DEBUG] requestAnimationFrame 대기 완료, 팝업 보여야 함');
 
   try {
     // 서버에서 액세스 토큰 가져오기

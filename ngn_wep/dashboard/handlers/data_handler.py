@@ -2899,6 +2899,42 @@ def ensure_act_prefix(account_id: str) -> str:
     return account_id
 
 
+def get_video_thumbnail(video_id: str, access_token: str) -> str:
+    """Meta API에서 비디오 썸네일 URL 조회"""
+    try:
+        url = f"https://graph.facebook.com/v24.0/{video_id}"
+        params = {
+            "fields": "thumbnails,picture",
+            "access_token": access_token
+        }
+        response = requests.get(url, params=params, timeout=15)
+        result = response.json()
+
+        print(f"[STEP5] 비디오 썸네일 조회 응답: {json.dumps(result, indent=2, ensure_ascii=False)[:500]}")
+
+        # thumbnails 배열에서 가장 큰 썸네일 선택
+        if "thumbnails" in result and result["thumbnails"].get("data"):
+            thumbnails = result["thumbnails"]["data"]
+            # 해상도가 가장 높은 썸네일 선택
+            best_thumb = max(thumbnails, key=lambda x: x.get("width", 0) * x.get("height", 0))
+            thumb_url = best_thumb.get("uri") or best_thumb.get("url")
+            if thumb_url:
+                print(f"[STEP5] 비디오 썸네일 찾음 (thumbnails): {thumb_url}")
+                return thumb_url
+
+        # picture 필드에서 가져오기
+        if "picture" in result:
+            print(f"[STEP5] 비디오 썸네일 찾음 (picture): {result['picture']}")
+            return result["picture"]
+
+        print(f"[STEP5] 비디오 썸네일을 찾을 수 없음")
+        return None
+
+    except Exception as e:
+        print(f"[STEP5] 비디오 썸네일 조회 오류: {e}")
+        return None
+
+
 def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str) -> str:
     """
     Meta API를 통해 AdCreative 생성 (내부 함수)
@@ -2940,7 +2976,15 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 }
                 # 미디어 타입에 따라 분기
                 if card.get("video_id"):
-                    attachment["video_id"] = str(card["video_id"])
+                    video_id_str = str(card["video_id"])
+                    attachment["video_id"] = video_id_str
+                    # 비디오 썸네일 처리
+                    thumb_url = card.get("thumbnail_url") or card.get("image_url")
+                    if not thumb_url:
+                        thumb_url = get_video_thumbnail(video_id_str, access_token)
+                    if thumb_url:
+                        attachment["picture"] = str(thumb_url)
+                        print(f"[STEP5] 캐러셀 카드 썸네일: {thumb_url}")
                 elif card.get("image_hash"):
                     attachment["image_hash"] = str(card["image_hash"])
 
@@ -2958,9 +3002,11 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             media_type = ad_data.get("media_type", "image")
 
             if media_type == "video":
-                # 비디오 광고
-                object_story_spec["video_data"] = {
-                    "video_id": str(ad_data.get("video_id")) if ad_data.get("video_id") else None,
+                # 비디오 광고 - image_url (썸네일) 필수
+                video_id_str = str(ad_data.get("video_id")) if ad_data.get("video_id") else None
+
+                video_data = {
+                    "video_id": video_id_str,
                     "message": ad_data.get("message", ""),
                     "title": ad_data.get("headline", ""),
                     "link_description": ad_data.get("description", ""),
@@ -2969,6 +3015,22 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                         "value": {"link": ad_data.get("link", "")}
                     }
                 }
+
+                # 썸네일 URL 추가 (thumbnail_url 또는 image_url 필드에서 가져옴)
+                thumbnail_url = ad_data.get("thumbnail_url") or ad_data.get("image_url")
+
+                # 썸네일이 없으면 Meta API에서 비디오 썸네일 조회
+                if not thumbnail_url and video_id_str:
+                    print(f"[STEP5] 썸네일 URL 없음, Meta API에서 조회 시도...")
+                    thumbnail_url = get_video_thumbnail(video_id_str, access_token)
+
+                if thumbnail_url:
+                    video_data["image_url"] = str(thumbnail_url)
+                    print(f"[STEP5] video_data.image_url 설정됨: {thumbnail_url}")
+                else:
+                    print(f"[STEP5] WARNING: 비디오 썸네일 URL을 찾을 수 없습니다!")
+
+                object_story_spec["video_data"] = video_data
             else:
                 # 이미지 광고
                 object_story_spec["link_data"] = {

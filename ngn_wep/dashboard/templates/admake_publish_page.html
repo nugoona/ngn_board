@@ -1119,6 +1119,7 @@ async function loadAllData() {
             mediaType: uploadedItem.type,
             hash: uploadedItem.hash,
             videoId: uploadedItem.video_id,
+            thumbnailUrl: uploadedItem.thumbnail_url || uploadedItem.thumbnailUrl,
             previewUrl: previewUrl
           });
         }
@@ -1223,6 +1224,10 @@ async function publishAds() {
 
         if (item.mediaType === 'video') {
           cardData.video_id = item.videoId;
+          // 썸네일 URL 추가 (있는 경우)
+          if (item.thumbnailUrl) {
+            cardData.thumbnail_url = item.thumbnailUrl;
+          }
         } else {
           cardData.image_hash = item.hash;
         }
@@ -1253,6 +1258,10 @@ async function publishAds() {
 
         if (item.mediaType === 'video') {
           adData.video_id = item.videoId;
+          // 썸네일 URL 추가 (있는 경우)
+          if (item.thumbnailUrl) {
+            adData.thumbnail_url = item.thumbnailUrl;
+          }
         } else {
           adData.image_hash = item.hash;
         }

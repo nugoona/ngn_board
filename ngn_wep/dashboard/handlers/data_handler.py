@@ -2328,3 +2328,181 @@ def get_compare_reviews():
     except Exception as e:
         print(f"[ERROR] get_compare_reviews 실패: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 Step 4: 광고 관리 API (Ad Management)
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/get_active_ads", methods=["GET"])
+def get_active_ads():
+    """Meta API에서 활성(ON) 상태인 광고 목록 조회"""
+    try:
+        account_id = request.args.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
+
+        # Meta API 액세스 토큰
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
+
+        # ad_account_id 형식 맞추기
+        ad_account_id = f"act_{account_id}" if not account_id.startswith("act_") else account_id
+
+        # Meta API로 ACTIVE 상태 광고 조회
+        ads_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/ads"
+        params = {
+            "access_token": access_token,
+            "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec}",
+            "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
+            "limit": 100
+        }
+
+        print(f"[STEP4] 활성 광고 조회: {ad_account_id}")
+        response = requests.get(ads_url, params=params, timeout=30)
+        result = response.json()
+
+        if "error" in result:
+            error_msg = result["error"].get("message", "Unknown error")
+            print(f"[STEP4] Meta API 오류: {error_msg}")
+            return jsonify({"status": "error", "message": f"Meta API 오류: {error_msg}"}), 400
+
+        ads_data = result.get("data", [])
+        print(f"[STEP4] 조회된 활성 광고 수: {len(ads_data)}")
+
+        # 광고 데이터 가공
+        processed_ads = []
+        for ad in ads_data:
+            creative = ad.get("creative", {})
+            thumbnail_url = creative.get("thumbnail_url", "")
+
+            processed_ads.append({
+                "id": ad.get("id"),
+                "name": ad.get("name", "이름 없음"),
+                "status": ad.get("status"),
+                "effective_status": ad.get("effective_status"),
+                "thumbnail_url": thumbnail_url
+            })
+
+        return jsonify({
+            "status": "success",
+            "ads": processed_ads,
+            "total": len(processed_ads)
+        }), 200
+
+    except requests.exceptions.Timeout:
+        return jsonify({"status": "error", "message": "Meta API 요청 시간 초과"}), 504
+    except Exception as e:
+        print(f"[ERROR] get_active_ads 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/pause_ads", methods=["POST"])
+def pause_ads():
+    """선택한 광고들을 일시정지(PAUSED) 상태로 변경"""
+    try:
+        data = request.get_json() or {}
+        ad_ids = data.get("ad_ids", [])
+
+        if not ad_ids:
+            return jsonify({"status": "error", "message": "ad_ids가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
+
+        print(f"[STEP4] 광고 일시정지 요청: {len(ad_ids)}개")
+
+        success_count = 0
+        failed_ids = []
+
+        for ad_id in ad_ids:
+            try:
+                update_url = f"https://graph.facebook.com/v24.0/{ad_id}"
+                response = requests.post(
+                    update_url,
+                    data={
+                        "access_token": access_token,
+                        "status": "PAUSED"
+                    },
+                    timeout=15
+                )
+                result = response.json()
+
+                if result.get("success") or "id" in result:
+                    success_count += 1
+                    print(f"[STEP4] 광고 {ad_id} 일시정지 성공")
+                else:
+                    failed_ids.append(ad_id)
+                    print(f"[STEP4] 광고 {ad_id} 일시정지 실패: {result}")
+
+            except Exception as e:
+                failed_ids.append(ad_id)
+                print(f"[STEP4] 광고 {ad_id} 일시정지 오류: {e}")
+
+        return jsonify({
+            "status": "success" if success_count > 0 else "error",
+            "message": f"{success_count}개 광고 일시정지 완료",
+            "success_count": success_count,
+            "failed_ids": failed_ids
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] pause_ads 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/delete_ads", methods=["POST"])
+def delete_ads():
+    """선택한 광고들을 삭제 (DELETED 상태로 변경)"""
+    try:
+        data = request.get_json() or {}
+        ad_ids = data.get("ad_ids", [])
+
+        if not ad_ids:
+            return jsonify({"status": "error", "message": "ad_ids가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
+
+        print(f"[STEP4] 광고 삭제 요청: {len(ad_ids)}개")
+
+        success_count = 0
+        failed_ids = []
+
+        for ad_id in ad_ids:
+            try:
+                # Meta API에서 광고 삭제는 DELETE 메서드 또는 status=DELETED로 변경
+                delete_url = f"https://graph.facebook.com/v24.0/{ad_id}"
+                response = requests.delete(
+                    delete_url,
+                    params={"access_token": access_token},
+                    timeout=15
+                )
+                result = response.json()
+
+                if result.get("success"):
+                    success_count += 1
+                    print(f"[STEP4] 광고 {ad_id} 삭제 성공")
+                else:
+                    failed_ids.append(ad_id)
+                    print(f"[STEP4] 광고 {ad_id} 삭제 실패: {result}")
+
+            except Exception as e:
+                failed_ids.append(ad_id)
+                print(f"[STEP4] 광고 {ad_id} 삭제 오류: {e}")
+
+        return jsonify({
+            "status": "success" if success_count > 0 else "error",
+            "message": f"{success_count}개 광고 삭제 완료",
+            "success_count": success_count,
+            "failed_ids": failed_ids
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] delete_ads 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500

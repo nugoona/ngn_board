@@ -314,6 +314,21 @@ def admake_adcreate_page():
                            company_names=session.get("company_names", []),
                            account_id=account_id)
 
+@app.route("/admake/manage")
+def admake_manage_page():
+    """ADMAKE 광고 관리 Step 4 페이지 (기존 광고 정리 및 노출 설정)"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    # account_id 파라미터 확인
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_admanage_page.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")

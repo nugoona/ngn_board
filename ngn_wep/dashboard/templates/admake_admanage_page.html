@@ -367,9 +367,11 @@
       overflow-x: auto;
       overflow-y: auto;
       max-height: 320px;
-      border: none;
-      border-radius: 0;
-      background: transparent;
+      border: none !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
 
     .admake-table {
@@ -377,39 +379,50 @@
       max-width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
+      border: none !important;
     }
 
     .admake-table th,
     .admake-table td {
-      padding: 12px 8px;
+      padding: 12px 8px !important;
       text-align: left;
-      border-bottom: 1px solid #27272A;
+      border: none !important;
+      border-bottom: 1px solid #27272A !important;
       vertical-align: middle;
     }
 
     .admake-table th {
-      font-size: 11px;
-      font-weight: 600;
-      color: #FFFFFF;
-      text-transform: none;
-      letter-spacing: 0;
-      background: #09090B;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      color: #FFFFFF !important;
+      text-transform: none !important;
+      letter-spacing: 0 !important;
+      background: transparent !important;
       position: sticky;
       top: 0;
       z-index: 1;
     }
 
+    .admake-table thead {
+      background: transparent !important;
+    }
+
+    .admake-table thead tr {
+      background: transparent !important;
+      border: none !important;
+    }
+
     /* 컬럼 폭 최적화 */
     .admake-table th:nth-child(1),
-    .admake-table td:nth-child(1) { width: 40px; padding-left: 12px; }  /* 체크박스 */
+    .admake-table td:nth-child(1) { width: 40px !important; padding-left: 12px !important; }
     .admake-table th:nth-child(2),
-    .admake-table td:nth-child(2) { width: 72px; }  /* 썸네일 */
+    .admake-table td:nth-child(2) { width: 72px !important; }
     .admake-table th:nth-child(3),
-    .admake-table td:nth-child(3) { width: auto; }  /* 광고 이름 */
+    .admake-table td:nth-child(3) { width: auto !important; }
     .admake-table th:nth-child(4),
-    .admake-table td:nth-child(4) { width: 60px; }  /* 캠페인 */
+    .admake-table td:nth-child(4) { width: 60px !important; }
     .admake-table th:nth-child(5),
-    .admake-table td:nth-child(5) { width: 70px; padding-right: 12px; }  /* 상태 */
+    .admake-table td:nth-child(5) { width: 70px !important; padding-right: 12px !important; }
 
     .admake-table td {
       font-size: 13px;
@@ -425,20 +438,20 @@
     }
 
     .admake-table tbody tr {
-      background: transparent;
+      background: transparent !important;
       transition: background 0.15s ease;
     }
 
     .admake-table tbody tr:hover {
-      background: rgba(39, 39, 42, 0.5);
+      background: rgba(39, 39, 42, 0.5) !important;
     }
 
     .admake-table tbody tr.selected {
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(59, 130, 246, 0.08) !important;
     }
 
     .admake-table tbody tr:last-child td {
-      border-bottom: 1px solid #27272A;
+      border-bottom: 1px solid #27272A !important;
     }
 
     /* 캠페인 타입 */

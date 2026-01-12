@@ -2397,28 +2397,27 @@ def get_active_ads():
 
         all_ads = []
 
-        # 전환 광고세트에서 status=ACTIVE인 광고 조회 (엔티티 레벨 ON)
-        # effective_status가 아닌 status로 필터 - 종료기간 등으로 일시중단된 광고도 포함
+        # 광고세트에서 모든 광고 조회 후 서버 측에서 status=ACTIVE 필터링
+        # Meta API는 status 필드 필터링을 지원하지 않음
         if adset_ids:
             for adset_id in adset_ids:
                 ads_url = f"https://graph.facebook.com/v24.0/{adset_id}/ads"
                 params = {
                     "access_token": access_token,
                     "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id,configured_status",
-                    "filtering": '[{"field":"status","operator":"IN","value":["ACTIVE"]}]',
                     "limit": 100
                 }
 
-                print(f"[STEP4] 세트 {adset_id}의 ON 상태(status=ACTIVE) 광고 조회")
+                print(f"[STEP4] 세트 {adset_id}의 모든 광고 조회")
                 response = requests.get(ads_url, params=params, timeout=30)
                 result = response.json()
 
-                print(f"[STEP4] API 응답: {result}")
-
                 if "error" not in result:
                     ads_data = result.get("data", [])
-                    all_ads.extend(ads_data)
-                    print(f"[STEP4] 세트 {adset_id}: {len(ads_data)}개 ON 광고 (status=ACTIVE)")
+                    # 서버 측에서 status=ACTIVE 필터링 (엔티티 레벨 ON인 광고만)
+                    active_ads = [ad for ad in ads_data if ad.get("status") == "ACTIVE"]
+                    all_ads.extend(active_ads)
+                    print(f"[STEP4] 세트 {adset_id}: 전체 {len(ads_data)}개 중 ON 상태 {len(active_ads)}개")
                 else:
                     error_msg = result.get('error', {}).get('message', 'Unknown')
                     print(f"[STEP4] 세트 {adset_id} 조회 오류: {error_msg}")
@@ -2428,22 +2427,22 @@ def get_active_ads():
             params = {
                 "access_token": access_token,
                 "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id,configured_status",
-                "filtering": '[{"field":"status","operator":"IN","value":["ACTIVE"]}]',
                 "limit": 100
             }
 
-            print(f"[STEP4] 계정 전체 ON 광고 조회 (폴백): {ad_account_id}")
+            print(f"[STEP4] 계정 전체 광고 조회 (폴백): {ad_account_id}")
             response = requests.get(ads_url, params=params, timeout=30)
             result = response.json()
-
-            print(f"[STEP4] API 응답: {result}")
 
             if "error" in result:
                 error_msg = result["error"].get("message", "Unknown error")
                 print(f"[STEP4] Meta API 오류: {error_msg}")
                 return jsonify({"status": "error", "message": f"Meta API 오류: {error_msg}"}), 400
 
-            all_ads = result.get("data", [])
+            ads_data = result.get("data", [])
+            # 서버 측에서 status=ACTIVE 필터링
+            all_ads = [ad for ad in ads_data if ad.get("status") == "ACTIVE"]
+            print(f"[STEP4] 계정 전체: 전체 {len(ads_data)}개 중 ON 상태 {len(all_ads)}개")
 
         # 중복 제거 (같은 광고가 여러 세트에 있을 수 있음)
         seen_ids = set()

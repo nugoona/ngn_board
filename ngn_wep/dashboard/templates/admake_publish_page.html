@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEP 5 - ADMAKE</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts: Inter Tight (영문/숫자) + Pretendard (한글) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
+  <style>
+    :root {
+      --bg-primary: #09090B;
+      --bg-secondary: #121215;
+      --bg-card: #18181B;
+      --bg-card-hover: #1f1f23;
+      --bg-input: #0d0d0f;
+      --border-default: #27272A;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-gold: #f59e0b;
+      --accent-red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: -0.02em;
+      height: 100vh;
+      overflow: hidden;
+      color: var(--text-primary);
+    }
+
+    /* ===== 전역 스크롤바 - Minimalist Style ===== */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3f3f46;
+    }
+
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-default) transparent;
+    }
+
+    .font-inter {
+      font-family: 'Inter Tight', sans-serif;
+      letter-spacing: 0;
+    }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-default) !important;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-default) !important;
+    }
+
+    .hamburger-dropdown a {
+      color: var(--text-secondary) !important;
+    }
+
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar (Refined Minimal Style) ===== */
+    .admake-progress-bar {
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: linear-gradient(180deg, #0A0A0B 0%, #09090B 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 28px 40px;
+      flex-shrink: 0;
+    }
+
+    .admake-progress-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .admake-progress-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: transparent;
+      min-width: 90px;
+    }
+
+    .admake-progress-step .step-icon {
+      display: none;
+      width: 18px;
+      height: 18px;
+    }
+
+    .admake-progress-step .step-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      color: #3F3F46;
+      letter-spacing: 0.08em;
+      transition: all 0.4s ease;
+      text-transform: uppercase;
+    }
+
+    .admake-progress-step .step-label {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: #3F3F46;
+      white-space: nowrap;
+      transition: all 0.4s ease;
+    }
+
+    /* ===== Completed State ===== */
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .admake-progress-step.completed .step-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #34D399;
+    }
+
+    .admake-progress-step.completed .step-icon i {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.5;
+    }
+
+    .admake-progress-step.completed .step-number {
+      display: none;
+    }
+
+    .admake-progress-step.completed .step-label {
+      color: #6EE7B7;
+      font-weight: 500;
+    }
+
+    /* ===== Active State ===== */
+    .admake-progress-step.active {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                  0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .admake-progress-step.active .step-number {
+      color: #18181B;
+      font-weight: 800;
+    }
+
+    .admake-progress-step.active .step-label {
+      color: #09090B;
+      font-weight: 600;
+    }
+
+    /* ===== Pending State ===== */
+    .admake-progress-step:not(.completed):not(.active) {
+      background: transparent;
+      border: 1px dashed #27272A;
+    }
+
+    .admake-progress-step:not(.completed):not(.active) .step-number {
+      color: #52525B;
+    }
+
+    .admake-progress-step:not(.completed):not(.active) .step-label {
+      color: #52525B;
+    }
+
+    /* ===== Connector Lines ===== */
+    .admake-progress-connector {
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      transition: all 0.4s ease;
+    }
+
+    .admake-progress-connector-line {
+      width: 28px;
+      height: 2px;
+      background: #27272A;
+      border-radius: 1px;
+      transition: all 0.4s ease;
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-line {
+      background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+    }
+
+    /* ===== 메인 레이아웃 ===== */
+    .admake-main-wrapper {
+      display: flex;
+      flex-direction: column;
+      padding-top: 65px;
+      height: calc(100vh - 56px - 105px - 72px);
+      overflow: hidden;
+    }
+
+    .admake-main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px 32px;
+    }
+
+    .admake-content-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* ===== 섹션 스타일 ===== */
+    .admake-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+
+    .admake-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .admake-section-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.1);
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .admake-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .admake-section-subtitle {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== Final Review 섹션 ===== */
+    .review-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .review-media-preview {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .review-media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+
+    .review-media-item {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--bg-input);
+    }
+
+    .review-media-item img,
+    .review-media-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .review-settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .review-setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .review-setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .review-setting-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .review-setting-label i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .review-setting-value {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+      max-width: 200px;
+      text-align: right;
+      word-break: break-all;
+    }
+
+    /* ===== 전송 프로그레스 섹션 ===== */
+    .publish-progress-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 20px;
+      display: none;
+    }
+
+    .publish-progress-section.active {
+      display: block;
+    }
+
+    .progress-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .progress-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .progress-count {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-blue);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 4px;
+      background: var(--border-default);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-status {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* ===== 결과 리스트 ===== */
+    .result-list {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .result-list.active {
+      display: flex;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+    }
+
+    .result-item.result-success {
+      border-left: 3px solid var(--accent-emerald);
+    }
+
+    .result-item.result-error {
+      border-left: 3px solid var(--accent-red);
+    }
+
+    .result-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-icon i {
+      width: 18px;
+      height: 18px;
+    }
+
+    .result-success .result-icon {
+      color: var(--accent-emerald);
+    }
+
+    .result-error .result-icon {
+      color: var(--accent-red);
+    }
+
+    .result-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .result-status {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .result-success .result-status {
+      color: var(--accent-emerald);
+    }
+
+    .result-error .result-status {
+      color: var(--accent-red);
+    }
+
+    .result-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--accent-blue);
+      text-decoration: none;
+      padding: 6px 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .result-link:hover {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .result-link i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .result-error-msg {
+      font-size: 11px;
+      color: var(--accent-red);
+      opacity: 0.9;
+      max-width: 250px;
+    }
+
+    /* ===== 하단 액션 바 ===== */
+    .admake-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background: linear-gradient(180deg, rgba(18, 18, 21, 0.95) 0%, var(--bg-secondary) 100%);
+      border-top: 1px solid var(--border-default);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 1000;
+      backdrop-filter: blur(12px);
+    }
+
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    .admake-action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .admake-btn {
+      font-family: 'Inter Tight', sans-serif;
+      padding: 12px 28px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admake-btn i {
+      width: 16px;
+      height: 16px;
+    }
+
+    .admake-btn-secondary {
+      background: linear-gradient(135deg, #27272A 0%, #1f1f23 100%);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .admake-btn-secondary:hover {
+      background: linear-gradient(135deg, #3f3f46 0%, #27272A 100%);
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .admake-btn-primary {
+      background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
+      color: #1a1a1a;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .admake-btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 1);
+      transform: translateY(-1px);
+    }
+
+    .admake-btn-primary:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* 전송 버튼 (Emerald) */
+    .admake-btn-publish {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .admake-btn-publish:hover:not(:disabled) {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .admake-btn-publish:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* ===== 후속 액션 버튼 (전송 완료 후) ===== */
+    .publish-action-buttons {
+      display: none;
+      gap: 12px;
+    }
+
+    .publish-action-buttons.active {
+      display: flex;
+    }
+
+    .publish-btn-more {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .publish-btn-more:hover {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .publish-btn-home {
+      background: linear-gradient(135deg, #27272A 0%, #1f1f23 100%);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-default);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .publish-btn-home:hover {
+      background: linear-gradient(135deg, #3f3f46 0%, #27272A 100%);
+      color: var(--text-primary);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== 성공 애니메이션 오버레이 ===== */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(9, 9, 11, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .success-overlay.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .success-overlay lottie-player {
+      width: 200px;
+      height: 200px;
+    }
+
+    .success-message {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      text-align: center;
+    }
+
+    .success-submessage {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    /* ===== 커스텀 토스트 알림 ===== */
+    .admake-toast-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .admake-toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      pointer-events: auto;
+      animation: toastSlideIn 0.3s ease;
+      max-width: 400px;
+    }
+
+    .admake-toast.toast-out {
+      animation: toastSlideOut 0.3s ease forwards;
+    }
+
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toastSlideOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    .admake-toast-icon { font-size: 18px; flex-shrink: 0; }
+    .admake-toast-message { font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
+    .admake-toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; margin-left: auto; font-size: 16px; }
+    .admake-toast-close:hover { color: var(--text-primary); }
+    .admake-toast.toast-info { border-left: 3px solid var(--accent-blue); }
+    .admake-toast.toast-success { border-left: 3px solid var(--accent-emerald); }
+    .admake-toast.toast-warning { border-left: 3px solid var(--accent-gold); }
+    .admake-toast.toast-error { border-left: 3px solid var(--accent-red); }
+
+    /* ===== 숨김 클래스 ===== */
+    .hidden { display: none !important; }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 768px) {
+      .review-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admake-action-bar {
+        padding: 0 16px;
+      }
+
+      .admake-btn {
+        padding: 10px 16px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+  var accountId = "{{ account_id }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- 네비게이션 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">ADMAKE</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}">TREND</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bar (Refined Minimal Style) -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
+      <span class="step-number font-inter">STEP 1</span>
+      <span class="step-label">미디어 업로드</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <span class="admake-progress-connector-line"></span>
+    </div>
+    <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
+      <span class="step-number font-inter">STEP 2</span>
+      <span class="step-label">가이드로 자르기</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <span class="admake-progress-connector-line"></span>
+    </div>
+    <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
+      <span class="step-number font-inter">STEP 3</span>
+      <span class="step-label">광고 생성</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <span class="admake-progress-connector-line"></span>
+    </div>
+    <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
+      <span class="step-number font-inter">STEP 4</span>
+      <span class="step-label">사전 세팅</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <span class="admake-progress-connector-line"></span>
+    </div>
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">STEP 5</span>
+      <span class="step-label">검토 및 생성</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 컨텐츠 -->
+<div class="admake-main-wrapper">
+  <div class="admake-main-content">
+    <div class="admake-content-inner">
+
+      <!-- Final Review 섹션 -->
+      <div class="admake-section" id="reviewSection">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">01</span>
+          <span class="admake-section-title">Final Review</span>
+          <span class="admake-section-subtitle">광고 설정을 확인하세요</span>
+        </div>
+
+        <div class="review-grid">
+          <!-- 미디어 프리뷰 -->
+          <div class="review-media-preview">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="image" style="width: 14px; height: 14px;"></i>
+              선택된 소재
+            </div>
+            <div class="review-media-grid" id="mediaPreviewGrid">
+              <!-- 동적으로 생성 -->
+            </div>
+          </div>
+
+          <!-- 설정 요약 -->
+          <div class="review-settings-card">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="settings" style="width: 14px; height: 14px;"></i>
+              광고 설정
+            </div>
+            <div class="review-setting-row">
+              <span class="review-setting-label"><i data-lucide="layout"></i> 광고 유형</span>
+              <span class="review-setting-value" id="reviewAdType">-</span>
+            </div>
+            <div class="review-setting-row">
+              <span class="review-setting-label"><i data-lucide="link"></i> 랜딩 URL</span>
+              <span class="review-setting-value" id="reviewUrl">-</span>
+            </div>
+            <div class="review-setting-row">
+              <span class="review-setting-label"><i data-lucide="heading"></i> 헤드라인</span>
+              <span class="review-setting-value" id="reviewHeadline">-</span>
+            </div>
+            <div class="review-setting-row">
+              <span class="review-setting-label"><i data-lucide="mouse-pointer-click"></i> CTA</span>
+              <span class="review-setting-value" id="reviewCta">-</span>
+            </div>
+            <div class="review-setting-row">
+              <span class="review-setting-label"><i data-lucide="calendar"></i> 종료 설정</span>
+              <span class="review-setting-value" id="reviewEndDate">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Text 미리보기 -->
+        <div style="margin-top: 16px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: 8px; padding: 16px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="align-left" style="width: 14px; height: 14px;"></i>
+            Primary Text
+          </div>
+          <div id="reviewPrimaryText" style="font-size: 13px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">-</div>
+        </div>
+      </div>
+
+      <!-- 전송 프로그레스 섹션 -->
+      <div class="admake-section">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">02</span>
+          <span class="admake-section-title">전송 상태</span>
+        </div>
+
+        <div class="publish-progress-section" id="progressSection">
+          <div class="progress-header">
+            <span class="progress-title">광고 전송 중</span>
+            <span class="progress-count" id="progressCount">(0/0)</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+          <div class="progress-status" id="progressStatus">대기 중...</div>
+        </div>
+
+        <div class="result-list" id="resultList">
+          <!-- 동적으로 생성 -->
+        </div>
+
+        <div id="readyMessage" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+          <i data-lucide="send" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i>
+          <p style="margin: 0; font-size: 14px;">[광고 전송] 버튼을 클릭하여<br>Meta에 광고를 게시하세요</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-left font-inter">STEP 5 OF 5</div>
+  <div class="admake-action-buttons" id="prePublishButtons">
+    <button class="admake-btn admake-btn-secondary" id="backBtn">
+      <i data-lucide="arrow-left"></i> BACK
+    </button>
+    <button class="admake-btn admake-btn-publish" id="publishBtn">
+      <i data-lucide="send"></i> 광고 전송
+    </button>
+  </div>
+  <div class="publish-action-buttons" id="postPublishButtons">
+    <button class="admake-btn publish-btn-more" id="moreAdsBtn">
+      <i data-lucide="plus"></i> 광고 더 만들기
+    </button>
+    <button class="admake-btn publish-btn-home" id="backHomeBtn">
+      <i data-lucide="home"></i> 브릿지 페이지로
+    </button>
+  </div>
+</div>
+
+<!-- 성공 애니메이션 오버레이 -->
+<div class="success-overlay" id="successOverlay">
+  <lottie-player
+    src="https://assets10.lottiefiles.com/packages/lf20_jbrw3hcz.json"
+    background="transparent"
+    speed="1"
+    style="width: 200px; height: 200px;"
+    autoplay
+  ></lottie-player>
+  <div class="success-message">전송 완료!</div>
+  <div class="success-submessage">모든 광고가 성공적으로 게시되었습니다</div>
+</div>
+
+<!-- 토스트 컨테이너 -->
+<div class="admake-toast-container" id="toastContainer"></div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+// ===== 커스텀 토스트 알림 시스템 =====
+function showToast(message, type = 'info', duration = 3500) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `admake-toast toast-${type}`;
+  const icons = { info: 'i', success: '✓', warning: '⚠', error: '✕' };
+
+  toast.innerHTML = `
+    <span class="admake-toast-icon">${icons[type] || icons.info}</span>
+    <span class="admake-toast-message">${message}</span>
+    <button class="admake-toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ===== 상태 관리 =====
+let step3Data = null;
+let step4Data = null;
+let mediaItems = [];
+let publishResults = [];
+let isPublishing = false;
+
+console.log('[STEP5] 페이지 초기화 시작');
+
+// ===== IndexedDB에서 File 객체 가져오기 =====
+async function getFileFromIndexedDB(mediaId) {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB를 지원하지 않습니다'));
+      return;
+    }
+
+    const dbName = 'admake_files';
+    const request = indexedDB.open(dbName, 1);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const transaction = db.transaction(['files'], 'readonly');
+      const store = transaction.objectStore('files');
+      const getRequest = store.get(mediaId);
+
+      getRequest.onsuccess = () => {
+        if (getRequest.result && getRequest.result.file) {
+          resolve(getRequest.result.file);
+        } else {
+          reject(new Error('파일을 찾을 수 없습니다'));
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ===== 데이터 로드 =====
+async function loadAllData() {
+  console.log('[STEP5] 데이터 로드 시작');
+
+  // Step 3 데이터 로드
+  const step3Raw = sessionStorage.getItem('admake_step3_state');
+  if (step3Raw) {
+    step3Data = JSON.parse(step3Raw);
+    console.log('[STEP5] Step 3 데이터 로드:', step3Data);
+  } else {
+    console.warn('[STEP5] Step 3 데이터 없음');
+    showToast('Step 3 데이터를 찾을 수 없습니다.', 'warning');
+  }
+
+  // Step 4 데이터 로드
+  const step4Raw = sessionStorage.getItem('admake_step4_state');
+  if (step4Raw) {
+    step4Data = JSON.parse(step4Raw);
+    console.log('[STEP5] Step 4 데이터 로드:', step4Data);
+  }
+
+  // Step 2 업로드 결과 로드
+  const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
+  if (uploadedRaw) {
+    const uploaded = JSON.parse(uploadedRaw);
+    console.log('[STEP5] 업로드된 미디어 로드:', uploaded);
+
+    // 선택된 미디어만 필터링
+    if (step3Data && step3Data.selectedMediaIds) {
+      for (const mediaId of step3Data.selectedMediaIds) {
+        const uploadedItem = uploaded.find(u => u.id === mediaId);
+        if (uploadedItem) {
+          let previewUrl = null;
+          try {
+            const file = await getFileFromIndexedDB(mediaId);
+            previewUrl = URL.createObjectURL(file);
+          } catch (e) {
+            console.warn(`[STEP5] ${mediaId}: 파일 로드 실패`);
+          }
+
+          mediaItems.push({
+            id: mediaId,
+            mediaType: uploadedItem.type,
+            hash: uploadedItem.hash,
+            videoId: uploadedItem.video_id,
+            previewUrl: previewUrl
+          });
+        }
+      }
+    }
+  }
+
+  console.log('[STEP5] 최종 미디어 아이템:', mediaItems.length);
+  renderReview();
+}
+
+// ===== Final Review 렌더링 =====
+function renderReview() {
+  // 미디어 프리뷰 그리드
+  const mediaGrid = document.getElementById('mediaPreviewGrid');
+  mediaGrid.innerHTML = '';
+
+  mediaItems.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'review-media-item';
+
+    if (item.previewUrl) {
+      if (item.mediaType === 'video') {
+        div.innerHTML = `<video src="${item.previewUrl}" muted></video>`;
+      } else {
+        div.innerHTML = `<img src="${item.previewUrl}" alt="미디어">`;
+      }
+    } else {
+      div.innerHTML = `<div style="width:100%;height:100%;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;">No Preview</div>`;
+    }
+
+    mediaGrid.appendChild(div);
+  });
+
+  // 설정 요약
+  if (step3Data) {
+    const adTypeMap = {
+      'single_image': 'Single Image',
+      'single_video': 'Single Video',
+      'slide': 'Carousel'
+    };
+    document.getElementById('reviewAdType').textContent = adTypeMap[step3Data.adType] || step3Data.adType;
+
+    const masterValues = step3Data.masterValues || {};
+    document.getElementById('reviewUrl').textContent = masterValues.url || '-';
+    document.getElementById('reviewHeadline').textContent = masterValues.headline || '-';
+    document.getElementById('reviewCta').textContent = masterValues.cta || 'SHOP_NOW';
+    document.getElementById('reviewPrimaryText').textContent = masterValues.primaryText || '-';
+  }
+
+  // 종료 설정 (Step 4)
+  if (step4Data) {
+    if (step4Data.endDateSetting === 'set_end' && step4Data.endDate) {
+      document.getElementById('reviewEndDate').textContent = `${step4Data.endDate} ${step4Data.endTime || ''}`;
+    } else {
+      document.getElementById('reviewEndDate').textContent = '기간 제한 없음';
+    }
+  } else {
+    document.getElementById('reviewEndDate').textContent = '설정 안 됨';
+  }
+
+  // Lucide 아이콘 초기화
+  lucide.createIcons();
+}
+
+// ===== 광고 전송 =====
+async function publishAds() {
+  if (isPublishing) return;
+  if (!step3Data || mediaItems.length === 0) {
+    showToast('전송할 데이터가 없습니다.', 'error');
+    return;
+  }
+
+  isPublishing = true;
+  publishResults = [];
+
+  // UI 상태 전환
+  document.getElementById('readyMessage').style.display = 'none';
+  document.getElementById('progressSection').classList.add('active');
+  document.getElementById('publishBtn').disabled = true;
+
+  const totalAds = step3Data.adType === 'slide' ? 1 : mediaItems.length;
+
+  try {
+    // Step 3 마스터 값
+    const masterValues = step3Data.masterValues || {};
+
+    // 전송할 광고 데이터 구성
+    const adsToPublish = [];
+
+    if (step3Data.adType === 'slide') {
+      // 캐러셀: 하나의 광고로 전송
+      const cards = mediaItems.map((item, idx) => {
+        const locks = step3Data.cardLocks?.[item.id] || {};
+        const values = step3Data.cardValues?.[item.id] || {};
+
+        const cardData = {
+          link: locks.url ? masterValues.url : (values.url || masterValues.url),
+          name: locks.headline ? masterValues.headline : (values.headline || masterValues.headline),
+          description: locks.description ? masterValues.description : (values.description || masterValues.description)
+        };
+
+        if (item.mediaType === 'video') {
+          cardData.video_id = item.videoId;
+        } else {
+          cardData.image_hash = item.hash;
+        }
+
+        return cardData;
+      });
+
+      adsToPublish.push({
+        name: masterValues.adName || 'AD_CAROUSEL',
+        is_carousel: true,
+        cards: cards,
+        message: masterValues.primaryText || '',
+        link: masterValues.url || '',
+        cta_type: masterValues.cta || 'SHOP_NOW'
+      });
+    } else {
+      // 단일 이미지/비디오: 각각 별도 광고
+      mediaItems.forEach((item, idx) => {
+        const adData = {
+          name: `${masterValues.adName || 'AD'}_${String(idx + 1).padStart(2, '0')}`,
+          media_type: item.mediaType,
+          message: masterValues.primaryText || '',
+          link: masterValues.url || '',
+          headline: masterValues.headline || '',
+          description: masterValues.description || '',
+          cta_type: masterValues.cta || 'SHOP_NOW'
+        };
+
+        if (item.mediaType === 'video') {
+          adData.video_id = item.videoId;
+        } else {
+          adData.image_hash = item.hash;
+        }
+
+        adsToPublish.push(adData);
+      });
+    }
+
+    console.log('[STEP5] 전송할 광고:', adsToPublish);
+
+    // 배치 전송 API 호출
+    const response = await fetch('/dashboard/publish_ads_batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        account_id: accountId,
+        ads: adsToPublish
+      })
+    });
+
+    const result = await response.json();
+    console.log('[STEP5] 전송 결과:', result);
+
+    if (result.status === 'success') {
+      publishResults = result.results || [];
+      renderResults();
+
+      // 모든 성공 시 애니메이션 표시
+      if (result.fail_count === 0) {
+        showSuccessAnimation();
+      } else {
+        showToast(`${result.success_count}개 성공, ${result.fail_count}개 실패`, 'warning');
+      }
+    } else {
+      throw new Error(result.message || '전송 실패');
+    }
+
+  } catch (error) {
+    console.error('[STEP5] 전송 오류:', error);
+    showToast(`전송 오류: ${error.message}`, 'error');
+
+    // 에러 결과 표시
+    publishResults = [{
+      name: 'Error',
+      success: false,
+      error: error.message
+    }];
+    renderResults();
+  }
+
+  // UI 상태 전환 (완료)
+  isPublishing = false;
+  document.getElementById('progressSection').classList.remove('active');
+  document.getElementById('prePublishButtons').style.display = 'none';
+  document.getElementById('postPublishButtons').classList.add('active');
+}
+
+// ===== 프로그레스 업데이트 =====
+function updateProgress(current, total, status) {
+  const percent = Math.round((current / total) * 100);
+  document.getElementById('progressCount').textContent = `(${current}/${total})`;
+  document.getElementById('progressBarFill').style.width = `${percent}%`;
+  document.getElementById('progressStatus').textContent = status;
+}
+
+// ===== 결과 렌더링 =====
+function renderResults() {
+  const resultList = document.getElementById('resultList');
+  resultList.innerHTML = '';
+  resultList.classList.add('active');
+
+  publishResults.forEach(result => {
+    const div = document.createElement('div');
+    div.className = `result-item ${result.success ? 'result-success' : 'result-error'}`;
+
+    if (result.success) {
+      div.innerHTML = `
+        <span class="result-icon"><i data-lucide="check-circle"></i></span>
+        <span class="result-name">${result.name}</span>
+        <span class="result-status">전송 완료</span>
+        ${result.preview_link ? `
+          <a href="${result.preview_link}" class="result-link" target="_blank">
+            <i data-lucide="external-link"></i> 메타에서 확인
+          </a>
+        ` : ''}
+      `;
+    } else {
+      div.innerHTML = `
+        <span class="result-icon"><i data-lucide="alert-circle"></i></span>
+        <span class="result-name">${result.name}</span>
+        <span class="result-status">전송 실패</span>
+        <span class="result-error-msg">${result.error || '알 수 없는 오류'}</span>
+      `;
+    }
+
+    resultList.appendChild(div);
+  });
+
+  lucide.createIcons();
+}
+
+// ===== 성공 애니메이션 =====
+function showSuccessAnimation() {
+  const overlay = document.getElementById('successOverlay');
+  overlay.classList.add('active');
+
+  // 2.5초 후 자동 숨김
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    showToast('모든 광고가 성공적으로 전송되었습니다!', 'success');
+  }, 2500);
+}
+
+// ===== Smart Reset =====
+function smartReset() {
+  // Step 3~4 데이터만 삭제
+  sessionStorage.removeItem('admake_step3_state');
+  sessionStorage.removeItem('admake_step4_state');
+
+  // Step 1~2 데이터 유지
+  // admake_step1_state, IndexedDB.admake_files 유지
+
+  showToast('기존 소재를 유지한 채 Step 1으로 이동합니다.', 'info', 2000);
+
+  setTimeout(() => {
+    window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}&preserve=true`;
+  }, 1500);
+}
+
+// ===== 이벤트 핸들러 =====
+function handleBackButton() {
+  console.log('[STEP5] 이전 버튼 클릭');
+  window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
+}
+
+function handleMoreAds() {
+  console.log('[STEP5] 광고 더 만들기 클릭');
+  smartReset();
+}
+
+function handleBackHome() {
+  console.log('[STEP5] 브릿지 페이지로 클릭');
+  window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
+}
+
+// ===== 초기화 =====
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[STEP5] DOMContentLoaded');
+
+  // Lucide 아이콘 초기화
+  lucide.createIcons();
+
+  // 데이터 로드
+  await loadAllData();
+
+  // 이벤트 리스너 등록
+  document.getElementById('backBtn').addEventListener('click', handleBackButton);
+  document.getElementById('publishBtn').addEventListener('click', publishAds);
+  document.getElementById('moreAdsBtn').addEventListener('click', handleMoreAds);
+  document.getElementById('backHomeBtn').addEventListener('click', handleBackHome);
+
+  console.log('[STEP5] 초기화 완료');
+});
+</script>
+
+</body>
+</html>

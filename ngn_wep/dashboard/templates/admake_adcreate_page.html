@@ -120,15 +120,14 @@
       color: var(--text-primary) !important;
     }
 
-    /* ===== Progress Bar ===== */
+    /* ===== Progress Bar (Refined Minimal Style) ===== */
     .admake-progress-bar {
       position: sticky;
       top: 56px;
       z-index: 100;
-      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(18, 18, 21, 0.95) 100%);
-      border-bottom: 1px solid var(--border-default);
-      padding: 20px 40px 18px;
-      backdrop-filter: blur(12px);
+      background: linear-gradient(180deg, #0A0A0B 0%, #09090B 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 28px 40px;
       flex-shrink: 0;
     }
 
@@ -136,8 +135,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 6px;
-      max-width: 900px;
+      gap: 0;
+      max-width: 860px;
       margin: 0 auto;
     }
 
@@ -147,91 +146,121 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      padding: 10px 20px;
+      padding: 12px 16px;
       border-radius: 8px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid transparent;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: transparent;
+      min-width: 90px;
+    }
+
+    .admake-progress-step .step-icon {
+      display: none;
+      width: 18px;
+      height: 18px;
     }
 
     .admake-progress-step .step-number {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 13px;
+      font-size: 10px;
       font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.02em;
+      color: #3F3F46;
+      letter-spacing: 0.08em;
+      transition: all 0.4s ease;
+      text-transform: uppercase;
     }
 
     .admake-progress-step .step-label {
       font-family: 'Pretendard', sans-serif;
       font-size: 12px;
       font-weight: 500;
-      color: var(--text-muted);
+      color: #3F3F46;
       white-space: nowrap;
-      opacity: 0.7;
+      transition: all 0.4s ease;
     }
 
+    /* ===== Completed State ===== */
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .admake-progress-step.completed .step-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #34D399;
+    }
+
+    .admake-progress-step.completed .step-icon i {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.5;
+    }
+
+    .admake-progress-step.completed .step-number {
+      display: none;
+    }
+
+    .admake-progress-step.completed .step-label {
+      color: #6EE7B7;
+      font-weight: 500;
+    }
+
+    /* ===== Active State ===== */
     .admake-progress-step.active {
-      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.12);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+                  0 4px 16px rgba(0, 0, 0, 0.2);
     }
 
     .admake-progress-step.active .step-number {
-      font-size: 14px;
-      color: #1a1a1a;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8), 0 -1px 1px rgba(0, 0, 0, 0.15);
+      color: #18181B;
+      font-weight: 800;
     }
 
     .admake-progress-step.active .step-label {
-      font-size: 13px;
+      color: #09090B;
       font-weight: 600;
-      color: #2a2a2a;
-      opacity: 1;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 -1px 1px rgba(0, 0, 0, 0.1);
     }
 
-    .admake-progress-step.completed {
-      background: rgba(16, 185, 129, 0.08);
-      border-color: rgba(16, 185, 129, 0.15);
+    /* ===== Pending State ===== */
+    .admake-progress-step:not(.completed):not(.active) {
+      background: transparent;
+      border: 1px dashed #27272A;
     }
 
-    .admake-progress-step.completed .step-number,
-    .admake-progress-step.completed .step-label {
-      color: var(--accent-emerald);
-      opacity: 1;
+    .admake-progress-step:not(.completed):not(.active) .step-number {
+      color: #52525B;
     }
 
+    .admake-progress-step:not(.completed):not(.active) .step-label {
+      color: #52525B;
+    }
+
+    /* ===== Connector Lines ===== */
     .admake-progress-connector {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 0 4px;
+      padding: 0 6px;
+      transition: all 0.4s ease;
     }
 
-    .admake-progress-connector::before,
-    .admake-progress-connector::after {
-      content: '';
-      width: 12px;
-      height: 1px;
-      background: var(--border-default);
+    .admake-progress-connector-line {
+      width: 28px;
+      height: 2px;
+      background: #27272A;
+      border-radius: 1px;
+      transition: all 0.4s ease;
     }
 
+    .admake-progress-connector.completed .admake-progress-connector-line {
+      background: linear-gradient(90deg, #10B981 0%, #34D399 100%);
+    }
+
+    /* Hide old dot element */
     .admake-progress-connector-dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      opacity: 0.4;
-    }
-
-    .admake-progress-connector.completed::before,
-    .admake-progress-connector.completed::after {
-      background: var(--accent-emerald);
-    }
-
-    .admake-progress-connector.completed .admake-progress-connector-dot {
-      background: var(--accent-emerald);
-      opacity: 1;
+      display: none;
     }
 
     /* ===== 메인 레이아웃 ===== */
@@ -951,40 +980,42 @@
   </div>
 </div>
 
-<!-- Progress Bar -->
+<!-- Progress Bar (Refined Minimal Style) -->
 <div class="admake-progress-bar">
   <div class="admake-progress-steps">
     <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
       <span class="step-number font-inter">STEP 1</span>
-      <span class="step-label">Media 업로드</span>
+      <span class="step-label">미디어 업로드</span>
     </div>
     <div class="admake-progress-connector completed">
-      <span class="admake-progress-connector-dot"></span>
+      <span class="admake-progress-connector-line"></span>
     </div>
     <div class="admake-progress-step completed">
+      <span class="step-icon"><i data-lucide="check"></i></span>
       <span class="step-number font-inter">STEP 2</span>
-      <span class="step-label">정밀 크롭</span>
+      <span class="step-label">가이드로 자르기</span>
     </div>
     <div class="admake-progress-connector completed">
-      <span class="admake-progress-connector-dot"></span>
+      <span class="admake-progress-connector-line"></span>
     </div>
     <div class="admake-progress-step active">
       <span class="step-number font-inter">STEP 3</span>
-      <span class="step-label">AD 생성</span>
+      <span class="step-label">광고 생성</span>
     </div>
     <div class="admake-progress-connector">
-      <span class="admake-progress-connector-dot"></span>
+      <span class="admake-progress-connector-line"></span>
     </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 4</span>
-      <span class="step-label">전략 SETTING</span>
+      <span class="step-label">사전 세팅</span>
     </div>
     <div class="admake-progress-connector">
-      <span class="admake-progress-connector-dot"></span>
+      <span class="admake-progress-connector-line"></span>
     </div>
     <div class="admake-progress-step">
       <span class="step-number font-inter">STEP 5</span>
-      <span class="step-label">검토 및 Publish</span>
+      <span class="step-label">검토 및 생성</span>
     </div>
   </div>
 </div>

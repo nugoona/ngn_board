@@ -2690,3 +2690,252 @@ def delete_ads():
     except Exception as e:
         print(f"[ERROR] delete_ads 실패: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ===== Meta API 에러 메시지 한국어 번역 =====
+META_ERROR_TRANSLATIONS = {
+    "(#100) Invalid parameter": "잘못된 파라미터입니다.",
+    "(#100) image_hash": "이미지 해시가 유효하지 않습니다.",
+    "(#100) video_id": "비디오 ID가 유효하지 않습니다.",
+    "(#2) Service temporarily unavailable": "Meta 서비스가 일시적으로 불가합니다. 잠시 후 다시 시도해주세요.",
+    "(#1) Please reduce the amount of data": "데이터 양이 너무 많습니다. 광고 개수를 줄여주세요.",
+    "(#190) Access token has expired": "인증이 만료되었습니다. 다시 로그인해주세요.",
+    "creative_spec": "광고 소재 설정에 오류가 있습니다.",
+    "object_story_spec": "광고 콘텐츠 설정에 오류가 있습니다.",
+    "The image hash": "이미지 해시가 올바르지 않습니다.",
+    "video ID": "비디오 ID가 올바르지 않습니다.",
+    "Page access token": "페이지 접근 권한이 없습니다.",
+    "permission": "접근 권한이 부족합니다.",
+    "rate limit": "API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.",
+}
+
+
+def translate_meta_error(error_message: str) -> str:
+    """Meta API 에러 메시지를 한국어로 번역"""
+    for key, translation in META_ERROR_TRANSLATIONS.items():
+        if key.lower() in error_message.lower():
+            return translation
+    return f"알 수 없는 오류: {error_message}"
+
+
+@data_blueprint.route("/publish_ads_batch", methods=["POST"])
+def publish_ads_batch():
+    """
+    Step 5: 여러 광고를 배치로 생성
+    - AdCreative 생성 → Ad 생성
+    """
+    try:
+        data = request.get_json()
+        account_id = data.get("account_id")
+        ads = data.get("ads", [])
+
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
+
+        if not ads:
+            return jsonify({"status": "error", "message": "전송할 광고가 없습니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
+
+        print(f"[STEP5] 광고 배치 전송 시작: {len(ads)}개")
+
+        # 광고 계정 정보 조회 (page_id, instagram_user_id 등)
+        account_info = get_account_info(account_id, access_token)
+        page_id = account_info.get("page_id")
+        instagram_user_id = account_info.get("instagram_user_id")
+
+        if not page_id:
+            return jsonify({"status": "error", "message": "Facebook 페이지 정보를 찾을 수 없습니다."}), 400
+
+        results = []
+        success_count = 0
+        fail_count = 0
+
+        for idx, ad_data in enumerate(ads):
+            ad_name = ad_data.get("name", f"AD_{idx + 1}")
+            print(f"[STEP5] 광고 {idx + 1}/{len(ads)} 처리 중: {ad_name}")
+
+            try:
+                # 1. AdCreative 생성
+                creative_id = create_ad_creative_internal(
+                    account_id=account_id,
+                    ad_data=ad_data,
+                    page_id=page_id,
+                    instagram_user_id=instagram_user_id,
+                    access_token=access_token
+                )
+
+                if not creative_id:
+                    raise Exception("AdCreative 생성 실패")
+
+                print(f"[STEP5] AdCreative 생성 완료: {creative_id}")
+
+                # 2. Ad 생성 (기본 AdSet에 연결)
+                # 참고: 실제 운영에서는 적절한 AdSet ID가 필요합니다
+                # 현재는 미리보기 목적이므로 AdCreative까지만 생성
+
+                results.append({
+                    "name": ad_name,
+                    "success": True,
+                    "creative_id": creative_id,
+                    "ad_id": None,  # AdSet 연결 시 생성됨
+                    "preview_link": f"https://business.facebook.com/adsmanager/manage/ads?act={account_id.replace('act_', '')}"
+                })
+                success_count += 1
+
+            except Exception as e:
+                error_msg = str(e)
+                translated_error = translate_meta_error(error_msg)
+                print(f"[STEP5] 광고 {ad_name} 전송 실패: {error_msg}")
+
+                results.append({
+                    "name": ad_name,
+                    "success": False,
+                    "error": translated_error
+                })
+                fail_count += 1
+
+        return jsonify({
+            "status": "success",
+            "results": results,
+            "success_count": success_count,
+            "fail_count": fail_count
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] publish_ads_batch 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+def get_account_info(account_id: str, access_token: str) -> dict:
+    """광고 계정에 연결된 페이지/Instagram 정보 조회"""
+    try:
+        # 광고 계정의 연결된 Instagram 계정 조회
+        url = f"https://graph.facebook.com/v24.0/{account_id}"
+        params = {
+            "fields": "name,instagram_accounts{id,username},business{owned_pages{id,name,instagram_business_account}}",
+            "access_token": access_token
+        }
+        response = requests.get(url, params=params, timeout=15)
+        result = response.json()
+
+        page_id = None
+        instagram_user_id = None
+
+        # Instagram 계정 정보 추출
+        if "instagram_accounts" in result and result["instagram_accounts"].get("data"):
+            instagram_user_id = result["instagram_accounts"]["data"][0].get("id")
+
+        # Business 페이지 정보 추출
+        if "business" in result and "owned_pages" in result["business"]:
+            pages = result["business"]["owned_pages"].get("data", [])
+            if pages:
+                page_id = pages[0].get("id")
+                # Instagram 비즈니스 계정 확인
+                if pages[0].get("instagram_business_account"):
+                    instagram_user_id = pages[0]["instagram_business_account"].get("id")
+
+        print(f"[STEP5] 계정 정보: page_id={page_id}, instagram_user_id={instagram_user_id}")
+        return {
+            "page_id": page_id,
+            "instagram_user_id": instagram_user_id
+        }
+
+    except Exception as e:
+        print(f"[STEP5] 계정 정보 조회 실패: {e}")
+        return {}
+
+
+def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str) -> str:
+    """
+    Meta API를 통해 AdCreative 생성 (내부 함수)
+    """
+    try:
+        url = f"https://graph.facebook.com/v24.0/{account_id}/adcreatives"
+
+        # object_story_spec 구성
+        object_story_spec = {
+            "page_id": page_id
+        }
+
+        if instagram_user_id:
+            object_story_spec["instagram_actor_id"] = instagram_user_id
+
+        # 캐러셀 vs 단일 미디어 분기
+        if ad_data.get("is_carousel") and ad_data.get("cards"):
+            # 캐러셀 광고
+            child_attachments = []
+            for card in ad_data["cards"]:
+                attachment = {
+                    "link": card.get("link", ad_data.get("link", "")),
+                    "name": card.get("name", ""),
+                    "description": card.get("description", ""),
+                    "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
+                }
+                # 미디어 타입에 따라 분기
+                if card.get("video_id"):
+                    attachment["video_id"] = card["video_id"]
+                elif card.get("image_hash"):
+                    attachment["image_hash"] = card["image_hash"]
+
+                child_attachments.append(attachment)
+
+            object_story_spec["link_data"] = {
+                "message": ad_data.get("message", ""),
+                "link": ad_data.get("link", ""),
+                "child_attachments": child_attachments,
+                "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
+            }
+
+        else:
+            # 단일 미디어 광고
+            media_type = ad_data.get("media_type", "image")
+
+            if media_type == "video":
+                # 비디오 광고
+                object_story_spec["video_data"] = {
+                    "video_id": ad_data.get("video_id"),
+                    "message": ad_data.get("message", ""),
+                    "title": ad_data.get("headline", ""),
+                    "link_description": ad_data.get("description", ""),
+                    "call_to_action": {
+                        "type": ad_data.get("cta_type", "SHOP_NOW"),
+                        "value": {"link": ad_data.get("link", "")}
+                    }
+                }
+            else:
+                # 이미지 광고
+                object_story_spec["link_data"] = {
+                    "message": ad_data.get("message", ""),
+                    "link": ad_data.get("link", ""),
+                    "image_hash": ad_data.get("image_hash"),
+                    "name": ad_data.get("headline", ""),
+                    "description": ad_data.get("description", ""),
+                    "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
+                }
+
+        # API 요청
+        payload = {
+            "name": ad_data.get("name", "AdCreative"),
+            "object_story_spec": json.dumps(object_story_spec),
+            "access_token": access_token
+        }
+
+        print(f"[STEP5] AdCreative 생성 요청: {json.dumps(payload, indent=2, ensure_ascii=False)[:500]}")
+
+        response = requests.post(url, data=payload, timeout=30)
+        result = response.json()
+
+        if "id" in result:
+            return result["id"]
+        elif "error" in result:
+            error_msg = result["error"].get("message", "Unknown error")
+            raise Exception(error_msg)
+        else:
+            raise Exception("AdCreative ID를 받지 못했습니다.")
+
+    except Exception as e:
+        print(f"[STEP5] AdCreative 생성 오류: {e}")
+        raise

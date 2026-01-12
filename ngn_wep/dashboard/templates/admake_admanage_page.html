@@ -1344,8 +1344,34 @@
 
   function handleNextButton() {
     console.log('[STEP4] 다음 버튼 클릭 - Step 5로 이동');
-    // TODO: Step 5 구현 후 연결
-    alert('Step 5는 아직 준비 중입니다.');
+
+    // 종료 날짜 설정 읽기
+    const periodRadio = document.querySelector('input[name="period"]:checked');
+    const endDateSetting = periodRadio ? periodRadio.value : 'no_end';
+
+    let endDate = null;
+    let endTime = null;
+    if (endDateSetting === 'set_end') {
+      const datetimeInput = document.getElementById('endDatetime');
+      if (datetimeInput && datetimeInput.value) {
+        const datetime = new Date(datetimeInput.value);
+        endDate = datetime.toISOString().split('T')[0];
+        endTime = datetime.toTimeString().split(' ')[0].substring(0, 5);
+      }
+    }
+
+    // Step 4 데이터 저장
+    const step4Data = {
+      selectedAdIds: Array.from(selectedAdIds),
+      endDateSetting: endDateSetting,
+      endDate: endDate,
+      endTime: endTime
+    };
+    sessionStorage.setItem('admake_step4_state', JSON.stringify(step4Data));
+    console.log('[STEP4] Step 4 데이터 저장:', step4Data);
+
+    // Step 5로 이동
+    window.location.href = `/admake/publish?account_id=${encodeURIComponent(accountId)}`;
   }
 
   // HTML 이스케이프

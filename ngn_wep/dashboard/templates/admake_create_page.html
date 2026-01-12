@@ -731,6 +731,127 @@
     .admake-toast.toast-warning { border-left: 3px solid var(--accent-gold); }
     .admake-toast.toast-error { border-left: 3px solid #ef4444; }
 
+    /* ===== Preserve Mode Modal ===== */
+    .preserve-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .preserve-modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .preserve-modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 420px;
+      padding: 32px;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .preserve-modal-overlay.show .preserve-modal {
+      transform: scale(1);
+    }
+
+    .preserve-modal-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preserve-modal-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--accent-blue);
+    }
+
+    .preserve-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .preserve-modal-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .preserve-modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .preserve-modal-btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .preserve-modal-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .preserve-modal-btn.btn-use {
+      background: linear-gradient(135deg, var(--accent-blue) 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .preserve-modal-btn.btn-use:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .preserve-modal-btn.btn-new {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .preserve-modal-btn.btn-new:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+
     /* 모바일 미지원 - 데스크탑 전용 */
   </style>
 </head>
@@ -742,6 +863,36 @@
   var accountId = "{{ account_id }}";
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- Preserve Mode 모달 -->
+<div class="preserve-modal-overlay" id="preserveModalOverlay">
+  <div class="preserve-modal">
+    <div class="preserve-modal-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+    <div class="preserve-modal-title">이전 소재를 그대로 사용하시겠습니까?</div>
+    <div class="preserve-modal-desc">
+      기존에 업로드한 미디어 파일이 남아 있습니다.<br>
+      이전 소재를 재사용하거나 새로 시작할 수 있습니다.
+    </div>
+    <div class="preserve-modal-actions">
+      <button class="preserve-modal-btn btn-use" id="preserveUseBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        이전 소재 사용하기
+      </button>
+      <button class="preserve-modal-btn btn-new" id="preserveNewBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        새로 시작하기
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- 네비게이션 -->
 <div class="nav-buttons">
@@ -1429,6 +1580,119 @@ window.addEventListener('beforeunload', (e) => {
   }
 });
 
+// ===== Preserve Mode 관련 함수 =====
+function showPreserveModal() {
+  const overlay = document.getElementById('preserveModalOverlay');
+  if (overlay) {
+    overlay.classList.add('show');
+  }
+}
+
+function hidePreserveModal() {
+  const overlay = document.getElementById('preserveModalOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+  }
+}
+
+function clearAllAdmakeData() {
+  // sessionStorage 정리
+  sessionStorage.removeItem('admake_step1_state');
+  sessionStorage.removeItem('admake_step2_results');
+  sessionStorage.removeItem('admake_step3_state');
+  sessionStorage.removeItem('admake_step4_state');
+  sessionStorage.removeItem('admake_uploaded_results');
+
+  // IndexedDB 정리
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open('admake_files', 1);
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        if (db.objectStoreNames.contains('files')) {
+          const transaction = db.transaction(['files'], 'readwrite');
+          const store = transaction.objectStore('files');
+          store.clear();
+          transaction.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          transaction.onerror = () => {
+            db.close();
+            resolve();
+          };
+        } else {
+          db.close();
+          resolve();
+        }
+      };
+      request.onerror = () => resolve();
+    } catch (e) {
+      console.error('[STEP1] IndexedDB 정리 오류:', e);
+      resolve();
+    }
+  });
+}
+
+function setupPreserveModalHandlers() {
+  const useBtn = document.getElementById('preserveUseBtn');
+  const newBtn = document.getElementById('preserveNewBtn');
+
+  if (useBtn) {
+    useBtn.addEventListener('click', () => {
+      console.log('[STEP1] 이전 소재 사용하기 선택');
+      hidePreserveModal();
+      // 기존 데이터 복원은 restoreStep1Data()에서 이미 처리됨
+      showToast('이전 소재를 불러왔습니다.', 'success', 2000);
+    });
+  }
+
+  if (newBtn) {
+    newBtn.addEventListener('click', async () => {
+      console.log('[STEP1] 새로 시작하기 선택');
+      hidePreserveModal();
+
+      // 모든 데이터 초기화
+      await clearAllAdmakeData();
+
+      // 미디어 아이템 초기화
+      mediaItems = [];
+      if (typeof updateUI === 'function') {
+        updateUI();
+      }
+
+      // URL에서 preserve 파라미터 제거
+      const url = new URL(window.location.href);
+      url.searchParams.delete('preserve');
+      window.history.replaceState({}, '', url);
+
+      showToast('새로운 작업을 시작합니다.', 'info', 2000);
+    });
+  }
+}
+
+function checkPreserveMode() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const preserveMode = urlParams.get('preserve') === 'true';
+
+  if (preserveMode) {
+    const step1State = sessionStorage.getItem('admake_step1_state');
+    if (step1State) {
+      try {
+        const state = JSON.parse(step1State);
+        if (state.mediaItems && state.mediaItems.length > 0) {
+          console.log('[STEP1] Preserve 모드: 기존 소재 감지됨, 모달 표시');
+          showPreserveModal();
+          return true;
+        }
+      } catch (e) {
+        console.error('[STEP1] Preserve 모드 상태 파싱 오류:', e);
+      }
+    }
+  }
+  return false;
+}
+
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
   if (!initDOMElements()) {
@@ -1437,8 +1701,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   setupEventListeners();
+  setupPreserveModalHandlers();
   restoreStep1Data();
   updateUI();
+
+  // Preserve 모드 확인 (URL에 preserve=true가 있고 기존 데이터가 있으면 모달 표시)
+  checkPreserveMode();
 });
 </script>
 

@@ -329,6 +329,21 @@ def admake_manage_page():
                            company_names=session.get("company_names", []),
                            account_id=account_id)
 
+@app.route("/admake/publish")
+def admake_publish_page():
+    """ADMAKE Step 5 페이지 (검토 및 생성)"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    # account_id 파라미터 확인
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_publish_page.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")

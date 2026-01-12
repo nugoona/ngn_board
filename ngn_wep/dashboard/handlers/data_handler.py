@@ -2838,6 +2838,258 @@ def remove_pending_ad(ad_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# ─────────────────────────────────────────────────────────────
+# 📌 ADMAKE: 예산 실시간 조회/수정 API (Meta API Live)
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/get_budget_info", methods=["GET"])
+def get_budget_info():
+    """
+    Meta API에서 캠페인/세트 예산 실시간 조회
+    - CBO(캠페인 예산) vs ABO(세트 예산) 자동 판단
+    """
+    try:
+        account_id = request.args.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 없습니다."}), 500
+
+        # account_id 정규화
+        clean_account_id = account_id.replace("act_", "")
+
+        # BigQuery에서 캠페인/세트 ID 조회
+        bq_client = bigquery.Client()
+        mapping_query = """
+            SELECT conv_campaign_id, conv_adset_id, traffic_campaign_id, traffic_adset_id
+            FROM `ngn_dataset.meta_account_mapping`
+            WHERE account_id = @account_id
+            LIMIT 1
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("account_id", "STRING", clean_account_id)
+            ]
+        )
+        mapping_result = bq_client.query(mapping_query, job_config=job_config).result()
+
+        mapping_row = None
+        for row in mapping_result:
+            mapping_row = row
+            break
+
+        if not mapping_row:
+            return jsonify({"status": "error", "message": "계정 매핑 정보가 없습니다."}), 404
+
+        result = {
+            "conv": None,  # 전환 캠페인 예산 정보
+            "traffic": None  # 유입 캠페인 예산 정보
+        }
+
+        # 전환 캠페인 예산 조회
+        if mapping_row.conv_campaign_id:
+            conv_budget = get_campaign_budget_from_meta(
+                mapping_row.conv_campaign_id,
+                mapping_row.conv_adset_id,
+                access_token
+            )
+            result["conv"] = conv_budget
+
+        # 유입 캠페인 예산 조회
+        if mapping_row.traffic_campaign_id:
+            traffic_budget = get_campaign_budget_from_meta(
+                mapping_row.traffic_campaign_id,
+                mapping_row.traffic_adset_id,
+                access_token
+            )
+            result["traffic"] = traffic_budget
+
+        print(f"[STEP4] 예산 정보 조회 완료: {json.dumps(result, indent=2, ensure_ascii=False)[:500]}")
+
+        return jsonify({
+            "status": "success",
+            "budget_info": result
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_budget_info 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+def get_campaign_budget_from_meta(campaign_id: str, adset_id: str, access_token: str) -> dict:
+    """
+    Meta API에서 캠페인/세트 예산 조회 및 CBO/ABO 판단
+    """
+    try:
+        budget_info = {
+            "campaign_id": campaign_id,
+            "adset_id": adset_id,
+            "budget_type": None,  # "CBO" or "ABO"
+            "daily_budget": None,
+            "lifetime_budget": None,
+            "budget_remaining": None,
+            "status": None,
+            "name": None
+        }
+
+        # 캠페인 정보 조회
+        campaign_url = f"https://graph.facebook.com/v24.0/{campaign_id}"
+        campaign_response = requests.get(campaign_url, params={
+            "fields": "id,name,status,daily_budget,lifetime_budget,budget_remaining",
+            "access_token": access_token
+        }, timeout=15)
+        campaign_data = campaign_response.json()
+
+        print(f"[STEP4] 캠페인 {campaign_id} 조회: {json.dumps(campaign_data, indent=2)[:300]}")
+
+        # CBO 여부 판단: 캠페인에 예산이 있으면 CBO
+        if campaign_data.get("daily_budget") or campaign_data.get("lifetime_budget"):
+            budget_info["budget_type"] = "CBO"
+            budget_info["daily_budget"] = int(campaign_data.get("daily_budget", 0)) // 100 if campaign_data.get("daily_budget") else None
+            budget_info["lifetime_budget"] = int(campaign_data.get("lifetime_budget", 0)) // 100 if campaign_data.get("lifetime_budget") else None
+            budget_info["budget_remaining"] = int(campaign_data.get("budget_remaining", 0)) // 100 if campaign_data.get("budget_remaining") else None
+            budget_info["status"] = campaign_data.get("status")
+            budget_info["name"] = campaign_data.get("name")
+        else:
+            # ABO: 세트 예산 조회
+            budget_info["budget_type"] = "ABO"
+            budget_info["name"] = campaign_data.get("name")
+
+            if adset_id:
+                adset_url = f"https://graph.facebook.com/v24.0/{adset_id}"
+                adset_response = requests.get(adset_url, params={
+                    "fields": "id,name,status,daily_budget,lifetime_budget,budget_remaining",
+                    "access_token": access_token
+                }, timeout=15)
+                adset_data = adset_response.json()
+
+                print(f"[STEP4] 세트 {adset_id} 조회: {json.dumps(adset_data, indent=2)[:300]}")
+
+                budget_info["daily_budget"] = int(adset_data.get("daily_budget", 0)) // 100 if adset_data.get("daily_budget") else None
+                budget_info["lifetime_budget"] = int(adset_data.get("lifetime_budget", 0)) // 100 if adset_data.get("lifetime_budget") else None
+                budget_info["budget_remaining"] = int(adset_data.get("budget_remaining", 0)) // 100 if adset_data.get("budget_remaining") else None
+                budget_info["status"] = adset_data.get("status")
+
+        return budget_info
+
+    except Exception as e:
+        print(f"[STEP4] 예산 조회 오류: {e}")
+        return {"error": str(e)}
+
+
+@data_blueprint.route("/update_budget", methods=["POST"])
+def update_budget():
+    """
+    Meta API로 예산 업데이트 (CBO/ABO 자동 분기)
+    """
+    try:
+        data = request.get_json()
+        target_type = data.get("target_type")  # "conv" or "traffic"
+        budget_type = data.get("budget_type")  # "CBO" or "ABO"
+        campaign_id = data.get("campaign_id")
+        adset_id = data.get("adset_id")
+        daily_budget = data.get("daily_budget")  # 원화 단위 (예: 50000)
+        lifetime_budget = data.get("lifetime_budget")
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 없습니다."}), 500
+
+        # 예산을 센트 단위로 변환 (Meta API 규격)
+        update_data = {}
+        if daily_budget is not None:
+            update_data["daily_budget"] = int(daily_budget) * 100
+        if lifetime_budget is not None:
+            update_data["lifetime_budget"] = int(lifetime_budget) * 100
+
+        if not update_data:
+            return jsonify({"status": "error", "message": "업데이트할 예산이 없습니다."}), 400
+
+        # CBO면 캠페인, ABO면 세트에 업데이트
+        if budget_type == "CBO":
+            target_id = campaign_id
+            target_url = f"https://graph.facebook.com/v24.0/{campaign_id}"
+        else:
+            target_id = adset_id
+            target_url = f"https://graph.facebook.com/v24.0/{adset_id}"
+
+        update_data["access_token"] = access_token
+
+        print(f"[STEP4] 예산 업데이트: {target_url}, 데이터: {update_data}")
+
+        response = requests.post(target_url, data=update_data, timeout=15)
+        result = response.json()
+
+        print(f"[STEP4] 예산 업데이트 응답: {json.dumps(result, indent=2)}")
+
+        if result.get("success"):
+            return jsonify({
+                "status": "success",
+                "message": "예산이 업데이트되었습니다.",
+                "target_type": target_type,
+                "target_id": target_id
+            }), 200
+        elif "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"].get("message", "예산 업데이트 실패")
+            }), 400
+        else:
+            return jsonify({"status": "error", "message": "알 수 없는 오류"}), 500
+
+    except Exception as e:
+        print(f"[ERROR] update_budget 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_blueprint.route("/update_adset_status", methods=["POST"])
+def update_adset_status():
+    """
+    AdSet 상태(ACTIVE/PAUSED) 업데이트
+    """
+    try:
+        data = request.get_json()
+        adset_id = data.get("adset_id")
+        status = data.get("status")  # "ACTIVE" or "PAUSED"
+
+        if not adset_id or not status:
+            return jsonify({"status": "error", "message": "adset_id와 status가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 없습니다."}), 500
+
+        url = f"https://graph.facebook.com/v24.0/{adset_id}"
+        response = requests.post(url, data={
+            "status": status,
+            "access_token": access_token
+        }, timeout=15)
+        result = response.json()
+
+        print(f"[STEP4] AdSet 상태 업데이트: {adset_id} → {status}, 응답: {result}")
+
+        if result.get("success"):
+            return jsonify({
+                "status": "success",
+                "message": f"세트 상태가 {status}로 변경되었습니다."
+            }), 200
+        elif "error" in result:
+            return jsonify({
+                "status": "error",
+                "message": result["error"].get("message", "상태 업데이트 실패")
+            }), 400
+        else:
+            return jsonify({"status": "error", "message": "알 수 없는 오류"}), 500
+
+    except Exception as e:
+        print(f"[ERROR] update_adset_status 실패: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @data_blueprint.route("/publish_ads_batch", methods=["POST"])
 def publish_ads_batch():
     """

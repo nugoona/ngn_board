@@ -2810,34 +2810,66 @@ def publish_ads_batch():
 
 
 def get_account_info(account_id: str, access_token: str) -> dict:
-    """광고 계정에 연결된 페이지/Instagram 정보 조회"""
+    """광고 계정에 연결된 페이지/Instagram 정보 조회 (BigQuery 우선, Meta API 폴백)"""
     try:
-        # 광고 계정의 연결된 Instagram 계정 조회
-        url = f"https://graph.facebook.com/v24.0/{account_id}"
-        params = {
-            "fields": "name,instagram_accounts{id,username},business{owned_pages{id,name,instagram_business_account}}",
-            "access_token": access_token
-        }
-        response = requests.get(url, params=params, timeout=15)
-        result = response.json()
-
         page_id = None
         instagram_user_id = None
 
-        # Instagram 계정 정보 추출
-        if "instagram_accounts" in result and result["instagram_accounts"].get("data"):
-            instagram_user_id = result["instagram_accounts"]["data"][0].get("id")
+        # 1. BigQuery에서 page_id, instagram_user_id 조회
+        try:
+            bq_client = bigquery.Client()
+            mapping_query = """
+                SELECT page_id, instagram_user_id
+                FROM `ngn_dataset.meta_account_mapping`
+                WHERE account_id = @account_id
+                LIMIT 1
+            """
+            job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+                ]
+            )
+            mapping_result = bq_client.query(mapping_query, job_config=job_config).result()
 
-        # Business 페이지 정보 추출
-        if "business" in result and "owned_pages" in result["business"]:
-            pages = result["business"]["owned_pages"].get("data", [])
-            if pages:
-                page_id = pages[0].get("id")
-                # Instagram 비즈니스 계정 확인
-                if pages[0].get("instagram_business_account"):
-                    instagram_user_id = pages[0]["instagram_business_account"].get("id")
+            for row in mapping_result:
+                page_id = str(row.page_id).strip() if row.page_id else None
+                instagram_user_id = str(row.instagram_user_id).strip() if row.instagram_user_id else None
+                print(f"[STEP5] BigQuery에서 조회 - page_id: '{page_id}', instagram_user_id: '{instagram_user_id}'")
+                break
+        except Exception as bq_err:
+            print(f"[STEP5] BigQuery 조회 실패: {bq_err}")
 
-        print(f"[STEP5] 계정 정보: page_id={page_id}, instagram_user_id={instagram_user_id}")
+        # 2. BigQuery에 없으면 Meta API로 폴백
+        if not page_id:
+            print(f"[STEP5] BigQuery에 account_id={account_id} 매핑 없음, Meta API로 폴백")
+            pages_url = "https://graph.facebook.com/v24.0/me/accounts"
+            pages_response = requests.get(pages_url, params={
+                "access_token": access_token,
+                "fields": "id,name"
+            }, timeout=10)
+            pages_data = pages_response.json()
+            print(f"[STEP5] Pages 응답: {json.dumps(pages_data, indent=2)[:500]}")
+
+            if 'data' in pages_data and len(pages_data['data']) > 0:
+                page_id = pages_data['data'][0]['id']
+
+        # 3. Page에서 Instagram Business Account 조회
+        if page_id and not instagram_user_id:
+            try:
+                ig_url = f"https://graph.facebook.com/v24.0/{page_id}"
+                ig_response = requests.get(ig_url, params={
+                    "access_token": access_token,
+                    "fields": "instagram_business_account"
+                }, timeout=10)
+                ig_data = ig_response.json()
+
+                if "instagram_business_account" in ig_data:
+                    instagram_user_id = ig_data["instagram_business_account"].get("id")
+                    print(f"[STEP5] Page에서 Instagram 계정 조회: {instagram_user_id}")
+            except Exception as ig_err:
+                print(f"[STEP5] Instagram 계정 조회 실패: {ig_err}")
+
+        print(f"[STEP5] 최종 계정 정보: page_id={page_id}, instagram_user_id={instagram_user_id}")
         return {
             "page_id": page_id,
             "instagram_user_id": instagram_user_id

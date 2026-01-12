@@ -2347,34 +2347,50 @@ def get_active_ads():
         if not access_token:
             return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
 
-        # BigQuery에서 캠페인/세트 ID 조회
+        # account_id 정규화 (act_ 접두사 제거)
+        clean_account_id = account_id.replace("act_", "")
+        print(f"[STEP4] 요청 account_id: {account_id}, 정규화: {clean_account_id}")
+
+        # BigQuery에서 캠페인/세트 ID 조회 (여러 형식 시도)
         bq_client = bigquery.Client()
         mapping_query = """
-            SELECT conv_campaign_id, conv_adset_id, traffic_campaign_id, traffic_adset_id
+            SELECT account_id, conv_campaign_id, conv_adset_id, traffic_campaign_id, traffic_adset_id
             FROM `ngn_dataset.meta_account_mapping`
             WHERE account_id = @account_id
+               OR account_id = @clean_account_id
+               OR account_id = @prefixed_account_id
             LIMIT 1
         """
         job_config = bigquery.QueryJobConfig(
             query_parameters=[
-                bigquery.ScalarQueryParameter("account_id", "STRING", account_id)
+                bigquery.ScalarQueryParameter("account_id", "STRING", account_id),
+                bigquery.ScalarQueryParameter("clean_account_id", "STRING", clean_account_id),
+                bigquery.ScalarQueryParameter("prefixed_account_id", "STRING", f"act_{clean_account_id}")
             ]
         )
         mapping_result = bq_client.query(mapping_query, job_config=job_config).result()
         mapping_row = None
         for row in mapping_result:
             mapping_row = row
+            print(f"[STEP4] BigQuery 매핑 발견: account_id={row.account_id}")
             break
+
+        if not mapping_row:
+            print(f"[STEP4] BigQuery에서 매핑 정보를 찾을 수 없음. account_id={account_id}")
 
         # 세트 ID 목록 수집
         adset_ids = []
         if mapping_row:
-            if mapping_row.conv_adset_id:
+            # conv_adset_id 확인
+            if mapping_row.conv_adset_id and mapping_row.conv_adset_id.strip():
                 adset_ids.append(mapping_row.conv_adset_id.strip())
-            if mapping_row.traffic_adset_id:
+                print(f"[STEP4] conv_adset_id 추가: {mapping_row.conv_adset_id.strip()}")
+            # traffic_adset_id 확인
+            if mapping_row.traffic_adset_id and mapping_row.traffic_adset_id.strip():
                 adset_ids.append(mapping_row.traffic_adset_id.strip())
+                print(f"[STEP4] traffic_adset_id 추가: {mapping_row.traffic_adset_id.strip()}")
 
-        print(f"[STEP4] BigQuery에서 조회된 세트 ID: {adset_ids}")
+        print(f"[STEP4] 최종 조회할 세트 ID 목록: {adset_ids}")
 
         # ad_account_id 형식 맞추기
         ad_account_id = f"act_{account_id}" if not account_id.startswith("act_") else account_id

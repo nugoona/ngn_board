@@ -1989,9 +1989,8 @@ function handleNextButton() {
 
   showToast('Step 4로 이동합니다.', 'success');
 
-  // Step 4로 이동 (TODO: Step 4 페이지 구현 후 활성화)
-  // window.location.href = `/admake/strategy?account_id=${encodeURIComponent(accountId)}`;
-  showToast('Step 4는 아직 준비 중입니다.', 'info');
+  // Step 4로 이동
+  window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
 }
 
 // ===== 초기화 =====

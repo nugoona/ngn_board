@@ -2402,11 +2402,8 @@ def get_active_ads():
         # Meta API 필드 정의 (썸네일 + configured_status 포함)
         fields = "id,name,status,effective_status,configured_status,preview_shareable_link,creative{id,thumbnail_url,image_url},adcreatives{image_url,thumbnail_url}"
 
-        # 광고 엔티티 자체의 status로 필터링 (DELETED, ARCHIVED 제외)
-        # 광고세트/캠페인이 OFF여도 광고 자체가 ON이면 ON으로 표시하기 위함
-        # ACTIVE: 광고 ON 상태
-        # PAUSED: 광고 OFF 상태 (사용자가 직접 끔)
-        filtering = '[{"field":"status","operator":"IN","value":["ACTIVE","PAUSED"]}]'
+        # Meta API는 status/effective_status 필터링 지원 안함
+        # 서버에서 직접 필터링: DELETED, ARCHIVED 제외
 
         all_ads = []
 
@@ -2427,7 +2424,6 @@ def get_active_ads():
                     params = {
                         "access_token": access_token,
                         "fields": fields,
-                        "filtering": filtering,
                         "limit": 100,
                         "_ts": cache_buster
                     }
@@ -2453,7 +2449,6 @@ def get_active_ads():
                     params = {
                         "access_token": access_token,
                         "fields": fields,
-                        "filtering": filtering,
                         "limit": 100,
                         "_ts": cache_buster
                     }
@@ -2478,7 +2473,6 @@ def get_active_ads():
                 params = {
                     "access_token": access_token,
                     "fields": fields,
-                    "filtering": filtering,
                     "limit": 100,
                     "_ts": cache_buster
                 }
@@ -2494,16 +2488,21 @@ def get_active_ads():
             except Exception as e:
                 print(f"[STEP4] Account 전체 조회 예외: {e}")
 
-        # 중복 제거
+        # 중복 제거 + DELETED/ARCHIVED 필터링 (서버 측)
         seen_ids = set()
         unique_ads = []
+        excluded_statuses = {'DELETED', 'ARCHIVED'}
         for ad in all_ads:
             ad_id = ad.get("id")
+            ad_status = ad.get("status", "")
+            # DELETED, ARCHIVED 제외
+            if ad_status in excluded_statuses:
+                continue
             if ad_id and ad_id not in seen_ids:
                 seen_ids.add(ad_id)
                 unique_ads.append(ad)
 
-        print(f"[STEP4] 최종 조회 결과: {len(unique_ads)}개 광고")
+        print(f"[STEP4] 최종 조회 결과: {len(unique_ads)}개 광고 (DELETED/ARCHIVED 제외)")
 
         # 광고 데이터 가공 (썸네일 추출)
         processed_ads = []

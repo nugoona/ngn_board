@@ -3226,10 +3226,12 @@ async function uploadToMeta() {
   loadingOverlay.classList.add('active');
 
   // 강제로 스타일 설정 (CSS가 적용되지 않는 문제 해결)
-  loadingOverlay.style.display = 'flex';
-  loadingOverlay.style.opacity = '1';
-  loadingOverlay.style.background = 'rgba(9, 9, 11, 0.95)';
-  loadingOverlay.style.visibility = 'visible';
+  loadingOverlay.style.cssText = 'display: flex !important; opacity: 1 !important; background: rgba(9, 9, 11, 0.95) !important; visibility: visible !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; z-index: 9999 !important;';
+
+  console.log('[UPLOAD DEBUG] 스타일 강제 적용 직후:');
+  console.log('[UPLOAD DEBUG] → style.cssText:', loadingOverlay.style.cssText);
+  console.log('[UPLOAD DEBUG] → computed opacity:', window.getComputedStyle(loadingOverlay).opacity);
+  console.log('[UPLOAD DEBUG] → computed background:', window.getComputedStyle(loadingOverlay).background);
 
   console.log('[UPLOAD DEBUG] active 클래스 추가 후 className:', loadingOverlay?.className);
   console.log('[UPLOAD DEBUG] active 추가 후 display:', loadingOverlay ? window.getComputedStyle(loadingOverlay).display : 'N/A');
@@ -3238,6 +3240,11 @@ async function uploadToMeta() {
   console.log('[UPLOAD DEBUG] initUploadProgress 호출, mediaItems 개수:', mediaItems?.length);
   initUploadProgress(mediaItems);
   console.log('[UPLOAD DEBUG] initUploadProgress 완료');
+
+  // initUploadProgress 후 스타일 재확인
+  console.log('[UPLOAD DEBUG] initUploadProgress 후 스타일 확인:');
+  console.log('[UPLOAD DEBUG] → computed opacity:', window.getComputedStyle(loadingOverlay).opacity);
+  console.log('[UPLOAD DEBUG] → computed background:', window.getComputedStyle(loadingOverlay).background);
 
   updateUploadStage('메타 서버에 연결 중...', '인증 정보를 확인하고 있습니다');
   console.log('[UPLOAD DEBUG] updateUploadStage 완료');

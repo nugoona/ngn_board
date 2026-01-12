@@ -308,25 +308,25 @@
     }
 
     .admake-section-subtitle .highlight {
-      color: #FFFFFF;
-      font-weight: 600;
+      color: #10B981;
+      font-weight: 700;
       font-family: 'Inter Tight', sans-serif;
     }
 
     /* ===== 액션 버튼 그룹 (섹션 내) ===== */
     .admake-header-actions {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       margin-left: auto;
     }
 
     .admake-btn-sm {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 12px;
+      gap: 5px;
+      padding: 7px 12px;
+      border-radius: 4px;
+      font-size: 11px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -362,44 +362,66 @@
       color: #FEE2E2;
     }
 
-    /* ===== 테이블 (Linear Dark Style) ===== */
+    /* ===== 테이블 (Compact Linear Style) ===== */
     .admake-table-container {
       overflow-x: auto;
       overflow-y: auto;
       max-height: 320px;
       border: none;
-      border-radius: 8px;
+      border-radius: 0;
       background: transparent;
     }
 
     .admake-table {
       width: 100%;
+      max-width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
 
     .admake-table th,
     .admake-table td {
-      padding: 14px 16px;
+      padding: 12px 8px;
       text-align: left;
       border-bottom: 1px solid #27272A;
+      vertical-align: middle;
     }
 
     .admake-table th {
-      font-size: 12px;
-      font-weight: 500;
-      color: #A1A1AA;
+      font-size: 11px;
+      font-weight: 600;
+      color: #FFFFFF;
       text-transform: none;
       letter-spacing: 0;
-      background: transparent;
+      background: #09090B;
       position: sticky;
       top: 0;
       z-index: 1;
-      backdrop-filter: blur(8px);
     }
+
+    /* 컬럼 폭 최적화 */
+    .admake-table th:nth-child(1),
+    .admake-table td:nth-child(1) { width: 40px; padding-left: 12px; }  /* 체크박스 */
+    .admake-table th:nth-child(2),
+    .admake-table td:nth-child(2) { width: 72px; }  /* 썸네일 */
+    .admake-table th:nth-child(3),
+    .admake-table td:nth-child(3) { width: auto; }  /* 광고 이름 */
+    .admake-table th:nth-child(4),
+    .admake-table td:nth-child(4) { width: 60px; }  /* 캠페인 */
+    .admake-table th:nth-child(5),
+    .admake-table td:nth-child(5) { width: 70px; padding-right: 12px; }  /* 상태 */
 
     .admake-table td {
       font-size: 13px;
       color: #FAFAFA;
+    }
+
+    /* 광고 이름 말줄임 */
+    .admake-table td:nth-child(3) {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .admake-table tbody tr {
@@ -417,6 +439,13 @@
 
     .admake-table tbody tr:last-child td {
       border-bottom: 1px solid #27272A;
+    }
+
+    /* 캠페인 타입 */
+    .admake-table td.campaign-type {
+      font-size: 11px;
+      color: #71717A;
+      font-weight: 500;
     }
 
     /* 체크박스 */
@@ -891,13 +920,11 @@
           <table class="admake-table">
             <thead>
               <tr>
-                <th style="width:40px;">
-                  <input type="checkbox" class="admake-checkbox" id="selectAll">
-                </th>
-                <th style="width:64px;">썸네일</th>
+                <th><input type="checkbox" class="admake-checkbox" id="selectAll"></th>
+                <th>썸네일</th>
                 <th>광고 이름</th>
-                <th style="width:60px;">캠페인</th>
-                <th style="width:80px;">상태</th>
+                <th>캠페인</th>
+                <th>상태</th>
               </tr>
             </thead>
             <tbody id="adsTableBody">
@@ -1152,8 +1179,8 @@
               : `<div class="admake-thumbnail-placeholder"><i data-lucide="image" style="width:18px;height:18px;"></i></div>`
             }
           </td>
-          <td>${escapeHtml(ad.name)}</td>
-          <td style="font-size:12px;color:var(--text-secondary);">${ad.campaign_type || '-'}</td>
+          <td title="${escapeHtml(ad.name)}">${escapeHtml(ad.name)}</td>
+          <td class="campaign-type">${ad.campaign_type || '-'}</td>
           <td>
             <span class="admake-status-badge ${statusClass}">
               <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>

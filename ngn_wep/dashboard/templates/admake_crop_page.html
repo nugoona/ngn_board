@@ -3235,6 +3235,26 @@ async function uploadToMeta() {
 
   // 브라우저가 UI를 렌더링할 시간 확보 (로딩 팝업 즉시 표시)
   console.log('[UPLOAD DEBUG] requestAnimationFrame 대기 시작...');
+
+  // 오버레이 위치/크기 디버그
+  const overlayRect = loadingOverlay.getBoundingClientRect();
+  console.log('[UPLOAD DEBUG] 오버레이 위치:', overlayRect);
+  console.log('[UPLOAD DEBUG] 오버레이 offsetParent:', loadingOverlay.offsetParent);
+  console.log('[UPLOAD DEBUG] 오버레이 z-index:', window.getComputedStyle(loadingOverlay).zIndex);
+  console.log('[UPLOAD DEBUG] 오버레이 visibility:', window.getComputedStyle(loadingOverlay).visibility);
+  console.log('[UPLOAD DEBUG] 오버레이 opacity:', window.getComputedStyle(loadingOverlay).opacity);
+  console.log('[UPLOAD DEBUG] 오버레이 position:', window.getComputedStyle(loadingOverlay).position);
+  console.log('[UPLOAD DEBUG] 오버레이 background:', window.getComputedStyle(loadingOverlay).background);
+
+  // 내부 콘텐츠 확인
+  const loadingContent = loadingOverlay.querySelector('.admake-loading-content');
+  if (loadingContent) {
+    console.log('[UPLOAD DEBUG] 콘텐츠 display:', window.getComputedStyle(loadingContent).display);
+    console.log('[UPLOAD DEBUG] 콘텐츠 위치:', loadingContent.getBoundingClientRect());
+  } else {
+    console.error('[UPLOAD DEBUG] .admake-loading-content를 찾을 수 없음!');
+  }
+
   await new Promise(resolve => requestAnimationFrame(() => {
     console.log('[UPLOAD DEBUG] 첫번째 RAF 콜백');
     requestAnimationFrame(() => {

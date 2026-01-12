@@ -3220,7 +3220,16 @@ async function uploadToMeta() {
   console.log('[UPLOAD DEBUG] loadingOverlay 현재 display:', loadingOverlay ? window.getComputedStyle(loadingOverlay).display : 'N/A');
 
   uploadBtn.disabled = true;
+
+  // 기존 인라인 스타일 제거 후 active 클래스 추가
+  loadingOverlay.removeAttribute('style');
   loadingOverlay.classList.add('active');
+
+  // 강제로 스타일 설정 (CSS가 적용되지 않는 문제 해결)
+  loadingOverlay.style.display = 'flex';
+  loadingOverlay.style.opacity = '1';
+  loadingOverlay.style.background = 'rgba(9, 9, 11, 0.95)';
+  loadingOverlay.style.visibility = 'visible';
 
   console.log('[UPLOAD DEBUG] active 클래스 추가 후 className:', loadingOverlay?.className);
   console.log('[UPLOAD DEBUG] active 추가 후 display:', loadingOverlay ? window.getComputedStyle(loadingOverlay).display : 'N/A');

@@ -117,15 +117,14 @@
       color: var(--text-primary) !important;
     }
 
-    /* ===== Progress Bar (High-End Style) ===== */
+    /* ===== Progress Bar (Clean Style) ===== */
     .admake-progress-bar {
       position: sticky;
       top: 56px;
       z-index: 100;
-      background: linear-gradient(180deg, #09090B 0%, rgba(9, 9, 11, 0.98) 100%);
+      background: #09090B;
       border-bottom: 1px solid #1F1F23;
-      padding: 24px 40px;
-      backdrop-filter: blur(16px);
+      padding: 20px 40px;
       flex-shrink: 0;
     }
 
@@ -141,56 +140,53 @@
     .admake-progress-step {
       position: relative;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border-radius: 24px;
-      transition: all 0.4s ease;
-      border: none;
+      gap: 4px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
       background: transparent;
     }
 
     .admake-progress-step .step-icon {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-    }
-
-    .admake-progress-step .step-icon i {
-      width: 14px;
-      height: 14px;
-      stroke-width: 3;
+      display: none;
     }
 
     .admake-progress-step .step-number {
       font-family: 'Inter Tight', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: #52525B;
       letter-spacing: 0.02em;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
     }
 
     .admake-progress-step .step-label {
       font-family: 'Pretendard', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: #52525B;
       white-space: nowrap;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
     }
 
     /* Completed State - Deep Emerald */
     .admake-progress-step.completed {
       background: #065F46;
-      box-shadow: 0 2px 8px rgba(6, 95, 70, 0.3);
     }
 
     .admake-progress-step.completed .step-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: #6EE7B7;
+    }
+
+    .admake-progress-step.completed .step-icon i {
+      width: 14px;
+      height: 14px;
+      stroke-width: 3;
     }
 
     .admake-progress-step.completed .step-number {
@@ -202,10 +198,9 @@
       font-weight: 500;
     }
 
-    /* Active State - White Glow */
+    /* Active State - White (No Glow) */
     .admake-progress-step.active {
       background: #FFFFFF;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.35), 0 0 40px rgba(255, 255, 255, 0.15);
     }
 
     .admake-progress-step.active .step-number {
@@ -233,7 +228,7 @@
       display: flex;
       align-items: center;
       padding: 0 4px;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
     }
 
     .admake-progress-connector-line {
@@ -241,7 +236,7 @@
       height: 2px;
       background: #3F3F46;
       border-radius: 1px;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
     }
 
     .admake-progress-connector.completed .admake-progress-connector-line {

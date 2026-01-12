@@ -285,7 +285,7 @@
 
     .admake-section-subtitle {
       font-size: 12px;
-      color: var(--text-muted);
+      color: var(--text-primary);
       margin-left: auto;
     }
 
@@ -339,8 +339,10 @@
     /* ===== 테이블 ===== */
     .admake-table-container {
       overflow-x: auto;
+      overflow-y: auto;
+      max-height: 320px;
       border: 1px solid var(--border-default);
-      border-radius: 8px;
+      border-radius: 0;
     }
 
     .admake-table {
@@ -357,11 +359,14 @@
 
     .admake-table th {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 400;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      background: var(--bg-card);
+      background: var(--bg-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     .admake-table td {
@@ -524,13 +529,20 @@
     }
 
     .admake-datetime-input {
-      width: 100%;
-      padding: 10px 12px;
+      width: 280px;
+      padding: 12px 14px;
       background: var(--bg-input);
       border: 1px solid var(--border-default);
       border-radius: 6px;
       color: var(--text-primary);
       font-size: 14px;
+      color-scheme: dark;
+    }
+
+    .admake-datetime-input::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+      padding: 4px;
     }
 
     .admake-datetime-input:focus {
@@ -800,9 +812,13 @@
       <div class="admake-section">
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">01</span>
-          <span class="admake-section-title">활성 광고 목록</span>
+          <span class="admake-section-title">함께 노출되는 광고 사전 확인</span>
           <span class="admake-section-subtitle" id="adCountLabel">0개</span>
           <div class="admake-header-actions">
+            <button class="admake-btn-sm admake-btn-sm-secondary" id="btnRefresh" title="새로고침">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+              새로고침
+            </button>
             <button class="admake-btn-sm admake-btn-sm-secondary" id="btnPause" disabled>
               <i data-lucide="pause" style="width:14px;height:14px;"></i>
               선택 종료
@@ -933,6 +949,12 @@
       updateButtonStates();
     });
 
+    // 새로고침 버튼
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      console.log('[STEP4] 수동 새로고침 요청');
+      loadActiveAds();
+    });
+
     // 종료 버튼
     document.getElementById('btnPause').addEventListener('click', () => {
       showModal('pause');
@@ -954,6 +976,8 @@
         const picker = document.getElementById('datetimePicker');
         if (value === 'set_end') {
           picker.classList.add('visible');
+          // 기본값을 현재 시간으로 설정
+          setDefaultEndDatetime();
         } else {
           picker.classList.remove('visible');
         }
@@ -963,6 +987,21 @@
     // Back/Next 버튼
     document.getElementById('backBtn').addEventListener('click', handleBackButton);
     document.getElementById('nextBtn').addEventListener('click', handleNextButton);
+  }
+
+  // 종료 날짜 기본값 설정 (현재 시간)
+  function setDefaultEndDatetime() {
+    const input = document.getElementById('endDatetime');
+    if (!input.value) {
+      const now = new Date();
+      // datetime-local 형식: YYYY-MM-DDTHH:MM
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      input.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
   }
 
   // 활성 광고 로드
@@ -979,8 +1018,13 @@
       document.getElementById('emptyState').style.display = 'none';
       document.querySelector('.admake-table tbody').innerHTML = '';
 
-      const response = await fetch(`/dashboard/get_active_ads?account_id=${accountId}`, {
-        credentials: 'include'
+      // 캐시 우회를 위한 타임스탬프 추가
+      const timestamp = Date.now();
+      const response = await fetch(`/dashboard/get_active_ads?account_id=${accountId}&_ts=${timestamp}`, {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       });
       const result = await response.json();
 
@@ -1011,39 +1055,19 @@
   function renderTable() {
     const tbody = document.getElementById('adsTableBody');
     tbody.innerHTML = ads.map(ad => {
-      // configured_status: 사용자가 설정한 상태 (ON/OFF)
-      // effective_status: 실제 노출 상태 (ACTIVE, PAUSED, PENDING_REVIEW, etc.)
-      const configuredStatus = ad.configured_status || 'PAUSED';
-      const effectiveStatus = ad.effective_status || 'UNKNOWN';
+      // 광고 엔티티 자체의 상태만 표시 (캠페인/세트 상태 무시)
+      // configured_status 또는 status: 광고 자체에 설정된 상태
+      const adStatus = ad.configured_status || ad.status || 'PAUSED';
 
-      // 상태 표시 로직:
-      // 1. configured_status == 'ACTIVE' → ON 배지 (사용자가 켬)
-      // 2. configured_status == 'PAUSED' → OFF 배지 (사용자가 끔)
-      // 3. effective_status가 PENDING_REVIEW/IN_PROCESS → 처리 중 표시
-      // 4. effective_status가 WITH_ISSUES → 이슈 표시
-
+      // 광고 자체 상태만 표시:
+      // - ACTIVE → ON (녹색) : 캠페인/세트 재개 시 함께 노출됨
+      // - PAUSED → OFF (회색) : 광고 자체가 꺼짐
       let statusClass, statusText;
 
-      if (effectiveStatus === 'PENDING_REVIEW' || effectiveStatus === 'IN_PROCESS') {
-        // 검토 중 / 처리 중
-        statusClass = 'admake-status-processing';
-        statusText = effectiveStatus === 'PENDING_REVIEW' ? '검토 중' : '처리 중';
-      } else if (effectiveStatus === 'WITH_ISSUES') {
-        // 이슈 있음
-        statusClass = 'admake-status-issues';
-        statusText = '이슈';
-      } else if (configuredStatus === 'ACTIVE') {
-        // 사용자가 ON으로 설정 + 정상 상태
-        if (effectiveStatus === 'ACTIVE') {
-          statusClass = 'admake-status-on';
-          statusText = 'ON';
-        } else {
-          // ON 설정이지만 다른 이유로 노출 안됨
-          statusClass = 'admake-status-paused';
-          statusText = getEffectiveStatusText(effectiveStatus);
-        }
+      if (adStatus === 'ACTIVE') {
+        statusClass = 'admake-status-on';
+        statusText = 'ON';
       } else {
-        // 사용자가 OFF로 설정
         statusClass = 'admake-status-inactive';
         statusText = 'OFF';
       }

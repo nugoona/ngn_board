@@ -2402,15 +2402,22 @@ def get_active_ads():
         # Meta API 필드 정의 (썸네일 + configured_status 포함)
         fields = "id,name,status,effective_status,configured_status,preview_shareable_link,creative{id,thumbnail_url,image_url},adcreatives{image_url,thumbnail_url}"
 
-        # effective_status 필터링 확장 (DELETED, ARCHIVED 제외)
-        # ACTIVE: 현재 라이브 중
-        # PAUSED: 일시정지 (사용자가 멈춤)
-        # PENDING_REVIEW: 검토 대기 중
-        # IN_PROCESS: 처리 중
-        # WITH_ISSUES: 이슈 있음
-        filtering = '[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED","PENDING_REVIEW","IN_PROCESS","WITH_ISSUES"]}]'
+        # 광고 엔티티 자체의 status로 필터링 (DELETED, ARCHIVED 제외)
+        # 광고세트/캠페인이 OFF여도 광고 자체가 ON이면 ON으로 표시하기 위함
+        # ACTIVE: 광고 ON 상태
+        # PAUSED: 광고 OFF 상태 (사용자가 직접 끔)
+        filtering = '[{"field":"status","operator":"IN","value":["ACTIVE","PAUSED"]}]'
 
         all_ads = []
+
+        # 캐시 우회 헤더
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache"
+        }
+        # 타임스탬프 (캐시 무효화)
+        import time
+        cache_buster = int(time.time() * 1000)
 
         # 1단계: AdSet 기준 조회
         if adset_ids:
@@ -2421,10 +2428,11 @@ def get_active_ads():
                         "access_token": access_token,
                         "fields": fields,
                         "filtering": filtering,
-                        "limit": 100
+                        "limit": 100,
+                        "_ts": cache_buster
                     }
                     print(f"[STEP4] AdSet {adset_id} 조회 중...")
-                    response = requests.get(ads_url, params=params, timeout=30)
+                    response = requests.get(ads_url, params=params, headers=headers, timeout=30)
                     result = response.json()
 
                     if "error" not in result:
@@ -2446,10 +2454,11 @@ def get_active_ads():
                         "access_token": access_token,
                         "fields": fields,
                         "filtering": filtering,
-                        "limit": 100
+                        "limit": 100,
+                        "_ts": cache_buster
                     }
                     print(f"[STEP4] Campaign {campaign_id} 조회 중...")
-                    response = requests.get(ads_url, params=params, timeout=30)
+                    response = requests.get(ads_url, params=params, headers=headers, timeout=30)
                     result = response.json()
 
                     if "error" not in result:
@@ -2470,10 +2479,11 @@ def get_active_ads():
                     "access_token": access_token,
                     "fields": fields,
                     "filtering": filtering,
-                    "limit": 100
+                    "limit": 100,
+                    "_ts": cache_buster
                 }
                 print(f"[STEP4] Account {ad_account_id} 전체 조회 중...")
-                response = requests.get(ads_url, params=params, timeout=30)
+                response = requests.get(ads_url, params=params, headers=headers, timeout=30)
                 result = response.json()
 
                 if "error" not in result:

@@ -2916,15 +2916,16 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
         print(f"[STEP5] instagram_user_id: {instagram_user_id}")
         print(f"[STEP5] access_token 존재: {bool(access_token)}, 길이: {len(access_token) if access_token else 0}")
 
-        # 2. object_story_spec 구성 - 문자열로 명시적 변환
+        # 2. object_story_spec 구성 - 모든 ID는 문자열로 명시적 변환
+        # v24.0 규격: instagram_user_id는 object_story_spec 최상위 레벨에 위치
         object_story_spec = {
             "page_id": str(page_id) if page_id else None
         }
 
-        # instagram_actor_id 명시적 문자열 변환
+        # instagram_user_id 명시적 문자열 변환 (v24.0: instagram_actor_id → instagram_user_id)
         if instagram_user_id:
-            object_story_spec["instagram_actor_id"] = str(instagram_user_id)
-            print(f"[STEP5] instagram_actor_id 설정됨: {object_story_spec['instagram_actor_id']} (type: {type(object_story_spec['instagram_actor_id']).__name__})")
+            object_story_spec["instagram_user_id"] = str(instagram_user_id)
+            print(f"[STEP5] instagram_user_id 설정됨: {object_story_spec['instagram_user_id']} (type: {type(object_story_spec['instagram_user_id']).__name__})")
 
         # 캐러셀 vs 단일 미디어 분기
         if ad_data.get("is_carousel") and ad_data.get("cards"):
@@ -2991,8 +2992,14 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             "access_token": access_token
         }
 
-        print(f"[STEP5] 전송 직전 페이로드 키: {list(payload.keys())}")
-        print(f"[STEP5] 전송 직전 name: {payload['name']}")
+        # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
+        print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")
+        print(f"[STEP5] URL: {url}")
+        print(f"[STEP5] name: {payload['name']}")
+        print(f"[STEP5] object_story_spec (전체):")
+        print(f"{object_story_spec_json}")
+        print(f"[STEP5] access_token: {access_token[:20]}...{access_token[-10:] if len(access_token) > 30 else ''}")
+        print(f"[STEP5] ================================================")
 
         # 5. API 호출
         response = requests.post(url, data=payload, timeout=30)

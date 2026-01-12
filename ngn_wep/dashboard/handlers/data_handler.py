@@ -2754,9 +2754,18 @@ def publish_ads_batch():
         account_info = get_account_info(raw_account_id, access_token)
         page_id = account_info.get("page_id")
         instagram_user_id = account_info.get("instagram_user_id")
+        conv_adset_id = account_info.get("conv_adset_id")
+        traffic_adset_id = account_info.get("traffic_adset_id")
 
         if not page_id:
             return jsonify({"status": "error", "message": "Facebook 페이지 정보를 찾을 수 없습니다."}), 400
+
+        # AdSet ID 결정 (전환 캠페인 우선, 없으면 유입 캠페인 사용)
+        adset_id = conv_adset_id or traffic_adset_id
+        if not adset_id:
+            return jsonify({"status": "error", "message": "AdSet 정보를 찾을 수 없습니다. BigQuery meta_account_mapping 테이블을 확인해주세요."}), 400
+
+        print(f"[STEP5] 사용할 AdSet ID: {adset_id} (전환: {conv_adset_id}, 유입: {traffic_adset_id})")
 
         results = []
         success_count = 0
@@ -2781,18 +2790,28 @@ def publish_ads_batch():
 
                 print(f"[STEP5] AdCreative 생성 완료: {creative_id}")
 
-                # 2. Ad 생성 (기본 AdSet에 연결)
-                # 참고: 실제 운영에서는 적절한 AdSet ID가 필요합니다
-                # 현재는 미리보기 목적이므로 AdCreative까지만 생성
+                # 2. Ad 생성 (AdSet에 연결)
+                ad_result = create_ad_internal(
+                    account_id=account_id,
+                    adset_id=adset_id,
+                    creative_id=creative_id,
+                    ad_name=ad_name,
+                    access_token=access_token,
+                    status="PAUSED"  # 기본값: 일시중지 상태로 생성
+                )
 
-                results.append({
-                    "name": ad_name,
-                    "success": True,
-                    "creative_id": creative_id,
-                    "ad_id": None,  # AdSet 연결 시 생성됨
-                    "preview_link": f"https://business.facebook.com/adsmanager/manage/ads?act={account_id.replace('act_', '')}"
-                })
-                success_count += 1
+                if ad_result.get("success"):
+                    results.append({
+                        "name": ad_name,
+                        "success": True,
+                        "creative_id": creative_id,
+                        "ad_id": ad_result.get("ad_id"),
+                        "preview_link": ad_result.get("preview_link")
+                    })
+                    success_count += 1
+                    print(f"[STEP5] Ad 생성 완료: {ad_result.get('ad_id')}")
+                else:
+                    raise Exception(ad_result.get("error", "Ad 생성 실패"))
 
             except Exception as e:
                 error_msg = str(e)
@@ -2819,16 +2838,18 @@ def publish_ads_batch():
 
 
 def get_account_info(account_id: str, access_token: str) -> dict:
-    """광고 계정에 연결된 페이지/Instagram 정보 조회 (BigQuery 우선, Meta API 폴백)"""
+    """광고 계정에 연결된 페이지/Instagram/AdSet 정보 조회 (BigQuery 우선, Meta API 폴백)"""
     try:
         page_id = None
         instagram_user_id = None
+        conv_adset_id = None
+        traffic_adset_id = None
 
-        # 1. BigQuery에서 page_id, instagram_user_id 조회
+        # 1. BigQuery에서 page_id, instagram_user_id, adset_id 조회
         try:
             bq_client = bigquery.Client()
             mapping_query = """
-                SELECT page_id, instagram_user_id
+                SELECT page_id, instagram_user_id, conv_adset_id, traffic_adset_id
                 FROM `ngn_dataset.meta_account_mapping`
                 WHERE account_id = @account_id
                 LIMIT 1
@@ -2843,7 +2864,10 @@ def get_account_info(account_id: str, access_token: str) -> dict:
             for row in mapping_result:
                 page_id = str(row.page_id).strip() if row.page_id else None
                 instagram_user_id = str(row.instagram_user_id).strip() if row.instagram_user_id else None
+                conv_adset_id = str(row.conv_adset_id).strip() if row.conv_adset_id else None
+                traffic_adset_id = str(row.traffic_adset_id).strip() if row.traffic_adset_id else None
                 print(f"[STEP5] BigQuery에서 조회 - page_id: '{page_id}', instagram_user_id: '{instagram_user_id}'")
+                print(f"[STEP5] BigQuery에서 조회 - conv_adset_id: '{conv_adset_id}', traffic_adset_id: '{traffic_adset_id}'")
                 break
         except Exception as bq_err:
             print(f"[STEP5] BigQuery 조회 실패: {bq_err}")
@@ -2879,9 +2903,12 @@ def get_account_info(account_id: str, access_token: str) -> dict:
                 print(f"[STEP5] Instagram 계정 조회 실패: {ig_err}")
 
         print(f"[STEP5] 최종 계정 정보: page_id={page_id}, instagram_user_id={instagram_user_id}")
+        print(f"[STEP5] AdSet 정보: conv_adset_id={conv_adset_id}, traffic_adset_id={traffic_adset_id}")
         return {
             "page_id": page_id,
-            "instagram_user_id": instagram_user_id
+            "instagram_user_id": instagram_user_id,
+            "conv_adset_id": conv_adset_id,
+            "traffic_adset_id": traffic_adset_id
         }
 
     except Exception as e:
@@ -2933,6 +2960,59 @@ def get_video_thumbnail(video_id: str, access_token: str) -> str:
     except Exception as e:
         print(f"[STEP5] 비디오 썸네일 조회 오류: {e}")
         return None
+
+
+def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name: str, access_token: str, status: str = "PAUSED") -> dict:
+    """
+    Meta API를 통해 Ad(광고) 생성
+    - AdCreative를 AdSet에 연결하여 실제 광고 생성
+    """
+    try:
+        formatted_account_id = ensure_act_prefix(account_id)
+        url = f"https://graph.facebook.com/v24.0/{formatted_account_id}/ads"
+
+        print(f"[STEP5] ========== Ad 생성 시작 ==========")
+        print(f"[STEP5] Ad 생성 URL: {url}")
+        print(f"[STEP5] adset_id: {adset_id}")
+        print(f"[STEP5] creative_id: {creative_id}")
+        print(f"[STEP5] ad_name: {ad_name}")
+        print(f"[STEP5] status: {status}")
+
+        payload = {
+            "name": ad_name,
+            "adset_id": str(adset_id),
+            "creative": json.dumps({"creative_id": str(creative_id)}),
+            "status": status,
+            "access_token": access_token
+        }
+
+        print(f"[STEP5] Ad 생성 페이로드: name={ad_name}, adset_id={adset_id}, creative_id={creative_id}")
+
+        response = requests.post(url, data=payload, timeout=30)
+        result = response.json()
+
+        print(f"[STEP5] Ad 생성 응답 상태: {response.status_code}")
+        print(f"[STEP5] Ad 생성 응답 내용: {json.dumps(result, indent=2, ensure_ascii=False)[:500]}")
+
+        if "id" in result:
+            ad_id = result["id"]
+            print(f"[STEP5] Ad 생성 성공! ID: {ad_id}")
+            return {
+                "success": True,
+                "ad_id": ad_id,
+                "preview_link": f"https://business.facebook.com/adsmanager/manage/ads?act={account_id.replace('act_', '')}&selected_ad_ids={ad_id}"
+            }
+        elif "error" in result:
+            error_msg = result["error"].get("message", "Unknown error")
+            error_code = result["error"].get("code", "N/A")
+            print(f"[STEP5] Ad 생성 실패 - 코드: {error_code}, 메시지: {error_msg}")
+            return {"success": False, "error": error_msg}
+        else:
+            return {"success": False, "error": "Ad ID를 받지 못했습니다."}
+
+    except Exception as e:
+        print(f"[STEP5] Ad 생성 오류: {e}")
+        return {"success": False, "error": str(e)}
 
 
 def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str) -> str:

@@ -2729,20 +2729,29 @@ def publish_ads_batch():
         account_id = data.get("account_id")
         ads = data.get("ads", [])
 
+        print(f"[STEP5] ========== publish_ads_batch 시작 ==========")
+        print(f"[STEP5] 수신된 account_id: {account_id}")
+        print(f"[STEP5] 수신된 ads 개수: {len(ads) if ads else 0}")
+
         if not account_id:
             return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
 
         if not ads:
             return jsonify({"status": "error", "message": "전송할 광고가 없습니다."}), 400
 
+        # act_ 접두사 제거 (BigQuery 조회용)
+        raw_account_id = account_id.replace("act_", "") if account_id.startswith("act_") else account_id
+        print(f"[STEP5] BigQuery 조회용 account_id: {raw_account_id}")
+
         access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
         if not access_token:
             return jsonify({"status": "error", "message": "Meta API 토큰이 설정되지 않았습니다."}), 500
 
+        print(f"[STEP5] access_token 존재: True, 길이: {len(access_token)}")
         print(f"[STEP5] 광고 배치 전송 시작: {len(ads)}개")
 
-        # 광고 계정 정보 조회 (page_id, instagram_user_id 등)
-        account_info = get_account_info(account_id, access_token)
+        # 광고 계정 정보 조회 (page_id, instagram_user_id 등) - raw ID 사용
+        account_info = get_account_info(raw_account_id, access_token)
         page_id = account_info.get("page_id")
         instagram_user_id = account_info.get("instagram_user_id")
 
@@ -2880,20 +2889,42 @@ def get_account_info(account_id: str, access_token: str) -> dict:
         return {}
 
 
+def ensure_act_prefix(account_id: str) -> str:
+    """광고 계정 ID에 act_ 접두사가 있는지 확인하고 없으면 추가"""
+    if not account_id:
+        return account_id
+    account_id = str(account_id).strip()
+    if not account_id.startswith("act_"):
+        return f"act_{account_id}"
+    return account_id
+
+
 def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str) -> str:
     """
     Meta API를 통해 AdCreative 생성 (내부 함수)
     """
     try:
-        url = f"https://graph.facebook.com/v24.0/{account_id}/adcreatives"
+        # 1. act_ 접두사 강제 적용
+        formatted_account_id = ensure_act_prefix(account_id)
+        url = f"https://graph.facebook.com/v24.0/{formatted_account_id}/adcreatives"
 
-        # object_story_spec 구성
+        print(f"[STEP5] ========== AdCreative 생성 시작 ==========")
+        print(f"[STEP5] 원본 account_id: {account_id}")
+        print(f"[STEP5] 포맷된 account_id: {formatted_account_id}")
+        print(f"[STEP5] 최종 URL: {url}")
+        print(f"[STEP5] page_id: {page_id}")
+        print(f"[STEP5] instagram_user_id: {instagram_user_id}")
+        print(f"[STEP5] access_token 존재: {bool(access_token)}, 길이: {len(access_token) if access_token else 0}")
+
+        # 2. object_story_spec 구성 - 문자열로 명시적 변환
         object_story_spec = {
-            "page_id": page_id
+            "page_id": str(page_id) if page_id else None
         }
 
+        # instagram_actor_id 명시적 문자열 변환
         if instagram_user_id:
-            object_story_spec["instagram_actor_id"] = instagram_user_id
+            object_story_spec["instagram_actor_id"] = str(instagram_user_id)
+            print(f"[STEP5] instagram_actor_id 설정됨: {object_story_spec['instagram_actor_id']} (type: {type(object_story_spec['instagram_actor_id']).__name__})")
 
         # 캐러셀 vs 단일 미디어 분기
         if ad_data.get("is_carousel") and ad_data.get("cards"):
@@ -2908,9 +2939,9 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 }
                 # 미디어 타입에 따라 분기
                 if card.get("video_id"):
-                    attachment["video_id"] = card["video_id"]
+                    attachment["video_id"] = str(card["video_id"])
                 elif card.get("image_hash"):
-                    attachment["image_hash"] = card["image_hash"]
+                    attachment["image_hash"] = str(card["image_hash"])
 
                 child_attachments.append(attachment)
 
@@ -2928,7 +2959,7 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             if media_type == "video":
                 # 비디오 광고
                 object_story_spec["video_data"] = {
-                    "video_id": ad_data.get("video_id"),
+                    "video_id": str(ad_data.get("video_id")) if ad_data.get("video_id") else None,
                     "message": ad_data.get("message", ""),
                     "title": ad_data.get("headline", ""),
                     "link_description": ad_data.get("description", ""),
@@ -2942,32 +2973,47 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 object_story_spec["link_data"] = {
                     "message": ad_data.get("message", ""),
                     "link": ad_data.get("link", ""),
-                    "image_hash": ad_data.get("image_hash"),
+                    "image_hash": str(ad_data.get("image_hash")) if ad_data.get("image_hash") else None,
                     "name": ad_data.get("headline", ""),
                     "description": ad_data.get("description", ""),
                     "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
                 }
 
-        # API 요청
+        # 3. object_story_spec JSON 직렬화 (한 번만)
+        object_story_spec_json = json.dumps(object_story_spec, ensure_ascii=False)
+        print(f"[STEP5] object_story_spec (직렬화 전): {json.dumps(object_story_spec, indent=2, ensure_ascii=False)}")
+        print(f"[STEP5] object_story_spec (직렬화 후 길이): {len(object_story_spec_json)}")
+
+        # 4. API 요청 페이로드 - form data로 전송
         payload = {
             "name": ad_data.get("name", "AdCreative"),
-            "object_story_spec": json.dumps(object_story_spec),
+            "object_story_spec": object_story_spec_json,
             "access_token": access_token
         }
 
-        print(f"[STEP5] AdCreative 생성 요청: {json.dumps(payload, indent=2, ensure_ascii=False)[:500]}")
+        print(f"[STEP5] 전송 직전 페이로드 키: {list(payload.keys())}")
+        print(f"[STEP5] 전송 직전 name: {payload['name']}")
 
+        # 5. API 호출
         response = requests.post(url, data=payload, timeout=30)
         result = response.json()
 
+        print(f"[STEP5] API 응답 상태: {response.status_code}")
+        print(f"[STEP5] API 응답 내용: {json.dumps(result, indent=2, ensure_ascii=False)[:1000]}")
+
         if "id" in result:
+            print(f"[STEP5] AdCreative 생성 성공! ID: {result['id']}")
             return result["id"]
         elif "error" in result:
             error_msg = result["error"].get("message", "Unknown error")
+            error_code = result["error"].get("code", "N/A")
+            error_type = result["error"].get("type", "N/A")
+            print(f"[STEP5] AdCreative 생성 실패 - 코드: {error_code}, 타입: {error_type}, 메시지: {error_msg}")
             raise Exception(error_msg)
         else:
             raise Exception("AdCreative ID를 받지 못했습니다.")
 
     except Exception as e:
         print(f"[STEP5] AdCreative 생성 오류: {e}")
+        print(f"[STEP5] ========== AdCreative 생성 종료 (실패) ==========")
         raise

@@ -235,7 +235,7 @@
     .admake-main-wrapper {
       display: flex;
       flex-direction: column;
-      padding-top: 20px;
+      padding-top: 65px;
       height: calc(100vh - 56px - 105px - 72px);
       overflow: hidden;
     }
@@ -435,6 +435,17 @@
     .admake-status-paused {
       background: rgba(245, 158, 11, 0.15);
       color: var(--accent-gold);
+    }
+
+    .admake-status-inactive {
+      background: rgba(82, 82, 91, 0.15);
+      color: var(--text-muted);
+    }
+
+    .admake-effective-status {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
     }
 
     /* ===== 기간 설정 ===== */
@@ -989,28 +1000,36 @@
   // 테이블 렌더링
   function renderTable() {
     const tbody = document.getElementById('adsTableBody');
-    tbody.innerHTML = ads.map(ad => `
-      <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">
-        <td>
-          <input type="checkbox" class="admake-checkbox ad-checkbox"
-                 data-id="${ad.id}"
-                 ${selectedAdIds.has(ad.id) ? 'checked' : ''}>
-        </td>
-        <td>
-          ${ad.thumbnail_url
-            ? `<img src="${ad.thumbnail_url}" class="admake-thumbnail" onerror="this.outerHTML='<div class=\\'admake-thumbnail-placeholder\\'><i data-lucide=\\'image\\'></i></div>'">`
-            : `<div class="admake-thumbnail-placeholder"><i data-lucide="image" style="width:18px;height:18px;"></i></div>`
-          }
-        </td>
-        <td>${escapeHtml(ad.name)}</td>
-        <td>
-          <span class="admake-status-badge admake-status-on">
-            <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>
-            ON
-          </span>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = ads.map(ad => {
+      // effective_status에 따른 실제 노출 상태
+      const effectiveStatus = ad.effective_status || 'UNKNOWN';
+      const isLive = effectiveStatus === 'ACTIVE';
+      const statusClass = isLive ? 'admake-status-on' : 'admake-status-inactive';
+      const statusText = isLive ? 'LIVE' : getEffectiveStatusText(effectiveStatus);
+
+      return `
+        <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">
+          <td>
+            <input type="checkbox" class="admake-checkbox ad-checkbox"
+                   data-id="${ad.id}"
+                   ${selectedAdIds.has(ad.id) ? 'checked' : ''}>
+          </td>
+          <td>
+            ${ad.thumbnail_url
+              ? `<img src="${ad.thumbnail_url}" class="admake-thumbnail" onerror="this.outerHTML='<div class=\\'admake-thumbnail-placeholder\\'><i data-lucide=\\'image\\'></i></div>'">`
+              : `<div class="admake-thumbnail-placeholder"><i data-lucide="image" style="width:18px;height:18px;"></i></div>`
+            }
+          </td>
+          <td>${escapeHtml(ad.name)}</td>
+          <td>
+            <span class="admake-status-badge ${statusClass}">
+              <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>
+              ${statusText}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     // 체크박스 이벤트
     tbody.querySelectorAll('.ad-checkbox').forEach(checkbox => {
@@ -1133,6 +1152,24 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // effective_status 텍스트 변환
+  function getEffectiveStatusText(status) {
+    const statusMap = {
+      'ACTIVE': 'LIVE',
+      'PAUSED': '일시중지',
+      'DELETED': '삭제됨',
+      'PENDING_REVIEW': '검토 중',
+      'DISAPPROVED': '비승인',
+      'PREAPPROVED': '사전승인',
+      'PENDING_BILLING_INFO': '결제정보 대기',
+      'CAMPAIGN_PAUSED': '캠페인 중지',
+      'ADSET_PAUSED': '세트 중지',
+      'IN_PROCESS': '처리 중',
+      'WITH_ISSUES': '이슈 있음'
+    };
+    return statusMap[status] || status;
   }
 </script>
 </body>

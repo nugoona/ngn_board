@@ -2393,44 +2393,50 @@ def get_active_ads():
         print(f"[STEP4] 최종 조회할 세트 ID 목록: {adset_ids}")
 
         # ad_account_id 형식 맞추기
-        ad_account_id = f"act_{account_id}" if not account_id.startswith("act_") else account_id
+        ad_account_id = f"act_{clean_account_id}"
 
         all_ads = []
 
+        # 전환 광고세트에서 status=ACTIVE인 광고 조회 (엔티티 레벨 ON)
+        # effective_status가 아닌 status로 필터 - 종료기간 등으로 일시중단된 광고도 포함
         if adset_ids:
-            # 각 세트별로 광고 조회
             for adset_id in adset_ids:
                 ads_url = f"https://graph.facebook.com/v24.0/{adset_id}/ads"
                 params = {
                     "access_token": access_token,
-                    "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id",
-                    "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
-                    "limit": 50
+                    "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id,configured_status",
+                    "filtering": '[{"field":"status","operator":"IN","value":["ACTIVE"]}]',
+                    "limit": 100
                 }
 
-                print(f"[STEP4] 세트 {adset_id}의 활성 광고 조회")
+                print(f"[STEP4] 세트 {adset_id}의 ON 상태(status=ACTIVE) 광고 조회")
                 response = requests.get(ads_url, params=params, timeout=30)
                 result = response.json()
+
+                print(f"[STEP4] API 응답: {result}")
 
                 if "error" not in result:
                     ads_data = result.get("data", [])
                     all_ads.extend(ads_data)
-                    print(f"[STEP4] 세트 {adset_id}: {len(ads_data)}개 광고")
+                    print(f"[STEP4] 세트 {adset_id}: {len(ads_data)}개 ON 광고 (status=ACTIVE)")
                 else:
-                    print(f"[STEP4] 세트 {adset_id} 조회 오류: {result.get('error', {}).get('message')}")
+                    error_msg = result.get('error', {}).get('message', 'Unknown')
+                    print(f"[STEP4] 세트 {adset_id} 조회 오류: {error_msg}")
         else:
             # 세트 ID가 없으면 계정 전체에서 조회 (폴백)
             ads_url = f"https://graph.facebook.com/v24.0/{ad_account_id}/ads"
             params = {
                 "access_token": access_token,
-                "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id",
-                "filtering": '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]',
+                "fields": "id,name,status,effective_status,creative{id,thumbnail_url,object_story_spec},adset_id,configured_status",
+                "filtering": '[{"field":"status","operator":"IN","value":["ACTIVE"]}]',
                 "limit": 100
             }
 
-            print(f"[STEP4] 계정 전체 활성 광고 조회 (폴백): {ad_account_id}")
+            print(f"[STEP4] 계정 전체 ON 광고 조회 (폴백): {ad_account_id}")
             response = requests.get(ads_url, params=params, timeout=30)
             result = response.json()
+
+            print(f"[STEP4] API 응답: {result}")
 
             if "error" in result:
                 error_msg = result["error"].get("message", "Unknown error")

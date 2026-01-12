@@ -284,9 +284,16 @@
     }
 
     .admake-section-subtitle {
-      font-size: 12px;
-      color: var(--text-primary);
-      margin-left: auto;
+      font-size: 13px;
+      color: #71717A;
+      margin-left: 0;
+      margin-right: auto;
+    }
+
+    .admake-section-subtitle .highlight {
+      color: #FFFFFF;
+      font-weight: 600;
+      font-family: 'Inter Tight', sans-serif;
     }
 
     /* ===== 액션 버튼 그룹 (섹션 내) ===== */
@@ -305,44 +312,47 @@
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       border: none;
     }
 
     .admake-btn-sm:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
     }
 
     .admake-btn-sm-secondary {
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-default);
+      background: #27272A;
+      color: #A1A1AA;
+      border: 1px solid #3F3F46;
     }
 
     .admake-btn-sm-secondary:hover:not(:disabled) {
-      background: var(--bg-card-hover);
-      border-color: var(--border-hover);
-      color: var(--text-primary);
+      background: #3F3F46;
+      border-color: #52525B;
+      color: #FFFFFF;
     }
 
     .admake-btn-sm-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--accent-red);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: #27272A;
+      color: #FCA5A5;
+      border: 1px solid #7F1D1D;
     }
 
     .admake-btn-sm-danger:hover:not(:disabled) {
-      background: rgba(239, 68, 68, 0.25);
+      background: #450A0A;
+      border-color: #991B1B;
+      color: #FEE2E2;
     }
 
-    /* ===== 테이블 ===== */
+    /* ===== 테이블 (Linear Dark Style) ===== */
     .admake-table-container {
       overflow-x: auto;
       overflow-y: auto;
       max-height: 320px;
-      border: 1px solid var(--border-default);
-      border-radius: 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
     }
 
     .admake-table {
@@ -352,42 +362,44 @@
 
     .admake-table th,
     .admake-table td {
-      padding: 12px 16px;
+      padding: 14px 16px;
       text-align: left;
-      border-bottom: 1px solid var(--border-default);
+      border-bottom: 1px solid #27272A;
     }
 
     .admake-table th {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: var(--bg-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      color: #A1A1AA;
+      text-transform: none;
+      letter-spacing: 0;
+      background: transparent;
       position: sticky;
       top: 0;
       z-index: 1;
+      backdrop-filter: blur(8px);
     }
 
     .admake-table td {
       font-size: 13px;
-      color: var(--text-primary);
+      color: #FAFAFA;
     }
 
     .admake-table tbody tr {
-      background: var(--bg-primary);
+      background: transparent;
+      transition: background 0.15s ease;
     }
 
     .admake-table tbody tr:hover {
-      background: var(--bg-card-hover);
+      background: rgba(39, 39, 42, 0.5);
     }
 
     .admake-table tbody tr.selected {
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.08);
     }
 
     .admake-table tbody tr:last-child td {
-      border-bottom: none;
+      border-bottom: 1px solid #27272A;
     }
 
     /* 체크박스 */
@@ -515,39 +527,64 @@
       color: var(--text-muted);
     }
 
-    /* DateTime Picker */
+    /* DateTime Picker (Linear Dark Style) */
     .admake-datetime-picker {
       display: none;
-      margin-top: 12px;
-      padding: 12px;
-      background: var(--bg-secondary);
-      border-radius: 6px;
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(39, 39, 42, 0.3);
+      border-radius: 8px;
     }
 
     .admake-datetime-picker.visible {
-      display: block;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
     }
 
     .admake-datetime-input {
-      width: 280px;
-      padding: 12px 14px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-default);
-      border-radius: 6px;
-      color: var(--text-primary);
+      width: 220px;
+      padding: 14px 16px;
+      background: #18181B;
+      border: 1px solid #3F3F46;
+      border-radius: 8px 0 0 8px;
+      color: #FFFFFF;
       font-size: 14px;
+      font-weight: 500;
       color-scheme: dark;
     }
 
     .admake-datetime-input::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      cursor: pointer;
-      padding: 4px;
+      display: none;
     }
 
     .admake-datetime-input:focus {
       outline: none;
-      border-color: var(--accent-blue);
+      border-color: #52525B;
+    }
+
+    .admake-calendar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: #FFFFFF;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .admake-calendar-btn:hover {
+      background: #E4E4E7;
+    }
+
+    .admake-calendar-btn i {
+      color: #18181B;
+      width: 20px;
+      height: 20px;
     }
 
     /* ===== 로딩 상태 ===== */
@@ -813,7 +850,7 @@
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">01</span>
           <span class="admake-section-title">함께 노출되는 광고 사전 확인</span>
-          <span class="admake-section-subtitle" id="adCountLabel">0개</span>
+          <span class="admake-section-subtitle" id="adCountLabel">전체 광고 <span class="highlight">0</span>개</span>
           <div class="admake-header-actions">
             <button class="admake-btn-sm admake-btn-sm-secondary" id="btnRefresh" title="새로고침">
               <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
@@ -882,6 +919,9 @@
               <div class="admake-period-desc">지정한 날짜와 시간에 광고가 자동으로 종료됩니다</div>
               <div class="admake-datetime-picker" id="datetimePicker">
                 <input type="datetime-local" class="admake-datetime-input" id="endDatetime">
+                <button type="button" class="admake-calendar-btn" id="calendarBtn" title="달력 열기">
+                  <i data-lucide="calendar" style="width:20px;height:20px;"></i>
+                </button>
               </div>
             </div>
           </label>
@@ -988,6 +1028,12 @@
     // Back/Next 버튼
     document.getElementById('backBtn').addEventListener('click', handleBackButton);
     document.getElementById('nextBtn').addEventListener('click', handleNextButton);
+
+    // 달력 버튼 클릭 시 datetime picker 열기
+    document.getElementById('calendarBtn').addEventListener('click', () => {
+      const input = document.getElementById('endDatetime');
+      input.showPicker();
+    });
   }
 
   // 종료 날짜 기본값 설정 (현재 시간)
@@ -1033,7 +1079,7 @@
 
       if (result.status === 'success') {
         ads = result.ads || [];
-        document.getElementById('adCountLabel').textContent = `${ads.length}개`;
+        document.getElementById('adCountLabel').innerHTML = `전체 광고 <span class="highlight">${ads.length}</span>개`;
 
         if (ads.length === 0) {
           showEmptyState();

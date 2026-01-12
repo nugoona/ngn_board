@@ -82,7 +82,7 @@
       letter-spacing: 0;
     }
 
-    /* ===== 네비게이션 ===== */
+    /* ===== 네비게이션 오버라이드 ===== */
     .nav-buttons {
       background: var(--bg-primary) !important;
       border-bottom: 1px solid var(--border-default) !important;
@@ -90,61 +90,92 @@
       flex-shrink: 0;
     }
 
-    /* ===== 레이아웃 ===== */
-    .admake-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      letter-spacing: 0.05em !important;
     }
 
-    .admake-header {
-      padding: 20px 32px;
-      border-bottom: 1px solid var(--border-default);
+    /* ===== 프로그레스 바 ===== */
+    .admake-progress-bar {
       background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-default);
+      padding: 16px 32px;
       flex-shrink: 0;
     }
 
-    .admake-header-content {
+    .admake-progress-steps {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 0;
+      max-width: 800px;
+      margin: 0 auto;
     }
 
-    .admake-title {
+    .admake-progress-step {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
+      padding: 0 16px;
     }
 
-    .admake-step-badge {
-      background: var(--accent-blue);
-      color: white;
-      padding: 4px 10px;
-      border-radius: 4px;
+    .admake-progress-step .step-number {
       font-size: 11px;
       font-weight: 700;
-      font-family: 'Inter Tight', sans-serif;
-    }
-
-    .admake-title h1 {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0;
-      color: var(--text-primary);
-    }
-
-    .admake-title p {
-      font-size: 13px;
       color: var(--text-muted);
-      margin: 4px 0 0 0;
+      transition: color 0.3s;
     }
 
-    /* ===== 메인 컨텐츠 ===== */
-    .admake-main {
+    .admake-progress-step .step-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .admake-progress-step.completed .step-number,
+    .admake-progress-step.completed .step-label {
+      color: var(--accent-emerald);
+    }
+
+    .admake-progress-step.active .step-number {
+      color: var(--accent-blue);
+    }
+
+    .admake-progress-step.active .step-label {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .admake-progress-connector {
+      width: 40px;
+      height: 2px;
+      background: var(--border-default);
+      position: relative;
+    }
+
+    .admake-progress-connector.completed {
+      background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector-dot {
+      display: none;
+    }
+
+    /* ===== 메인 컨텐츠 영역 ===== */
+    .admake-main-content {
       flex: 1;
       overflow-y: auto;
-      padding: 24px 32px;
+      padding: 24px 32px 24px 32px;
+    }
+
+    .admake-content-inner {
+      max-width: 900px;
+      margin: 0 auto;
     }
 
     /* ===== 섹션 ===== */
@@ -521,25 +552,35 @@
       padding: 12px;
     }
 
-    /* ===== 푸터 네비게이션 ===== */
-    .admake-footer {
-      padding: 16px 32px;
-      border-top: 1px solid var(--border-default);
+    /* ===== 하단 액션 바 (Step 3와 동일) ===== */
+    .admake-action-bar {
+      height: 64px;
       background: var(--bg-secondary);
+      border-top: 1px solid var(--border-default);
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
       flex-shrink: 0;
     }
 
-    .admake-footer-info {
-      font-size: 13px;
+    .admake-action-left {
+      font-size: 12px;
       color: var(--text-muted);
+      font-weight: 600;
     }
 
-    .admake-footer-actions {
+    .admake-action-bar .admake-action-buttons {
       display: flex;
-      gap: 12px;
+      gap: 10px;
+    }
+
+    .admake-action-bar .admake-btn {
+      min-width: 100px;
+      justify-content: center;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -566,372 +607,391 @@
   </div>
 </div>
 
-  <div class="admake-container">
-    <!-- 헤더 -->
-    <div class="admake-header">
-      <div class="admake-header-content">
-        <div class="admake-title">
-          <span class="admake-step-badge font-inter">STEP 4</span>
-          <div>
-            <h1>광고 관리</h1>
-            <p>기존 광고 정리 및 노출 기간 설정</p>
-          </div>
+<!-- Progress Bar -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">STEP 1</span>
+      <span class="step-label">Media 업로드</span>
+    </div>
+    <div class="admake-progress-connector completed"></div>
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">STEP 2</span>
+      <span class="step-label">정밀 크롭</span>
+    </div>
+    <div class="admake-progress-connector completed"></div>
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">STEP 3</span>
+      <span class="step-label">AD 생성</span>
+    </div>
+    <div class="admake-progress-connector completed"></div>
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">STEP 4</span>
+      <span class="step-label">전략 SETTING</span>
+    </div>
+    <div class="admake-progress-connector"></div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">STEP 5</span>
+      <span class="step-label">검토 및 Publish</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 컨텐츠 -->
+<div class="admake-main-content">
+  <div class="admake-content-inner">
+    <!-- 기존 광고 리스트 -->
+    <div class="admake-section">
+      <div class="admake-section-header">
+        <div>
+          <span class="admake-section-title">활성 광고 목록</span>
+          <span class="admake-section-subtitle" id="adCountLabel">0개</span>
+        </div>
+        <div class="admake-action-buttons">
+          <button class="admake-btn admake-btn-secondary" id="btnPause" disabled>
+            <i data-lucide="pause" style="width:14px;height:14px;"></i>
+            선택 종료
+          </button>
+          <button class="admake-btn admake-btn-danger" id="btnDelete" disabled>
+            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+            선택 삭제
+          </button>
+        </div>
+      </div>
+      <div class="admake-section-body" style="padding:0;">
+        <div class="admake-table-container">
+          <table class="admake-table">
+            <thead>
+              <tr>
+                <th style="width:40px;">
+                  <input type="checkbox" class="admake-checkbox" id="selectAll">
+                </th>
+                <th style="width:80px;">썸네일</th>
+                <th>광고 이름</th>
+                <th style="width:100px;">상태</th>
+              </tr>
+            </thead>
+            <tbody id="adsTableBody">
+              <!-- 동적 로드 -->
+            </tbody>
+          </table>
+        </div>
+        <!-- 로딩 상태 -->
+        <div class="admake-loading" id="loadingState">
+          <div class="admake-loading-spinner"></div>
+          <span>광고를 불러오는 중...</span>
+        </div>
+        <!-- 빈 상태 -->
+        <div class="admake-empty" id="emptyState" style="display:none;">
+          <i data-lucide="inbox"></i>
+          <p>활성 상태인 광고가 없습니다</p>
         </div>
       </div>
     </div>
 
-    <!-- 메인 컨텐츠 -->
-    <div class="admake-main">
-      <!-- 기존 광고 리스트 -->
-      <div class="admake-section">
-        <div class="admake-section-header">
-          <div>
-            <span class="admake-section-title">활성 광고 목록</span>
-            <span class="admake-section-subtitle" id="adCountLabel">0개</span>
-          </div>
-          <div class="admake-action-buttons">
-            <button class="admake-btn admake-btn-secondary" id="btnPause" disabled>
-              <i data-lucide="pause" style="width:14px;height:14px;"></i>
-              선택 종료
-            </button>
-            <button class="admake-btn admake-btn-danger" id="btnDelete" disabled>
-              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-              선택 삭제
-            </button>
-          </div>
-        </div>
-        <div class="admake-section-body" style="padding:0;">
-          <div class="admake-table-container">
-            <table class="admake-table">
-              <thead>
-                <tr>
-                  <th style="width:40px;">
-                    <input type="checkbox" class="admake-checkbox" id="selectAll">
-                  </th>
-                  <th style="width:80px;">썸네일</th>
-                  <th>광고 이름</th>
-                  <th style="width:100px;">상태</th>
-                </tr>
-              </thead>
-              <tbody id="adsTableBody">
-                <!-- 동적 로드 -->
-              </tbody>
-            </table>
-          </div>
-          <!-- 로딩 상태 -->
-          <div class="admake-loading" id="loadingState">
-            <div class="admake-loading-spinner"></div>
-            <span>광고를 불러오는 중...</span>
-          </div>
-          <!-- 빈 상태 -->
-          <div class="admake-empty" id="emptyState" style="display:none;">
-            <i data-lucide="inbox"></i>
-            <p>활성 상태인 광고가 없습니다</p>
-          </div>
-        </div>
+    <!-- 노출 기간 설정 -->
+    <div class="admake-section">
+      <div class="admake-section-header">
+        <span class="admake-section-title">노출 기간 설정</span>
       </div>
-
-      <!-- 노출 기간 설정 -->
-      <div class="admake-section">
-        <div class="admake-section-header">
-          <span class="admake-section-title">노출 기간 설정</span>
-        </div>
-        <div class="admake-section-body">
-          <div class="admake-period-options">
-            <label class="admake-period-option selected" data-value="no_end">
-              <input type="radio" name="period" value="no_end" class="admake-period-radio" checked>
-              <div class="admake-period-content">
-                <div class="admake-period-title">종료 기간 없음</div>
-                <div class="admake-period-desc">광고가 수동으로 중지하기 전까지 계속 게재됩니다</div>
+      <div class="admake-section-body">
+        <div class="admake-period-options">
+          <label class="admake-period-option selected" data-value="no_end">
+            <input type="radio" name="period" value="no_end" class="admake-period-radio" checked>
+            <div class="admake-period-content">
+              <div class="admake-period-title">종료 기간 없음</div>
+              <div class="admake-period-desc">광고가 수동으로 중지하기 전까지 계속 게재됩니다</div>
+            </div>
+          </label>
+          <label class="admake-period-option" data-value="set_end">
+            <input type="radio" name="period" value="set_end" class="admake-period-radio">
+            <div class="admake-period-content">
+              <div class="admake-period-title">종료 날짜/시간 설정</div>
+              <div class="admake-period-desc">지정한 날짜와 시간에 광고가 자동으로 종료됩니다</div>
+              <div class="admake-datetime-picker" id="datetimePicker">
+                <input type="datetime-local" class="admake-datetime-input" id="endDatetime">
               </div>
-            </label>
-            <label class="admake-period-option" data-value="set_end">
-              <input type="radio" name="period" value="set_end" class="admake-period-radio">
-              <div class="admake-period-content">
-                <div class="admake-period-title">종료 날짜/시간 설정</div>
-                <div class="admake-period-desc">지정한 날짜와 시간에 광고가 자동으로 종료됩니다</div>
-                <div class="admake-datetime-picker" id="datetimePicker">
-                  <input type="datetime-local" class="admake-datetime-input" id="endDatetime">
-                </div>
-              </div>
-            </label>
-          </div>
+            </div>
+          </label>
         </div>
-      </div>
-    </div>
-
-    <!-- 푸터 -->
-    <div class="admake-footer">
-      <div class="admake-footer-info">
-        <span id="selectedCount">0</span>개 광고 선택됨
-      </div>
-      <div class="admake-footer-actions">
-        <button class="admake-btn admake-btn-secondary" onclick="goBack()">
-          <i data-lucide="arrow-left" style="width:14px;height:14px;"></i>
-          이전
-        </button>
-        <button class="admake-btn admake-btn-primary" id="btnNext">
-          다음
-          <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
-        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- 경고 모달 -->
-  <div class="admake-modal-overlay" id="confirmModal">
-    <div class="admake-modal">
-      <div class="admake-modal-icon" id="modalIcon">
-        <i data-lucide="alert-triangle" style="width:24px;height:24px;"></i>
-      </div>
-      <div class="admake-modal-title" id="modalTitle">확인</div>
-      <div class="admake-modal-message" id="modalMessage">정말 진행하시겠습니까?</div>
-      <div class="admake-modal-actions">
-        <button class="admake-btn admake-btn-secondary" onclick="closeModal()">취소</button>
-        <button class="admake-btn" id="modalConfirmBtn">확인</button>
-      </div>
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-left font-inter">STEP 4 OF 5</div>
+  <div class="admake-action-buttons">
+    <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
+    <button class="admake-btn admake-btn-primary" id="nextBtn">NEXT</button>
+  </div>
+</div>
+
+<!-- 경고 모달 -->
+<div class="admake-modal-overlay" id="confirmModal">
+  <div class="admake-modal">
+    <div class="admake-modal-icon" id="modalIcon">
+      <i data-lucide="alert-triangle" style="width:24px;height:24px;"></i>
+    </div>
+    <div class="admake-modal-title" id="modalTitle">확인</div>
+    <div class="admake-modal-message" id="modalMessage">정말 진행하시겠습니까?</div>
+    <div class="admake-modal-actions">
+      <button class="admake-btn admake-btn-secondary" onclick="closeModal()">취소</button>
+      <button class="admake-btn" id="modalConfirmBtn">확인</button>
     </div>
   </div>
+</div>
 
-  <script src="{{ url_for('static', filename='js/common.js') }}?v=1.2"></script>
-  <script>
-    // URL에서 account_id 추출
-    const urlParams = new URLSearchParams(window.location.search);
-    const accountId = urlParams.get('account_id');
+<script src="{{ url_for('static', filename='js/common.js') }}?v=1.2"></script>
+<script>
+  // URL에서 account_id 추출
+  const urlParams = new URLSearchParams(window.location.search);
+  const accountId = urlParams.get('account_id');
 
-    // 상태
-    let ads = [];
-    let selectedAdIds = new Set();
-    let currentAction = null;
+  // 상태
+  let ads = [];
+  let selectedAdIds = new Set();
+  let currentAction = null;
 
-    // 초기화
-    document.addEventListener('DOMContentLoaded', () => {
-      lucide.createIcons();
-      loadActiveAds();
-      setupEventListeners();
+  // 초기화
+  document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+    loadActiveAds();
+    setupEventListeners();
+  });
+
+  // 이벤트 리스너 설정
+  function setupEventListeners() {
+    // 전체 선택
+    document.getElementById('selectAll').addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      ads.forEach(ad => {
+        if (checked) {
+          selectedAdIds.add(ad.id);
+        } else {
+          selectedAdIds.delete(ad.id);
+        }
+      });
+      renderTable();
+      updateButtonStates();
     });
 
-    // 이벤트 리스너 설정
-    function setupEventListeners() {
-      // 전체 선택
-      document.getElementById('selectAll').addEventListener('change', (e) => {
-        const checked = e.target.checked;
-        ads.forEach(ad => {
-          if (checked) {
-            selectedAdIds.add(ad.id);
-          } else {
-            selectedAdIds.delete(ad.id);
+    // 종료 버튼
+    document.getElementById('btnPause').addEventListener('click', () => {
+      showModal('pause');
+    });
+
+    // 삭제 버튼
+    document.getElementById('btnDelete').addEventListener('click', () => {
+      showModal('delete');
+    });
+
+    // 기간 설정 옵션
+    document.querySelectorAll('.admake-period-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.admake-period-option').forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+        option.querySelector('input[type="radio"]').checked = true;
+
+        const value = option.dataset.value;
+        const picker = document.getElementById('datetimePicker');
+        if (value === 'set_end') {
+          picker.classList.add('visible');
+        } else {
+          picker.classList.remove('visible');
+        }
+      });
+    });
+
+    // Back/Next 버튼
+    document.getElementById('backBtn').addEventListener('click', handleBackButton);
+    document.getElementById('nextBtn').addEventListener('click', handleNextButton);
+  }
+
+  // 활성 광고 로드
+  async function loadActiveAds() {
+    if (!accountId) {
+      showEmptyState('account_id가 없습니다');
+      return;
+    }
+
+    try {
+      document.getElementById('loadingState').style.display = 'flex';
+      document.getElementById('emptyState').style.display = 'none';
+
+      const response = await fetch(`/dashboard/get_active_ads?account_id=${accountId}`, {
+        credentials: 'include'
+      });
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        ads = result.ads || [];
+        document.getElementById('adCountLabel').textContent = `${ads.length}개`;
+
+        if (ads.length === 0) {
+          showEmptyState();
+        } else {
+          renderTable();
+        }
+      } else {
+        console.error('광고 로드 실패:', result.message);
+        showEmptyState(result.message);
+      }
+    } catch (error) {
+      console.error('광고 로드 오류:', error);
+      showEmptyState('광고를 불러오는데 실패했습니다');
+    } finally {
+      document.getElementById('loadingState').style.display = 'none';
+    }
+  }
+
+  // 테이블 렌더링
+  function renderTable() {
+    const tbody = document.getElementById('adsTableBody');
+    tbody.innerHTML = ads.map(ad => `
+      <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">
+        <td>
+          <input type="checkbox" class="admake-checkbox ad-checkbox"
+                 data-id="${ad.id}"
+                 ${selectedAdIds.has(ad.id) ? 'checked' : ''}>
+        </td>
+        <td>
+          ${ad.thumbnail_url
+            ? `<img src="${ad.thumbnail_url}" class="admake-thumbnail" onerror="this.outerHTML='<div class=\\'admake-thumbnail-placeholder\\'><i data-lucide=\\'image\\'></i></div>'">`
+            : `<div class="admake-thumbnail-placeholder"><i data-lucide="image" style="width:20px;height:20px;"></i></div>`
           }
-        });
+        </td>
+        <td>${escapeHtml(ad.name)}</td>
+        <td>
+          <span class="admake-status-badge admake-status-on">
+            <i data-lucide="circle" style="width:8px;height:8px;fill:currentColor;"></i>
+            ON
+          </span>
+        </td>
+      </tr>
+    `).join('');
+
+    // 체크박스 이벤트
+    tbody.querySelectorAll('.ad-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const adId = e.target.dataset.id;
+        if (e.target.checked) {
+          selectedAdIds.add(adId);
+        } else {
+          selectedAdIds.delete(adId);
+        }
         renderTable();
         updateButtonStates();
       });
+    });
 
-      // 종료 버튼
-      document.getElementById('btnPause').addEventListener('click', () => {
-        showModal('pause');
+    // 전체 선택 체크박스 상태 업데이트
+    document.getElementById('selectAll').checked =
+      ads.length > 0 && selectedAdIds.size === ads.length;
+
+    lucide.createIcons();
+  }
+
+  // 빈 상태 표시
+  function showEmptyState(message) {
+    document.getElementById('emptyState').style.display = 'flex';
+    if (message) {
+      document.getElementById('emptyState').querySelector('p').textContent = message;
+    }
+  }
+
+  // 버튼 상태 업데이트
+  function updateButtonStates() {
+    const hasSelection = selectedAdIds.size > 0;
+    document.getElementById('btnPause').disabled = !hasSelection;
+    document.getElementById('btnDelete').disabled = !hasSelection;
+  }
+
+  // 모달 표시
+  function showModal(action) {
+    currentAction = action;
+    const count = selectedAdIds.size;
+    const modal = document.getElementById('confirmModal');
+    const icon = document.getElementById('modalIcon');
+    const title = document.getElementById('modalTitle');
+    const message = document.getElementById('modalMessage');
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+
+    if (action === 'pause') {
+      icon.className = 'admake-modal-icon warning';
+      icon.innerHTML = '<i data-lucide="pause-circle" style="width:24px;height:24px;"></i>';
+      title.textContent = '광고 종료';
+      message.innerHTML = `선택한 <strong>${count}개</strong>의 광고를 즉시 종료하시겠습니까?<br><span style="color:var(--text-muted);">이 작업은 메타 관리자에 바로 반영됩니다.</span>`;
+      confirmBtn.className = 'admake-btn admake-btn-secondary';
+      confirmBtn.textContent = '종료하기';
+    } else if (action === 'delete') {
+      icon.className = 'admake-modal-icon danger';
+      icon.innerHTML = '<i data-lucide="trash-2" style="width:24px;height:24px;"></i>';
+      title.textContent = '광고 삭제';
+      message.innerHTML = `선택한 <strong>${count}개</strong>의 광고를 즉시 삭제하시겠습니까?<br><span style="color:var(--accent-red);">이 작업은 되돌릴 수 없으며 메타 관리자에 바로 반영됩니다.</span>`;
+      confirmBtn.className = 'admake-btn admake-btn-danger';
+      confirmBtn.textContent = '삭제하기';
+    }
+
+    confirmBtn.onclick = () => executeAction(action);
+    modal.classList.add('visible');
+    lucide.createIcons();
+  }
+
+  // 모달 닫기
+  function closeModal() {
+    document.getElementById('confirmModal').classList.remove('visible');
+    currentAction = null;
+  }
+
+  // 액션 실행
+  async function executeAction(action) {
+    const adIds = Array.from(selectedAdIds);
+    closeModal();
+
+    try {
+      const endpoint = action === 'pause' ? '/dashboard/pause_ads' : '/dashboard/delete_ads';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ad_ids: adIds })
       });
 
-      // 삭제 버튼
-      document.getElementById('btnDelete').addEventListener('click', () => {
-        showModal('delete');
-      });
+      const result = await response.json();
 
-      // 기간 설정 옵션
-      document.querySelectorAll('.admake-period-option').forEach(option => {
-        option.addEventListener('click', () => {
-          document.querySelectorAll('.admake-period-option').forEach(o => o.classList.remove('selected'));
-          option.classList.add('selected');
-          option.querySelector('input[type="radio"]').checked = true;
-
-          const value = option.dataset.value;
-          const picker = document.getElementById('datetimePicker');
-          if (value === 'set_end') {
-            picker.classList.add('visible');
-          } else {
-            picker.classList.remove('visible');
-          }
-        });
-      });
-    }
-
-    // 활성 광고 로드
-    async function loadActiveAds() {
-      if (!accountId) {
-        showEmptyState('account_id가 없습니다');
-        return;
+      if (result.status === 'success') {
+        alert(result.message);
+        selectedAdIds.clear();
+        loadActiveAds();
+      } else {
+        alert(`오류: ${result.message}`);
       }
-
-      try {
-        document.getElementById('loadingState').style.display = 'flex';
-        document.getElementById('emptyState').style.display = 'none';
-
-        const response = await fetch(`/dashboard/get_active_ads?account_id=${accountId}`, {
-          credentials: 'include'
-        });
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          ads = result.ads || [];
-          document.getElementById('adCountLabel').textContent = `${ads.length}개`;
-
-          if (ads.length === 0) {
-            showEmptyState();
-          } else {
-            renderTable();
-          }
-        } else {
-          console.error('광고 로드 실패:', result.message);
-          showEmptyState(result.message);
-        }
-      } catch (error) {
-        console.error('광고 로드 오류:', error);
-        showEmptyState('광고를 불러오는데 실패했습니다');
-      } finally {
-        document.getElementById('loadingState').style.display = 'none';
-      }
+    } catch (error) {
+      console.error('액션 실행 오류:', error);
+      alert('요청 처리 중 오류가 발생했습니다.');
     }
+  }
 
-    // 테이블 렌더링
-    function renderTable() {
-      const tbody = document.getElementById('adsTableBody');
-      tbody.innerHTML = ads.map(ad => `
-        <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">
-          <td>
-            <input type="checkbox" class="admake-checkbox ad-checkbox"
-                   data-id="${ad.id}"
-                   ${selectedAdIds.has(ad.id) ? 'checked' : ''}>
-          </td>
-          <td>
-            ${ad.thumbnail_url
-              ? `<img src="${ad.thumbnail_url}" class="admake-thumbnail" onerror="this.outerHTML='<div class=\\'admake-thumbnail-placeholder\\'><i data-lucide=\\'image\\'></i></div>'">`
-              : `<div class="admake-thumbnail-placeholder"><i data-lucide="image" style="width:20px;height:20px;"></i></div>`
-            }
-          </td>
-          <td>${escapeHtml(ad.name)}</td>
-          <td>
-            <span class="admake-status-badge admake-status-on">
-              <i data-lucide="circle" style="width:8px;height:8px;fill:currentColor;"></i>
-              ON
-            </span>
-          </td>
-        </tr>
-      `).join('');
+  // 이전/다음 버튼
+  function handleBackButton() {
+    console.log('[STEP4] 이전 버튼 클릭 - Step 3로 이동');
+    window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
+  }
 
-      // 체크박스 이벤트
-      tbody.querySelectorAll('.ad-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', (e) => {
-          const adId = e.target.dataset.id;
-          if (e.target.checked) {
-            selectedAdIds.add(adId);
-          } else {
-            selectedAdIds.delete(adId);
-          }
-          renderTable();
-          updateButtonStates();
-        });
-      });
+  function handleNextButton() {
+    console.log('[STEP4] 다음 버튼 클릭 - Step 5로 이동');
+    // TODO: Step 5 구현 후 연결
+    alert('Step 5는 아직 준비 중입니다.');
+  }
 
-      // 전체 선택 체크박스 상태 업데이트
-      document.getElementById('selectAll').checked =
-        ads.length > 0 && selectedAdIds.size === ads.length;
-
-      lucide.createIcons();
-    }
-
-    // 빈 상태 표시
-    function showEmptyState(message) {
-      document.getElementById('emptyState').style.display = 'flex';
-      if (message) {
-        document.getElementById('emptyState').querySelector('p').textContent = message;
-      }
-    }
-
-    // 버튼 상태 업데이트
-    function updateButtonStates() {
-      const hasSelection = selectedAdIds.size > 0;
-      document.getElementById('btnPause').disabled = !hasSelection;
-      document.getElementById('btnDelete').disabled = !hasSelection;
-      document.getElementById('selectedCount').textContent = selectedAdIds.size;
-    }
-
-    // 모달 표시
-    function showModal(action) {
-      currentAction = action;
-      const count = selectedAdIds.size;
-      const modal = document.getElementById('confirmModal');
-      const icon = document.getElementById('modalIcon');
-      const title = document.getElementById('modalTitle');
-      const message = document.getElementById('modalMessage');
-      const confirmBtn = document.getElementById('modalConfirmBtn');
-
-      if (action === 'pause') {
-        icon.className = 'admake-modal-icon warning';
-        icon.innerHTML = '<i data-lucide="pause-circle" style="width:24px;height:24px;"></i>';
-        title.textContent = '광고 종료';
-        message.innerHTML = `선택한 <strong>${count}개</strong>의 광고를 즉시 종료하시겠습니까?<br><span style="color:var(--text-muted);">이 작업은 메타 관리자에 바로 반영됩니다.</span>`;
-        confirmBtn.className = 'admake-btn admake-btn-secondary';
-        confirmBtn.textContent = '종료하기';
-      } else if (action === 'delete') {
-        icon.className = 'admake-modal-icon danger';
-        icon.innerHTML = '<i data-lucide="trash-2" style="width:24px;height:24px;"></i>';
-        title.textContent = '광고 삭제';
-        message.innerHTML = `선택한 <strong>${count}개</strong>의 광고를 즉시 삭제하시겠습니까?<br><span style="color:var(--accent-red);">이 작업은 되돌릴 수 없으며 메타 관리자에 바로 반영됩니다.</span>`;
-        confirmBtn.className = 'admake-btn admake-btn-danger';
-        confirmBtn.textContent = '삭제하기';
-      }
-
-      confirmBtn.onclick = () => executeAction(action);
-      modal.classList.add('visible');
-      lucide.createIcons();
-    }
-
-    // 모달 닫기
-    function closeModal() {
-      document.getElementById('confirmModal').classList.remove('visible');
-      currentAction = null;
-    }
-
-    // 액션 실행
-    async function executeAction(action) {
-      const adIds = Array.from(selectedAdIds);
-      closeModal();
-
-      try {
-        const endpoint = action === 'pause' ? '/dashboard/pause_ads' : '/dashboard/delete_ads';
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ ad_ids: adIds })
-        });
-
-        const result = await response.json();
-
-        if (result.status === 'success') {
-          alert(result.message);
-          selectedAdIds.clear();
-          loadActiveAds();
-        } else {
-          alert(`오류: ${result.message}`);
-        }
-      } catch (error) {
-        console.error('액션 실행 오류:', error);
-        alert('요청 처리 중 오류가 발생했습니다.');
-      }
-    }
-
-    // 이전 페이지로
-    function goBack() {
-      window.history.back();
-    }
-
-    // HTML 이스케이프
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-  </script>
+  // HTML 이스케이프
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
 </body>
 </html>

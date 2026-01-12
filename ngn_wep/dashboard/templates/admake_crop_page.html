@@ -3201,6 +3201,11 @@ async function uploadToMeta() {
   initUploadProgress(mediaItems);
   updateUploadStage('메타 서버에 연결 중...', '인증 정보를 확인하고 있습니다');
 
+  // 브라우저가 UI를 렌더링할 시간 확보 (로딩 팝업 즉시 표시)
+  await new Promise(resolve => requestAnimationFrame(() => {
+    requestAnimationFrame(resolve);
+  }));
+
   try {
     // 서버에서 액세스 토큰 가져오기
     const tokenResponse = await fetch('/dashboard/get_meta_token', {

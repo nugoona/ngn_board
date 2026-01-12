@@ -3095,15 +3095,29 @@ def publish_ads_batch():
     """
     Step 5: 여러 광고를 배치로 생성
     - AdCreative 생성 → Ad 생성
+    - 유입 캠페인 복사 옵션 지원
+    - UTM 파라미터 및 Pixel tracking 지원
     """
     try:
         data = request.get_json()
         account_id = data.get("account_id")
         ads = data.get("ads", [])
 
+        # Step 4 설정 추출
+        copy_to_traffic = data.get("copy_to_traffic", False)
+        conv_active = data.get("conv_active", True)
+        traffic_active = data.get("traffic_active", False)
+        end_time = data.get("end_time")  # ISO 8601 형식 (예: 2024-12-31T23:59:00+09:00)
+        utm_params = data.get("utm_params", "")
+        pixel_id = data.get("pixel_id", "")
+
         print(f"[STEP5] ========== publish_ads_batch 시작 ==========")
         print(f"[STEP5] 수신된 account_id: {account_id}")
         print(f"[STEP5] 수신된 ads 개수: {len(ads) if ads else 0}")
+        print(f"[STEP5] copy_to_traffic: {copy_to_traffic}, conv_active: {conv_active}, traffic_active: {traffic_active}")
+        print(f"[STEP5] end_time: {end_time}")
+        print(f"[STEP5] utm_params: {utm_params[:50] if utm_params else 'None'}...")
+        print(f"[STEP5] pixel_id: {pixel_id}")
 
         if not account_id:
             return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
@@ -3129,15 +3143,26 @@ def publish_ads_batch():
         conv_adset_id = account_info.get("conv_adset_id")
         traffic_adset_id = account_info.get("traffic_adset_id")
 
+        # 클라이언트에서 전달된 값이 없으면 계정 정보에서 가져오기
+        if not utm_params:
+            utm_params = account_info.get("utm_params", "")
+        if not pixel_id:
+            pixel_id = account_info.get("pixel_id", "")
+
         if not page_id:
             return jsonify({"status": "error", "message": "Facebook 페이지 정보를 찾을 수 없습니다."}), 400
 
-        # AdSet ID 결정 (전환 캠페인 우선, 없으면 유입 캠페인 사용)
-        adset_id = conv_adset_id or traffic_adset_id
-        if not adset_id:
-            return jsonify({"status": "error", "message": "AdSet 정보를 찾을 수 없습니다. BigQuery meta_account_mapping 테이블을 확인해주세요."}), 400
+        # 전송할 캠페인 결정 (활성 상태에 따라)
+        target_adsets = []
+        if conv_active and conv_adset_id:
+            target_adsets.append(("conv", conv_adset_id))
+        if (traffic_active or copy_to_traffic) and traffic_adset_id:
+            target_adsets.append(("traffic", traffic_adset_id))
 
-        print(f"[STEP5] 사용할 AdSet ID: {adset_id} (전환: {conv_adset_id}, 유입: {traffic_adset_id})")
+        if not target_adsets:
+            return jsonify({"status": "error", "message": "활성화된 캠페인이 없습니다. 최소 하나의 캠페인을 활성화해주세요."}), 400
+
+        print(f"[STEP5] 전송할 캠페인: {target_adsets}")
 
         results = []
         success_count = 0
@@ -3148,13 +3173,14 @@ def publish_ads_batch():
             print(f"[STEP5] 광고 {idx + 1}/{len(ads)} 처리 중: {ad_name}")
 
             try:
-                # 1. AdCreative 생성
+                # 1. AdCreative 생성 (UTM 파라미터 포함)
                 creative_id = create_ad_creative_internal(
                     account_id=account_id,
                     ad_data=ad_data,
                     page_id=page_id,
                     instagram_user_id=instagram_user_id,
-                    access_token=access_token
+                    access_token=access_token,
+                    url_tags=utm_params  # UTM 파라미터 전달
                 )
 
                 if not creative_id:
@@ -3162,28 +3188,37 @@ def publish_ads_batch():
 
                 print(f"[STEP5] AdCreative 생성 완료: {creative_id}")
 
-                # 2. Ad 생성 (AdSet에 연결)
-                ad_result = create_ad_internal(
-                    account_id=account_id,
-                    adset_id=adset_id,
-                    creative_id=creative_id,
-                    ad_name=ad_name,
-                    access_token=access_token,
-                    status="PAUSED"  # 기본값: 일시중지 상태로 생성
-                )
+                # 2. 각 타겟 AdSet에 Ad 생성
+                ad_created = False
+                for campaign_type, adset_id in target_adsets:
+                    suffix = "_TRAFFIC" if campaign_type == "traffic" else ""
+                    full_ad_name = f"{ad_name}{suffix}"
 
-                if ad_result.get("success"):
-                    results.append({
-                        "name": ad_name,
-                        "success": True,
-                        "creative_id": creative_id,
-                        "ad_id": ad_result.get("ad_id"),
-                        "preview_link": ad_result.get("preview_link")
-                    })
-                    success_count += 1
-                    print(f"[STEP5] Ad 생성 완료: {ad_result.get('ad_id')}")
-                else:
-                    raise Exception(ad_result.get("error", "Ad 생성 실패"))
+                    ad_result = create_ad_internal(
+                        account_id=account_id,
+                        adset_id=adset_id,
+                        creative_id=creative_id,
+                        ad_name=full_ad_name,
+                        access_token=access_token,
+                        status="PAUSED",
+                        pixel_id=pixel_id if campaign_type == "conv" else "",  # 전환 캠페인에만 픽셀 적용
+                        end_time=end_time
+                    )
+
+                    if ad_result.get("success"):
+                        results.append({
+                            "name": full_ad_name,
+                            "campaign_type": campaign_type,
+                            "success": True,
+                            "creative_id": creative_id,
+                            "ad_id": ad_result.get("ad_id"),
+                            "preview_link": ad_result.get("preview_link")
+                        })
+                        success_count += 1
+                        ad_created = True
+                        print(f"[STEP5] Ad 생성 완료 ({campaign_type}): {ad_result.get('ad_id')}")
+                    else:
+                        raise Exception(f"{campaign_type} 캠페인 Ad 생성 실패: {ad_result.get('error', 'Unknown')}")
 
             except Exception as e:
                 error_msg = str(e)
@@ -3350,10 +3385,12 @@ def get_video_thumbnail(video_id: str, access_token: str) -> str:
         return None
 
 
-def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name: str, access_token: str, status: str = "PAUSED") -> dict:
+def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name: str, access_token: str, status: str = "PAUSED", pixel_id: str = "", end_time: str = "") -> dict:
     """
     Meta API를 통해 Ad(광고) 생성
     - AdCreative를 AdSet에 연결하여 실제 광고 생성
+    - pixel_id: Meta Pixel ID (tracking_specs에 사용)
+    - end_time: 광고 종료 시간 (ISO 8601 형식)
     """
     try:
         formatted_account_id = ensure_act_prefix(account_id)
@@ -3365,6 +3402,8 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
         print(f"[STEP5] creative_id: {creative_id}")
         print(f"[STEP5] ad_name: {ad_name}")
         print(f"[STEP5] status: {status}")
+        print(f"[STEP5] pixel_id: {pixel_id}")
+        print(f"[STEP5] end_time: {end_time}")
 
         payload = {
             "name": ad_name,
@@ -3373,6 +3412,23 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
             "status": status,
             "access_token": access_token
         }
+
+        # tracking_specs 추가 (Pixel ID가 있는 경우)
+        if pixel_id:
+            tracking_specs = [
+                {
+                    "action.type": ["offsite_conversion"],
+                    "fb_pixel": [str(pixel_id)]
+                }
+            ]
+            payload["tracking_specs"] = json.dumps(tracking_specs)
+            print(f"[STEP5] tracking_specs 추가: {tracking_specs}")
+
+        # end_time 추가 (종료 시간이 있는 경우)
+        # Note: end_time은 Ad 레벨이 아닌 AdSet 레벨에서 설정해야 함
+        # 여기서는 로그만 출력하고 실제 설정은 AdSet 업데이트 API에서 처리
+        if end_time:
+            print(f"[STEP5] Note: end_time은 AdSet 레벨에서 관리됨: {end_time}")
 
         print(f"[STEP5] Ad 생성 페이로드: name={ad_name}, adset_id={adset_id}, creative_id={creative_id}")
 
@@ -3403,9 +3459,10 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
         return {"success": False, "error": str(e)}
 
 
-def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str) -> str:
+def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, instagram_user_id: str, access_token: str, url_tags: str = "") -> str:
     """
     Meta API를 통해 AdCreative 생성 (내부 함수)
+    - url_tags: UTM 파라미터 (예: utm_source=meta&utm_medium=prospecting...)
     """
     try:
         # 1. act_ 접두사 강제 적용
@@ -3521,6 +3578,11 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             "object_story_spec": object_story_spec_json,
             "access_token": access_token
         }
+
+        # UTM 파라미터 추가 (url_tags)
+        if url_tags:
+            payload["url_tags"] = url_tags
+            print(f"[STEP5] url_tags 추가: {url_tags[:80]}...")
 
         # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
         print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")

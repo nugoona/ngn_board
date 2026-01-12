@@ -562,6 +562,304 @@
       margin-top: 2px;
     }
 
+    /* ===== Section 02: 예산 설정 ===== */
+    .admake-budget-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .admake-budget-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.2s ease;
+    }
+
+    .admake-budget-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .admake-budget-card.modified {
+      border-color: var(--accent-emerald);
+      box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+    }
+
+    .admake-budget-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .admake-budget-type-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-conv {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .badge-traffic {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+    }
+
+    .admake-budget-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .admake-budget-mode {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
+
+    .admake-budget-value-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .admake-budget-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .admake-budget-currency {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .admake-budget-input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Inter Tight', sans-serif;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+
+    .admake-budget-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .admake-budget-input.modified {
+      color: var(--accent-emerald);
+      border-color: var(--accent-emerald);
+    }
+
+    .admake-budget-unit {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .admake-budget-toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admake-toggle-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .admake-budget-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-dot.status-loading {
+      background: var(--accent-gold);
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-dot.status-active {
+      background: var(--accent-emerald);
+    }
+
+    .status-dot.status-paused {
+      background: var(--text-muted);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .admake-section-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      padding-left: 4px;
+    }
+
+    /* ===== Toggle Switch ===== */
+    .admake-toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .admake-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .admake-toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-default);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .admake-toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .admake-toggle input:checked + .admake-toggle-slider {
+      background-color: var(--accent-emerald);
+    }
+
+    .admake-toggle input:checked + .admake-toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    .admake-toggle-large {
+      width: 52px;
+      height: 28px;
+    }
+
+    .admake-toggle-large .admake-toggle-slider:before {
+      height: 22px;
+      width: 22px;
+    }
+
+    .admake-toggle-large input:checked + .admake-toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* ===== Section 03: 유입 캠페인 복사 ===== */
+    .admake-traffic-copy-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .admake-traffic-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 14px 16px;
+      background: rgba(59, 130, 246, 0.08);
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .admake-traffic-info strong {
+      color: var(--accent-blue);
+    }
+
+    .admake-traffic-copy-option {
+      padding: 16px;
+      background: var(--bg-input);
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .admake-toggle-label-full {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .admake-toggle-label-full .toggle-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .admake-traffic-copy-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    /* ===== Campaign Type Badge in Table ===== */
+    .campaign-type-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .campaign-type-badge.type-conv {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .campaign-type-badge.type-traffic {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+    }
+
     /* ===== 기간 설정 ===== */
     .admake-period-options {
       display: flex;
@@ -985,10 +1283,104 @@
         </div>
       </div>
 
-      <!-- 노출 기간 설정 -->
+      <!-- Section 02: 캠페인별 예산 확인 -->
       <div class="admake-section">
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">02</span>
+          <span class="admake-section-title">캠페인별 예산 확인</span>
+          <button class="admake-btn-sm admake-btn-sm-secondary" id="btnRefreshBudget" style="margin-left: auto;">
+            <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+            새로고침
+          </button>
+        </div>
+
+        <div class="admake-budget-container" id="budgetContainer">
+          <!-- 전환 목표 예산 -->
+          <div class="admake-budget-card" id="convBudgetCard">
+            <div class="admake-budget-header">
+              <span class="admake-budget-type-badge badge-conv">전환</span>
+              <span class="admake-budget-label">전환 목표 예산</span>
+              <span class="admake-budget-mode" id="convBudgetMode">CBO</span>
+            </div>
+            <div class="admake-budget-value-row">
+              <div class="admake-budget-input-wrapper">
+                <span class="admake-budget-currency">₩</span>
+                <input type="number" class="admake-budget-input" id="convDailyBudget" placeholder="0" min="0" step="1000">
+                <span class="admake-budget-unit">/ 일</span>
+              </div>
+              <div class="admake-budget-toggle-wrapper">
+                <label class="admake-toggle">
+                  <input type="checkbox" id="convActiveToggle" checked>
+                  <span class="admake-toggle-slider"></span>
+                </label>
+                <span class="admake-toggle-label" id="convToggleLabel">활성화</span>
+              </div>
+            </div>
+            <div class="admake-budget-status" id="convBudgetStatus">
+              <span class="status-dot status-loading"></span>
+              <span>예산 정보 로딩 중...</span>
+            </div>
+          </div>
+
+          <!-- 유입 목표 예산 -->
+          <div class="admake-budget-card" id="trafficBudgetCard">
+            <div class="admake-budget-header">
+              <span class="admake-budget-type-badge badge-traffic">유입</span>
+              <span class="admake-budget-label">유입 목표 예산</span>
+              <span class="admake-budget-mode" id="trafficBudgetMode">CBO</span>
+            </div>
+            <div class="admake-budget-value-row">
+              <div class="admake-budget-input-wrapper">
+                <span class="admake-budget-currency">₩</span>
+                <input type="number" class="admake-budget-input" id="trafficDailyBudget" placeholder="0" min="0" step="1000">
+                <span class="admake-budget-unit">/ 일</span>
+              </div>
+              <div class="admake-budget-toggle-wrapper">
+                <label class="admake-toggle">
+                  <input type="checkbox" id="trafficActiveToggle">
+                  <span class="admake-toggle-slider"></span>
+                </label>
+                <span class="admake-toggle-label" id="trafficToggleLabel">비활성화</span>
+              </div>
+            </div>
+            <div class="admake-budget-status" id="trafficBudgetStatus">
+              <span class="status-dot status-loading"></span>
+              <span>예산 정보 로딩 중...</span>
+            </div>
+          </div>
+        </div>
+        <p class="admake-section-note">* 수정된 예산은 <span style="color: var(--accent-emerald);">에메랄드 그린</span>으로 표시됩니다. 토글 OFF 시 해당 캠페인에 광고가 전송되지 않습니다.</p>
+      </div>
+
+      <!-- Section 03: 유입 캠페인 광고 확장 설정 -->
+      <div class="admake-section">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">03</span>
+          <span class="admake-section-title">유입 캠페인 광고 확장 설정</span>
+        </div>
+
+        <div class="admake-traffic-copy-container">
+          <div class="admake-traffic-info">
+            <i data-lucide="info" style="width:18px;height:18px;color:var(--accent-blue);"></i>
+            <span>현재 소재는 <strong>전환 캠페인</strong>에만 생성됩니다. 유입 캠페인에도 동일한 광고를 생성하려면 아래 옵션을 활성화하세요.</span>
+          </div>
+          <div class="admake-traffic-copy-option">
+            <label class="admake-toggle-label-full">
+              <span class="toggle-text">유입 캠페인으로 복사</span>
+              <label class="admake-toggle admake-toggle-large">
+                <input type="checkbox" id="copyToTrafficToggle">
+                <span class="admake-toggle-slider"></span>
+              </label>
+            </label>
+            <p class="admake-traffic-copy-desc">활성화 시 전환 캠페인과 동일한 크리에이티브가 유입 캠페인에도 생성됩니다. UTM 파라미터는 자동으로 적용됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 04: 노출 기간 설정 (기존 02) -->
+      <div class="admake-section">
+        <div class="admake-section-header">
+          <span class="admake-section-number font-inter">04</span>
           <span class="admake-section-title">노출 기간 설정</span>
         </div>
 
@@ -1055,11 +1447,26 @@
   let selectedAdIds = new Set();
   let currentAction = null;
 
+  // 예산 관련 상태
+  let budgetData = {
+    conv: { originalBudget: 0, currentBudget: 0, budgetType: 'CBO', campaignId: '', adsetId: '', isActive: false },
+    traffic: { originalBudget: 0, currentBudget: 0, budgetType: 'CBO', campaignId: '', adsetId: '', isActive: false }
+  };
+  let accountInfo = null;
+
   // 초기화
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
+
+    // 계정 정보 로드 (budget 로드에 필요)
+    await loadAccountInfo();
+
+    // 광고 목록 및 예산 정보 병렬 로드
     loadActiveAds();
+    loadBudgetInfo();
+
     setupEventListeners();
+    setupBudgetEventListeners();
   });
 
   // 이벤트 리스너 설정
@@ -1122,7 +1529,294 @@
       const input = document.getElementById('endDatetime');
       input.showPicker();
     });
+
+    // 예산 새로고침 버튼
+    document.getElementById('btnRefreshBudget').addEventListener('click', () => {
+      console.log('[STEP4] 예산 수동 새로고침');
+      loadBudgetInfo();
+    });
   }
+
+  // 계정 정보 로드
+  async function loadAccountInfo() {
+    if (!accountId) return;
+
+    try {
+      const response = await fetch(`/dashboard/get_account_info?account_id=${accountId}`, {
+        credentials: 'include'
+      });
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        accountInfo = result;
+        console.log('[STEP4] 계정 정보 로드:', accountInfo);
+      } else {
+        console.error('[STEP4] 계정 정보 로드 실패:', result.message);
+      }
+    } catch (error) {
+      console.error('[STEP4] 계정 정보 로드 오류:', error);
+    }
+  }
+
+  // 예산 정보 로드 (Meta API Live)
+  async function loadBudgetInfo() {
+    if (!accountId || !accountInfo) {
+      console.warn('[STEP4] 예산 로드 스킵 - 계정 정보 없음');
+      return;
+    }
+
+    console.log('[STEP4] 예산 정보 로드 시작');
+
+    // 로딩 상태 표시
+    updateBudgetStatus('conv', 'loading', '예산 정보 로딩 중...');
+    updateBudgetStatus('traffic', 'loading', '예산 정보 로딩 중...');
+
+    try {
+      const response = await fetch(`/dashboard/get_budget_info?account_id=${accountId}`, {
+        credentials: 'include',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      const result = await response.json();
+
+      console.log('[STEP4] 예산 API 응답:', result);
+
+      if (result.status === 'success') {
+        // 전환 캠페인 예산
+        if (result.conv_campaign) {
+          const conv = result.conv_campaign;
+          budgetData.conv = {
+            originalBudget: parseInt(conv.daily_budget) || 0,
+            currentBudget: parseInt(conv.daily_budget) || 0,
+            budgetType: conv.budget_type || 'CBO',
+            campaignId: conv.campaign_id || '',
+            adsetId: conv.adset_id || '',
+            isActive: conv.status === 'ACTIVE'
+          };
+
+          document.getElementById('convDailyBudget').value = budgetData.conv.currentBudget;
+          document.getElementById('convBudgetMode').textContent = budgetData.conv.budgetType;
+          document.getElementById('convActiveToggle').checked = budgetData.conv.isActive;
+          updateToggleLabel('conv', budgetData.conv.isActive);
+          updateBudgetStatus('conv', budgetData.conv.isActive ? 'active' : 'paused',
+            budgetData.conv.isActive ? '활성 상태' : '일시 중지');
+        }
+
+        // 유입 캠페인 예산
+        if (result.traffic_campaign) {
+          const traffic = result.traffic_campaign;
+          budgetData.traffic = {
+            originalBudget: parseInt(traffic.daily_budget) || 0,
+            currentBudget: parseInt(traffic.daily_budget) || 0,
+            budgetType: traffic.budget_type || 'CBO',
+            campaignId: traffic.campaign_id || '',
+            adsetId: traffic.adset_id || '',
+            isActive: traffic.status === 'ACTIVE'
+          };
+
+          document.getElementById('trafficDailyBudget').value = budgetData.traffic.currentBudget;
+          document.getElementById('trafficBudgetMode').textContent = budgetData.traffic.budgetType;
+          document.getElementById('trafficActiveToggle').checked = budgetData.traffic.isActive;
+          updateToggleLabel('traffic', budgetData.traffic.isActive);
+          updateBudgetStatus('traffic', budgetData.traffic.isActive ? 'active' : 'paused',
+            budgetData.traffic.isActive ? '활성 상태' : '일시 중지');
+        }
+      } else {
+        console.error('[STEP4] 예산 로드 실패:', result.message);
+        updateBudgetStatus('conv', 'paused', '정보 로드 실패');
+        updateBudgetStatus('traffic', 'paused', '정보 로드 실패');
+      }
+    } catch (error) {
+      console.error('[STEP4] 예산 로드 오류:', error);
+      updateBudgetStatus('conv', 'paused', '네트워크 오류');
+      updateBudgetStatus('traffic', 'paused', '네트워크 오류');
+    }
+  }
+
+  // 예산 상태 표시 업데이트
+  function updateBudgetStatus(type, status, text) {
+    const statusEl = document.getElementById(`${type}BudgetStatus`);
+    if (!statusEl) return;
+
+    const dotClass = status === 'loading' ? 'status-loading' :
+                     status === 'active' ? 'status-active' : 'status-paused';
+
+    statusEl.innerHTML = `
+      <span class="status-dot ${dotClass}"></span>
+      <span>${text}</span>
+    `;
+  }
+
+  // 토글 레이블 업데이트
+  function updateToggleLabel(type, isActive) {
+    const label = document.getElementById(`${type}ToggleLabel`);
+    if (label) {
+      label.textContent = isActive ? '활성화' : '비활성화';
+    }
+  }
+
+  // 예산 이벤트 리스너 설정
+  function setupBudgetEventListeners() {
+    // 전환 예산 입력 변경
+    document.getElementById('convDailyBudget').addEventListener('input', (e) => {
+      const value = parseInt(e.target.value) || 0;
+      budgetData.conv.currentBudget = value;
+      checkBudgetModified('conv');
+    });
+
+    // 유입 예산 입력 변경
+    document.getElementById('trafficDailyBudget').addEventListener('input', (e) => {
+      const value = parseInt(e.target.value) || 0;
+      budgetData.traffic.currentBudget = value;
+      checkBudgetModified('traffic');
+    });
+
+    // 전환 활성화 토글
+    document.getElementById('convActiveToggle').addEventListener('change', async (e) => {
+      const isActive = e.target.checked;
+      budgetData.conv.isActive = isActive;
+      updateToggleLabel('conv', isActive);
+
+      // 즉시 상태 업데이트
+      await updateAdsetStatus('conv', isActive);
+    });
+
+    // 유입 활성화 토글
+    document.getElementById('trafficActiveToggle').addEventListener('change', async (e) => {
+      const isActive = e.target.checked;
+      budgetData.traffic.isActive = isActive;
+      updateToggleLabel('traffic', isActive);
+
+      // 즉시 상태 업데이트
+      await updateAdsetStatus('traffic', isActive);
+    });
+
+    // 예산 입력 blur 시 저장
+    document.getElementById('convDailyBudget').addEventListener('blur', () => {
+      if (budgetData.conv.currentBudget !== budgetData.conv.originalBudget) {
+        saveBudgetChanges('conv');
+      }
+    });
+
+    document.getElementById('trafficDailyBudget').addEventListener('blur', () => {
+      if (budgetData.traffic.currentBudget !== budgetData.traffic.originalBudget) {
+        saveBudgetChanges('traffic');
+      }
+    });
+  }
+
+  // 예산 수정 체크 및 UI 업데이트
+  function checkBudgetModified(type) {
+    const input = document.getElementById(`${type}DailyBudget`);
+    const card = document.getElementById(`${type}BudgetCard`);
+
+    const isModified = budgetData[type].currentBudget !== budgetData[type].originalBudget;
+
+    if (isModified) {
+      input.classList.add('modified');
+      card.classList.add('modified');
+    } else {
+      input.classList.remove('modified');
+      card.classList.remove('modified');
+    }
+  }
+
+  // 예산 변경 저장
+  async function saveBudgetChanges(type) {
+    const data = budgetData[type];
+    if (!data.campaignId && !data.adsetId) {
+      console.warn(`[STEP4] ${type} 캠페인/세트 ID 없음`);
+      return;
+    }
+
+    console.log(`[STEP4] ${type} 예산 변경 저장:`, data.currentBudget);
+    updateBudgetStatus(type, 'loading', '저장 중...');
+
+    try {
+      const response = await fetch('/dashboard/update_budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          account_id: accountId,
+          campaign_id: data.campaignId,
+          adset_id: data.adsetId,
+          daily_budget: data.currentBudget,
+          budget_type: data.budgetType
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        budgetData[type].originalBudget = data.currentBudget;
+        checkBudgetModified(type);
+        updateBudgetStatus(type, data.isActive ? 'active' : 'paused',
+          data.isActive ? '저장 완료' : '일시 중지');
+
+        setTimeout(() => {
+          updateBudgetStatus(type, data.isActive ? 'active' : 'paused',
+            data.isActive ? '활성 상태' : '일시 중지');
+        }, 2000);
+      } else {
+        console.error(`[STEP4] ${type} 예산 저장 실패:`, result.message);
+        updateBudgetStatus(type, 'paused', '저장 실패');
+      }
+    } catch (error) {
+      console.error(`[STEP4] ${type} 예산 저장 오류:`, error);
+      updateBudgetStatus(type, 'paused', '네트워크 오류');
+    }
+  }
+
+  // AdSet 상태 업데이트 (활성/비활성)
+  async function updateAdsetStatus(type, isActive) {
+    const data = budgetData[type];
+    if (!data.adsetId && !data.campaignId) {
+      console.warn(`[STEP4] ${type} 세트/캠페인 ID 없음`);
+      return;
+    }
+
+    console.log(`[STEP4] ${type} 상태 변경:`, isActive ? 'ACTIVE' : 'PAUSED');
+    updateBudgetStatus(type, 'loading', '상태 변경 중...');
+
+    try {
+      const response = await fetch('/dashboard/update_adset_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          account_id: accountId,
+          adset_id: data.adsetId,
+          campaign_id: data.campaignId,
+          status: isActive ? 'ACTIVE' : 'PAUSED'
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        updateBudgetStatus(type, isActive ? 'active' : 'paused',
+          isActive ? '활성화됨' : '일시 중지됨');
+
+        setTimeout(() => {
+          updateBudgetStatus(type, isActive ? 'active' : 'paused',
+            isActive ? '활성 상태' : '일시 중지');
+        }, 2000);
+      } else {
+        console.error(`[STEP4] ${type} 상태 변경 실패:`, result.message);
+        // 실패 시 토글 복원
+        document.getElementById(`${type}ActiveToggle`).checked = !isActive;
+        budgetData[type].isActive = !isActive;
+        updateToggleLabel(type, !isActive);
+        updateBudgetStatus(type, !isActive ? 'active' : 'paused', '상태 변경 실패');
+      }
+    } catch (error) {
+      console.error(`[STEP4] ${type} 상태 변경 오류:`, error);
+      // 실패 시 토글 복원
+      document.getElementById(`${type}ActiveToggle`).checked = !isActive;
+      budgetData[type].isActive = !isActive;
+      updateToggleLabel(type, !isActive);
+      updateBudgetStatus(type, !isActive ? 'active' : 'paused', '네트워크 오류');
+    }
 
   // 종료 날짜 기본값 설정 (현재 시간)
   function setDefaultEndDatetime() {
@@ -1221,7 +1915,7 @@
             }
           </td>
           <td title="${escapeHtml(ad.name)}">${escapeHtml(ad.name)}</td>
-          <td class="campaign-type">${ad.campaign_type || '-'}</td>
+          <td class="campaign-type">${getCampaignTypeBadge(ad.campaign_type)}</td>
           <td>
             <span class="admake-status-badge ${statusClass}">
               <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>
@@ -1360,18 +2054,42 @@
       }
     }
 
+    // 유입 캠페인 복사 토글 상태
+    const copyToTraffic = document.getElementById('copyToTrafficToggle').checked;
+
+    // 캠페인 활성화 상태
+    const convActive = document.getElementById('convActiveToggle').checked;
+    const trafficActive = document.getElementById('trafficActiveToggle').checked;
+
     // Step 4 데이터 저장
     const step4Data = {
       selectedAdIds: Array.from(selectedAdIds),
       endDateSetting: endDateSetting,
       endDate: endDate,
-      endTime: endTime
+      endTime: endTime,
+      copyToTraffic: copyToTraffic,
+      convActive: convActive,
+      trafficActive: trafficActive,
+      budgetData: budgetData
     };
     sessionStorage.setItem('admake_step4_state', JSON.stringify(step4Data));
     console.log('[STEP4] Step 4 데이터 저장:', step4Data);
 
     // Step 5로 이동
     window.location.href = `/admake/publish?account_id=${encodeURIComponent(accountId)}`;
+  }
+
+  // 캠페인 유형 배지 생성
+  function getCampaignTypeBadge(campaignType) {
+    if (!campaignType) return '-';
+
+    const type = campaignType.toLowerCase();
+    if (type.includes('conv') || type.includes('전환')) {
+      return `<span class="campaign-type-badge type-conv">전환</span>`;
+    } else if (type.includes('traffic') || type.includes('유입')) {
+      return `<span class="campaign-type-badge type-traffic">유입</span>`;
+    }
+    return campaignType;
   }
 
   // HTML 이스케이프

@@ -1039,6 +1039,8 @@ let step4Data = null;
 let mediaItems = [];
 let publishResults = [];
 let isPublishing = false;
+let pendingAds = [];    // Flask Session에서 로드
+let accountInfo = null; // 계정 정보 (UTM, pixel_id 등)
 
 console.log('[STEP5] 페이지 초기화 시작');
 
@@ -1078,15 +1080,11 @@ async function getFileFromIndexedDB(mediaId) {
 async function loadAllData() {
   console.log('[STEP5] 데이터 로드 시작');
 
-  // Step 3 데이터 로드
-  const step3Raw = sessionStorage.getItem('admake_step3_state');
-  if (step3Raw) {
-    step3Data = JSON.parse(step3Raw);
-    console.log('[STEP5] Step 3 데이터 로드:', step3Data);
-  } else {
-    console.warn('[STEP5] Step 3 데이터 없음');
-    showToast('Step 3 데이터를 찾을 수 없습니다.', 'warning');
-  }
+  // 1. Flask Session에서 pending_ads 로드
+  await loadPendingAds();
+
+  // 2. 계정 정보 로드 (UTM, pixel_id)
+  await loadAccountInfo();
 
   // Step 4 데이터 로드
   const step4Raw = sessionStorage.getItem('admake_step4_state');
@@ -1095,33 +1093,55 @@ async function loadAllData() {
     console.log('[STEP5] Step 4 데이터 로드:', step4Data);
   }
 
-  // Step 2 업로드 결과 로드
-  const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
-  if (uploadedRaw) {
-    const uploaded = JSON.parse(uploadedRaw);
-    console.log('[STEP5] 업로드된 미디어 로드:', uploaded);
+  // Step 3 데이터 로드 (이전 버전 호환)
+  const step3Raw = sessionStorage.getItem('admake_step3_state');
+  if (step3Raw) {
+    step3Data = JSON.parse(step3Raw);
+    console.log('[STEP5] Step 3 데이터 로드:', step3Data);
+  }
 
-    // 선택된 미디어만 필터링
-    if (step3Data && step3Data.selectedMediaIds) {
-      for (const mediaId of step3Data.selectedMediaIds) {
-        const uploadedItem = uploaded.find(u => u.id === mediaId);
-        if (uploadedItem) {
-          let previewUrl = null;
-          try {
-            const file = await getFileFromIndexedDB(mediaId);
-            previewUrl = URL.createObjectURL(file);
-          } catch (e) {
-            console.warn(`[STEP5] ${mediaId}: 파일 로드 실패`);
+  // 미디어 아이템 구성 (pending_ads 또는 sessionStorage)
+  if (pendingAds.length > 0) {
+    // pending_ads 사용
+    console.log('[STEP5] pending_ads 사용:', pendingAds.length);
+    // pending_ads에서 썸네일 정보 추출
+    mediaItems = pendingAds.map(ad => ({
+      id: ad.ad_id,
+      adName: ad.ad_name,
+      mediaType: ad.media_type,
+      hash: ad.image_hash,
+      videoId: ad.video_id,
+      thumbnailUrl: ad.thumbnail_url,
+      previewUrl: ad.thumbnail_url
+    }));
+  } else if (step3Data) {
+    // 이전 버전 호환: sessionStorage 사용
+    const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
+    if (uploadedRaw) {
+      const uploaded = JSON.parse(uploadedRaw);
+      console.log('[STEP5] 업로드된 미디어 로드:', uploaded);
+
+      if (step3Data.selectedMediaIds) {
+        for (const mediaId of step3Data.selectedMediaIds) {
+          const uploadedItem = uploaded.find(u => u.id === mediaId);
+          if (uploadedItem) {
+            let previewUrl = null;
+            try {
+              const file = await getFileFromIndexedDB(mediaId);
+              previewUrl = URL.createObjectURL(file);
+            } catch (e) {
+              console.warn(`[STEP5] ${mediaId}: 파일 로드 실패`);
+            }
+
+            mediaItems.push({
+              id: mediaId,
+              mediaType: uploadedItem.type,
+              hash: uploadedItem.hash,
+              videoId: uploadedItem.video_id,
+              thumbnailUrl: uploadedItem.thumbnail_url || uploadedItem.thumbnailUrl,
+              previewUrl: previewUrl || uploadedItem.thumbnail_url
+            });
           }
-
-          mediaItems.push({
-            id: mediaId,
-            mediaType: uploadedItem.type,
-            hash: uploadedItem.hash,
-            videoId: uploadedItem.video_id,
-            thumbnailUrl: uploadedItem.thumbnail_url || uploadedItem.thumbnailUrl,
-            previewUrl: previewUrl
-          });
         }
       }
     }
@@ -1131,21 +1151,62 @@ async function loadAllData() {
   renderReview();
 }
 
+// ===== pending_ads 로드 =====
+async function loadPendingAds() {
+  try {
+    const response = await fetch(`/dashboard/get_pending_ads?account_id=${accountId}`, {
+      credentials: 'include'
+    });
+    const result = await response.json();
+
+    if (result.status === 'success' && result.pending_ads) {
+      pendingAds = result.pending_ads;
+      console.log('[STEP5] pending_ads 로드:', pendingAds.length);
+    }
+  } catch (error) {
+    console.error('[STEP5] pending_ads 로드 오류:', error);
+  }
+}
+
+// ===== 계정 정보 로드 =====
+async function loadAccountInfo() {
+  try {
+    const response = await fetch(`/dashboard/get_account_info?account_id=${accountId}`, {
+      credentials: 'include'
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      accountInfo = result;
+      console.log('[STEP5] 계정 정보 로드:', accountInfo);
+    }
+  } catch (error) {
+    console.error('[STEP5] 계정 정보 로드 오류:', error);
+  }
+}
+
 // ===== Final Review 렌더링 =====
 function renderReview() {
   // 미디어 프리뷰 그리드
   const mediaGrid = document.getElementById('mediaPreviewGrid');
   mediaGrid.innerHTML = '';
 
-  mediaItems.forEach(item => {
+  // pending_ads 또는 mediaItems에서 썸네일 표시
+  const displayItems = pendingAds.length > 0 ? pendingAds : mediaItems;
+
+  displayItems.forEach(item => {
     const div = document.createElement('div');
     div.className = 'review-media-item';
 
-    if (item.previewUrl) {
-      if (item.mediaType === 'video') {
-        div.innerHTML = `<video src="${item.previewUrl}" muted></video>`;
+    const thumbUrl = item.thumbnail_url || item.thumbnailUrl || item.previewUrl;
+    const mediaType = item.media_type || item.mediaType;
+
+    if (thumbUrl) {
+      if (mediaType === 'video') {
+        // 비디오는 썸네일 이미지로 표시
+        div.innerHTML = `<img src="${thumbUrl}" alt="비디오 썸네일" style="width:100%;height:100%;object-fit:cover;">`;
       } else {
-        div.innerHTML = `<img src="${item.previewUrl}" alt="미디어">`;
+        div.innerHTML = `<img src="${thumbUrl}" alt="미디어">`;
       }
     } else {
       div.innerHTML = `<div style="width:100%;height:100%;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;">No Preview</div>`;
@@ -1154,8 +1215,24 @@ function renderReview() {
     mediaGrid.appendChild(div);
   });
 
-  // 설정 요약
-  if (step3Data) {
+  // 광고 개수 표시 업데이트
+  const adCount = displayItems.length;
+  document.querySelector('.admake-section-subtitle').textContent = `총 ${adCount}개의 광고`;
+
+  // pending_ads가 있으면 해당 정보 사용, 없으면 step3Data 사용
+  if (pendingAds.length > 0) {
+    // pending_ads 기반 표시
+    const firstAd = pendingAds[0];
+    const isCarousel = pendingAds.some(ad => ad.is_carousel);
+
+    document.getElementById('reviewAdType').textContent = isCarousel ? 'Carousel' :
+      (firstAd.media_type === 'video' ? 'Single Video' : 'Single Image');
+    document.getElementById('reviewUrl').textContent = firstAd.url || '-';
+    document.getElementById('reviewHeadline').textContent = firstAd.headline || '-';
+    document.getElementById('reviewCta').textContent = firstAd.cta_type || 'SHOP_NOW';
+    document.getElementById('reviewPrimaryText').textContent = firstAd.primary_text || '-';
+  } else if (step3Data) {
+    // step3Data 기반 표시 (이전 버전 호환)
     const adTypeMap = {
       'single_image': 'Single Image',
       'single_video': 'Single Video',
@@ -1177,6 +1254,11 @@ function renderReview() {
     } else {
       document.getElementById('reviewEndDate').textContent = '기간 제한 없음';
     }
+
+    // 캠페인 복사 설정 표시 (있으면)
+    if (step4Data.copyToTraffic) {
+      console.log('[STEP5] 유입 캠페인 복사 활성화됨');
+    }
   } else {
     document.getElementById('reviewEndDate').textContent = '설정 안 됨';
   }
@@ -1188,7 +1270,9 @@ function renderReview() {
 // ===== 광고 전송 =====
 async function publishAds() {
   if (isPublishing) return;
-  if (!step3Data || mediaItems.length === 0) {
+
+  // pending_ads 또는 step3Data가 있어야 전송 가능
+  if (pendingAds.length === 0 && (!step3Data || mediaItems.length === 0)) {
     showToast('전송할 데이터가 없습니다.', 'error');
     return;
   }
@@ -1201,85 +1285,124 @@ async function publishAds() {
   document.getElementById('progressSection').classList.add('active');
   document.getElementById('publishBtn').disabled = true;
 
-  const totalAds = step3Data.adType === 'slide' ? 1 : mediaItems.length;
-
   try {
-    // Step 3 마스터 값
-    const masterValues = step3Data.masterValues || {};
+    // Step 4 설정 추출
+    const copyToTraffic = step4Data?.copyToTraffic || false;
+    const convActive = step4Data?.convActive !== false; // 기본값 true
+    const trafficActive = step4Data?.trafficActive || false;
+
+    // 종료 날짜 설정
+    let endTime = null;
+    if (step4Data?.endDateSetting === 'set_end' && step4Data.endDate) {
+      // ISO 8601 형식으로 변환 (Meta API 요구사항)
+      const dateStr = step4Data.endDate;
+      const timeStr = step4Data.endTime || '23:59';
+      endTime = `${dateStr}T${timeStr}:00+09:00`;  // KST timezone
+    }
+
+    // UTM 파라미터 (계정 정보에서)
+    const utmParams = accountInfo?.utm_params || '';
+
+    // Pixel ID (계정 정보에서)
+    const pixelId = accountInfo?.pixel_id || '';
 
     // 전송할 광고 데이터 구성
-    const adsToPublish = [];
+    let adsToPublish = [];
 
-    if (step3Data.adType === 'slide') {
-      // 캐러셀: 하나의 광고로 전송
-      const cards = mediaItems.map((item, idx) => {
-        const locks = step3Data.cardLocks?.[item.id] || {};
-        const values = step3Data.cardValues?.[item.id] || {};
+    if (pendingAds.length > 0) {
+      // pending_ads 사용 (v1.0 방식)
+      adsToPublish = pendingAds.map(ad => ({
+        name: ad.ad_name,
+        media_type: ad.media_type,
+        message: ad.primary_text || '',
+        link: ad.url || '',
+        headline: ad.headline || '',
+        description: ad.description || '',
+        cta_type: ad.cta_type || 'SHOP_NOW',
+        image_hash: ad.image_hash,
+        video_id: ad.video_id,
+        thumbnail_url: ad.thumbnail_url,
+        is_carousel: ad.is_carousel || false,
+        cards: ad.cards || []
+      }));
+    } else if (step3Data) {
+      // 이전 방식 (sessionStorage 기반)
+      const masterValues = step3Data.masterValues || {};
 
-        const cardData = {
-          link: locks.url ? masterValues.url : (values.url || masterValues.url),
-          name: locks.headline ? masterValues.headline : (values.headline || masterValues.headline),
-          description: locks.description ? masterValues.description : (values.description || masterValues.description)
-        };
+      if (step3Data.adType === 'slide') {
+        // 캐러셀: 하나의 광고로 전송
+        const cards = mediaItems.map((item, idx) => {
+          const locks = step3Data.cardLocks?.[item.id] || {};
+          const values = step3Data.cardValues?.[item.id] || {};
 
-        if (item.mediaType === 'video') {
-          cardData.video_id = item.videoId;
-          // 썸네일 URL 추가 (있는 경우)
-          if (item.thumbnailUrl) {
-            cardData.thumbnail_url = item.thumbnailUrl;
+          const cardData = {
+            link: locks.url ? masterValues.url : (values.url || masterValues.url),
+            name: locks.headline ? masterValues.headline : (values.headline || masterValues.headline),
+            description: locks.description ? masterValues.description : (values.description || masterValues.description)
+          };
+
+          if (item.mediaType === 'video') {
+            cardData.video_id = item.videoId;
+            if (item.thumbnailUrl) cardData.thumbnail_url = item.thumbnailUrl;
+          } else {
+            cardData.image_hash = item.hash;
           }
-        } else {
-          cardData.image_hash = item.hash;
-        }
 
-        return cardData;
-      });
+          return cardData;
+        });
 
-      adsToPublish.push({
-        name: masterValues.adName || 'AD_CAROUSEL',
-        is_carousel: true,
-        cards: cards,
-        message: masterValues.primaryText || '',
-        link: masterValues.url || '',
-        cta_type: masterValues.cta || 'SHOP_NOW'
-      });
-    } else {
-      // 단일 이미지/비디오: 각각 별도 광고
-      mediaItems.forEach((item, idx) => {
-        const adData = {
-          name: `${masterValues.adName || 'AD'}_${String(idx + 1).padStart(2, '0')}`,
-          media_type: item.mediaType,
+        adsToPublish.push({
+          name: masterValues.adName || 'AD_CAROUSEL',
+          is_carousel: true,
+          cards: cards,
           message: masterValues.primaryText || '',
           link: masterValues.url || '',
-          headline: masterValues.headline || '',
-          description: masterValues.description || '',
           cta_type: masterValues.cta || 'SHOP_NOW'
-        };
+        });
+      } else {
+        // 단일 이미지/비디오: 각각 별도 광고
+        mediaItems.forEach((item, idx) => {
+          const adData = {
+            name: item.adName || `${masterValues.adName || 'AD'}_${String(idx + 1).padStart(2, '0')}`,
+            media_type: item.mediaType,
+            message: masterValues.primaryText || '',
+            link: masterValues.url || '',
+            headline: masterValues.headline || '',
+            description: masterValues.description || '',
+            cta_type: masterValues.cta || 'SHOP_NOW'
+          };
 
-        if (item.mediaType === 'video') {
-          adData.video_id = item.videoId;
-          // 썸네일 URL 추가 (있는 경우)
-          if (item.thumbnailUrl) {
-            adData.thumbnail_url = item.thumbnailUrl;
+          if (item.mediaType === 'video') {
+            adData.video_id = item.videoId;
+            if (item.thumbnailUrl) adData.thumbnail_url = item.thumbnailUrl;
+          } else {
+            adData.image_hash = item.hash;
           }
-        } else {
-          adData.image_hash = item.hash;
-        }
 
-        adsToPublish.push(adData);
-      });
+          adsToPublish.push(adData);
+        });
+      }
     }
 
     console.log('[STEP5] 전송할 광고:', adsToPublish);
+    console.log('[STEP5] 설정 - copyToTraffic:', copyToTraffic, 'convActive:', convActive, 'trafficActive:', trafficActive);
+    console.log('[STEP5] UTM:', utmParams, 'Pixel:', pixelId);
 
-    // 배치 전송 API 호출
+    // 배치 전송 API 호출 (Step 4 설정 포함)
     const response = await fetch('/dashboard/publish_ads_batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         account_id: accountId,
-        ads: adsToPublish
+        ads: adsToPublish,
+        // Step 4 설정 추가
+        copy_to_traffic: copyToTraffic,
+        conv_active: convActive,
+        traffic_active: trafficActive,
+        end_time: endTime,
+        utm_params: utmParams,
+        pixel_id: pixelId
       })
     });
 
@@ -1289,6 +1412,9 @@ async function publishAds() {
     if (result.status === 'success') {
       publishResults = result.results || [];
       renderResults();
+
+      // 전송 성공 후 pending_ads 클리어
+      await clearPendingAds();
 
       // 모든 성공 시 애니메이션 표시
       if (result.fail_count === 0) {
@@ -1318,6 +1444,19 @@ async function publishAds() {
   document.getElementById('progressSection').classList.remove('active');
   document.getElementById('prePublishButtons').style.display = 'none';
   document.getElementById('postPublishButtons').classList.add('active');
+}
+
+// ===== pending_ads 클리어 =====
+async function clearPendingAds() {
+  try {
+    await fetch(`/dashboard/clear_pending_ads?account_id=${accountId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    console.log('[STEP5] pending_ads 클리어 완료');
+  } catch (error) {
+    console.error('[STEP5] pending_ads 클리어 오류:', error);
+  }
 }
 
 // ===== 프로그레스 업데이트 =====

@@ -808,19 +808,19 @@
       box-shadow: none;
     }
 
-    /* ===== 로딩 오버레이 ===== */
+    /* ===== 업로드 프로그레스 모달 (개선된 버전) ===== */
     .admake-loading-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(9, 9, 11, 0.95);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 2000;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(12px);
     }
 
     .admake-loading-overlay.active {
@@ -829,10 +829,199 @@
 
     .admake-loading-content {
       background: var(--bg-secondary);
-      padding: 40px;
-      border-radius: 16px;
+      padding: 40px 48px;
+      border-radius: 20px;
       text-align: center;
+      border: 1px solid var(--border-default);
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    /* 원형 프로그레스 인디케이터 */
+    .upload-progress-circle {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+    }
+
+    .upload-progress-circle svg {
+      transform: rotate(-90deg);
+      width: 120px;
+      height: 120px;
+    }
+
+    .upload-progress-circle .progress-bg {
+      fill: none;
+      stroke: var(--border-default);
+      stroke-width: 8;
+    }
+
+    .upload-progress-circle .progress-fill {
+      fill: none;
+      stroke: url(#progressGradient);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 339.292;
+      stroke-dashoffset: 339.292;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .upload-progress-percent {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* 현재 상태 메시지 */
+    .upload-stage-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .upload-stage-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    /* 파일별 상태 체크리스트 */
+    .upload-file-list {
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .upload-file-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .upload-file-item:last-child {
+      border-bottom: none;
+    }
+
+    .upload-file-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .upload-file-icon.status-done {
+      color: #10b981;
+    }
+
+    .upload-file-icon.status-progress {
+      color: #3b82f6;
+    }
+
+    .upload-file-icon.status-progress::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid #3b82f6;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .upload-file-icon.status-waiting {
+      color: var(--text-muted);
+    }
+
+    .upload-file-icon.status-error {
+      color: #ef4444;
+    }
+
+    .upload-file-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .upload-file-item.current .upload-file-name {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .upload-file-status {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .upload-file-status.status-done {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .upload-file-status.status-progress {
+      background: rgba(59, 130, 246, 0.15);
+      color: #3b82f6;
+    }
+
+    .upload-file-status.status-waiting {
+      background: rgba(82, 82, 91, 0.15);
+      color: var(--text-muted);
+    }
+
+    /* 예상 시간 및 팁 */
+    .upload-eta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .upload-tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #fbbf24;
+      text-align: left;
+      line-height: 1.5;
+    }
+
+    .upload-tip-icon {
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .admake-loading-spinner {
@@ -843,11 +1032,6 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
 
     .admake-loading-text {
@@ -1136,18 +1320,43 @@
   </div>
 </div>
 
-<!-- 로딩 오버레이 -->
+<!-- 업로드 프로그레스 모달 -->
 <div class="admake-loading-overlay" id="loadingOverlay">
   <div class="admake-loading-content">
-    <div class="admake-loading-spinner"></div>
-    <div class="admake-loading-text">메타 서버에 소재를 등록 중입니다...</div>
-    <div style="margin-top: 24px; width: 100%; max-width: 300px;">
-      <div style="width: 100%; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden;">
-        <div id="uploadProgressBar" style="height: 100%; background: var(--text-primary); width: 0%; transition: width 0.3s;"></div>
-      </div>
-      <div id="uploadProgressText" style="margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">
-        0 / 0 업로드 중...
-      </div>
+    <!-- 원형 프로그레스 인디케이터 -->
+    <div class="upload-progress-circle">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#10b981"/>
+            <stop offset="100%" style="stop-color:#34d399"/>
+          </linearGradient>
+        </defs>
+        <circle class="progress-bg" cx="60" cy="60" r="54"/>
+        <circle class="progress-fill" id="progressCircle" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="upload-progress-percent" id="progressPercent">0%</div>
+    </div>
+
+    <!-- 현재 상태 -->
+    <div class="upload-stage-title" id="uploadStageTitle">메타 서버에 연결 중...</div>
+    <div class="upload-stage-subtitle" id="uploadStageSubtitle">잠시만 기다려주세요</div>
+
+    <!-- 파일별 상태 리스트 -->
+    <div class="upload-file-list" id="uploadFileList">
+      <!-- 동적 생성 -->
+    </div>
+
+    <!-- 예상 시간 -->
+    <div class="upload-eta" id="uploadEta">
+      <span style="font-size: 16px;">⏱</span>
+      <span>예상 소요 시간 계산 중...</span>
+    </div>
+
+    <!-- 팁/경고 -->
+    <div class="upload-tip">
+      <span class="upload-tip-icon">💡</span>
+      <span>업로드가 완료될 때까지 창을 닫지 마세요. 영상 파일은 용량에 따라 1~3분 정도 소요될 수 있습니다.</span>
     </div>
   </div>
 </div>
@@ -2831,20 +3040,146 @@ async function createCroppedImage(mediaItem) {
   });
 }
 
-// ✅ 프로그레스 바 업데이트
-function updateUploadProgress(current, total, fileName) {
-  const progressBar = document.getElementById('uploadProgressBar');
-  const progressText = document.getElementById('uploadProgressText');
-  
+// ✅ 업로드 프로그레스 UI 관리
+let uploadStartTime = null;
+let uploadFileStatuses = [];
+
+// 업로드 UI 초기화
+function initUploadProgress(files) {
+  uploadStartTime = Date.now();
+  uploadFileStatuses = files.map((f, idx) => ({
+    id: f.id,
+    name: f.name || `파일 ${idx + 1}`,
+    type: f.mediaType || 'image',
+    status: 'waiting' // waiting, progress, done, error
+  }));
+
+  renderUploadFileList();
+  updateProgressCircle(0);
+  updateUploadStage('준비 중...', '파일 정보를 확인하고 있습니다');
+}
+
+// 파일 리스트 렌더링
+function renderUploadFileList() {
+  const container = document.getElementById('uploadFileList');
+  if (!container) return;
+
+  container.innerHTML = uploadFileStatuses.map((file, idx) => {
+    const iconMap = {
+      waiting: '<span class="upload-file-icon status-waiting">○</span>',
+      progress: '<span class="upload-file-icon status-progress"></span>',
+      done: '<span class="upload-file-icon status-done">✓</span>',
+      error: '<span class="upload-file-icon status-error">✕</span>'
+    };
+
+    const statusTextMap = {
+      waiting: '<span class="upload-file-status status-waiting">대기</span>',
+      progress: '<span class="upload-file-status status-progress">업로드 중</span>',
+      done: '<span class="upload-file-status status-done">완료</span>',
+      error: '<span class="upload-file-status status-error">실패</span>'
+    };
+
+    const typeIcon = file.type === 'video' ? '🎬' : '🖼️';
+    const isCurrent = file.status === 'progress';
+
+    return `
+      <div class="upload-file-item ${isCurrent ? 'current' : ''}">
+        ${iconMap[file.status]}
+        <span class="upload-file-name">${typeIcon} ${file.name}</span>
+        ${statusTextMap[file.status]}
+      </div>
+    `;
+  }).join('');
+}
+
+// 원형 프로그레스 업데이트
+function updateProgressCircle(percent) {
+  const circle = document.getElementById('progressCircle');
+  const percentText = document.getElementById('progressPercent');
+
+  if (circle) {
+    // stroke-dasharray: 339.292 (2 * PI * 54)
+    const offset = 339.292 * (1 - percent / 100);
+    circle.style.strokeDashoffset = offset;
+  }
+
+  if (percentText) {
+    percentText.textContent = `${Math.round(percent)}%`;
+  }
+}
+
+// 상태 메시지 업데이트
+function updateUploadStage(title, subtitle) {
+  const titleEl = document.getElementById('uploadStageTitle');
+  const subtitleEl = document.getElementById('uploadStageSubtitle');
+
+  if (titleEl) titleEl.textContent = title;
+  if (subtitleEl) subtitleEl.textContent = subtitle;
+}
+
+// 예상 시간 업데이트
+function updateUploadEta(current, total) {
+  const etaEl = document.getElementById('uploadEta');
+  if (!etaEl || !uploadStartTime || current === 0) return;
+
+  const elapsed = Date.now() - uploadStartTime;
+  const avgTimePerFile = elapsed / current;
+  const remaining = (total - current) * avgTimePerFile;
+
+  let etaText;
+  if (remaining < 5000) {
+    etaText = '거의 완료';
+  } else if (remaining < 60000) {
+    etaText = `약 ${Math.ceil(remaining / 1000)}초 남음`;
+  } else {
+    etaText = `약 ${Math.ceil(remaining / 60000)}분 남음`;
+  }
+
+  etaEl.innerHTML = `<span style="font-size: 16px;">⏱</span><span>${etaText} (${current}/${total})</span>`;
+}
+
+// 파일 상태 업데이트
+function updateFileStatus(fileId, status) {
+  const file = uploadFileStatuses.find(f => f.id === fileId);
+  if (file) {
+    file.status = status;
+    renderUploadFileList();
+  }
+}
+
+// 프로그레스 바 업데이트 (기존 함수 확장)
+function updateUploadProgress(current, total, fileName, fileId) {
   const percentage = Math.round((current / total) * 100);
-  
-  if (progressBar) {
-    progressBar.style.width = percentage + '%';
+
+  // 원형 프로그레스
+  updateProgressCircle(percentage);
+
+  // 파일 상태 업데이트
+  if (fileId) {
+    // 이전 파일들을 완료 처리
+    uploadFileStatuses.forEach((f, idx) => {
+      if (idx < current - 1 && f.status !== 'done') {
+        f.status = 'done';
+      }
+    });
+    // 현재 파일을 진행 중으로
+    updateFileStatus(fileId, 'progress');
   }
-  
-  if (progressText) {
-    progressText.textContent = `${current} / ${total} 업로드 중... ${fileName ? `(${fileName})` : ''}`;
+
+  // 상태 메시지
+  if (current === total && fileName === '완료') {
+    updateUploadStage('업로드 완료!', 'Step 3으로 이동합니다...');
+    // 모든 파일 완료 처리
+    uploadFileStatuses.forEach(f => f.status = 'done');
+    renderUploadFileList();
+  } else {
+    const fileType = uploadFileStatuses.find(f => f.id === fileId)?.type;
+    const typeText = fileType === 'video' ? '영상' : '이미지';
+    updateUploadStage(`${typeText} 업로드 중...`, `${fileName || '파일'} (${current}/${total})`);
   }
+
+  // 예상 시간
+  updateUploadEta(current, total);
 }
 
 // ✅ 메타 API 업로드 (크롭된 이미지 사용, 순차 처리 및 프로그레스 바)
@@ -2861,6 +3196,10 @@ async function uploadToMeta() {
 
   uploadBtn.disabled = true;
   loadingOverlay.classList.add('active');
+
+  // 업로드 UI 초기화
+  initUploadProgress(mediaItems);
+  updateUploadStage('메타 서버에 연결 중...', '인증 정보를 확인하고 있습니다');
 
   try {
     // 서버에서 액세스 토큰 가져오기
@@ -2879,10 +3218,13 @@ async function uploadToMeta() {
     const accessToken = tokenData.access_token;
     const apiVersion = 'v24.0';
     const adAccountId = `act_${accountId}`;
-    
+
     uploadedResults = [];
     const errors = [];
     const totalCount = mediaItems.length;
+
+    // 상태 업데이트: 연결 성공
+    updateUploadStage('파일 준비 중...', '크롭된 이미지를 처리하고 있습니다');
 
     // ===== [Fix] 업로드 전 모든 미디어의 mediaType 검증 및 previewUrl 갱신 =====
     for (const item of mediaItems) {
@@ -2906,9 +3248,9 @@ async function uploadToMeta() {
       const item = mediaItems[i];
       
       try {
-        // 프로그레스 바 업데이트
-        updateUploadProgress(i, totalCount, item.name);
-        
+        // 프로그레스 바 업데이트 (파일 ID 전달)
+        updateUploadProgress(i + 1, totalCount, item.name, item.id);
+
         // 크롭된 이미지 또는 원본 파일 가져오기
         let file;
         if (item.mediaType === 'image') {
@@ -3036,13 +3378,17 @@ async function uploadToMeta() {
         }
 
         uploadedResults.push(result);
-        
+
+        // 현재 파일 완료 처리
+        updateFileStatus(item.id, 'done');
+
         // 마지막 항목 업로드 완료 시 프로그레스 바 100%
         if (i === mediaItems.length - 1) {
-          updateUploadProgress(totalCount, totalCount, '완료');
+          updateUploadProgress(totalCount, totalCount, '완료', null);
         }
       } catch (error) {
         console.error(`미디어 ${item.id} 업로드 실패:`, error);
+        updateFileStatus(item.id, 'error');
         errors.push({
           id: item.id,
           name: item.name,

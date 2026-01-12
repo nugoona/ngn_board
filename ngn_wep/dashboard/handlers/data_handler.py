@@ -2435,6 +2435,8 @@ def get_active_ads():
                         ads_data = result.get("data", [])
                         all_ads.extend(ads_data)
                         print(f"[STEP4] AdSet {adset_id}: {len(ads_data)}개 광고")
+                        for ad in ads_data:
+                            print(f"  - ID: {ad.get('id')}, Name: {ad.get('name')}, Status: {ad.get('status')}")
                     else:
                         print(f"[STEP4] AdSet {adset_id} 오류: {result.get('error', {}).get('message')}")
                 except Exception as e:
@@ -2460,6 +2462,8 @@ def get_active_ads():
                         ads_data = result.get("data", [])
                         all_ads.extend(ads_data)
                         print(f"[STEP4] Campaign {campaign_id}: {len(ads_data)}개 광고")
+                        for ad in ads_data:
+                            print(f"  - ID: {ad.get('id')}, Name: {ad.get('name')}, Status: {ad.get('status')}")
                     else:
                         print(f"[STEP4] Campaign {campaign_id} 오류: {result.get('error', {}).get('message')}")
                 except Exception as e:
@@ -2503,6 +2507,8 @@ def get_active_ads():
                 unique_ads.append(ad)
 
         print(f"[STEP4] 최종 조회 결과: {len(unique_ads)}개 광고 (DELETED/ARCHIVED 제외)")
+        for ad in unique_ads:
+            print(f"  [최종] ID: {ad.get('id')}, Name: {ad.get('name')}")
 
         # 광고 데이터 가공 (썸네일 추출)
         processed_ads = []

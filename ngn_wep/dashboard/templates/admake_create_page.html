@@ -1734,7 +1734,7 @@ async function checkAddMoreMode() {
 }
 
 // 초기화
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (!initDOMElements()) {
     showToast('페이지 로드 중 오류가 발생했습니다.', 'error');
     return;

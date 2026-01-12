@@ -949,6 +949,318 @@
 
     /* ===== 숨김 클래스 ===== */
     .hidden { display: none !important; }
+
+    /* ===== 저장된 광고 목록 영역 ===== */
+    .saved-ads-container {
+      position: fixed;
+      bottom: 70px;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-default);
+      padding: 12px 20px;
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+
+    .saved-ads-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .saved-ads-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .saved-ads-count {
+      font-size: 11px;
+      color: var(--accent-emerald);
+      font-weight: 600;
+    }
+
+    .saved-ads-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .saved-ads-list::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .saved-ads-list::-webkit-scrollbar-thumb {
+      background: var(--border-hover);
+      border-radius: 2px;
+    }
+
+    .saved-ad-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      font-size: 12px;
+      animation: fadeSlideIn 0.25s ease;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .saved-ad-type {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .saved-ad-type.type-image { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .saved-ad-type.type-video { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .saved-ad-type.type-carousel { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+    .saved-ad-name {
+      color: var(--text-primary);
+      font-weight: 500;
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .saved-ad-delete {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .saved-ad-delete:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
+    .saved-ads-empty {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 8px;
+    }
+
+    /* 저장된 광고 있을 때 액션바 여백 조정 */
+    body.has-saved-ads .admake-action-bar {
+      bottom: 0;
+    }
+
+    body.has-saved-ads .admake-preview-panel {
+      padding-bottom: 150px;
+    }
+
+    /* ===== 마스터 설정 리셋 버튼 ===== */
+    .master-reset-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .master-reset-btn:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
+    .master-reset-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ===== 최종 확인 모달 ===== */
+    .confirm-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .confirm-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .confirm-modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.25s ease;
+    }
+
+    .confirm-modal-overlay.active .confirm-modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .confirm-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-default);
+    }
+
+    .confirm-modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .confirm-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .confirm-modal-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .confirm-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .confirm-summary {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+    }
+
+    .confirm-summary-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .confirm-summary-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+    }
+
+    .confirm-summary-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .confirm-ads-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .confirm-ad-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+    }
+
+    .confirm-ad-index {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .confirm-ad-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .confirm-ad-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .confirm-ad-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .confirm-modal-footer {
+      display: flex;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-default);
+    }
+
+    .confirm-modal-footer .admake-btn {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -1059,6 +1371,9 @@
       <div class="admake-section-header">
         <span class="admake-section-number font-inter">02</span>
         <span class="admake-section-title">마스터 설정</span>
+        <button type="button" class="master-reset-btn" id="masterResetBtn" title="마스터 설정 초기화">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        </button>
         <span class="admake-section-subtitle">모든 카드에 일괄 적용</span>
       </div>
 
@@ -1159,6 +1474,56 @@
 
 </div>
 
+<!-- 저장된 광고 목록 -->
+<div class="saved-ads-container" id="savedAdsContainer" style="display: none;">
+  <div class="saved-ads-header">
+    <span class="saved-ads-title">저장된 광고</span>
+    <span class="saved-ads-count" id="savedAdsCountText">0개</span>
+  </div>
+  <div class="saved-ads-list" id="savedAdsList">
+    <div class="saved-ads-empty">저장된 광고가 없습니다</div>
+  </div>
+</div>
+
+<!-- 최종 확인 모달 -->
+<div class="confirm-modal-overlay" id="confirmModalOverlay">
+  <div class="confirm-modal">
+    <div class="confirm-modal-header">
+      <span class="confirm-modal-title">광고 전송 최종 확인</span>
+      <button type="button" class="confirm-modal-close" id="confirmModalClose">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="confirm-modal-body">
+      <div class="confirm-summary">
+        <div class="confirm-summary-item">
+          <div class="confirm-summary-value" id="confirmTotalCount">0</div>
+          <div class="confirm-summary-label">총 광고 수</div>
+        </div>
+        <div class="confirm-summary-item">
+          <div class="confirm-summary-value" id="confirmImageCount">0</div>
+          <div class="confirm-summary-label">이미지</div>
+        </div>
+        <div class="confirm-summary-item">
+          <div class="confirm-summary-value" id="confirmVideoCount">0</div>
+          <div class="confirm-summary-label">비디오</div>
+        </div>
+        <div class="confirm-summary-item">
+          <div class="confirm-summary-value" id="confirmCarouselCount">0</div>
+          <div class="confirm-summary-label">캐러셀</div>
+        </div>
+      </div>
+      <div class="confirm-ads-list" id="confirmAdsList">
+        <!-- 광고 목록이 동적으로 추가됨 -->
+      </div>
+    </div>
+    <div class="confirm-modal-footer">
+      <button type="button" class="admake-btn admake-btn-secondary" id="confirmCancelBtn">취소</button>
+      <button type="button" class="admake-btn admake-btn-primary" id="confirmProceedBtn">Step 4로 진행</button>
+    </div>
+  </div>
+</div>
+
 <!-- 하단 액션 바 -->
 <div class="admake-action-bar">
   <div class="admake-action-left">
@@ -1169,7 +1534,7 @@
     <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
     <button class="admake-btn admake-btn-secondary" id="addMoreBtn" disabled style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none;">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      광고 추가하기
+      저장하고 광고추가
     </button>
     <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>다음 단계로</button>
   </div>
@@ -2074,66 +2439,290 @@ async function addToPendingAds() {
   }
 }
 
-// 광고 추가하기 버튼 클릭 핸들러
-async function handleAddMoreButton() {
-  console.log('[STEP3] 광고 추가하기 클릭 - pending_ads에 추가 후 Step 1로 이동');
+// ===== 저장된 광고 목록 관리 =====
+let savedAdsList = []; // 저장된 광고 목록
+
+// 중복 체크 함수 (광고형식 + 광고소재 + 광고이름)
+function checkDuplicateAd(newAd) {
+  return savedAdsList.some(existing => {
+    // 광고 형식 비교
+    const sameType = existing.is_carousel === newAd.is_carousel &&
+                     existing.media_type === newAd.media_type;
+
+    // 광고 이름 비교
+    const sameName = existing.ad_name === newAd.ad_name;
+
+    // 광고 소재 비교 (캐러셀은 카드들, 단일은 해시/ID)
+    let sameMedia = false;
+    if (newAd.is_carousel && existing.is_carousel) {
+      // 캐러셀: 카드 수와 각 카드의 해시/ID 비교
+      if (existing.cards?.length === newAd.cards?.length) {
+        sameMedia = newAd.cards.every((card, idx) => {
+          const existCard = existing.cards[idx];
+          return card.image_hash === existCard.image_hash &&
+                 card.video_id === existCard.video_id;
+        });
+      }
+    } else {
+      // 단일 이미지/비디오
+      sameMedia = existing.image_hash === newAd.image_hash &&
+                  existing.video_id === newAd.video_id;
+    }
+
+    return sameType && sameName && sameMedia;
+  });
+}
+
+// 저장된 광고 목록 렌더링
+function renderSavedAdsList() {
+  const container = document.getElementById('savedAdsContainer');
+  const listEl = document.getElementById('savedAdsList');
+  const countEl = document.getElementById('savedAdsCountText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  if (savedAdsList.length === 0) {
+    container.style.display = 'none';
+    document.body.classList.remove('has-saved-ads');
+    nextBtn.disabled = true;
+    return;
+  }
+
+  container.style.display = 'block';
+  document.body.classList.add('has-saved-ads');
+  countEl.textContent = `${savedAdsList.length}개`;
+  nextBtn.disabled = false;
+
+  listEl.innerHTML = savedAdsList.map((ad, index) => {
+    // 광고 형식 결정
+    let typeClass = 'type-image';
+    let typeLabel = '이미지';
+    if (ad.is_carousel) {
+      typeClass = 'type-carousel';
+      typeLabel = '캐러셀';
+    } else if (ad.media_type === 'video') {
+      typeClass = 'type-video';
+      typeLabel = '비디오';
+    }
+
+    return `
+      <div class="saved-ad-item" data-index="${index}">
+        <span class="saved-ad-type ${typeClass}">${typeLabel}</span>
+        <span class="saved-ad-name" title="${ad.ad_name}">${ad.ad_name}</span>
+        <button type="button" class="saved-ad-delete" onclick="deleteSavedAd(${index})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+// 저장된 광고 삭제
+async function deleteSavedAd(index) {
+  const ad = savedAdsList[index];
+  if (!ad || !ad.id) return;
 
   try {
-    showToast('광고를 저장하고 있습니다...', 'info', 2000);
+    // 서버에서도 삭제 (id 기반 DELETE)
+    const response = await fetch(`/dashboard/remove_pending_ad/${ad.id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      savedAdsList.splice(index, 1);
+      renderSavedAdsList();
+      updatePendingAdsCount();
+      showToast('광고가 삭제되었습니다.', 'info', 2000);
+    }
+  } catch (error) {
+    console.error('[STEP3] 광고 삭제 오류:', error);
+    showToast('삭제 중 오류가 발생했습니다.', 'error');
+  }
+}
+
+// 저장된 광고 목록 로드 (서버에서)
+async function loadSavedAds() {
+  try {
+    const response = await fetch('/dashboard/get_pending_ads', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      savedAdsList = result.pending_ads || [];
+      renderSavedAdsList();
+    }
+  } catch (error) {
+    console.error('[STEP3] 저장된 광고 로드 오류:', error);
+  }
+}
+
+// 마스터 설정 초기화
+function resetMasterSettings() {
+  masterValues = {
+    adName: '',
+    url: '',
+    cta: 'SHOP_NOW',
+    primaryText: '',
+    headline: '',
+    description: ''
+  };
+
+  // UI 초기화
+  document.getElementById('masterAdName').value = '';
+  document.getElementById('masterUrl').value = '';
+  document.getElementById('masterCta').value = 'SHOP_NOW';
+  document.getElementById('masterPrimaryText').value = '';
+  document.getElementById('masterHeadline').value = '';
+  document.getElementById('masterDescription').value = '';
+
+  showToast('마스터 설정이 초기화되었습니다.', 'info', 2000);
+}
+
+// 광고 추가하기 버튼 클릭 핸들러 (Step 3에 머무름)
+async function handleAddMoreButton() {
+  console.log('[STEP3] 저장하고 광고추가 클릭 - pending_ads에 추가 후 Step 3 유지');
+
+  try {
+    // 현재 광고 데이터 구성 (중복 체크용)
+    const selectedMedia = mediaItems.filter(m => selectedMediaIds.includes(m.id));
+    const firstMedia = selectedMedia[0];
+    const isCarousel = currentAdType === 'slide';
+
+    let cards = [];
+    if (isCarousel) {
+      cards = selectedMedia.map(media => ({
+        media_type: media.mediaType,
+        video_id: media.videoId || null,
+        image_hash: media.hash || null
+      }));
+    }
+
+    const newAdData = {
+      media_type: firstMedia?.mediaType || 'image',
+      video_id: firstMedia?.videoId || null,
+      image_hash: firstMedia?.hash || null,
+      ad_name: masterValues.adName || `AD_${Date.now()}`,
+      is_carousel: isCarousel,
+      cards: cards
+    };
+
+    // 중복 체크
+    if (checkDuplicateAd(newAdData)) {
+      showToast('동일한 광고가 이미 저장되어 있습니다. (형식+소재+이름 중복)', 'warning', 3000);
+      return;
+    }
+
+    showToast('광고를 저장하고 있습니다...', 'info', 1500);
 
     // 현재 광고 데이터를 서버 세션에 추가
     const result = await addToPendingAds();
-    showToast(`광고가 추가되었습니다. (총 ${result.total_count}개)`, 'success', 2000);
 
-    // Step 1으로 이동 (소재 입력 초기화, 계정 정보 유지)
-    setTimeout(() => {
-      // sessionStorage에서 소재 관련 데이터만 삭제
-      sessionStorage.removeItem('admake_step2_results');
-      sessionStorage.removeItem('admake_uploaded_results');
-      sessionStorage.removeItem('admake_step3_state');
+    // 로컬 목록에도 추가 (서버에서 반환된 id 포함)
+    savedAdsList.push({
+      ...newAdData,
+      id: result.ad_id,  // 서버에서 반환된 고유 ID
+      message: masterValues.primaryText || '',
+      headline: masterValues.headline || '',
+      description: masterValues.description || '',
+      link: masterValues.url || '',
+      cta_type: masterValues.cta || 'SHOP_NOW'
+    });
 
-      // Step 1에서 미디어 파일도 초기화되어야 함
-      // IndexedDB 초기화는 Step 1에서 처리
+    renderSavedAdsList();
+    updatePendingAdsCount();
 
-      window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}&add_more=true`;
-    }, 1500);
+    showToast(`광고가 저장되었습니다. (총 ${result.total_count}개)`, 'success', 2000);
+
+    // 마스터 설정은 유지, 광고 이름만 자동 증가
+    const currentName = masterValues.adName || 'AD';
+    const match = currentName.match(/^(.+?)(\d+)?$/);
+    if (match) {
+      const prefix = match[1];
+      const num = match[2] ? parseInt(match[2]) + 1 : 2;
+      masterValues.adName = `${prefix}${num}`;
+      document.getElementById('masterAdName').value = masterValues.adName;
+    }
 
   } catch (error) {
     showToast(`오류: ${error.message}`, 'error');
   }
 }
 
-// 다음 단계로 버튼 클릭 핸들러
+// 최종 확인 모달 표시
+function showConfirmModal() {
+  const overlay = document.getElementById('confirmModalOverlay');
+  const listEl = document.getElementById('confirmAdsList');
+
+  // 통계 계산
+  let imageCount = 0, videoCount = 0, carouselCount = 0;
+  savedAdsList.forEach(ad => {
+    if (ad.is_carousel) carouselCount++;
+    else if (ad.media_type === 'video') videoCount++;
+    else imageCount++;
+  });
+
+  document.getElementById('confirmTotalCount').textContent = savedAdsList.length;
+  document.getElementById('confirmImageCount').textContent = imageCount;
+  document.getElementById('confirmVideoCount').textContent = videoCount;
+  document.getElementById('confirmCarouselCount').textContent = carouselCount;
+
+  // 광고 목록 렌더링
+  listEl.innerHTML = savedAdsList.map((ad, index) => {
+    let typeLabel = ad.is_carousel ? '캐러셀' : (ad.media_type === 'video' ? '비디오' : '이미지');
+    let mediaCount = ad.is_carousel ? `${ad.cards?.length || 0}장` : '1장';
+
+    return `
+      <div class="confirm-ad-item">
+        <span class="confirm-ad-index">${index + 1}</span>
+        <div class="confirm-ad-info">
+          <div class="confirm-ad-name">${ad.ad_name}</div>
+          <div class="confirm-ad-meta">${typeLabel} · ${mediaCount}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  overlay.classList.add('active');
+}
+
+// 최종 확인 모달 닫기
+function hideConfirmModal() {
+  document.getElementById('confirmModalOverlay').classList.remove('active');
+}
+
+// Step 4로 실제 이동
+function proceedToStep4() {
+  // sessionStorage에 상태 저장
+  const step3Data = {
+    adType: currentAdType,
+    selectedMediaIds: selectedMediaIds,
+    masterValues: masterValues,
+    cardLocks: cardLocks,
+    cardValues: cardValues
+  };
+  sessionStorage.setItem('admake_step3_state', JSON.stringify(step3Data));
+
+  hideConfirmModal();
+  showToast('Step 4로 이동합니다...', 'success', 1500);
+
+  setTimeout(() => {
+    window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
+  }, 800);
+}
+
+// 다음 단계로 버튼 클릭 핸들러 (확인 모달 표시)
 async function handleNextButton() {
-  console.log('[STEP3] 다음 단계로 클릭 - pending_ads에 추가 후 Step 4로 이동');
+  console.log('[STEP3] 다음 단계로 클릭 - 최종 확인 모달 표시');
 
-  try {
-    showToast('광고를 저장하고 있습니다...', 'info', 1500);
-
-    // 현재 광고 데이터를 서버 세션에 추가
-    const result = await addToPendingAds();
-
-    // sessionStorage에도 저장 (호환성)
-    const step3Data = {
-      adType: currentAdType,
-      selectedMediaIds: selectedMediaIds,
-      masterValues: masterValues,
-      cardLocks: cardLocks,
-      cardValues: cardValues
-    };
-    sessionStorage.setItem('admake_step3_state', JSON.stringify(step3Data));
-    console.log('[STEP3] Step 3 데이터 저장 완료');
-
-    showToast(`Step 4로 이동합니다. (총 ${result.total_count}개 광고)`, 'success', 1500);
-
-    // Step 4로 이동
-    setTimeout(() => {
-      window.location.href = `/admake/manage?account_id=${encodeURIComponent(accountId)}`;
-    }, 1000);
-
-  } catch (error) {
-    showToast(`오류: ${error.message}`, 'error');
+  if (savedAdsList.length === 0) {
+    showToast('저장된 광고가 없습니다. 먼저 광고를 저장해주세요.', 'warning', 3000);
+    return;
   }
+
+  showConfirmModal();
 }
 
 // pending_ads 카운트 표시
@@ -2187,6 +2776,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('backBtn').addEventListener('click', handleBackButton);
   document.getElementById('addMoreBtn').addEventListener('click', handleAddMoreButton);
   document.getElementById('nextBtn').addEventListener('click', handleNextButton);
+
+  // 마스터 설정 리셋 버튼
+  document.getElementById('masterResetBtn').addEventListener('click', resetMasterSettings);
+
+  // 최종 확인 모달 이벤트
+  document.getElementById('confirmModalClose').addEventListener('click', hideConfirmModal);
+  document.getElementById('confirmCancelBtn').addEventListener('click', hideConfirmModal);
+  document.getElementById('confirmProceedBtn').addEventListener('click', proceedToStep4);
+  document.getElementById('confirmModalOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'confirmModalOverlay') hideConfirmModal();
+  });
+
+  // 저장된 광고 목록 로드
+  await loadSavedAds();
 
   // pending_ads 카운트 표시
   updatePendingAdsCount();

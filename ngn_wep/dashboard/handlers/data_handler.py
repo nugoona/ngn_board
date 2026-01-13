@@ -3203,15 +3203,22 @@ def publish_ads_batch():
         if not page_id:
             return jsonify({"status": "error", "message": "Facebook 페이지 정보를 찾을 수 없습니다."}), 400
 
-        # 전송할 캠페인 결정 (활성 상태에 따라)
+        # 전송할 캠페인 결정
+        # Note: PAUSED 상태의 AdSet에도 광고 생성 가능 (Meta API 허용)
         target_adsets = []
-        if conv_active and conv_adset_id:
+
+        # 전환 캠페인: adset_id가 있으면 항상 추가 (PAUSED 상태여도 광고 생성 가능)
+        if conv_adset_id:
             target_adsets.append(("conv", conv_adset_id))
+            print(f"[STEP5] 전환 캠페인 추가 (conv_active={conv_active})")
+
+        # 유입 캠페인: 명시적으로 활성화하거나 복사 옵션 선택 시에만 추가
         if (traffic_active or copy_to_traffic) and traffic_adset_id:
             target_adsets.append(("traffic", traffic_adset_id))
+            print(f"[STEP5] 유입 캠페인 추가 (traffic_active={traffic_active}, copy_to_traffic={copy_to_traffic})")
 
         if not target_adsets:
-            return jsonify({"status": "error", "message": "활성화된 캠페인이 없습니다. 최소 하나의 캠페인을 활성화해주세요."}), 400
+            return jsonify({"status": "error", "message": "전송할 광고 세트가 없습니다. 계정 설정을 확인해주세요."}), 400
 
         print(f"[STEP5] 전송할 캠페인: {target_adsets}")
 

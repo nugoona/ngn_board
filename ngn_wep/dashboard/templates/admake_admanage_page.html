@@ -565,7 +565,7 @@
     /* ===== Section 02: 예산 설정 ===== */
     .admake-budget-container {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 320px));
+      grid-template-columns: repeat(2, minmax(280px, 360px));
       gap: 16px;
       justify-content: start;
     }
@@ -576,6 +576,8 @@
       border-radius: 12px;
       padding: 20px;
       transition: border-color 0.2s ease;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .admake-budget-card:hover {
@@ -631,8 +633,7 @@
     .admake-budget-value-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
       margin-bottom: 12px;
     }
 
@@ -641,25 +642,29 @@
       align-items: center;
       gap: 8px;
       flex: 1;
+      min-width: 0;
     }
 
     .admake-budget-currency {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-secondary);
+      flex-shrink: 0;
     }
 
     .admake-budget-input {
-      flex: 1;
+      width: 120px;
+      min-width: 80px;
       background: var(--bg-input);
       border: 1px solid var(--border-default);
       border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 18px;
+      padding: 10px 12px;
+      font-size: 16px;
       font-weight: 700;
       font-family: 'Inter Tight', sans-serif;
       color: var(--text-primary);
       transition: all 0.2s ease;
+      text-align: right;
     }
 
     .admake-budget-input:focus {
@@ -676,12 +681,15 @@
     .admake-budget-unit {
       font-size: 13px;
       color: var(--text-muted);
+      flex-shrink: 0;
     }
 
     .admake-budget-toggle-wrapper {
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-shrink: 0;
+      margin-left: auto;
     }
 
     .admake-toggle-label {
@@ -1306,7 +1314,7 @@
             <div class="admake-budget-value-row">
               <div class="admake-budget-input-wrapper">
                 <span class="admake-budget-currency">₩</span>
-                <input type="number" class="admake-budget-input" id="convDailyBudget" placeholder="0" min="0" step="1000">
+                <input type="text" class="admake-budget-input" id="convDailyBudget" placeholder="0" inputmode="numeric">
                 <span class="admake-budget-unit">/ 일</span>
               </div>
               <div class="admake-budget-toggle-wrapper">
@@ -1333,7 +1341,7 @@
             <div class="admake-budget-value-row">
               <div class="admake-budget-input-wrapper">
                 <span class="admake-budget-currency">₩</span>
-                <input type="number" class="admake-budget-input" id="trafficDailyBudget" placeholder="0" min="0" step="1000">
+                <input type="text" class="admake-budget-input" id="trafficDailyBudget" placeholder="0" inputmode="numeric">
                 <span class="admake-budget-unit">/ 일</span>
               </div>
               <div class="admake-budget-toggle-wrapper">
@@ -1559,6 +1567,16 @@
     }
   }
 
+  // 예산 값 포맷팅 (쉼표 추가)
+  function formatBudget(value) {
+    return value.toLocaleString('ko-KR');
+  }
+
+  // 예산 값 파싱 (쉼표 제거)
+  function parseBudget(str) {
+    return parseInt(str.replace(/,/g, '')) || 0;
+  }
+
   // 예산 정보 로드 (Meta API Live)
   async function loadBudgetInfo() {
     if (!accountId || !accountInfo) {
@@ -1582,19 +1600,20 @@
       console.log('[STEP4] 예산 API 응답:', result);
 
       if (result.status === 'success') {
-        // 전환 캠페인 예산
+        // 전환 캠페인 예산 (API 값 × 100 = 원화)
         if (result.conv_campaign) {
           const conv = result.conv_campaign;
+          const convBudgetWon = (parseInt(conv.daily_budget) || 0) * 100;
           budgetData.conv = {
-            originalBudget: parseInt(conv.daily_budget) || 0,
-            currentBudget: parseInt(conv.daily_budget) || 0,
+            originalBudget: convBudgetWon,
+            currentBudget: convBudgetWon,
             budgetType: conv.budget_type || 'CBO',
             campaignId: conv.campaign_id || '',
             adsetId: conv.adset_id || '',
             isActive: conv.status === 'ACTIVE'
           };
 
-          document.getElementById('convDailyBudget').value = budgetData.conv.currentBudget;
+          document.getElementById('convDailyBudget').value = formatBudget(budgetData.conv.currentBudget);
           document.getElementById('convBudgetMode').textContent = budgetData.conv.budgetType;
           document.getElementById('convActiveToggle').checked = budgetData.conv.isActive;
           updateToggleLabel('conv', budgetData.conv.isActive);
@@ -1602,19 +1621,20 @@
             budgetData.conv.isActive ? '활성 상태' : '일시 중지');
         }
 
-        // 유입 캠페인 예산
+        // 유입 캠페인 예산 (API 값 × 100 = 원화)
         if (result.traffic_campaign) {
           const traffic = result.traffic_campaign;
+          const trafficBudgetWon = (parseInt(traffic.daily_budget) || 0) * 100;
           budgetData.traffic = {
-            originalBudget: parseInt(traffic.daily_budget) || 0,
-            currentBudget: parseInt(traffic.daily_budget) || 0,
+            originalBudget: trafficBudgetWon,
+            currentBudget: trafficBudgetWon,
             budgetType: traffic.budget_type || 'CBO',
             campaignId: traffic.campaign_id || '',
             adsetId: traffic.adset_id || '',
             isActive: traffic.status === 'ACTIVE'
           };
 
-          document.getElementById('trafficDailyBudget').value = budgetData.traffic.currentBudget;
+          document.getElementById('trafficDailyBudget').value = formatBudget(budgetData.traffic.currentBudget);
           document.getElementById('trafficBudgetMode').textContent = budgetData.traffic.budgetType;
           document.getElementById('trafficActiveToggle').checked = budgetData.traffic.isActive;
           updateToggleLabel('traffic', budgetData.traffic.isActive);
@@ -1659,14 +1679,14 @@
   function setupBudgetEventListeners() {
     // 전환 예산 입력 변경
     document.getElementById('convDailyBudget').addEventListener('input', (e) => {
-      const value = parseInt(e.target.value) || 0;
+      const value = parseBudget(e.target.value);
       budgetData.conv.currentBudget = value;
       checkBudgetModified('conv');
     });
 
     // 유입 예산 입력 변경
     document.getElementById('trafficDailyBudget').addEventListener('input', (e) => {
-      const value = parseInt(e.target.value) || 0;
+      const value = parseBudget(e.target.value);
       budgetData.traffic.currentBudget = value;
       checkBudgetModified('traffic');
     });
@@ -1691,14 +1711,16 @@
       await updateAdsetStatus('traffic', isActive);
     });
 
-    // 예산 입력 blur 시 저장
-    document.getElementById('convDailyBudget').addEventListener('blur', () => {
+    // 예산 입력 blur 시 포맷팅 및 저장
+    document.getElementById('convDailyBudget').addEventListener('blur', (e) => {
+      e.target.value = formatBudget(budgetData.conv.currentBudget);
       if (budgetData.conv.currentBudget !== budgetData.conv.originalBudget) {
         saveBudgetChanges('conv');
       }
     });
 
-    document.getElementById('trafficDailyBudget').addEventListener('blur', () => {
+    document.getElementById('trafficDailyBudget').addEventListener('blur', (e) => {
+      e.target.value = formatBudget(budgetData.traffic.currentBudget);
       if (budgetData.traffic.currentBudget !== budgetData.traffic.originalBudget) {
         saveBudgetChanges('traffic');
       }

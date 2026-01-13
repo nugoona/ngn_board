@@ -1031,6 +1031,63 @@
       animation: spin 1s linear infinite;
     }
 
+    /* ===== 로딩 오버레이 ===== */
+    .admake-loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(9, 9, 11, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+
+    .admake-loading-overlay.active {
+      display: flex;
+    }
+
+    .admake-loading-content {
+      background: var(--bg-secondary);
+      padding: 40px 56px;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid var(--border-default);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    .admake-loading-spinner-large {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-default);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    .admake-loading-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .admake-loading-status {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .admake-loading-progress {
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent-blue);
+    }
+
     /* ===== 빈 상태 ===== */
     .admake-empty {
       display: flex;
@@ -1560,6 +1617,16 @@
       <button class="admake-btn admake-btn-secondary" onclick="closeModal()">취소</button>
       <button class="admake-btn" id="modalConfirmBtn">확인</button>
     </div>
+  </div>
+</div>
+
+<!-- 로딩 오버레이 -->
+<div class="admake-loading-overlay" id="loadingOverlay">
+  <div class="admake-loading-content">
+    <div class="admake-loading-spinner-large"></div>
+    <div class="admake-loading-title" id="loadingTitle">처리 중...</div>
+    <div class="admake-loading-status" id="loadingStatus">잠시만 기다려주세요</div>
+    <div class="admake-loading-progress" id="loadingProgress"></div>
   </div>
 </div>
 
@@ -2166,32 +2233,113 @@
     currentAction = null;
   }
 
+  // 로딩 오버레이 표시
+  function showLoadingOverlay(title, status, progress = '') {
+    const overlay = document.getElementById('loadingOverlay');
+    document.getElementById('loadingTitle').textContent = title;
+    document.getElementById('loadingStatus').textContent = status;
+    document.getElementById('loadingProgress').textContent = progress;
+    overlay.classList.add('active');
+  }
+
+  // 로딩 오버레이 업데이트
+  function updateLoadingOverlay(status, progress = '') {
+    document.getElementById('loadingStatus').textContent = status;
+    document.getElementById('loadingProgress').textContent = progress;
+  }
+
+  // 로딩 오버레이 숨김
+  function hideLoadingOverlay() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+  }
+
   // 액션 실행
   async function executeAction(action) {
     const adIds = Array.from(selectedAdIds);
     closeModal();
 
-    try {
-      const endpoint = action === 'pause' ? '/dashboard/pause_ads' : '/dashboard/delete_ads';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ ad_ids: adIds })
-      });
+    const totalCount = adIds.length;
+    const actionText = action === 'pause' ? '일시중지' : '삭제';
+    const endpoint = action === 'pause' ? '/dashboard/pause_ads' : '/dashboard/delete_ads';
 
-      const result = await response.json();
+    // 3개 이상일 경우 로딩 오버레이 표시 및 개별 처리
+    if (totalCount >= 3) {
+      showLoadingOverlay(
+        `광고 ${actionText} 중...`,
+        '메타 서버에 요청 중입니다',
+        `0 / ${totalCount}`
+      );
 
-      if (result.status === 'success') {
-        showToast(result.message, 'success');
-        selectedAdIds.clear();
-        loadActiveAds();
-      } else {
-        showToast(result.message, 'error');
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < adIds.length; i++) {
+        const adId = adIds[i];
+        updateLoadingOverlay(
+          `${i + 1}번째 광고 처리 중...`,
+          `${i + 1} / ${totalCount}`
+        );
+
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ ad_ids: [adId] })
+          });
+
+          const result = await response.json();
+          if (result.status === 'success') {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`광고 ${adId} ${actionText} 오류:`, error);
+          failCount++;
+        }
+
+        // 짧은 딜레이 (API 과부하 방지)
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-    } catch (error) {
-      console.error('액션 실행 오류:', error);
-      showToast('요청 처리 중 오류가 발생했습니다.', 'error');
+
+      hideLoadingOverlay();
+
+      // 결과 토스트
+      if (failCount === 0) {
+        showToast(`${totalCount}개의 광고가 ${actionText}되었습니다.`, 'success');
+      } else if (successCount > 0) {
+        showToast(`${successCount}개 성공, ${failCount}개 실패`, 'warning');
+      } else {
+        showToast(`${actionText} 실패: 모든 광고 처리에 실패했습니다.`, 'error');
+      }
+
+      selectedAdIds.clear();
+      loadActiveAds();
+
+    } else {
+      // 2개 이하: 기존 방식 (일괄 처리)
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ ad_ids: adIds })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          showToast(result.message, 'success');
+          selectedAdIds.clear();
+          loadActiveAds();
+        } else {
+          showToast(result.message, 'error');
+        }
+      } catch (error) {
+        console.error('액션 실행 오류:', error);
+        showToast('요청 처리 중 오류가 발생했습니다.', 'error');
+      }
     }
   }
 

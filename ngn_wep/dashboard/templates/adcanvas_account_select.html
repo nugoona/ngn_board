@@ -310,8 +310,8 @@
       }).catch(err => console.error('계정 저장 실패:', err));
     }
 
-    // AdCanvas로 이동
-    window.location.href = '/admake/create?account_id=' + encodeURIComponent(accountId);
+    // AdCanvas 브릿지 페이지로 이동
+    window.location.href = '/admake?account_id=' + encodeURIComponent(accountId);
   }
 </script>
 

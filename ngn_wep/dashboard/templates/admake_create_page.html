@@ -1130,6 +1130,92 @@ function showToast(message, type = 'info', duration = 3500) {
 const META_MIN_WIDTH = 600;
 const META_RECOMMENDED_WIDTH = 1080;
 
+// ✅ [Performance] 업로드 시 이미지 리사이즈 설정
+const RESIZE_MAX_SIZE = 2000;  // 최대 2000px (Meta 광고에 충분하고 크롭 후에도 고품질 유지)
+const RESIZE_QUALITY = 0.92;   // JPEG 품질 (0.92 = 고품질, 파일 크기 대폭 감소)
+
+/**
+ * 이미지 리사이즈 함수 - 고용량 이미지를 최적화하여 성능 개선
+ * @param {File} file - 원본 이미지 파일
+ * @returns {Promise<File>} - 리사이즈된 이미지 파일
+ */
+async function resizeImageIfNeeded(file) {
+  return new Promise((resolve, reject) => {
+    // 이미지가 아니면 원본 반환
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      const { width, height } = img;
+
+      // 이미 작은 이미지는 리사이즈 불필요
+      if (width <= RESIZE_MAX_SIZE && height <= RESIZE_MAX_SIZE) {
+        console.log(`[RESIZE] ${file.name}: ${width}x${height} - 리사이즈 불필요`);
+        resolve(file);
+        return;
+      }
+
+      // 비율 유지하며 축소 계산
+      let newWidth, newHeight;
+      if (width > height) {
+        newWidth = RESIZE_MAX_SIZE;
+        newHeight = Math.round(height * (RESIZE_MAX_SIZE / width));
+      } else {
+        newHeight = RESIZE_MAX_SIZE;
+        newWidth = Math.round(width * (RESIZE_MAX_SIZE / height));
+      }
+
+      // Canvas로 리사이즈
+      const canvas = document.createElement('canvas');
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+      // Blob으로 변환 (PNG는 PNG로, 나머지는 JPEG로)
+      const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      const quality = file.type === 'image/png' ? undefined : RESIZE_QUALITY;
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error(`[RESIZE] ${file.name}: Blob 생성 실패`);
+          resolve(file);
+          return;
+        }
+
+        // 새 File 객체 생성 (원본 파일명 유지)
+        const resizedFile = new File([blob], file.name, { type: outputType });
+
+        const originalSizeMB = (file.size / 1024 / 1024).toFixed(2);
+        const newSizeMB = (resizedFile.size / 1024 / 1024).toFixed(2);
+        const reduction = (((file.size - resizedFile.size) / file.size) * 100).toFixed(1);
+
+        console.log(`[RESIZE] ${file.name}: ${width}x${height} → ${newWidth}x${newHeight}, ${originalSizeMB}MB → ${newSizeMB}MB (${reduction}% 감소)`);
+
+        resolve(resizedFile);
+      }, outputType, quality);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      console.error(`[RESIZE] ${file.name}: 이미지 로드 실패`);
+      resolve(file); // 실패 시 원본 반환
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 // ✅ 상태 관리
 let mediaItems = [];
 let hasUnsavedChanges = false;
@@ -1291,8 +1377,8 @@ function setupEventListeners() {
   });
 }
 
-// 파일 처리
-function handleFiles(files) {
+// 파일 처리 (이미지 자동 리사이즈 포함)
+async function handleFiles(files) {
   const remainingSlots = 10 - mediaItems.length;
   const filesToAdd = files.slice(0, remainingSlots);
 
@@ -1300,21 +1386,39 @@ function handleFiles(files) {
     showToast(`최대 10개까지 업로드 가능합니다. ${remainingSlots}개만 추가됩니다.`, 'warning');
   }
 
-  filesToAdd.forEach(file => {
-    if (mediaItems.length >= 10) return;
+  // 이미지 개수 확인 (리사이즈 필요 여부 판단)
+  const imageCount = filesToAdd.filter(f => f.type.startsWith('image/')).length;
+  if (imageCount > 0) {
+    showToast(`${imageCount}개 이미지 최적화 중...`, 'info', 2000);
+  }
+
+  // 파일들을 순차적으로 처리 (병렬 처리 시 메모리 과부하 방지)
+  for (const file of filesToAdd) {
+    if (mediaItems.length >= 10) break;
 
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
 
     if (!isImage && !isVideo) {
       showToast(`${file.name}은(는) 지원하지 않는 파일 형식입니다.`, 'error');
-      return;
+      continue;
     }
 
-    const previewUrl = URL.createObjectURL(file);
+    // ✅ 이미지는 리사이즈 처리 (고용량 → 최적화)
+    let processedFile = file;
+    if (isImage) {
+      try {
+        processedFile = await resizeImageIfNeeded(file);
+      } catch (e) {
+        console.error(`[RESIZE] ${file.name} 처리 실패:`, e);
+        processedFile = file; // 실패 시 원본 사용
+      }
+    }
+
+    const previewUrl = URL.createObjectURL(processedFile);
     const mediaItem = {
       id: `media_${++mediaIdCounter}_${Date.now()}`,
-      file: file,
+      file: processedFile,
       previewUrl: previewUrl,
       type: isImage ? 'image' : 'video'
     };
@@ -1322,9 +1426,12 @@ function handleFiles(files) {
     mediaItems.push(mediaItem);
     hasUnsavedChanges = true;
     renderThumbnail(mediaItem);
-  });
+    updateUI(); // 썸네일 추가될 때마다 UI 업데이트 (진행 상황 표시)
+  }
 
-  updateUI();
+  if (imageCount > 0) {
+    showToast(`${imageCount}개 이미지 최적화 완료!`, 'success', 2000);
+  }
 }
 
 // 썸네일 렌더링

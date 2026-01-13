@@ -12,7 +12,9 @@
       "Bash(export PATH=\"$HOME/google-cloud-sdk/bin:$PATH\")",
       "Bash(gcloud:*)",
       "Bash(find:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(bash:*)",
+      "Bash(wc:*)"
     ]
   }
 }

@@ -1193,6 +1193,97 @@
       cursor: not-allowed;
       box-shadow: none;
     }
+
+    /* ===== 토스트 알림 ===== */
+    .admake-toast-container {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .admake-toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(45, 45, 50, 0.95) 0%, rgba(35, 35, 40, 0.98) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(20px);
+      animation: toastIn 0.3s ease;
+      min-width: 280px;
+      max-width: 400px;
+    }
+
+    .admake-toast.toast-success {
+      border-left: 4px solid var(--accent-emerald);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+
+    .admake-toast.toast-error {
+      border-left: 4px solid var(--accent-red);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+
+    .admake-toast.toast-warning {
+      border-left: 4px solid var(--accent-gold);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+
+    .admake-toast.toast-info {
+      border-left: 4px solid var(--accent-blue);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+
+    .admake-toast-icon {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .admake-toast.toast-success .admake-toast-icon { color: var(--accent-emerald); }
+    .admake-toast.toast-error .admake-toast-icon { color: var(--accent-red); }
+    .admake-toast.toast-warning .admake-toast-icon { color: var(--accent-gold); }
+    .admake-toast.toast-info .admake-toast-icon { color: var(--accent-blue); }
+
+    .admake-toast-message {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .admake-toast-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .admake-toast-close:hover {
+      color: var(--text-primary);
+    }
+
+    .admake-toast.toast-out {
+      animation: toastOut 0.3s ease forwards;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100px); }
+    }
   </style>
 </head>
 <body>
@@ -2088,15 +2179,15 @@
       const result = await response.json();
 
       if (result.status === 'success') {
-        alert(result.message);
+        showToast(result.message, 'success');
         selectedAdIds.clear();
         loadActiveAds();
       } else {
-        alert(`오류: ${result.message}`);
+        showToast(result.message, 'error');
       }
     } catch (error) {
       console.error('액션 실행 오류:', error);
-      alert('요청 처리 중 오류가 발생했습니다.');
+      showToast('요청 처리 중 오류가 발생했습니다.', 'error');
     }
   }
 
@@ -2186,6 +2277,32 @@
     };
     return statusMap[status] || status;
   }
+
+  // ===== 토스트 알림 함수 =====
+  function showToast(message, type = 'info', duration = 3500) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `admake-toast toast-${type}`;
+    const icons = { info: 'i', success: '✓', warning: '⚠', error: '✕' };
+
+    toast.innerHTML = `
+      <span class="admake-toast-icon">${icons[type] || icons.info}</span>
+      <span class="admake-toast-message">${message}</span>
+      <button class="admake-toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('toast-out');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
 </script>
+
+<!-- 토스트 알림 컨테이너 -->
+<div id="toastContainer" class="admake-toast-container"></div>
+
 </body>
 </html>

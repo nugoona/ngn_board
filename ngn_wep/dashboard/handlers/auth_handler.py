@@ -170,32 +170,12 @@ def login():
 def handle_adcanvas_login(user_id: str, client: bigquery.Client):
     """AdCanvas 로그인 후 계정 선택 처리"""
 
-    # 데모 사용자인 경우 데모 계정으로 바로 이동
-    if user_id.lower() == "demo" or user_id.lower() == "guest":
-        # 데모 계정의 account_id 조회
-        demo_query = """
-            SELECT account_id, account_name
-            FROM `ngn_dataset.meta_account_mapping`
-            WHERE LOWER(company_name) = 'demo'
-            LIMIT 1
-        """
-        try:
-            demo_result = list(client.query(demo_query).result())
-            if demo_result:
-                return redirect(f"/admake/create?account_id={demo_result[0].account_id}")
-            else:
-                # 데모 계정 정보가 없는 경우 기본 브릿지로
-                return redirect("/admake")
-        except Exception as e:
-            print(f"[ERROR] 데모 계정 조회 실패: {e}")
-            return redirect("/admake")
-
-    # 사용자의 Meta 계정 목록 조회
+    # 사용자의 Meta 계정 목록 조회 (account_name 컬럼이 없으므로 company_name 사용)
     try:
         query = """
             SELECT DISTINCT
                 m.account_id,
-                m.account_name
+                m.company_name AS account_name
             FROM `ngn_dataset.user_company_map` ucm
             JOIN `ngn_dataset.meta_account_mapping` m
                 ON ucm.company_name = m.company_name

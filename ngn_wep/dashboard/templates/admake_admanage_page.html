@@ -1778,6 +1778,10 @@
     updateBudgetStatus(type, 'loading', '저장 중...');
 
     try {
+      // Meta API는 뒤에 00을 제외한 값을 받음 (25,000원 → 250)
+      const apiBudget = Math.round(data.currentBudget / 100);
+      console.log(`[STEP4] ${type} API 전송 예산: ${data.currentBudget}원 → ${apiBudget}`);
+
       const response = await fetch('/dashboard/update_budget', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1786,7 +1790,7 @@
           account_id: accountId,
           campaign_id: data.campaignId,
           adset_id: data.adsetId,
-          daily_budget: data.currentBudget,
+          daily_budget: apiBudget,
           budget_type: data.budgetType
         })
       });

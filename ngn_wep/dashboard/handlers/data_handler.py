@@ -3648,22 +3648,25 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             payload["url_tags"] = url_tags
             print(f"[STEP5] url_tags 추가: {url_tags[:80]}...")
 
-        # 어드밴티지+ 크리에이티브 기능 비활성화 (소재 원본성 유지)
-        # Meta API v24.0: standard_enhancements 폐기됨 → advantage_plus_creative 및 개별 필드 사용
-        degrees_of_freedom_spec = {
-            "creative_features_spec": {
-                # 1. 전체 어드밴티지+ 크리에이티브 옵트아웃
-                "advantage_plus_creative": {
-                    "enroll_status": "OPT_OUT"
-                },
-                # 2. 개별 보정 기능들도 명시적으로 옵트아웃 (v24.0 권장)
-                "image_touchup": {"enroll_status": "OPT_OUT"},
-                "text_optimizations": {"enroll_status": "OPT_OUT"},
-                "visual_enhancements": {"enroll_status": "OPT_OUT"}
+        # [v24.0] 어드밴티지+ 크리에이티브 전체 비활성화
+        # creative_features_spec만 사용 (degrees_of_freedom_spec 사용 금지)
+        # standard_enhancements는 v24.0에서 완전히 폐기됨
+        creative_features_spec = {
+            "advantage_plus_creative": {
+                "enroll_status": "OPT_OUT"
             }
         }
-        payload["degrees_of_freedom_spec"] = json.dumps(degrees_of_freedom_spec, ensure_ascii=False)
-        print(f"[STEP5] degrees_of_freedom_spec 추가 (v24.0: 어드밴티지+ 크리에이티브 전체 비활성화)")
+        payload["creative_features_spec"] = json.dumps(creative_features_spec, ensure_ascii=False)
+        print(f"[STEP5] creative_features_spec 추가: {creative_features_spec}")
+
+        # [Emergency Check] standard_enhancements 필드가 페이로드에 존재하면 강제 삭제
+        payload_str = json.dumps(payload, ensure_ascii=False)
+        if "standard_enhancements" in payload_str:
+            print(f"[STEP5] WARNING: standard_enhancements 감지됨! 강제 삭제 시도...")
+            # 가능한 모든 위치에서 제거
+            if "degrees_of_freedom_spec" in payload:
+                del payload["degrees_of_freedom_spec"]
+                print(f"[STEP5] degrees_of_freedom_spec 삭제됨")
 
         # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
         print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")
@@ -3671,6 +3674,13 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
         print(f"[STEP5] name: {payload['name']}")
         print(f"[STEP5] object_story_spec (전체):")
         print(f"{object_story_spec_json}")
+        print(f"[STEP5] creative_features_spec: {payload.get('creative_features_spec', 'N/A')}")
+        # 최종 검증: standard_enhancements 문자열 포함 여부
+        final_payload_str = str(payload)
+        if "standard_enhancements" in final_payload_str:
+            print(f"[STEP5] CRITICAL ERROR: standard_enhancements가 여전히 존재함!")
+        else:
+            print(f"[STEP5] OK: standard_enhancements 미포함 확인")
         print(f"[STEP5] access_token: {access_token[:20]}...{access_token[-10:] if len(access_token) > 30 else ''}")
         print(f"[STEP5] ================================================")
 

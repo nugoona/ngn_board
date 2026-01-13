@@ -3141,6 +3141,114 @@ def update_adset_status():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@data_blueprint.route("/update_adset_schedule", methods=["POST"])
+def update_adset_schedule():
+    """
+    AdSet 노출 기간 설정 업데이트 (Meta API v24.0)
+    - end_time: 종료 시간 (ISO 8601 또는 Unix timestamp)
+    - 'no_end'인 경우 end_time을 0으로 설정 (종료일 없음)
+    """
+    try:
+        data = request.get_json()
+        account_id = data.get("account_id")
+        end_time_setting = data.get("end_time_setting", "no_end")  # "no_end" or "set_end"
+        end_time_value = data.get("end_time_value")  # ISO 8601 형식: "2024-12-31T23:59:00+09:00"
+
+        print(f"[STEP4] ========== AdSet 스케줄 업데이트 시작 ==========")
+        print(f"[STEP4] account_id: {account_id}")
+        print(f"[STEP4] end_time_setting: {end_time_setting}")
+        print(f"[STEP4] end_time_value: {end_time_value}")
+
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 없습니다."}), 500
+
+        # BigQuery에서 계정의 AdSet ID 조회
+        raw_account_id = account_id.replace("act_", "") if account_id.startswith("act_") else account_id
+        account_info = get_account_info(raw_account_id, access_token)
+        conv_adset_id = account_info.get("conv_adset_id")
+        traffic_adset_id = account_info.get("traffic_adset_id")
+
+        if not conv_adset_id and not traffic_adset_id:
+            return jsonify({"status": "error", "message": "업데이트할 AdSet이 없습니다."}), 400
+
+        # 업데이트할 AdSet 목록
+        adsets_to_update = []
+        if conv_adset_id:
+            adsets_to_update.append(("전환", conv_adset_id))
+        if traffic_adset_id:
+            adsets_to_update.append(("유입", traffic_adset_id))
+
+        results = []
+        for adset_name, adset_id in adsets_to_update:
+            url = f"https://graph.facebook.com/v24.0/{adset_id}"
+
+            # 페이로드 구성
+            payload = {"access_token": access_token}
+
+            if end_time_setting == "no_end":
+                # 종료일 없음: end_time을 0으로 설정 (Meta API에서 종료일 제거)
+                payload["end_time"] = 0
+                print(f"[STEP4] {adset_name} AdSet: 종료일 없음 설정")
+            elif end_time_setting == "set_end" and end_time_value:
+                # 특정 종료일 설정
+                payload["end_time"] = end_time_value
+                print(f"[STEP4] {adset_name} AdSet: 종료일 설정 → {end_time_value}")
+            else:
+                print(f"[STEP4] {adset_name} AdSet: 변경 없음 (스킵)")
+                continue
+
+            response = requests.post(url, data=payload, timeout=15)
+            result = response.json()
+
+            print(f"[STEP4] {adset_name} AdSet ({adset_id}) 응답: {result}")
+
+            if result.get("success"):
+                results.append({
+                    "adset_name": adset_name,
+                    "adset_id": adset_id,
+                    "success": True
+                })
+            else:
+                error_msg = result.get("error", {}).get("message", "Unknown error")
+                results.append({
+                    "adset_name": adset_name,
+                    "adset_id": adset_id,
+                    "success": False,
+                    "error": error_msg
+                })
+
+        # 결과 집계
+        success_count = sum(1 for r in results if r["success"])
+        fail_count = len(results) - success_count
+
+        print(f"[STEP4] 스케줄 업데이트 완료: 성공 {success_count}, 실패 {fail_count}")
+        print(f"[STEP4] ========== AdSet 스케줄 업데이트 종료 ==========")
+
+        if fail_count > 0:
+            failed_names = [r["adset_name"] for r in results if not r["success"]]
+            return jsonify({
+                "status": "partial",
+                "message": f"일부 AdSet 업데이트 실패: {', '.join(failed_names)}",
+                "results": results
+            }), 200
+
+        return jsonify({
+            "status": "success",
+            "message": "모든 AdSet 스케줄이 업데이트되었습니다.",
+            "results": results
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] update_adset_schedule 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @data_blueprint.route("/publish_ads_batch", methods=["POST"])
 def publish_ads_batch():
     """

@@ -1027,6 +1027,10 @@
       to { transform: rotate(360deg); }
     }
 
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
     /* ===== 빈 상태 ===== */
     .admake-empty {
       display: flex;
@@ -2197,7 +2201,7 @@
     window.location.href = `/admake/create?account_id=${encodeURIComponent(accountId)}`;
   }
 
-  function handleNextButton() {
+  async function handleNextButton() {
     console.log('[STEP4] 다음 버튼 클릭 - Step 5로 이동');
 
     // 종료 날짜 설정 읽기
@@ -2206,12 +2210,15 @@
 
     let endDate = null;
     let endTime = null;
+    let endTimeValue = null;  // ISO 8601 형식의 종료 시간
+
     if (endDateSetting === 'set_end') {
       const datetimeInput = document.getElementById('endDatetime');
       if (datetimeInput && datetimeInput.value) {
         const datetime = new Date(datetimeInput.value);
         endDate = datetime.toISOString().split('T')[0];
         endTime = datetime.toTimeString().split(' ')[0].substring(0, 5);
+        endTimeValue = datetime.toISOString();  // ISO 8601 형식
       }
     }
 
@@ -2236,8 +2243,59 @@
     sessionStorage.setItem('admake_step4_state', JSON.stringify(step4Data));
     console.log('[STEP4] Step 4 데이터 저장:', step4Data);
 
-    // Step 5로 이동
-    window.location.href = `/admake/publish?account_id=${encodeURIComponent(accountId)}`;
+    // AdSet 스케줄 업데이트 API 호출
+    const nextBtn = document.querySelector('.btn-next');
+    const originalText = nextBtn.innerHTML;
+    nextBtn.disabled = true;
+    nextBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 세트 업데이트 중...';
+    lucide.createIcons();
+
+    try {
+      const updatePayload = {
+        account_id: accountId,
+        end_time_setting: endDateSetting,
+        end_time_value: endTimeValue,
+        conv_active: convActive,
+        traffic_active: trafficActive
+      };
+
+      console.log('[STEP4] AdSet 스케줄 업데이트 요청:', updatePayload);
+
+      const response = await fetch('/dashboard/update_adset_schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+
+      const result = await response.json();
+      console.log('[STEP4] AdSet 스케줄 업데이트 응답:', result);
+
+      if (result.status === 'success') {
+        showToast('AdSet 노출 기간이 업데이트되었습니다.', 'success', 2000);
+        // Step 5로 이동
+        setTimeout(() => {
+          window.location.href = `/admake/publish?account_id=${encodeURIComponent(accountId)}`;
+        }, 500);
+      } else if (result.status === 'partial') {
+        // 일부 성공
+        showToast(`일부 AdSet 업데이트 완료. ${result.message}`, 'warning', 3000);
+        setTimeout(() => {
+          window.location.href = `/admake/publish?account_id=${encodeURIComponent(accountId)}`;
+        }, 1500);
+      } else {
+        // 실패
+        showToast(`AdSet 업데이트 실패: ${result.message}`, 'error', 4000);
+        nextBtn.disabled = false;
+        nextBtn.innerHTML = originalText;
+        lucide.createIcons();
+      }
+    } catch (error) {
+      console.error('[STEP4] AdSet 스케줄 업데이트 오류:', error);
+      showToast('AdSet 업데이트 중 오류가 발생했습니다.', 'error', 3000);
+      nextBtn.disabled = false;
+      nextBtn.innerHTML = originalText;
+      lucide.createIcons();
+    }
   }
 
   // 캠페인 유형 배지 생성

@@ -3595,6 +3595,11 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 # 썸네일 URL 추가 (thumbnail_url 또는 image_url 필드에서 가져옴)
                 thumbnail_url = ad_data.get("thumbnail_url") or ad_data.get("image_url")
 
+                # blob URL은 Meta API에서 사용 불가 - 필터링
+                if thumbnail_url and thumbnail_url.startswith("blob:"):
+                    print(f"[STEP5] blob URL 감지, 무시: {thumbnail_url[:50]}...")
+                    thumbnail_url = None
+
                 # 썸네일이 없으면 Meta API에서 비디오 썸네일 조회
                 if not thumbnail_url and video_id_str:
                     print(f"[STEP5] 썸네일 URL 없음, Meta API에서 조회 시도...")

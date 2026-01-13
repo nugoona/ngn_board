@@ -2839,6 +2839,55 @@ def remove_pending_ad(ad_id):
 
 
 # ─────────────────────────────────────────────────────────────
+# 📌 ADMAKE: 계정 정보 조회 API
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/get_account_info", methods=["GET"])
+def get_account_info_api():
+    """
+    광고 계정에 연결된 페이지/Instagram/AdSet/UTM/Pixel 정보 조회 API
+    """
+    try:
+        account_id = request.args.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id가 필요합니다."}), 400
+
+        access_token = os.environ.get("META_SYSTEM_USER_TOKEN")
+        if not access_token:
+            return jsonify({"status": "error", "message": "Meta API 토큰이 없습니다."}), 500
+
+        # account_id 정규화 (act_ 접두사 제거)
+        clean_account_id = account_id.replace("act_", "")
+
+        # 기존 헬퍼 함수 호출
+        info = get_account_info(clean_account_id, access_token)
+
+        if not info or (not info.get("page_id") and not info.get("conv_adset_id")):
+            return jsonify({
+                "status": "error",
+                "message": "계정 정보를 찾을 수 없습니다."
+            }), 404
+
+        print(f"[STEP4] 계정 정보 조회 완료: {json.dumps(info, ensure_ascii=False)[:300]}")
+
+        return jsonify({
+            "status": "success",
+            "page_id": info.get("page_id"),
+            "instagram_user_id": info.get("instagram_user_id"),
+            "conv_adset_id": info.get("conv_adset_id"),
+            "traffic_adset_id": info.get("traffic_adset_id"),
+            "utm_params": info.get("utm_params"),
+            "pixel_id": info.get("pixel_id")
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] get_account_info_api 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
 # 📌 ADMAKE: 예산 실시간 조회/수정 API (Meta API Live)
 # ─────────────────────────────────────────────────────────────
 
@@ -2910,7 +2959,8 @@ def get_budget_info():
 
         return jsonify({
             "status": "success",
-            "budget_info": result
+            "conv_campaign": result.get("conv"),
+            "traffic_campaign": result.get("traffic")
         }), 200
 
     except Exception as e:

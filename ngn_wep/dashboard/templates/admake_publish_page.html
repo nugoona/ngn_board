@@ -1523,12 +1523,12 @@ async function publishAds() {
     let adsToPublish = [];
 
     if (pendingAds.length > 0) {
-      // pending_ads 사용 (v1.0 방식)
+      // pending_ads 사용 - 필드명 매핑 주의 (backend 저장 구조와 일치)
       adsToPublish = pendingAds.map(ad => ({
         name: ad.ad_name,
         media_type: ad.media_type,
-        message: ad.primary_text || '',
-        link: ad.url || '',
+        message: ad.message || '',      // pending_ads에는 'message'로 저장
+        link: ad.link || '',            // pending_ads에는 'link'로 저장
         headline: ad.headline || '',
         description: ad.description || '',
         cta_type: ad.cta_type || 'SHOP_NOW',

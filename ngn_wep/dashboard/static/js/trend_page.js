@@ -1863,10 +1863,10 @@ function renderSection1AsCard(section1Text) {
         if (window.allTabsData && Object.keys(window.allTabsData).length > 0) {
             const companyProducts = getCompanyProducts();
             if (companyProducts.length > 0) {
-                // 급상승 상품이 있으면 우선 표시, 없으면 첫 번째 상품
-                const risingProducts = companyProducts.filter(p => p.trendType === 'rising_star');
-                const productsToShow = risingProducts.length > 0 ? risingProducts : companyProducts.slice(0, 1);
-                
+                // 모든 자사몰 상품 표시 (급상승 우선 정렬, 신규진입/하락도 포함)
+                // getCompanyProducts()에서 이미 정렬됨: rising_star > new_entry > rank_drop
+                const productsToShow = companyProducts;
+
                 const thumbnailGrid = createThumbnailGridFromProducts(productsToShow, productsToShow[0]?.trendType || 'rising_star');
                 if (thumbnailGrid) {
                     thumbnailContainer.innerHTML = thumbnailGrid;

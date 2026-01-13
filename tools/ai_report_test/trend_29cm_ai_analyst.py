@@ -412,28 +412,59 @@ def build_trend_analysis_prompt(
 ) -> str:
     """
     29CM 트렌드 분석 프롬프트 생성
-    
+
     Args:
         snapshot_data: 트렌드 스냅샷 데이터
         target_brand: 분석 타겟 브랜드명 (한글명)
-    
+
     Returns:
         프롬프트 문자열
     """
     tabs_data = snapshot_data.get("tabs_data", {})
     current_week = snapshot_data.get("current_week", "")
-    
-    # 데이터 요약 및 필수 필드만 추출
+
+    # 자사몰 브랜드 목록 가져오기 (target_brand 기반)
+    own_brand_names = []
+    if COMPANY_MAPPING_AVAILABLE:
+        # target_brand(한글명)에 해당하는 영문 company_name 찾기
+        for comp_name, comp_info in COMPANY_MAPPING.items():
+            if comp_info.get("ko") == target_brand:
+                own_brand_names = comp_info.get("brands", [])
+                break
+    # 자사몰 브랜드 목록이 없으면 target_brand 자체를 포함
+    if not own_brand_names:
+        own_brand_names = [target_brand]
+
+    # 데이터 요약 및 필수 필드만 추출 (자사몰 상품 우선 포함)
     def extract_essential_fields(items: list, max_items: int = 15) -> list:
-        """필수 필드만 추출하여 AI 프롬프트 크기 최적화"""
+        """필수 필드만 추출하여 AI 프롬프트 크기 최적화 (자사몰 상품 우선 포함)"""
         essential = []
-        for item in items[:max_items]:  # 상위 N개만 사용
-            essential.append({
-                "Brand": item.get("Brand_Name"),  # 필수: 브랜드명
+        own_brand_items = []
+        other_items = []
+
+        # 자사몰 상품과 일반 상품 분리
+        for item in items:
+            brand_name = item.get("Brand_Name") or ""
+            item_data = {
+                "Brand": brand_name,  # 필수: 브랜드명
                 "Product": item.get("Product_Name"),  # 필수: 상품명
                 "Rank_Change": item.get("Rank_Change"),  # 필수: 순위 변화
                 "Price": item.get("price")  # 필수: 가격
-            })
+            }
+
+            # 자사몰 브랜드인지 확인
+            if brand_name in own_brand_names:
+                own_brand_items.append(item_data)
+            else:
+                other_items.append(item_data)
+
+        # 자사몰 상품 먼저 추가 (전부 포함)
+        essential.extend(own_brand_items)
+
+        # 남은 슬롯에 일반 상품 추가
+        remaining_slots = max(0, max_items - len(own_brand_items))
+        essential.extend(other_items[:remaining_slots])
+
         return essential
     
     # 모든 카테고리 선택 (CORE_CATEGORIES 필터링 제거)

@@ -92,7 +92,7 @@ def get_meta_ads_preview_list(account_id):
 
         try:
             # 1차 요청: 크리에이티브 ID
-            creative_url = f"https://graph.facebook.com/v22.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
+            creative_url = f"https://graph.facebook.com/v24.0/{ad_id}?fields=adcreatives&access_token={META_ACCESS_TOKEN}"
             creative_res = requests.get(creative_url)
             creative_data = creative_res.json()
             creative_id = creative_data.get("adcreatives", {}).get("data", [{}])[0].get("id")
@@ -100,7 +100,7 @@ def get_meta_ads_preview_list(account_id):
                 continue
 
             # 2차 요청: 상세 정보
-            detail_url = f"https://graph.facebook.com/v22.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
+            detail_url = f"https://graph.facebook.com/v24.0/{creative_id}?fields=body,object_story_spec,image_url,video_id&access_token={META_ACCESS_TOKEN}"
             detail_res = requests.get(detail_url)
             detail_data = detail_res.json()
 
@@ -118,7 +118,7 @@ def get_meta_ads_preview_list(account_id):
                         detail_data.get("object_story_spec", {}).get("link_data", {}).get("picture") or ""
 
             if not image_url and detail_data.get("video_id"):
-                thumb_url = f"https://graph.facebook.com/v22.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
+                thumb_url = f"https://graph.facebook.com/v24.0/{detail_data['video_id']}?fields=thumbnails&access_token={META_ACCESS_TOKEN}"
                 thumb_res = requests.get(thumb_url)
                 thumb_data = thumb_res.json()
                 image_url = thumb_data.get("thumbnails", {}).get("data", [{}])[0].get("uri", "")

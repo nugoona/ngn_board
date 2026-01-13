@@ -3471,17 +3471,11 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
             "access_token": access_token
         }
 
-        # tracking_specs 추가 (Pixel ID가 있는 경우) - 웹사이트 이벤트 추적 활성화
-        # 전환 캠페인 및 유입(트래픽) 캠페인 모두에 적용
+        # Note: tracking_specs (픽셀 추적)는 AdSet 레벨에서 설정됨
+        # Ad 레벨에서 설정 시 AdSet의 최적화 설정과 충돌할 수 있음 (error_subcode: 1634034)
+        # 따라서 Ad 생성 시에는 tracking_specs를 포함하지 않음
         if pixel_id:
-            tracking_specs = [
-                {
-                    "action.type": "offsite_pixel",
-                    "offsite_pixel": [str(pixel_id)]
-                }
-            ]
-            payload["tracking_specs"] = json.dumps(tracking_specs)
-            print(f"[STEP5] tracking_specs 추가 (웹사이트 이벤트 활성화): pixel_id={pixel_id}")
+            print(f"[STEP5] pixel_id 존재: {pixel_id} (AdSet 레벨에서 추적 설정됨)")
 
         # end_time 추가 (종료 시간이 있는 경우)
         # Note: end_time은 Ad 레벨이 아닌 AdSet 레벨에서 설정해야 함

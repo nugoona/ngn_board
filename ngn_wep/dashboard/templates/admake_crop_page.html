@@ -3454,7 +3454,27 @@ async function uploadToMeta() {
           if (!videoId) {
             throw new Error('동영상 ID를 받을 수 없습니다');
           }
-          
+
+          // ✅ 동영상 썸네일 URL 가져오기 (Step 5 표시용)
+          let videoThumbnailUrl = null;
+          try {
+            const thumbResponse = await fetch(
+              `https://graph.facebook.com/${apiVersion}/${videoId}?fields=thumbnails&access_token=${encodeURIComponent(accessToken)}`
+            );
+            const thumbData = await thumbResponse.json();
+            if (thumbData.thumbnails?.data?.length > 0) {
+              // 가장 큰 썸네일 선택
+              const thumbnails = thumbData.thumbnails.data;
+              const bestThumb = thumbnails.reduce((a, b) =>
+                (a.width * a.height) > (b.width * b.height) ? a : b
+              );
+              videoThumbnailUrl = bestThumb.uri;
+              console.log(`[UPLOAD] 동영상 썸네일 획득: ${videoThumbnailUrl}`);
+            }
+          } catch (thumbError) {
+            console.warn(`[UPLOAD] 동영상 썸네일 조회 실패:`, thumbError);
+          }
+
           // ✅ [UX 개선] 배치 호환성 데이터 추가
           const videoRatio = item.cropState?.aspectRatio || RATIO_9_16;
           const videoIs916 = Math.abs(videoRatio - RATIO_9_16) < RATIO_TOLERANCE;
@@ -3464,6 +3484,7 @@ async function uploadToMeta() {
             type: 'video',
             hash: null,
             video_id: videoId,
+            thumbnail_url: videoThumbnailUrl,  // 동영상 썸네일 URL 저장
             // 배치 호환성 정보
             aspectRatio: videoRatio,
             placements: {

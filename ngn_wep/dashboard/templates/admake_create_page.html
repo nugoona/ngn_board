@@ -2147,6 +2147,8 @@ function resetExtractModal() {
 }
 
 // 로딩 상태 표시
+let progressInterval = null;
+
 function showExtractLoading(message = '이미지를 추출하고 있습니다...') {
   document.getElementById('extractGrid').innerHTML = '';
   document.getElementById('extractEmpty').style.display = 'none';
@@ -2154,12 +2156,46 @@ function showExtractLoading(message = '이미지를 추출하고 있습니다...
   document.getElementById('extractLoading').style.display = 'flex';
   document.getElementById('extractLoadingText').textContent = message;
 
-  // 프로그레스 바 애니메이션
+  // 프로그레스 바 - 부드러운 애니메이션 (예상 30초 기준)
   const progressFill = document.getElementById('extractProgressFill');
+  const loadingText = document.getElementById('extractLoadingText');
   progressFill.style.width = '0%';
-  setTimeout(() => progressFill.style.width = '30%', 100);
-  setTimeout(() => progressFill.style.width = '60%', 2000);
-  setTimeout(() => progressFill.style.width = '80%', 5000);
+
+  let progress = 0;
+  const stages = [
+    { pct: 15, msg: '페이지 접속 중...' },
+    { pct: 30, msg: '상세페이지 로딩 중...' },
+    { pct: 45, msg: '이미지 탐색 중...' },
+    { pct: 60, msg: '이미지 다운로드 중...' },
+    { pct: 75, msg: 'AI 분석 중...' },
+    { pct: 88, msg: '크롭 처리 중...' },
+  ];
+  let stageIdx = 0;
+
+  // 기존 인터벌 정리
+  if (progressInterval) clearInterval(progressInterval);
+
+  progressInterval = setInterval(() => {
+    if (progress < 90) {
+      progress += 0.5;  // 0.5%씩 증가 (약 30초에 90%)
+      progressFill.style.width = progress + '%';
+
+      // 단계별 메시지 업데이트
+      if (stageIdx < stages.length && progress >= stages[stageIdx].pct) {
+        loadingText.textContent = stages[stageIdx].msg;
+        stageIdx++;
+      }
+    }
+  }, 150);  // 150ms마다 업데이트
+}
+
+function stopExtractLoading() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
+  document.getElementById('extractProgressFill').style.width = '100%';
+  document.getElementById('extractLoadingText').textContent = '완료!';
 }
 
 // 이미지 추출 API 호출
@@ -2209,8 +2245,8 @@ async function fetchImagesFromUrl(url) {
     console.log('[DEBUG] API 응답:', data);
     console.log('[DEBUG] 이미지 수:', data.images ? data.images.length : 0);
 
+    stopExtractLoading();
     document.getElementById('extractLoading').style.display = 'none';
-    document.getElementById('extractProgressFill').style.width = '100%';
 
     if (data.images && data.images.length > 0) {
       extractedImages = data.images;
@@ -2230,6 +2266,7 @@ async function fetchImagesFromUrl(url) {
     }
   } catch (error) {
     console.error('[DEBUG] Image extraction error:', error);
+    stopExtractLoading();
     document.getElementById('extractLoading').style.display = 'none';
     document.getElementById('extractEmpty').style.display = 'flex';
     document.querySelector('.extract-empty-title').textContent = '이미지 추출 실패';

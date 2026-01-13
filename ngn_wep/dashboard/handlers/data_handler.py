@@ -3649,16 +3649,21 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             print(f"[STEP5] url_tags 추가: {url_tags[:80]}...")
 
         # 어드밴티지+ 크리에이티브 기능 비활성화 (소재 원본성 유지)
-        # Meta API: degrees_of_freedom_spec으로 모든 AI 개선 기능 OPT_OUT
+        # Meta API v24.0: standard_enhancements 폐기됨 → advantage_plus_creative 및 개별 필드 사용
         degrees_of_freedom_spec = {
             "creative_features_spec": {
-                "standard_enhancements": {
-                    "enroll_status": "OPT_OUT"  # 시각적 보정 및 개선 비활성화
-                }
+                # 1. 전체 어드밴티지+ 크리에이티브 옵트아웃
+                "advantage_plus_creative": {
+                    "enroll_status": "OPT_OUT"
+                },
+                # 2. 개별 보정 기능들도 명시적으로 옵트아웃 (v24.0 권장)
+                "image_touchup": {"enroll_status": "OPT_OUT"},
+                "text_optimizations": {"enroll_status": "OPT_OUT"},
+                "visual_enhancements": {"enroll_status": "OPT_OUT"}
             }
         }
         payload["degrees_of_freedom_spec"] = json.dumps(degrees_of_freedom_spec, ensure_ascii=False)
-        print(f"[STEP5] degrees_of_freedom_spec 추가 (어드밴티지+ 크리에이티브 비활성화)")
+        print(f"[STEP5] degrees_of_freedom_spec 추가 (v24.0: 어드밴티지+ 크리에이티브 전체 비활성화)")
 
         # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
         print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")

@@ -37,4 +37,8 @@ credentials*.json
 tokens.json
 
 # Test images
-ngn_wep/ad_make/test_crop/
+ngn_wep/ad_make/test_crop/*.png
+*.jpg
+*.jpeg
+*.mp4
+*.gif

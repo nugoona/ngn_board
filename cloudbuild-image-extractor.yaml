@@ -1,0 +1,59 @@
+# Cloud Build - Image Extractor API 배포
+steps:
+  # 1. Docker 이미지 빌드
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/image-extractor-api:$BUILD_ID'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/image-extractor-api:latest'
+      - '-f'
+      - 'docker/Dockerfile-image-extractor'
+      - '.'
+    timeout: '1800s'
+
+  # 2. GCR에 푸시
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/image-extractor-api:$BUILD_ID'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/image-extractor-api:latest'
+
+  # 3. Cloud Run 배포
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'image-extractor-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/image-extractor-api:$BUILD_ID'
+      - '--platform'
+      - 'managed'
+      - '--region'
+      - 'asia-northeast1'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '3'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'PYTHONUNBUFFERED=1'
+
+timeout: '2400s'
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'

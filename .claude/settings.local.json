@@ -14,7 +14,11 @@
       "Bash(find:*)",
       "Bash(chmod:*)",
       "Bash(bash:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(bq query:*)",
+      "Bash(bq show:*)",
+      "Bash(./deploy_image_extractor.sh)",
+      "Bash(ls:*)"
     ]
   }
 }

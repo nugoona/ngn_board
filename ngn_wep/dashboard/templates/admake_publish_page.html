@@ -1196,18 +1196,48 @@ async function loadAllData() {
 
   // 미디어 아이템 구성 (pending_ads 또는 sessionStorage)
   if (pendingAds.length > 0) {
-    // pending_ads 사용
+    // pending_ads 사용 - IndexedDB에서 썸네일 다시 로드
     console.log('[STEP5] pending_ads 사용:', pendingAds.length);
-    // pending_ads에서 썸네일 정보 추출
-    mediaItems = pendingAds.map(ad => ({
-      id: ad.ad_id,
-      adName: ad.ad_name,
-      mediaType: ad.media_type,
-      hash: ad.image_hash,
-      videoId: ad.video_id,
-      thumbnailUrl: ad.thumbnail_url,
-      previewUrl: ad.thumbnail_url
-    }));
+
+    for (const ad of pendingAds) {
+      let previewUrl = null;
+
+      // media_id가 있으면 IndexedDB에서 파일 로드
+      if (ad.media_id) {
+        try {
+          const file = await getFileFromIndexedDB(ad.media_id);
+          previewUrl = URL.createObjectURL(file);
+          console.log(`[STEP5] IndexedDB에서 썸네일 로드 성공: ${ad.media_id}`);
+        } catch (e) {
+          console.warn(`[STEP5] IndexedDB 로드 실패: ${ad.media_id}`, e);
+        }
+      }
+
+      // 캐러셀인 경우 첫 번째 카드의 미디어로 시도
+      if (!previewUrl && ad.is_carousel && ad.cards?.length > 0) {
+        const firstCard = ad.cards[0];
+        if (firstCard.media_id) {
+          try {
+            const file = await getFileFromIndexedDB(firstCard.media_id);
+            previewUrl = URL.createObjectURL(file);
+          } catch (e) {
+            console.warn(`[STEP5] 캐러셀 첫 카드 로드 실패: ${firstCard.media_id}`);
+          }
+        }
+      }
+
+      mediaItems.push({
+        id: ad.id,
+        mediaId: ad.media_id,
+        adName: ad.ad_name,
+        mediaType: ad.media_type,
+        hash: ad.image_hash,
+        videoId: ad.video_id,
+        thumbnailUrl: previewUrl,  // IndexedDB에서 새로 생성한 URL
+        previewUrl: previewUrl,
+        isCarousel: ad.is_carousel
+      });
+    }
   } else if (step3Data) {
     // 이전 버전 호환: sessionStorage 사용
     const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
@@ -1281,18 +1311,19 @@ async function loadAccountInfo() {
 
 // ===== 최종 확인 렌더링 =====
 function renderReview() {
-  const displayItems = pendingAds.length > 0 ? pendingAds : mediaItems;
+  // mediaItems 사용 (IndexedDB에서 regenerated URLs 포함)
+  const displayItems = mediaItems;
 
   // 1. 광고 목록 렌더링
   const adList = document.getElementById('reviewAdList');
   adList.innerHTML = displayItems.map((item, index) => {
-    const thumbUrl = item.thumbnail_url || item.thumbnailUrl || item.previewUrl;
-    const mediaType = item.media_type || item.mediaType;
-    const adName = item.ad_name || item.adName || `광고 ${index + 1}`;
+    const thumbUrl = item.previewUrl || item.thumbnailUrl;
+    const mediaType = item.mediaType || item.media_type;
+    const adName = item.adName || item.ad_name || `광고 ${index + 1}`;
 
     // 형식 텍스트
     let formatText = '단일 이미지';
-    if (item.is_carousel) {
+    if (item.isCarousel || item.is_carousel) {
       formatText = '캐러셀';
     } else if (mediaType === 'video') {
       formatText = '단일 비디오';
@@ -1302,7 +1333,7 @@ function renderReview() {
       <div class="review-ad-item">
         <div class="review-ad-thumb">
           ${thumbUrl
-            ? `<img src="${thumbUrl}" alt="썸네일" onerror="this.style.display='none'">`
+            ? `<img src="${thumbUrl}" alt="썸네일" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);\\'><i data-lucide=\\'image\\' style=\\'width:20px;height:20px;\\'></i></div>';lucide.createIcons();">`
             : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);"><i data-lucide="image" style="width:20px;height:20px;"></i></div>`
           }
         </div>

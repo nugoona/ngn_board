@@ -2740,6 +2740,7 @@ def add_pending_ad():
         import uuid
         ad_data = {
             "id": str(uuid.uuid4()),
+            "media_id": data.get("media_id"),  # IndexedDB 키 (Step 5 썸네일 로드용)
             "media_type": data.get("media_type", "image"),
             "video_id": data.get("video_id"),
             "image_hash": data.get("image_hash"),

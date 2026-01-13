@@ -2392,6 +2392,7 @@ async function addToPendingAds() {
   let cards = [];
   if (isCarousel) {
     cards = selectedMedia.map(media => ({
+      media_id: media.id || null,  // IndexedDB 키
       media_type: media.mediaType,
       video_id: media.videoId || null,
       image_hash: media.hash || null,
@@ -2401,6 +2402,7 @@ async function addToPendingAds() {
 
   // 광고 데이터 구성
   const adData = {
+    media_id: firstMedia?.id || null,  // IndexedDB 키 (Step 5에서 썸네일 로드용)
     media_type: firstMedia?.mediaType || 'image',
     video_id: firstMedia?.videoId || null,
     image_hash: firstMedia?.hash || null,

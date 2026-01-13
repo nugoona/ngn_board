@@ -2485,13 +2485,22 @@ async function addToPendingAds() {
   // 카드 데이터 구성 (캐러셀인 경우)
   let cards = [];
   if (isCarousel) {
-    cards = selectedMedia.map(media => ({
-      media_id: media.id || null,  // IndexedDB 키
-      media_type: media.mediaType,
-      video_id: media.videoId || null,
-      image_hash: media.hash || null,
-      thumbnail_url: media.previewUrl || null
-    }));
+    cards = selectedMedia.map(media => {
+      const locks = cardLocks[media.id] || { url: true, headline: true, description: true };
+      const values = cardValues[media.id] || {};
+
+      return {
+        media_id: media.id || null,  // IndexedDB 키
+        media_type: media.mediaType,
+        video_id: media.videoId || null,
+        image_hash: media.hash || null,
+        thumbnail_url: media.previewUrl || null,
+        // 개별 카드 설정 (잠금 시 마스터 값, 해제 시 개별 값)
+        link: locks.url ? masterValues.url : (values.url || masterValues.url),
+        name: locks.headline ? masterValues.headline : (values.headline || masterValues.headline),
+        description: locks.description ? masterValues.description : (values.description || masterValues.description)
+      };
+    });
   }
 
   // 광고 데이터 구성

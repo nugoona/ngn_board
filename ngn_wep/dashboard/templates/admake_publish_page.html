@@ -825,7 +825,7 @@
       text-align: center;
     }
 
-    /* ===== 커스텀 토스트 알림 ===== */
+    /* ===== 커스텀 토스트 알림 (세련된 디자인) ===== */
     .admake-toast-container {
       position: fixed;
       top: 80px;
@@ -842,39 +842,99 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 14px 20px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-default);
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(12px);
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(45, 45, 50, 0.95) 0%, rgba(35, 35, 40, 0.98) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
       pointer-events: auto;
-      animation: toastSlideIn 0.3s ease;
-      max-width: 400px;
+      animation: toastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1);
+      max-width: 420px;
+      min-width: 280px;
     }
 
     .admake-toast.toast-out {
-      animation: toastSlideOut 0.3s ease forwards;
+      animation: toastSlideOut 0.25s ease forwards;
     }
 
     @keyframes toastSlideIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     @keyframes toastSlideOut {
-      from { opacity: 1; transform: translateY(0); }
-      to { opacity: 0; transform: translateY(-20px); }
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-10px) scale(0.95); }
     }
 
-    .admake-toast-icon { font-size: 18px; flex-shrink: 0; }
-    .admake-toast-message { font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
-    .admake-toast-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; margin-left: auto; font-size: 16px; }
-    .admake-toast-close:hover { color: var(--text-primary); }
-    .admake-toast.toast-info { border-left: 3px solid var(--accent-blue); }
-    .admake-toast.toast-success { border-left: 3px solid var(--accent-emerald); }
-    .admake-toast.toast-warning { border-left: 3px solid var(--accent-gold); }
-    .admake-toast.toast-error { border-left: 3px solid var(--accent-red); }
+    .admake-toast-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .admake-toast-message { font-size: 13px; font-weight: 500; color: #ffffff; line-height: 1.5; }
+    .admake-toast-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      cursor: pointer;
+      padding: 6px;
+      margin-left: auto;
+      font-size: 14px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .admake-toast-close:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+    }
+
+    /* Toast 타입별 스타일 */
+    .admake-toast.toast-info {
+      border-left: 4px solid #3b82f6;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+    .admake-toast.toast-info .admake-toast-icon {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .admake-toast.toast-success {
+      border-left: 4px solid #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+    .admake-toast.toast-success .admake-toast-icon {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .admake-toast.toast-warning {
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+    .admake-toast.toast-warning .admake-toast-icon {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .admake-toast.toast-error {
+      border-left: 4px solid #ef4444;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(35, 35, 45, 0.98) 30%);
+    }
+    .admake-toast.toast-error .admake-toast-icon {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
 
     /* ===== 숨김 클래스 ===== */
     .hidden { display: none !important; }

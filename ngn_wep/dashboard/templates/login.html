@@ -6,12 +6,15 @@
   <title>NGN 대시보드 로그인</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
     }
-    
+
     body {
       margin: 0;
       padding: 0;
@@ -21,6 +24,7 @@
       align-items: center;
       min-height: 100vh;
       position: relative;
+      transition: background 0.4s ease;
     }
 
     body::before {
@@ -32,79 +36,111 @@
       bottom: 0;
       background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
       opacity: 0.3;
+      transition: opacity 0.4s ease;
+    }
+
+    /* ===== AdCanvas Dark Mode ===== */
+    body.adcanvas-mode {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    }
+
+    body.adcanvas-mode::before {
+      opacity: 0.1;
     }
 
     .login-container {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
       border-radius: 24px;
-      padding: 48px 40px;
+      padding: 40px 40px 48px;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       width: 100%;
       max-width: 420px;
       position: relative;
       border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.4s ease;
     }
 
-    /* 모바일 최적화 */
-    @media (max-width: 768px) {
-      .login-container {
-        padding: 32px 24px;
-        margin: 20px;
-        max-width: calc(100% - 40px);
-        border-radius: 16px;
-      }
-      
-      .login-logo {
-        font-size: 24px;
-        margin-bottom: 24px;
-      }
-      
-      .login-logo img {
-        width: 32px;
-        height: 32px;
-      }
-      
-      input[type="text"],
-      input[type="password"] {
-        padding: 14px 16px;
-        font-size: 16px; /* iOS에서 줌 방지 */
-      }
-      
-      .login-btn,
-      .demo-btn {
-        padding: 14px;
-        font-size: 16px;
-      }
-      
-      .form-group {
-        margin-bottom: 20px;
-      }
-      
-      label {
-        font-size: 13px;
-      }
-    }
-    
-    /* 작은 모바일 화면 */
-    @media (max-width: 480px) {
-      .login-container {
-        padding: 24px 20px;
-        margin: 16px;
-        max-width: calc(100% - 32px);
-      }
-      
-      .login-logo {
-        font-size: 22px;
-        margin-bottom: 20px;
-      }
-      
-      .login-logo img {
-        width: 28px;
-        height: 28px;
-      }
+    body.adcanvas-mode .login-container {
+      background: rgba(22, 22, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
+    /* ===== Tab Navigation ===== */
+    .login-tabs {
+      display: flex;
+      margin-bottom: 28px;
+      border-bottom: 2px solid #e5e7eb;
+      transition: border-color 0.4s ease;
+    }
+
+    body.adcanvas-mode .login-tabs {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px 0;
+      background: transparent;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.2s ease;
+    }
+
+    .tab-btn.active {
+      color: #6366f1;
+    }
+
+    .tab-btn.active::after {
+      background: #6366f1;
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: #6b7280;
+    }
+
+    body.adcanvas-mode .tab-btn {
+      color: #525252;
+    }
+
+    body.adcanvas-mode .tab-btn.active {
+      color: #10b981;
+    }
+
+    body.adcanvas-mode .tab-btn.active::after {
+      background: #10b981;
+    }
+
+    body.adcanvas-mode .tab-btn:hover:not(.active) {
+      color: #a1a1a1;
+    }
+
+    /* ===== Tab Content ===== */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ===== Logo ===== */
     .login-logo {
       text-align: center;
       font-size: 28px;
@@ -115,6 +151,7 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
+      transition: color 0.4s ease;
     }
 
     .login-logo img {
@@ -123,6 +160,42 @@
       object-fit: contain;
     }
 
+    /* AdCanvas Logo */
+    .adcanvas-logo {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .adcanvas-logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .adcanvas-logo-icon svg {
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+
+    .adcanvas-tagline {
+      font-size: 13px;
+      font-weight: 500;
+      color: #525252;
+      margin-top: -4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ===== Error Message ===== */
     .error-message {
       background: linear-gradient(135deg, #ff6b6b, #ee5a52);
       color: white;
@@ -139,6 +212,7 @@
       display: block;
     }
 
+    /* ===== Form ===== */
     .form-group {
       margin-bottom: 24px;
     }
@@ -149,8 +223,13 @@
       display: block;
       color: #374151;
       font-weight: 600;
+      transition: color 0.4s ease;
     }
-    
+
+    body.adcanvas-mode label {
+      color: #a1a1a1;
+    }
+
     input[type="text"],
     input[type="password"] {
       width: 100%;
@@ -171,6 +250,26 @@
       box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
     }
 
+    body.adcanvas-mode input[type="text"],
+    body.adcanvas-mode input[type="password"] {
+      background: #1a1a1a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    body.adcanvas-mode input[type="text"]::placeholder,
+    body.adcanvas-mode input[type="password"]::placeholder {
+      color: #525252;
+    }
+
+    body.adcanvas-mode input[type="text"]:focus,
+    body.adcanvas-mode input[type="password"]:focus {
+      border-color: #10b981;
+      background: #1a1a1a;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    /* ===== Buttons ===== */
     .login-btn {
       width: 100%;
       padding: 16px;
@@ -190,12 +289,21 @@
       box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
     }
 
+    .adcanvas-login-btn {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .adcanvas-login-btn:hover {
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+
     .divider {
       text-align: center;
       margin: 20px 0;
       position: relative;
     }
-    
+
     .divider::before {
       content: '';
       position: absolute;
@@ -204,8 +312,13 @@
       right: 0;
       height: 1px;
       background: rgba(0, 0, 0, 0.1);
+      transition: background 0.4s ease;
     }
-    
+
+    body.adcanvas-mode .divider::before {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
     .divider span {
       background: transparent;
       padding: 0 15px;
@@ -213,6 +326,11 @@
       font-size: 14px;
       position: relative;
       z-index: 1;
+      transition: color 0.4s ease;
+    }
+
+    body.adcanvas-mode .divider span {
+      color: #525252;
     }
 
     .demo-btn {
@@ -235,11 +353,29 @@
       box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
     }
 
+    body.adcanvas-mode .demo-btn {
+      background: transparent;
+      color: #10b981;
+      border-color: #10b981;
+    }
+
+    body.adcanvas-mode .demo-btn:hover {
+      background: #10b981;
+      color: white;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    /* ===== Footer ===== */
     .footer-link {
       margin-top: 32px;
       text-align: center;
       font-size: 13px;
       color: #6b7280;
+      transition: color 0.4s ease;
+    }
+
+    body.adcanvas-mode .footer-link {
+      color: #525252;
     }
 
     .footer-link a {
@@ -248,136 +384,98 @@
       font-weight: 500;
       transition: color 0.3s ease;
     }
-    
+
     .footer-link a:hover {
       color: #4f46e5;
       text-decoration: underline;
     }
 
-
-
-    /* 업데이트 알림 카드 스타일 */
-    .update-notification {
-      position: fixed;
-      top: 50%;
-      right: 0;
-      transform: translateY(-50%);
-      width: 400px;
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(15px);
-      border-radius: 16px 0 0 16px;
-      padding: 24px;
-      box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-right: none;
-      font-size: 16px;
-      line-height: 1.5;
-      color: #1a1a1a;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-      z-index: 9999;
-      transition: all 0.3s ease;
+    body.adcanvas-mode .footer-link a {
+      color: #10b981;
     }
 
-    .update-notification.hidden {
-      opacity: 0;
-      transform: translateY(20px);
-      pointer-events: none;
+    body.adcanvas-mode .footer-link a:hover {
+      color: #059669;
     }
 
-    .update-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 18px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(156, 163, 175, 0.4);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .update-version {
-      font-size: 13px;
-      font-weight: 600;
-      color: #6366f1;
-      background: rgba(99, 102, 241, 0.15);
-      padding: 3px 6px;
-      border-radius: 5px;
-      margin-left: 8px;
-    }
-
-    .update-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-size: 15px;
-    }
-
-    .update-item svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      margin-top: 2px;
-      color: #6366f1;
-      filter: drop-shadow(0 1px 2px rgba(99, 102, 241, 0.3));
-    }
-
-    .update-section {
-      margin-bottom: 16px;
-    }
-
-    .update-section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 10px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid rgba(156, 163, 175, 0.4);
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .update-close {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: none;
-      border: none;
-      color: #6b7280;
-      cursor: pointer;
-      padding: 3px;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-
-    .update-close:hover {
-      background: #f3f4f6;
-      color: #374151;
-    }
-
-    @media (max-width: 480px) {
+    /* ===== Mobile Responsive ===== */
+    @media (max-width: 768px) {
       .login-container {
-        margin: 20px;
         padding: 32px 24px;
+        margin: 20px;
+        max-width: calc(100% - 40px);
+        border-radius: 16px;
       }
-      
+
       .login-logo {
         font-size: 24px;
+        margin-bottom: 24px;
       }
-      
+
       .login-logo img {
         width: 32px;
         height: 32px;
       }
 
-      .update-notification {
-        position: fixed;
-        top: 50%;
-        right: 0;
-        transform: translateY(-50%);
-        width: 90%;
-        max-width: 380px;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 16px 0 0 16px;
-        border-right: none;
+      .adcanvas-logo {
+        font-size: 28px;
+      }
+
+      .adcanvas-logo-icon {
+        width: 40px;
+        height: 40px;
+      }
+
+      .adcanvas-logo-icon svg {
+        width: 24px;
+        height: 24px;
+      }
+
+      input[type="text"],
+      input[type="password"] {
+        padding: 14px 16px;
+        font-size: 16px;
+      }
+
+      .login-btn,
+      .demo-btn {
+        padding: 14px;
+        font-size: 16px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        font-size: 13px;
+      }
+
+      .tab-btn {
+        font-size: 14px;
+        padding: 12px 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 24px 20px;
+        margin: 16px;
+        max-width: calc(100% - 32px);
+      }
+
+      .login-logo {
+        font-size: 22px;
+        margin-bottom: 20px;
+      }
+
+      .login-logo img {
+        width: 28px;
+        height: 28px;
+      }
+
+      .adcanvas-logo {
+        font-size: 24px;
       }
     }
   </style>
@@ -386,35 +484,84 @@
 
 <div class="login-container">
 
-  <div class="login-logo">
-    <img src="{{ url_for('static', filename='img/x.png') }}" alt="NGN">
-    NGN 대시보드
+  <!-- Tab Navigation -->
+  <div class="login-tabs">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">NGN 대시보드</button>
+    <button class="tab-btn" data-tab="adcanvas" onclick="switchTab('adcanvas')">AdCanvas</button>
   </div>
 
-  <!-- 에러 메시지 영역 -->
-  <div id="error-message" class="error-message" {% if error %}style="display: block;"{% endif %}>
-    {% if error %}{{ error }}{% endif %}
-  </div>
-
-  <form id="login-form" method="POST">
-    <div class="form-group">
-      <label for="user_id">아이디</label>
-      <input type="text" name="user_id" id="user_id" required placeholder="아이디를 입력하세요">
+  <!-- NGN 대시보드 Tab Content -->
+  <div class="tab-content active" id="dashboard-tab">
+    <div class="login-logo">
+      <img src="{{ url_for('static', filename='img/x.png') }}" alt="NGN">
+      NGN 대시보드
     </div>
 
-    <div class="form-group">
-      <label for="password">비밀번호</label>
-      <input type="password" name="password" id="password" required placeholder="비밀번호를 입력하세요">
+    <!-- 에러 메시지 영역 -->
+    <div id="error-message-dashboard" class="error-message" {% if error and active_tab != 'adcanvas' %}style="display: block;"{% endif %}>
+      {% if error and active_tab != 'adcanvas' %}{{ error }}{% endif %}
     </div>
 
-    <button type="submit" class="login-btn">로그인</button>
-  </form>
+    <form id="login-form-dashboard" method="POST">
+      <input type="hidden" name="login_mode" value="dashboard">
+      <div class="form-group">
+        <label for="user_id_dashboard">아이디</label>
+        <input type="text" name="user_id" id="user_id_dashboard" required placeholder="아이디를 입력하세요">
+      </div>
 
-  <div class="divider">
-    <span>또는</span>
+      <div class="form-group">
+        <label for="password_dashboard">비밀번호</label>
+        <input type="password" name="password" id="password_dashboard" required placeholder="비밀번호를 입력하세요">
+      </div>
+
+      <button type="submit" class="login-btn">로그인</button>
+    </form>
+
+    <div class="divider">
+      <span>또는</span>
+    </div>
+
+    <button class="demo-btn" onclick="fillDemoCredentials('dashboard')">데모 계정 접속</button>
   </div>
 
-  <button class="demo-btn" onclick="fillDemoCredentials()">데모 계정 접속</button>
+  <!-- AdCanvas Tab Content -->
+  <div class="tab-content" id="adcanvas-tab">
+    <div class="login-logo adcanvas-logo">
+      <div class="adcanvas-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+        </svg>
+      </div>
+      AdCanvas
+      <span class="adcanvas-tagline">AI-Powered Ad Creation Platform</span>
+    </div>
+
+    <!-- 에러 메시지 영역 -->
+    <div id="error-message-adcanvas" class="error-message" {% if error and active_tab == 'adcanvas' %}style="display: block;"{% endif %}>
+      {% if error and active_tab == 'adcanvas' %}{{ error }}{% endif %}
+    </div>
+
+    <form id="login-form-adcanvas" method="POST">
+      <input type="hidden" name="login_mode" value="adcanvas">
+      <div class="form-group">
+        <label for="user_id_adcanvas">아이디</label>
+        <input type="text" name="user_id" id="user_id_adcanvas" required placeholder="아이디를 입력하세요">
+      </div>
+
+      <div class="form-group">
+        <label for="password_adcanvas">비밀번호</label>
+        <input type="password" name="password" id="password_adcanvas" required placeholder="비밀번호를 입력하세요">
+      </div>
+
+      <button type="submit" class="login-btn adcanvas-login-btn">AdCanvas 시작하기</button>
+    </form>
+
+    <div class="divider">
+      <span>또는</span>
+    </div>
+
+    <button class="demo-btn" onclick="fillDemoCredentials('adcanvas')">데모 계정 접속</button>
+  </div>
 
   <div class="footer-link">
     <a href="/privacy" target="_blank">개인정보 처리방침</a> |
@@ -423,88 +570,65 @@
   </div>
 </div>
 
-<!-- 업데이트 알림 카드 (login-container 밖에 배치) - 주석처리됨 -->
-<!--
-<div class="update-notification" id="updateNotification">
-  <button class="update-close" onclick="hideUpdateNotification()">×</button>
-  
-  <div class="update-title">
-    NGN 대시보드 V 10.1 업데이트<span class="update-version">V 10.1</span>
-  </div>
-  
-  <div class="update-section">
-          <div class="update-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        데이터 로딩 속도 4배 향상
-      </div>
-      <div class="update-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        메타 광고 자동 카탈로그 세트 구현
-      </div>
-      <div class="update-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        백엔드 쿼리 최적화 및 캐싱 시스템 구축
-      </div>
-      <div class="update-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        반응형 UI/UX 디자인 개선
-      </div>
-  </div>
-  
-  <div class="update-section">
-    <div class="update-section-title">다음 업데이트 V 10.2 (예정)</div>
-          <div class="update-item">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-        </svg>
-        MCP AI 기반 지능형 보고서 코멘트 시스템 개발
-      </div>
-  </div>
-</div>
--->
-
 <script>
-  // ✅ 로그인 시 세션스토리지 초기화
+  // 로그인 시 세션스토리지 초기화
   sessionStorage.clear();
 
-  // 에러 메시지가 있으면 표시 (HTML에서 직접 처리됨)
+  // 탭 전환 함수
+  function switchTab(tabName) {
+    // 탭 버튼 활성화
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.tab === tabName) {
+        btn.classList.add('active');
+      }
+    });
 
-  function fillDemoCredentials() {
-    document.getElementById('user_id').value = 'demo';
-    document.getElementById('password').value = 'Nugoona';
-    document.getElementById('login-form').submit();
-  }
+    // 탭 콘텐츠 전환
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    document.getElementById(tabName + '-tab').classList.add('active');
 
-  // 업데이트 알림 카드 숨기기
-  function hideUpdateNotification() {
-    const notification = document.getElementById('updateNotification');
-    notification.classList.add('hidden');
-    
-    // 로컬 스토리지에 숨김 상태 저장 (24시간 동안)
-    localStorage.setItem('updateNotificationHidden', Date.now());
-  }
-
-  // 페이지 로드 시 업데이트 알림 카드 상태 확인 (임시 비활성화)
-  /*
-  document.addEventListener('DOMContentLoaded', function() {
-    const hiddenTime = localStorage.getItem('updateNotificationHidden');
-    const notification = document.getElementById('updateNotification');
-    
-    // 24시간(86400000ms) 이내에 숨겼다면 다시 표시하지 않음
-    if (hiddenTime && (Date.now() - parseInt(hiddenTime)) < 86400000) {
-      notification.classList.add('hidden');
+    // AdCanvas 다크 모드 전환
+    if (tabName === 'adcanvas') {
+      document.body.classList.add('adcanvas-mode');
+      document.title = 'AdCanvas 로그인';
+    } else {
+      document.body.classList.remove('adcanvas-mode');
+      document.title = 'NGN 대시보드 로그인';
     }
-  });
-  */
 
+    // 로컬스토리지에 마지막 선택 탭 저장
+    localStorage.setItem('lastLoginTab', tabName);
+  }
+
+  // 데모 계정 자동 입력
+  function fillDemoCredentials(mode) {
+    if (mode === 'adcanvas') {
+      document.getElementById('user_id_adcanvas').value = 'demo';
+      document.getElementById('password_adcanvas').value = 'Nugoona';
+      document.getElementById('login-form-adcanvas').submit();
+    } else {
+      document.getElementById('user_id_dashboard').value = 'demo';
+      document.getElementById('password_dashboard').value = 'Nugoona';
+      document.getElementById('login-form-dashboard').submit();
+    }
+  }
+
+  // 페이지 로드 시 마지막 선택 탭 복원
+  document.addEventListener('DOMContentLoaded', function() {
+    // 에러가 있고 active_tab이 지정된 경우 해당 탭으로 전환
+    {% if active_tab %}
+    switchTab('{{ active_tab }}');
+    {% else %}
+    // 로컬스토리지에서 마지막 선택 탭 복원
+    const lastTab = localStorage.getItem('lastLoginTab');
+    if (lastTab === 'adcanvas') {
+      switchTab('adcanvas');
+    }
+    {% endif %}
+  });
 </script>
 
 </body>

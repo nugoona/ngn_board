@@ -260,12 +260,31 @@ def trend_ably_page():
 def trend_page():
     return redirect(url_for("trend_selection_page"))
 
+@app.route("/adcanvas/select-account")
+def adcanvas_select_account():
+    """AdCanvas 계정 선택 페이지"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    accounts = session.get("adcanvas_accounts", [])
+    last_account = session.get("last_adcanvas_account")
+
+    if not accounts:
+        return redirect(url_for("auth.login"))
+
+    return render_template(
+        "adcanvas_account_select.html",
+        accounts=accounts,
+        last_account=last_account
+    )
+
+
 @app.route("/admake")
 def admake_page():
     """ADMAKE 페이지"""
     if "user_id" not in session:
         return redirect(url_for("auth.login"))
-    
+
     return render_template("admake_page.html",
                            company_names=session.get("company_names", []))
 

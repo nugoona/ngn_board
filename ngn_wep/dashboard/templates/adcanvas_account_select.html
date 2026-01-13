@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdCanvas - 계정 선택</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      opacity: 0.1;
+    }
+
+    .select-container {
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 60px 24px;
+      position: relative;
+    }
+
+    .select-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .adcanvas-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .adcanvas-logo-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    }
+
+    .adcanvas-logo-icon svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .adcanvas-title {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .select-subtitle {
+      font-size: 16px;
+      color: #a1a1a1;
+      margin-top: 16px;
+    }
+
+    .account-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .account-card {
+      width: 100%;
+      padding: 20px 24px;
+      background: #161616;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .account-card:hover {
+      background: #1a1a1a;
+      border-color: #10b981;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+    }
+
+    .account-card:active {
+      transform: translateY(0);
+    }
+
+    .account-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .account-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .account-id {
+      font-family: 'Inter Tight', monospace;
+      font-size: 13px;
+      color: #525252;
+    }
+
+    .badge-recent {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+    }
+
+    .account-arrow {
+      color: #525252;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+
+    .account-card:hover .account-arrow {
+      color: #10b981;
+      transform: translateX(4px);
+    }
+
+    .remember-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+
+    .remember-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #10b981;
+      cursor: pointer;
+    }
+
+    .remember-option label {
+      font-size: 14px;
+      color: #a1a1a1;
+      cursor: pointer;
+    }
+
+    .back-link {
+      text-align: center;
+    }
+
+    .back-link a {
+      font-size: 14px;
+      color: #525252;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .back-link a:hover {
+      color: #10b981;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 480px) {
+      .select-container {
+        padding: 40px 20px;
+      }
+
+      .adcanvas-logo-icon {
+        width: 48px;
+        height: 48px;
+      }
+
+      .adcanvas-logo-icon svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .adcanvas-title {
+        font-size: 28px;
+      }
+
+      .select-subtitle {
+        font-size: 14px;
+      }
+
+      .account-card {
+        padding: 16px 20px;
+      }
+
+      .account-name {
+        font-size: 15px;
+      }
+
+      .account-id {
+        font-size: 12px;
+      }
+    }
+
+    /* Loading State */
+    .account-card.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .account-card.loading .account-arrow {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="select-container">
+  <div class="select-header">
+    <div class="adcanvas-logo">
+      <div class="adcanvas-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+        </svg>
+      </div>
+      <h1 class="adcanvas-title">AdCanvas</h1>
+    </div>
+    <p class="select-subtitle">광고 계정을 선택하세요</p>
+  </div>
+
+  <div class="account-list">
+    {% for account in accounts %}
+    <button class="account-card" data-account-id="{{ account.id }}" onclick="selectAccount('{{ account.id }}')">
+      <div class="account-info">
+        <span class="account-name">{{ account.name }}</span>
+        <span class="account-id">{{ account.id }}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        {% if account.id == last_account %}
+        <span class="badge-recent">최근 사용</span>
+        {% endif %}
+        <svg class="account-arrow" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </div>
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="remember-option">
+    <input type="checkbox" id="rememberAccount" checked>
+    <label for="rememberAccount">이 계정 기억하기</label>
+  </div>
+
+  <div class="back-link">
+    <a href="{{ url_for('auth.login') }}">다른 계정으로 로그인</a>
+  </div>
+</div>
+
+<script>
+  function selectAccount(accountId) {
+    const card = document.querySelector(`[data-account-id="${accountId}"]`);
+    card.classList.add('loading');
+
+    // 마지막 계정 저장 (체크박스가 체크된 경우)
+    const rememberCheckbox = document.getElementById('rememberAccount');
+    if (rememberCheckbox.checked) {
+      fetch('/save_last_account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ account_id: accountId })
+      }).catch(err => console.error('계정 저장 실패:', err));
+    }
+
+    // AdCanvas로 이동
+    window.location.href = '/admake/create?account_id=' + encodeURIComponent(accountId);
+  }
+</script>
+
+</body>
+</html>

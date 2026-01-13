@@ -44,7 +44,7 @@ def login():
     def is_mobile_device():
         user_agent = request.headers.get('User-Agent', '').lower()
         mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'blackberry', 'windows phone']
-        
+
         # 화면 크기 기반 추가 감지 (쿼리 파라미터로)
         screen_width = request.args.get('screen_width')
         if screen_width:
@@ -54,13 +54,14 @@ def login():
                     return True
             except ValueError:
                 pass
-        
+
         # User-Agent 기반 감지
         return any(keyword in user_agent for keyword in mobile_keywords)
-    
+
     if request.method == "POST":
         user_id   = request.form["user_id"]
         password  = request.form["password"]
+        login_mode = request.form.get("login_mode", "dashboard")  # 'dashboard' 또는 'adcanvas'
         client    = bigquery.Client()
 
         # 1) 사용자 인증
@@ -86,7 +87,8 @@ def login():
                 return render_template("mobile/login.html",
                                        error="내부 오류가 발생했습니다.")
             return render_template("login.html",
-                                   error="내부 오류가 발생했습니다.")
+                                   error="내부 오류가 발생했습니다.",
+                                   active_tab=login_mode)
 
         if not result:
             # 모바일인 경우 모바일 로그인 페이지로 에러 표시
@@ -94,7 +96,8 @@ def login():
                 return render_template("mobile/login.html",
                                        error="아이디 또는 비밀번호가 올바르지 않습니다.")
             return render_template("login.html",
-                                   error="아이디 또는 비밀번호가 올바르지 않습니다.")
+                                   error="아이디 또는 비밀번호가 올바르지 않습니다.",
+                                   active_tab=login_mode)
 
         # 2) 세션 저장
         session["user_id"]      = user_id
@@ -141,18 +144,113 @@ def login():
                 return render_template("mobile/login.html",
                                        error="회사 목록을 불러올 수 없습니다.")
             return render_template("login.html",
-                                   error="회사 목록을 불러올 수 없습니다.")
+                                   error="회사 목록을 불러올 수 없습니다.",
+                                   active_tab=login_mode)
 
         session["company_names"] = company_names
-        print(f"[INFO] 로그인 성공: {user_id} / 업체 수: {len(company_names)}")
+        print(f"[INFO] 로그인 성공: {user_id} / 업체 수: {len(company_names)} / 모드: {login_mode}")
+
+        # AdCanvas 모드인 경우 계정 선택 처리
+        if login_mode == "adcanvas":
+            return handle_adcanvas_login(user_id, client)
+
         return redirect("/")
 
     # GET - 모바일인 경우에만 모바일 로그인 페이지 렌더링
     if is_mobile_device():
         return render_template("mobile/login.html")
-    
+
     # 웹은 원래 로그인 페이지 사용
     return render_template("login.html")
+
+
+# ───────────────────────────────────────────────
+#  AdCanvas 로그인 처리
+# ───────────────────────────────────────────────
+def handle_adcanvas_login(user_id: str, client: bigquery.Client):
+    """AdCanvas 로그인 후 계정 선택 처리"""
+
+    # 데모 사용자인 경우 데모 계정으로 바로 이동
+    if user_id.lower() == "demo" or user_id.lower() == "guest":
+        # 데모 계정의 account_id 조회
+        demo_query = """
+            SELECT account_id, account_name
+            FROM `ngn_dataset.meta_account_mapping`
+            WHERE LOWER(company_name) = 'demo'
+            LIMIT 1
+        """
+        try:
+            demo_result = list(client.query(demo_query).result())
+            if demo_result:
+                return redirect(f"/admake/create?account_id={demo_result[0].account_id}")
+            else:
+                # 데모 계정 정보가 없는 경우 기본 브릿지로
+                return redirect("/admake")
+        except Exception as e:
+            print(f"[ERROR] 데모 계정 조회 실패: {e}")
+            return redirect("/admake")
+
+    # 사용자의 Meta 계정 목록 조회
+    try:
+        query = """
+            SELECT DISTINCT
+                m.account_id,
+                m.account_name
+            FROM `ngn_dataset.user_company_map` ucm
+            JOIN `ngn_dataset.meta_account_mapping` m
+                ON ucm.company_name = m.company_name
+            WHERE ucm.user_id = @user_id
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
+            ]
+        )
+        result = list(client.query(query, job_config=job_config).result())
+
+        print(f"[AdCanvas] 사용자 {user_id}의 Meta 계정 수: {len(result)}")
+
+        if len(result) == 0:
+            # 계정이 없는 경우
+            return render_template("login.html",
+                                   error="연결된 광고 계정이 없습니다.",
+                                   active_tab="adcanvas")
+        elif len(result) == 1:
+            # 단일 계정: 바로 AdCanvas로 이동
+            account_id = result[0].account_id
+            print(f"[AdCanvas] 단일 계정 - 바로 이동: {account_id}")
+            return redirect(f"/admake/create?account_id={account_id}")
+        else:
+            # 다중 계정: 계정 선택 페이지로 이동
+            session["adcanvas_accounts"] = [
+                {"id": row.account_id, "name": row.account_name or f"계정 {row.account_id}"}
+                for row in result
+            ]
+            print(f"[AdCanvas] 다중 계정 - 선택 페이지로 이동")
+            return redirect("/adcanvas/select-account")
+
+    except Exception as e:
+        print(f"[ERROR] AdCanvas 계정 조회 실패: {e}")
+        return render_template("login.html",
+                               error="광고 계정 정보를 불러올 수 없습니다.",
+                               active_tab="adcanvas")
+
+
+# ───────────────────────────────────────────────
+#  마지막 계정 저장 API
+# ───────────────────────────────────────────────
+@auth_blueprint.route("/save_last_account", methods=["POST"])
+def save_last_account():
+    """사용자의 마지막 선택 계정 저장"""
+    account_id = (request.json or {}).get("account_id")
+    user_id = session.get("user_id")
+
+    if not user_id or not account_id:
+        return {"status": "error", "message": "Missing user_id or account_id"}, 400
+
+    session["last_adcanvas_account"] = account_id
+    print(f"[AdCanvas] 마지막 계정 저장: user={user_id}, account={account_id}")
+    return {"status": "ok"}
 
 # ───────────────────────────────────────────────
 #  로그아웃

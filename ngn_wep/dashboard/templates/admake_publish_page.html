@@ -1458,6 +1458,15 @@ async function publishAds() {
     return;
   }
 
+  // 필수 필드 검증 (link URL)
+  const adsWithMissingLink = pendingAds.filter(ad => !ad.link || ad.link.trim() === '');
+  if (adsWithMissingLink.length > 0) {
+    const names = adsWithMissingLink.map(ad => ad.ad_name).join(', ');
+    showToast(`URL이 입력되지 않은 광고가 있습니다: ${names}`, 'error', 5000);
+    console.error('[STEP5] URL 누락된 광고:', adsWithMissingLink);
+    return;
+  }
+
   isPublishing = true;
   publishResults = [];
 

@@ -317,79 +317,172 @@
       color: var(--text-muted);
     }
 
-    /* ===== Final Review 섹션 ===== */
-    .review-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+    /* ===== 01 최종 확인 섹션 ===== */
+    .review-ad-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .review-media-preview {
+    .review-ad-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
       background: var(--bg-card);
       border: 1px solid var(--border-default);
       border-radius: 8px;
-      padding: 16px;
+      padding: 12px 16px;
     }
 
-    .review-media-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-      gap: 8px;
-    }
-
-    .review-media-item {
-      aspect-ratio: 1;
+    .review-ad-thumb {
+      width: 56px;
+      height: 56px;
       border-radius: 6px;
       overflow: hidden;
       background: var(--bg-input);
+      flex-shrink: 0;
     }
 
-    .review-media-item img,
-    .review-media-item video {
+    .review-ad-thumb img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .review-settings-card {
+    .review-ad-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .review-ad-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .review-ad-format {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .review-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .review-card {
       background: var(--bg-card);
       border: 1px solid var(--border-default);
       border-radius: 8px;
       padding: 16px;
     }
 
-    .review-setting-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .review-setting-row:last-child {
-      border-bottom: none;
-    }
-
-    .review-setting-label {
+    .review-card-title {
       font-size: 12px;
       color: var(--text-muted);
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .review-setting-label i {
+    .review-card-title i {
       width: 14px;
       height: 14px;
     }
 
-    .review-setting-value {
+    .review-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .review-row:last-child {
+      border-bottom: none;
+    }
+
+    .review-label {
       font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .review-value {
+      font-size: 13px;
+      font-weight: 600;
       color: var(--text-primary);
-      font-weight: 500;
-      max-width: 200px;
-      text-align: right;
-      word-break: break-all;
+    }
+
+    .review-value.highlight {
+      color: var(--accent-emerald);
+    }
+
+    .review-value.warning {
+      color: var(--accent-gold);
+    }
+
+    .review-exposure-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-exposure-banner.active {
+      border-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .review-exposure-banner.paused {
+      border-color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.05);
+    }
+
+    .review-exposure-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .review-exposure-banner.active .review-exposure-icon {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+    }
+
+    .review-exposure-banner.paused .review-exposure-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+    }
+
+    .review-exposure-text {
+      flex: 1;
+    }
+
+    .review-exposure-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .review-exposure-desc {
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
     /* ===== 전송 프로그레스 섹션 ===== */
@@ -879,62 +972,63 @@
   <div class="admake-main-content">
     <div class="admake-content-inner">
 
-      <!-- Final Review 섹션 -->
+      <!-- 01 최종 확인 섹션 -->
       <div class="admake-section" id="reviewSection">
         <div class="admake-section-header">
           <span class="admake-section-number font-inter">01</span>
-          <span class="admake-section-title">Final Review</span>
-          <span class="admake-section-subtitle">광고 설정을 확인하세요</span>
+          <span class="admake-section-title">최종 확인</span>
+          <span class="admake-section-subtitle" id="reviewAdCount">총 0개의 광고</span>
         </div>
 
-        <div class="review-grid">
-          <!-- 미디어 프리뷰 -->
-          <div class="review-media-preview">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-              <i data-lucide="image" style="width: 14px; height: 14px;"></i>
-              선택된 소재
+        <!-- 게시될 광고 목록 -->
+        <div class="review-ad-list" id="reviewAdList">
+          <!-- 동적으로 생성 -->
+        </div>
+
+        <!-- 전송 설정 + 예산 설정 -->
+        <div class="review-settings-grid">
+          <!-- 전송 설정 -->
+          <div class="review-card">
+            <div class="review-card-title">
+              <i data-lucide="send"></i>
+              전송 설정
             </div>
-            <div class="review-media-grid" id="mediaPreviewGrid">
-              <!-- 동적으로 생성 -->
+            <div class="review-row">
+              <span class="review-label">유입 캠페인 복사</span>
+              <span class="review-value" id="reviewCopyTraffic">-</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">종료 일시</span>
+              <span class="review-value" id="reviewEndDate">-</span>
             </div>
           </div>
 
-          <!-- 설정 요약 -->
-          <div class="review-settings-card">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-              <i data-lucide="settings" style="width: 14px; height: 14px;"></i>
-              광고 설정
+          <!-- 예산 설정 -->
+          <div class="review-card">
+            <div class="review-card-title">
+              <i data-lucide="wallet"></i>
+              예산 설정
             </div>
-            <div class="review-setting-row">
-              <span class="review-setting-label"><i data-lucide="layout"></i> 광고 유형</span>
-              <span class="review-setting-value" id="reviewAdType">-</span>
+            <div class="review-row">
+              <span class="review-label">전환 캠페인</span>
+              <span class="review-value" id="reviewConvBudget">-</span>
             </div>
-            <div class="review-setting-row">
-              <span class="review-setting-label"><i data-lucide="link"></i> 랜딩 URL</span>
-              <span class="review-setting-value" id="reviewUrl">-</span>
-            </div>
-            <div class="review-setting-row">
-              <span class="review-setting-label"><i data-lucide="heading"></i> 헤드라인</span>
-              <span class="review-setting-value" id="reviewHeadline">-</span>
-            </div>
-            <div class="review-setting-row">
-              <span class="review-setting-label"><i data-lucide="mouse-pointer-click"></i> CTA</span>
-              <span class="review-setting-value" id="reviewCta">-</span>
-            </div>
-            <div class="review-setting-row">
-              <span class="review-setting-label"><i data-lucide="calendar"></i> 종료 설정</span>
-              <span class="review-setting-value" id="reviewEndDate">-</span>
+            <div class="review-row">
+              <span class="review-label">유입 캠페인</span>
+              <span class="review-value" id="reviewTrafficBudget">-</span>
             </div>
           </div>
         </div>
 
-        <!-- Primary Text 미리보기 -->
-        <div style="margin-top: 16px; background: var(--bg-card); border: 1px solid var(--border-default); border-radius: 8px; padding: 16px;">
-          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="align-left" style="width: 14px; height: 14px;"></i>
-            Primary Text
+        <!-- 노출 상태 배너 -->
+        <div class="review-exposure-banner" id="reviewExposureBanner">
+          <div class="review-exposure-icon">
+            <i data-lucide="eye" style="width: 20px; height: 20px;"></i>
           </div>
-          <div id="reviewPrimaryText" style="font-size: 13px; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">-</div>
+          <div class="review-exposure-text">
+            <div class="review-exposure-title" id="reviewExposureTitle">-</div>
+            <div class="review-exposure-desc" id="reviewExposureDesc">-</div>
+          </div>
         </div>
       </div>
 
@@ -1185,82 +1279,110 @@ async function loadAccountInfo() {
   }
 }
 
-// ===== Final Review 렌더링 =====
+// ===== 최종 확인 렌더링 =====
 function renderReview() {
-  // 미디어 프리뷰 그리드
-  const mediaGrid = document.getElementById('mediaPreviewGrid');
-  mediaGrid.innerHTML = '';
-
-  // pending_ads 또는 mediaItems에서 썸네일 표시
   const displayItems = pendingAds.length > 0 ? pendingAds : mediaItems;
 
-  displayItems.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'review-media-item';
-
+  // 1. 광고 목록 렌더링
+  const adList = document.getElementById('reviewAdList');
+  adList.innerHTML = displayItems.map((item, index) => {
     const thumbUrl = item.thumbnail_url || item.thumbnailUrl || item.previewUrl;
     const mediaType = item.media_type || item.mediaType;
+    const adName = item.ad_name || item.adName || `광고 ${index + 1}`;
 
-    if (thumbUrl) {
-      if (mediaType === 'video') {
-        // 비디오는 썸네일 이미지로 표시
-        div.innerHTML = `<img src="${thumbUrl}" alt="비디오 썸네일" style="width:100%;height:100%;object-fit:cover;">`;
-      } else {
-        div.innerHTML = `<img src="${thumbUrl}" alt="미디어">`;
-      }
-    } else {
-      div.innerHTML = `<div style="width:100%;height:100%;background:var(--bg-input);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;">No Preview</div>`;
+    // 형식 텍스트
+    let formatText = '단일 이미지';
+    if (item.is_carousel) {
+      formatText = '캐러셀';
+    } else if (mediaType === 'video') {
+      formatText = '단일 비디오';
     }
 
-    mediaGrid.appendChild(div);
-  });
+    return `
+      <div class="review-ad-item">
+        <div class="review-ad-thumb">
+          ${thumbUrl
+            ? `<img src="${thumbUrl}" alt="썸네일" onerror="this.style.display='none'">`
+            : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--text-muted);"><i data-lucide="image" style="width:20px;height:20px;"></i></div>`
+          }
+        </div>
+        <div class="review-ad-info">
+          <div class="review-ad-name">${adName}</div>
+          <div class="review-ad-format">${formatText}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 
-  // 광고 개수 표시 업데이트
-  const adCount = displayItems.length;
-  document.querySelector('.admake-section-subtitle').textContent = `총 ${adCount}개의 광고`;
+  // 광고 개수 업데이트
+  document.getElementById('reviewAdCount').textContent = `총 ${displayItems.length}개의 광고`;
 
-  // pending_ads가 있으면 해당 정보 사용, 없으면 step3Data 사용
-  if (pendingAds.length > 0) {
-    // pending_ads 기반 표시
-    const firstAd = pendingAds[0];
-    const isCarousel = pendingAds.some(ad => ad.is_carousel);
-
-    document.getElementById('reviewAdType').textContent = isCarousel ? 'Carousel' :
-      (firstAd.media_type === 'video' ? 'Single Video' : 'Single Image');
-    document.getElementById('reviewUrl').textContent = firstAd.url || '-';
-    document.getElementById('reviewHeadline').textContent = firstAd.headline || '-';
-    document.getElementById('reviewCta').textContent = firstAd.cta_type || 'SHOP_NOW';
-    document.getElementById('reviewPrimaryText').textContent = firstAd.primary_text || '-';
-  } else if (step3Data) {
-    // step3Data 기반 표시 (이전 버전 호환)
-    const adTypeMap = {
-      'single_image': 'Single Image',
-      'single_video': 'Single Video',
-      'slide': 'Carousel'
-    };
-    document.getElementById('reviewAdType').textContent = adTypeMap[step3Data.adType] || step3Data.adType;
-
-    const masterValues = step3Data.masterValues || {};
-    document.getElementById('reviewUrl').textContent = masterValues.url || '-';
-    document.getElementById('reviewHeadline').textContent = masterValues.headline || '-';
-    document.getElementById('reviewCta').textContent = masterValues.cta || 'SHOP_NOW';
-    document.getElementById('reviewPrimaryText').textContent = masterValues.primaryText || '-';
+  // 2. 전송 설정
+  // 유입 캠페인 복사 여부
+  const copyTraffic = step4Data?.copyToTraffic || false;
+  const copyEl = document.getElementById('reviewCopyTraffic');
+  if (copyEl) {
+    copyEl.textContent = copyTraffic ? '복사함' : '복사 안 함';
+    copyEl.className = `review-value ${copyTraffic ? 'highlight' : ''}`;
   }
 
-  // 종료 설정 (Step 4)
-  if (step4Data) {
-    if (step4Data.endDateSetting === 'set_end' && step4Data.endDate) {
-      document.getElementById('reviewEndDate').textContent = `${step4Data.endDate} ${step4Data.endTime || ''}`;
+  // 종료 일시
+  const endDateEl = document.getElementById('reviewEndDate');
+  if (endDateEl) {
+    if (step4Data?.endDateSetting === 'set_end' && step4Data.endDate) {
+      endDateEl.textContent = `${step4Data.endDate} ${step4Data.endTime || ''}`;
     } else {
-      document.getElementById('reviewEndDate').textContent = '기간 제한 없음';
+      endDateEl.textContent = '기간 제한 없음';
     }
+  }
 
-    // 캠페인 복사 설정 표시 (있으면)
-    if (step4Data.copyToTraffic) {
-      console.log('[STEP5] 유입 캠페인 복사 활성화됨');
+  // 3. 예산 설정 (Step 4에서 가져오기)
+  const convBudget = step4Data?.budgetData?.conv?.currentBudget;
+  const trafficBudget = step4Data?.budgetData?.traffic?.currentBudget;
+  const convActive = step4Data?.budgetData?.conv?.isActive !== false;
+  const trafficActive = step4Data?.budgetData?.traffic?.isActive !== false;
+
+  const convBudgetEl = document.getElementById('reviewConvBudget');
+  if (convBudgetEl) {
+    if (convBudget) {
+      const formatted = convBudget.toLocaleString('ko-KR');
+      const status = convActive ? '활성화' : '비활성화';
+      const color = convActive ? 'var(--accent-emerald)' : 'var(--text-muted)';
+      convBudgetEl.innerHTML = `${formatted}원/일 <span style="color:${color};font-size:11px;margin-left:4px;">(${status})</span>`;
+    } else {
+      convBudgetEl.textContent = '-';
     }
-  } else {
-    document.getElementById('reviewEndDate').textContent = '설정 안 됨';
+  }
+
+  const trafficBudgetEl = document.getElementById('reviewTrafficBudget');
+  if (trafficBudgetEl) {
+    if (trafficBudget) {
+      const formatted = trafficBudget.toLocaleString('ko-KR');
+      const status = trafficActive ? '활성화' : '비활성화';
+      const color = trafficActive ? 'var(--accent-emerald)' : 'var(--text-muted)';
+      trafficBudgetEl.innerHTML = `${formatted}원/일 <span style="color:${color};font-size:11px;margin-left:4px;">(${status})</span>`;
+    } else {
+      trafficBudgetEl.textContent = '-';
+    }
+  }
+
+  // 4. 노출 상태 배너
+  const banner = document.getElementById('reviewExposureBanner');
+  const titleEl = document.getElementById('reviewExposureTitle');
+  const descEl = document.getElementById('reviewExposureDesc');
+
+  const willExpose = convActive || trafficActive;
+
+  if (banner && titleEl && descEl) {
+    if (willExpose) {
+      banner.className = 'review-exposure-banner active';
+      titleEl.textContent = '광고 전송 시 바로 노출됩니다';
+      descEl.textContent = '활성화된 캠페인에 광고가 게시되어 즉시 노출이 시작됩니다.';
+    } else {
+      banner.className = 'review-exposure-banner paused';
+      titleEl.textContent = '광고만 게시되고 노출되지 않습니다';
+      descEl.textContent = '모든 캠페인이 비활성화 상태입니다. 광고는 게시되지만 노출되지 않습니다.';
+    }
   }
 
   // Lucide 아이콘 초기화
@@ -1288,8 +1410,8 @@ async function publishAds() {
   try {
     // Step 4 설정 추출
     const copyToTraffic = step4Data?.copyToTraffic || false;
-    const convActive = step4Data?.convActive !== false; // 기본값 true
-    const trafficActive = step4Data?.trafficActive || false;
+    const convActive = step4Data?.budgetData?.conv?.isActive !== false; // 기본값 true
+    const trafficActive = step4Data?.budgetData?.traffic?.isActive || false;
 
     // 종료 날짜 설정
     let endTime = null;

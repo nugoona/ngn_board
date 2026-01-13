@@ -3648,6 +3648,18 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             payload["url_tags"] = url_tags
             print(f"[STEP5] url_tags 추가: {url_tags[:80]}...")
 
+        # 어드밴티지+ 크리에이티브 기능 비활성화 (소재 원본성 유지)
+        # Meta API: degrees_of_freedom_spec으로 모든 AI 개선 기능 OPT_OUT
+        degrees_of_freedom_spec = {
+            "creative_features_spec": {
+                "standard_enhancements": {
+                    "enroll_status": "OPT_OUT"  # 시각적 보정 및 개선 비활성화
+                }
+            }
+        }
+        payload["degrees_of_freedom_spec"] = json.dumps(degrees_of_freedom_spec, ensure_ascii=False)
+        print(f"[STEP5] degrees_of_freedom_spec 추가 (어드밴티지+ 크리에이티브 비활성화)")
+
         # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
         print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")
         print(f"[STEP5] URL: {url}")

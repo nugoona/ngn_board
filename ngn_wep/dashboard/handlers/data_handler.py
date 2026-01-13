@@ -3258,7 +3258,7 @@ def publish_ads_batch():
                         creative_id=creative_id,
                         ad_name=full_ad_name,
                         access_token=access_token,
-                        status="PAUSED",
+                        status="ACTIVE",  # 광고 ON 상태로 생성
                         pixel_id=pixel_id,  # 전환 + 유입 캠페인 모두 픽셀 적용 (웹사이트 이벤트 추적)
                         end_time=end_time
                     )
@@ -3471,11 +3471,17 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
             "access_token": access_token
         }
 
-        # Note: tracking_specs (픽셀 추적)는 AdSet 레벨에서 설정됨
-        # Ad 레벨에서 설정 시 AdSet의 최적화 설정과 충돌할 수 있음 (error_subcode: 1634034)
-        # 따라서 Ad 생성 시에는 tracking_specs를 포함하지 않음
+        # tracking_specs 추가 (Pixel ID가 있는 경우) - 웹사이트 이벤트 추적 활성화
+        # Meta API v24.0 형식: fb_pixel 사용 (offsite_pixel 아님)
         if pixel_id:
-            print(f"[STEP5] pixel_id 존재: {pixel_id} (AdSet 레벨에서 추적 설정됨)")
+            tracking_specs = [
+                {
+                    "action.type": "offsite_conversion",
+                    "fb_pixel": [str(pixel_id)]
+                }
+            ]
+            payload["tracking_specs"] = json.dumps(tracking_specs)
+            print(f"[STEP5] tracking_specs 추가: {tracking_specs}")
 
         # end_time 추가 (종료 시간이 있는 경우)
         # Note: end_time은 Ad 레벨이 아닌 AdSet 레벨에서 설정해야 함

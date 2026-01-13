@@ -196,10 +196,10 @@ def handle_adcanvas_login(user_id: str, client: bigquery.Client):
                                    error="연결된 광고 계정이 없습니다.",
                                    active_tab="adcanvas")
         elif len(result) == 1:
-            # 단일 계정: 바로 AdCanvas로 이동
+            # 단일 계정: 브릿지 페이지로 이동
             account_id = result[0].account_id
-            print(f"[AdCanvas] 단일 계정 - 바로 이동: {account_id}")
-            return redirect(f"/admake/create?account_id={account_id}")
+            print(f"[AdCanvas] 단일 계정 - 브릿지 페이지로 이동: {account_id}")
+            return redirect(f"/admake?account_id={account_id}")
         else:
             # 다중 계정: 계정 선택 페이지로 이동
             session["adcanvas_accounts"] = [

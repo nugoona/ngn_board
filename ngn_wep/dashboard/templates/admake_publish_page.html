@@ -1194,6 +1194,14 @@ async function loadAllData() {
     console.log('[STEP5] Step 3 데이터 로드:', step3Data);
   }
 
+  // uploaded_results 로드 (fallback용)
+  let uploadedResults = [];
+  const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
+  if (uploadedRaw) {
+    uploadedResults = JSON.parse(uploadedRaw);
+    console.log('[STEP5] uploaded_results 로드:', uploadedResults.length);
+  }
+
   // 미디어 아이템 구성 (pending_ads 또는 sessionStorage)
   if (pendingAds.length > 0) {
     // pending_ads 사용 - IndexedDB에서 썸네일 다시 로드
@@ -1201,34 +1209,58 @@ async function loadAllData() {
 
     for (const ad of pendingAds) {
       let previewUrl = null;
+      let mediaIdToUse = ad.media_id;
 
-      // media_id가 있으면 IndexedDB에서 파일 로드
-      if (ad.media_id) {
+      // media_id가 없으면 image_hash 또는 video_id로 uploaded_results에서 찾기
+      if (!mediaIdToUse && uploadedResults.length > 0) {
+        const matchingItem = uploadedResults.find(u =>
+          (ad.image_hash && u.hash === ad.image_hash) ||
+          (ad.video_id && u.video_id === ad.video_id)
+        );
+        if (matchingItem) {
+          mediaIdToUse = matchingItem.id;
+          console.log(`[STEP5] hash/video_id로 mediaId 찾음: ${mediaIdToUse}`);
+        }
+      }
+
+      // mediaId가 있으면 IndexedDB에서 파일 로드
+      if (mediaIdToUse) {
         try {
-          const file = await getFileFromIndexedDB(ad.media_id);
+          const file = await getFileFromIndexedDB(mediaIdToUse);
           previewUrl = URL.createObjectURL(file);
-          console.log(`[STEP5] IndexedDB에서 썸네일 로드 성공: ${ad.media_id}`);
+          console.log(`[STEP5] IndexedDB에서 썸네일 로드 성공: ${mediaIdToUse}`);
         } catch (e) {
-          console.warn(`[STEP5] IndexedDB 로드 실패: ${ad.media_id}`, e);
+          console.warn(`[STEP5] IndexedDB 로드 실패: ${mediaIdToUse}`, e);
         }
       }
 
       // 캐러셀인 경우 첫 번째 카드의 미디어로 시도
       if (!previewUrl && ad.is_carousel && ad.cards?.length > 0) {
         const firstCard = ad.cards[0];
-        if (firstCard.media_id) {
+        let cardMediaId = firstCard.media_id;
+
+        // 카드에도 media_id 없으면 hash로 찾기
+        if (!cardMediaId && uploadedResults.length > 0) {
+          const cardMatch = uploadedResults.find(u =>
+            (firstCard.image_hash && u.hash === firstCard.image_hash) ||
+            (firstCard.video_id && u.video_id === firstCard.video_id)
+          );
+          if (cardMatch) cardMediaId = cardMatch.id;
+        }
+
+        if (cardMediaId) {
           try {
-            const file = await getFileFromIndexedDB(firstCard.media_id);
+            const file = await getFileFromIndexedDB(cardMediaId);
             previewUrl = URL.createObjectURL(file);
           } catch (e) {
-            console.warn(`[STEP5] 캐러셀 첫 카드 로드 실패: ${firstCard.media_id}`);
+            console.warn(`[STEP5] 캐러셀 첫 카드 로드 실패: ${cardMediaId}`);
           }
         }
       }
 
       mediaItems.push({
         id: ad.id,
-        mediaId: ad.media_id,
+        mediaId: mediaIdToUse,
         adName: ad.ad_name,
         mediaType: ad.media_type,
         hash: ad.image_hash,
@@ -1238,34 +1270,30 @@ async function loadAllData() {
         isCarousel: ad.is_carousel
       });
     }
-  } else if (step3Data) {
-    // 이전 버전 호환: sessionStorage 사용
-    const uploadedRaw = sessionStorage.getItem('admake_uploaded_results');
-    if (uploadedRaw) {
-      const uploaded = JSON.parse(uploadedRaw);
-      console.log('[STEP5] 업로드된 미디어 로드:', uploaded);
+  } else if (step3Data && uploadedResults.length > 0) {
+    // pending_ads 없이 step3Data만 있는 경우 (이전 버전 호환)
+    console.log('[STEP5] step3Data 기반 로드');
 
-      if (step3Data.selectedMediaIds) {
-        for (const mediaId of step3Data.selectedMediaIds) {
-          const uploadedItem = uploaded.find(u => u.id === mediaId);
-          if (uploadedItem) {
-            let previewUrl = null;
-            try {
-              const file = await getFileFromIndexedDB(mediaId);
-              previewUrl = URL.createObjectURL(file);
-            } catch (e) {
-              console.warn(`[STEP5] ${mediaId}: 파일 로드 실패`);
-            }
-
-            mediaItems.push({
-              id: mediaId,
-              mediaType: uploadedItem.type,
-              hash: uploadedItem.hash,
-              videoId: uploadedItem.video_id,
-              thumbnailUrl: uploadedItem.thumbnail_url || uploadedItem.thumbnailUrl,
-              previewUrl: previewUrl || uploadedItem.thumbnail_url
-            });
+    if (step3Data.selectedMediaIds) {
+      for (const mediaId of step3Data.selectedMediaIds) {
+        const uploadedItem = uploadedResults.find(u => u.id === mediaId);
+        if (uploadedItem) {
+          let previewUrl = null;
+          try {
+            const file = await getFileFromIndexedDB(mediaId);
+            previewUrl = URL.createObjectURL(file);
+          } catch (e) {
+            console.warn(`[STEP5] ${mediaId}: 파일 로드 실패`);
           }
+
+          mediaItems.push({
+            id: mediaId,
+            mediaType: uploadedItem.type,
+            hash: uploadedItem.hash,
+            videoId: uploadedItem.video_id,
+            thumbnailUrl: previewUrl,
+            previewUrl: previewUrl
+          });
         }
       }
     }

@@ -2392,7 +2392,7 @@
     console.log('[STEP4] Step 4 데이터 저장:', step4Data);
 
     // AdSet 스케줄 업데이트 API 호출
-    const nextBtn = document.querySelector('.btn-next');
+    const nextBtn = document.getElementById('nextBtn');
     const originalText = nextBtn.innerHTML;
     nextBtn.disabled = true;
     nextBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> 세트 업데이트 중...';

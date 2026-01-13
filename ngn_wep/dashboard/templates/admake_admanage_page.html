@@ -562,6 +562,27 @@
       margin-top: 2px;
     }
 
+    /* 현재 노출 배지 */
+    .admake-exposure-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Inter Tight', sans-serif;
+    }
+
+    .admake-exposure-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+    }
+
+    .admake-exposure-paused {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
     /* ===== Section 02: 예산 설정 ===== */
     .admake-budget-container {
       display: grid;
@@ -1272,6 +1293,7 @@
                 <th>광고 이름</th>
                 <th>캠페인</th>
                 <th>상태</th>
+                <th>현재 노출</th>
               </tr>
             </thead>
             <tbody id="adsTableBody">
@@ -1924,6 +1946,20 @@
         statusText = 'OFF';
       }
 
+      // 현재 노출 상태 (effective_status 기반)
+      // - effective_status === 'ACTIVE' → 노출중 (실제로 노출됨)
+      // - 그 외 → 노출중지 (캠페인/세트 꺼짐 등)
+      const effectiveStatus = ad.effective_status || 'PAUSED';
+      let exposureClass, exposureText;
+
+      if (effectiveStatus === 'ACTIVE') {
+        exposureClass = 'admake-exposure-active';
+        exposureText = '노출중';
+      } else {
+        exposureClass = 'admake-exposure-paused';
+        exposureText = '노출중지';
+      }
+
       return `
         <tr class="${selectedAdIds.has(ad.id) ? 'selected' : ''}" data-id="${ad.id}">
           <td>
@@ -1943,6 +1979,11 @@
             <span class="admake-status-badge ${statusClass}">
               <i data-lucide="circle" style="width:6px;height:6px;fill:currentColor;"></i>
               ${statusText}
+            </span>
+          </td>
+          <td>
+            <span class="admake-exposure-badge ${exposureClass}">
+              ${exposureText}
             </span>
           </td>
         </tr>

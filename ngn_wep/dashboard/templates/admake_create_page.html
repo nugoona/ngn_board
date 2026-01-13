@@ -896,6 +896,114 @@
       border-color: var(--border-hover);
     }
 
+    /* ===== 이탈 경고 모달 ===== */
+    .exit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .exit-modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .exit-modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 380px;
+      padding: 32px;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .exit-modal-overlay.show .exit-modal {
+      transform: scale(1);
+    }
+
+    .exit-modal-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .exit-modal-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--accent-red);
+    }
+
+    .exit-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .exit-modal-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    .exit-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .exit-modal-btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .exit-modal-btn.btn-cancel {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .exit-modal-btn.btn-cancel:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .exit-modal-btn.btn-confirm {
+      background: var(--accent-red);
+      color: #ffffff;
+    }
+
+    .exit-modal-btn.btn-confirm:hover {
+      background: #dc2626;
+    }
+
     /* 모바일 미지원 - 데스크탑 전용 */
   </style>
 </head>
@@ -938,6 +1046,26 @@
   </div>
 </div>
 
+<!-- 이탈 경고 모달 -->
+<div class="exit-modal-overlay" id="exitModalOverlay">
+  <div class="exit-modal">
+    <div class="exit-modal-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    </div>
+    <div class="exit-modal-title">페이지를 나가시겠습니까?</div>
+    <div class="exit-modal-desc">
+      현재 진행 중인 광고 제작 내용이<br>
+      <strong style="color: var(--accent-red);">모두 삭제</strong>됩니다.
+    </div>
+    <div class="exit-modal-actions">
+      <button class="exit-modal-btn btn-cancel" id="exitCancelBtn">계속 작업하기</button>
+      <button class="exit-modal-btn btn-confirm" id="exitConfirmBtn">나가기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 네비게이션 -->
 <div class="nav-buttons">
   <div class="nav-left">
@@ -949,9 +1077,9 @@
         <div></div><div></div><div></div>
       </div>
       <div class="hamburger-dropdown" id="hamburgerDropdown">
-        <a href="/">사이트 성과</a>
-        <a href="{{ url_for('ads_page') }}">광고 성과</a>
-        <a href="{{ url_for('trend_selection_page') }}">TREND</a>
+        <a href="/" data-exit-link="true">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}" data-exit-link="true">광고 성과</a>
+        <a href="{{ url_for('trend_selection_page') }}" data-exit-link="true">TREND</a>
         <a href="{{ url_for('auth.logout') }}">로그아웃</a>
       </div>
     </div>
@@ -1850,6 +1978,51 @@ function checkPreserveMode() {
   return false;
 }
 
+// ===== 이탈 경고 모달 =====
+let pendingExitUrl = null;
+
+function showExitModal(url) {
+  pendingExitUrl = url;
+  document.getElementById('exitModalOverlay').classList.add('show');
+}
+
+function hideExitModal() {
+  document.getElementById('exitModalOverlay').classList.remove('show');
+  pendingExitUrl = null;
+}
+
+function setupExitModalHandlers() {
+  // 햄버거 메뉴 링크에 이벤트 추가
+  document.querySelectorAll('[data-exit-link="true"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      showExitModal(link.href);
+    });
+  });
+
+  // 취소 버튼
+  document.getElementById('exitCancelBtn').addEventListener('click', hideExitModal);
+
+  // 나가기 버튼
+  document.getElementById('exitConfirmBtn').addEventListener('click', async () => {
+    // 모든 ADMAKE 데이터 삭제
+    await clearAllAdmakeData();
+    console.log('[EXIT] 모든 ADMAKE 데이터 삭제 완료');
+
+    // 페이지 이동
+    if (pendingExitUrl) {
+      window.location.href = pendingExitUrl;
+    }
+  });
+
+  // 오버레이 클릭 시 닫기
+  document.getElementById('exitModalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      hideExitModal();
+    }
+  });
+}
+
 // add_more 모드: 광고 추가하기로 돌아온 경우
 async function checkAddMoreMode() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -1899,6 +2072,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupEventListeners();
   setupPreserveModalHandlers();
+  setupExitModalHandlers();
 
   // Add More 모드 확인 (광고 추가하기로 돌아온 경우)
   const isAddMoreMode = await checkAddMoreMode();

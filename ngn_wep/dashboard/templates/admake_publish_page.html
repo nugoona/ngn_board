@@ -1211,19 +1211,20 @@ async function loadAllData() {
       let previewUrl = null;
       let mediaIdToUse = ad.media_id;
 
-      // media_id가 없으면 image_hash 또는 video_id로 uploaded_results에서 찾기
-      if (!mediaIdToUse && uploadedResults.length > 0) {
-        const matchingItem = uploadedResults.find(u =>
+      // uploaded_results에서 매칭되는 아이템 찾기
+      let matchingItem = null;
+      if (uploadedResults.length > 0) {
+        matchingItem = uploadedResults.find(u =>
           (ad.image_hash && u.hash === ad.image_hash) ||
           (ad.video_id && u.video_id === ad.video_id)
         );
-        if (matchingItem) {
+        if (matchingItem && !mediaIdToUse) {
           mediaIdToUse = matchingItem.id;
           console.log(`[STEP5] hash/video_id로 mediaId 찾음: ${mediaIdToUse}`);
         }
       }
 
-      // mediaId가 있으면 IndexedDB에서 파일 로드
+      // 1순위: IndexedDB에서 파일 로드 시도
       if (mediaIdToUse) {
         try {
           const file = await getFileFromIndexedDB(mediaIdToUse);
@@ -1234,20 +1235,34 @@ async function loadAllData() {
         }
       }
 
+      // 2순위: uploaded_results의 thumbnail_url 사용 (특히 비디오)
+      if (!previewUrl && matchingItem?.thumbnail_url) {
+        previewUrl = matchingItem.thumbnail_url;
+        console.log(`[STEP5] uploaded_results 썸네일 사용: ${previewUrl}`);
+      }
+
+      // 3순위: pending_ads에 저장된 원본 thumbnail_url (Meta에서 받은 URL)
+      if (!previewUrl && ad.thumbnail_url && !ad.thumbnail_url.startsWith('blob:')) {
+        previewUrl = ad.thumbnail_url;
+        console.log(`[STEP5] pending_ads 썸네일 사용: ${previewUrl}`);
+      }
+
       // 캐러셀인 경우 첫 번째 카드의 미디어로 시도
       if (!previewUrl && ad.is_carousel && ad.cards?.length > 0) {
         const firstCard = ad.cards[0];
         let cardMediaId = firstCard.media_id;
 
-        // 카드에도 media_id 없으면 hash로 찾기
-        if (!cardMediaId && uploadedResults.length > 0) {
-          const cardMatch = uploadedResults.find(u =>
+        // 카드 매칭 아이템 찾기
+        let cardMatch = null;
+        if (uploadedResults.length > 0) {
+          cardMatch = uploadedResults.find(u =>
             (firstCard.image_hash && u.hash === firstCard.image_hash) ||
             (firstCard.video_id && u.video_id === firstCard.video_id)
           );
-          if (cardMatch) cardMediaId = cardMatch.id;
+          if (cardMatch && !cardMediaId) cardMediaId = cardMatch.id;
         }
 
+        // IndexedDB 시도
         if (cardMediaId) {
           try {
             const file = await getFileFromIndexedDB(cardMediaId);
@@ -1255,6 +1270,14 @@ async function loadAllData() {
           } catch (e) {
             console.warn(`[STEP5] 캐러셀 첫 카드 로드 실패: ${cardMediaId}`);
           }
+        }
+
+        // fallback: 카드의 thumbnail_url
+        if (!previewUrl && cardMatch?.thumbnail_url) {
+          previewUrl = cardMatch.thumbnail_url;
+        }
+        if (!previewUrl && firstCard.thumbnail_url && !firstCard.thumbnail_url.startsWith('blob:')) {
+          previewUrl = firstCard.thumbnail_url;
         }
       }
 
@@ -1265,7 +1288,7 @@ async function loadAllData() {
         mediaType: ad.media_type,
         hash: ad.image_hash,
         videoId: ad.video_id,
-        thumbnailUrl: previewUrl,  // IndexedDB에서 새로 생성한 URL
+        thumbnailUrl: previewUrl,
         previewUrl: previewUrl,
         isCarousel: ad.is_carousel
       });

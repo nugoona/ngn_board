@@ -29,8 +29,8 @@
       --border-hover: rgba(255, 255, 255, 0.12);
       --border-focus: rgba(255, 255, 255, 0.2);
       --text-primary: #ffffff;
-      --text-secondary: #a1a1a1;
-      --text-muted: #525252;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
       --accent-blue: #3b82f6;
       --accent-emerald: #10b981;
       --accent-gold: #f59e0b;
@@ -1332,9 +1332,9 @@
 <div class="admake-action-bar">
   <div class="admake-action-left font-inter">STEP 2 OF 5</div>
   <div class="admake-action-buttons">
-    <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
+    <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
     <button class="admake-btn admake-btn-primary" id="uploadBtn" disabled>
-      <span id="uploadBtnText">SAVE & NEXT</span>
+      <span id="uploadBtnText">다음 단계로</span>
       <span id="uploadBtnCount" style="display: none; margin-left: 8px; font-size: 11px; opacity: 0.8;"></span>
     </button>
   </div>
@@ -2714,10 +2714,10 @@ function updateUploadButtonState() {
   // 버튼 텍스트 및 미완료 개수 표시
   if (uploadBtnText) {
     if (allConfirmed) {
-      uploadBtnText.textContent = '메타에 업로드 하기';
+      uploadBtnText.textContent = '다음 단계로';
       if (uploadBtnCount) uploadBtnCount.style.display = 'none';
     } else {
-      uploadBtnText.textContent = '메타에 업로드 하기';
+      uploadBtnText.textContent = '다음 단계로';
       if (uploadBtnCount) {
         uploadBtnCount.textContent = `${remainingCount}개 더 확인 필요`;
         uploadBtnCount.style.display = 'inline';

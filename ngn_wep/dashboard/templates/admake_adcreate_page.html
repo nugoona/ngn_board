@@ -22,6 +22,7 @@
     :root {
       --bg-primary: #09090B;
       --bg-secondary: #121215;
+      --bg-tertiary: #1c1c1f;
       --bg-card: #18181B;
       --bg-card-hover: #1f1f23;
       --bg-input: #0d0d0f;
@@ -31,7 +32,7 @@
       --border-focus: rgba(255, 255, 255, 0.2);
       --text-primary: #ffffff;
       --text-secondary: #a1a1aa;
-      --text-muted: #52525b;
+      --text-muted: #71717a;
       --accent-blue: #3b82f6;
       --accent-emerald: #10b981;
       --accent-gold: #f59e0b;
@@ -1441,7 +1442,7 @@
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="tag"></i>
-            Ad Name Prefix
+            광고 이름
           </label>
           <input type="text" class="admake-field-input font-inter" id="masterAdName" placeholder="AD_2024_SUMMER">
         </div>
@@ -1449,7 +1450,7 @@
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="link"></i>
-            Website URL
+            랜딩페이지 URL
           </label>
           <input type="url" class="admake-field-input font-inter" id="masterUrl" placeholder="https://example.com">
         </div>
@@ -1457,19 +1458,19 @@
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="mouse-pointer-click"></i>
-            Call to Action
+            버튼 형식
           </label>
           <select class="admake-field-input admake-field-select" id="masterCta">
-            <option value="SHOP_NOW">Shop Now</option>
-            <option value="LEARN_MORE">Learn More</option>
-            <option value="SIGN_UP">Sign Up</option>
-            <option value="BOOK_TRAVEL">Book Now</option>
-            <option value="CONTACT_US">Contact Us</option>
-            <option value="DOWNLOAD">Download</option>
-            <option value="GET_OFFER">Get Offer</option>
-            <option value="GET_QUOTE">Get Quote</option>
-            <option value="SUBSCRIBE">Subscribe</option>
-            <option value="WATCH_MORE">Watch More</option>
+            <option value="SHOP_NOW">지금 구매하기</option>
+            <option value="LEARN_MORE">더 알아보기</option>
+            <option value="SIGN_UP">가입하기</option>
+            <option value="BOOK_TRAVEL">지금 예약하기</option>
+            <option value="CONTACT_US">문의하기</option>
+            <option value="DOWNLOAD">다운로드</option>
+            <option value="GET_OFFER">할인받기</option>
+            <option value="GET_QUOTE">견적받기</option>
+            <option value="SUBSCRIBE">구독하기</option>
+            <option value="WATCH_MORE">더 보기</option>
           </select>
         </div>
       </div>
@@ -1478,7 +1479,7 @@
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="align-left"></i>
-            Primary Text
+            주요문구
           </label>
           <textarea class="admake-field-input admake-field-textarea" id="masterPrimaryText" placeholder="광고 본문을 입력하세요..."></textarea>
         </div>
@@ -1486,15 +1487,15 @@
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="heading"></i>
-            Headline
+            제목
           </label>
-          <input type="text" class="admake-field-input" id="masterHeadline" placeholder="눈에 띄는 헤드라인">
+          <input type="text" class="admake-field-input" id="masterHeadline" placeholder="눈에 띄는 제목">
         </div>
 
         <div class="admake-field-group">
           <label class="admake-field-label">
             <i data-lucide="file-text"></i>
-            Description
+            설명
           </label>
           <input type="text" class="admake-field-input" id="masterDescription" placeholder="부가 설명 (선택)">
         </div>
@@ -1519,9 +1520,9 @@
   <div class="admake-preview-panel">
     <div class="admake-preview-header">
       <div class="admake-preview-tabs">
-        <button class="admake-preview-tab active" data-format="INSTAGRAM_STANDARD">IG Feed</button>
-        <button class="admake-preview-tab" data-format="INSTAGRAM_REELS">Reels</button>
-        <button class="admake-preview-tab" data-format="MOBILE_FEED_STANDARD">FB Feed</button>
+        <button class="admake-preview-tab active" data-format="INSTAGRAM_STANDARD">인스타 피드</button>
+        <button class="admake-preview-tab" data-format="INSTAGRAM_REELS">릴스</button>
+        <button class="admake-preview-tab" data-format="MOBILE_FEED_STANDARD">페이스북 피드</button>
       </div>
     </div>
     <div class="admake-preview-content" id="previewContent">
@@ -1570,7 +1571,7 @@
         </div>
         <div class="confirm-summary-item">
           <div class="confirm-summary-value" id="confirmCarouselCount">0</div>
-          <div class="confirm-summary-label">캐러셀</div>
+          <div class="confirm-summary-label">슬라이드</div>
         </div>
       </div>
       <div class="confirm-ads-list" id="confirmAdsList">
@@ -1591,7 +1592,7 @@
     <span class="pending-ads-count" id="pendingAdsCount" style="display: none; margin-left: 12px; padding: 4px 10px; background: var(--accent-emerald); color: #fff; border-radius: 12px; font-size: 12px; font-weight: 600;"></span>
   </div>
   <div class="admake-action-buttons">
-    <button class="admake-btn admake-btn-secondary" id="backBtn">BACK</button>
+    <button class="admake-btn admake-btn-secondary" id="backBtn">이전</button>
     <button class="admake-btn admake-btn-secondary" id="addMoreBtn" disabled style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none;">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       저장하고 광고추가
@@ -2005,11 +2006,11 @@ function renderCardList() {
       </div>
 
       <div class="admake-field-group" style="margin-top: 12px;">
-        <label class="admake-field-label"><i data-lucide="heading"></i> Headline</label>
+        <label class="admake-field-label"><i data-lucide="heading"></i> 제목</label>
         <div class="admake-field-with-lock">
           <input type="text" class="admake-field-input card-field"
             data-media-id="${mediaId}" data-field="headline"
-            placeholder="${locks.headline ? '마스터 동기화' : '헤드라인'}"
+            placeholder="${locks.headline ? '마스터 동기화' : '제목'}"
             value="${locks.headline ? '' : (values.headline || '')}"
             ${locks.headline ? 'disabled' : ''}>
           <button class="admake-lock-btn ${locks.headline ? 'locked' : ''}"
@@ -2020,7 +2021,7 @@ function renderCardList() {
       </div>
 
       <div class="admake-field-group" style="margin-top: 12px;">
-        <label class="admake-field-label"><i data-lucide="file-text"></i> Description</label>
+        <label class="admake-field-label"><i data-lucide="file-text"></i> 설명</label>
         <div class="admake-field-with-lock">
           <input type="text" class="admake-field-input card-field"
             data-media-id="${mediaId}" data-field="description"
@@ -2557,13 +2558,13 @@ function renderSavedAdsList() {
   listEl.innerHTML = savedAdsList.map((ad, index) => {
     // 광고 형식 결정
     let typeClass = 'type-image';
-    let typeLabel = '이미지';
+    let typeLabel = '단일 이미지';
     if (ad.is_carousel) {
       typeClass = 'type-carousel';
-      typeLabel = '캐러셀';
+      typeLabel = '슬라이드';
     } else if (ad.media_type === 'video') {
       typeClass = 'type-video';
-      typeLabel = '비디오';
+      typeLabel = '단일 비디오';
     }
 
     return `
@@ -2733,7 +2734,7 @@ function showConfirmModal() {
 
   // 광고 목록 렌더링
   listEl.innerHTML = savedAdsList.map((ad, index) => {
-    let typeLabel = ad.is_carousel ? '캐러셀' : (ad.media_type === 'video' ? '비디오' : '이미지');
+    let typeLabel = ad.is_carousel ? '슬라이드' : (ad.media_type === 'video' ? '단일 비디오' : '단일 이미지');
     let mediaCount = ad.is_carousel ? `${ad.cards?.length || 0}장` : '1장';
 
     return `

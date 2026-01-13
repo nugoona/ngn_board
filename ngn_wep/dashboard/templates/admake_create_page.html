@@ -1793,7 +1793,9 @@ function setupPreserveModalHandlers() {
     useBtn.addEventListener('click', () => {
       console.log('[STEP1] 이전 소재 사용하기 선택');
       hidePreserveModal();
-      // 기존 데이터 복원은 restoreStep1Data()에서 이미 처리됨
+      // 기존 데이터 복원
+      restoreStep1Data();
+      updateUI();
       showToast('이전 소재를 불러왔습니다.', 'success', 2000);
     });
   }
@@ -1808,9 +1810,13 @@ function setupPreserveModalHandlers() {
 
       // 미디어 아이템 초기화
       mediaItems = [];
-      if (typeof updateUI === 'function') {
-        updateUI();
+
+      // 썸네일 그리드 비우기
+      if (thumbnailsGrid) {
+        thumbnailsGrid.innerHTML = '';
       }
+
+      updateUI();
 
       // URL에서 preserve 파라미터 제거
       const url = new URL(window.location.href);
@@ -1898,9 +1904,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isAddMoreMode = await checkAddMoreMode();
 
   if (!isAddMoreMode) {
-    restoreStep1Data();
-    // Preserve 모드 확인 (URL에 preserve=true가 있고 기존 데이터가 있으면 모달 표시)
-    checkPreserveMode();
+    // Preserve 모드 먼저 확인 (URL에 preserve=true가 있고 기존 데이터가 있으면 모달 표시)
+    const isPreserveMode = checkPreserveMode();
+
+    // Preserve 모드가 아닐 때만 자동 복원 (모달에서 사용자가 선택)
+    if (!isPreserveMode) {
+      restoreStep1Data();
+    }
   }
 
   updateUI();

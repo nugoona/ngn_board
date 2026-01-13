@@ -3252,7 +3252,7 @@ def publish_ads_batch():
                         ad_name=full_ad_name,
                         access_token=access_token,
                         status="PAUSED",
-                        pixel_id=pixel_id if campaign_type == "conv" else "",  # 전환 캠페인에만 픽셀 적용
+                        pixel_id=pixel_id,  # 전환 + 유입 캠페인 모두 픽셀 적용 (웹사이트 이벤트 추적)
                         end_time=end_time
                     )
 
@@ -3464,16 +3464,17 @@ def create_ad_internal(account_id: str, adset_id: str, creative_id: str, ad_name
             "access_token": access_token
         }
 
-        # tracking_specs 추가 (Pixel ID가 있는 경우)
+        # tracking_specs 추가 (Pixel ID가 있는 경우) - 웹사이트 이벤트 추적 활성화
+        # 전환 캠페인 및 유입(트래픽) 캠페인 모두에 적용
         if pixel_id:
             tracking_specs = [
                 {
-                    "action.type": ["offsite_conversion"],
-                    "fb_pixel": [str(pixel_id)]
+                    "action.type": "offsite_pixel",
+                    "offsite_pixel": [str(pixel_id)]
                 }
             ]
             payload["tracking_specs"] = json.dumps(tracking_specs)
-            print(f"[STEP5] tracking_specs 추가: {tracking_specs}")
+            print(f"[STEP5] tracking_specs 추가 (웹사이트 이벤트 활성화): pixel_id={pixel_id}")
 
         # end_time 추가 (종료 시간이 있는 경우)
         # Note: end_time은 Ad 레벨이 아닌 AdSet 레벨에서 설정해야 함

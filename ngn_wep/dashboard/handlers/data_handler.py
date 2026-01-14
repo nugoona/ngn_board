@@ -3725,6 +3725,13 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
             # 단일 미디어 광고
             media_type = ad_data.get("media_type", "image")
 
+            # 제품 표시 (Product Tags) 정보 확인
+            product_tags = ad_data.get("product_tags")
+            product_set_id = None
+            if product_tags and product_tags.get("enabled") and product_tags.get("product_set_id"):
+                product_set_id = str(product_tags["product_set_id"])
+                print(f"[STEP5] 제품 표시 활성화: product_set_id={product_set_id}")
+
             if media_type == "video":
                 # 비디오 광고 - image_url (썸네일) 필수
                 video_id_str = str(ad_data.get("video_id")) if ad_data.get("video_id") else None
@@ -3739,6 +3746,11 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                         "value": {"link": ad_data.get("link", "")}
                     }
                 }
+
+                # 제품 표시 추가 (비디오)
+                if product_set_id:
+                    video_data["product_set_id"] = product_set_id
+                    print(f"[STEP5] video_data에 product_set_id 추가됨")
 
                 # 썸네일 URL 추가 (thumbnail_url 또는 image_url 필드에서 가져옴)
                 thumbnail_url = ad_data.get("thumbnail_url") or ad_data.get("image_url")
@@ -3762,7 +3774,7 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 object_story_spec["video_data"] = video_data
             else:
                 # 이미지 광고
-                object_story_spec["link_data"] = {
+                link_data = {
                     "message": ad_data.get("message", ""),
                     "link": ad_data.get("link", ""),
                     "image_hash": str(ad_data.get("image_hash")) if ad_data.get("image_hash") else None,
@@ -3770,6 +3782,13 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                     "description": ad_data.get("description", ""),
                     "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
                 }
+
+                # 제품 표시 추가 (이미지)
+                if product_set_id:
+                    link_data["product_set_id"] = product_set_id
+                    print(f"[STEP5] link_data에 product_set_id 추가됨")
+
+                object_story_spec["link_data"] = link_data
 
         # 3. object_story_spec JSON 직렬화 (한 번만)
         object_story_spec_json = json.dumps(object_story_spec, ensure_ascii=False)

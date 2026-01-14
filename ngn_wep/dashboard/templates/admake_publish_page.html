@@ -386,6 +386,36 @@
       color: var(--text-muted);
     }
 
+    .review-ad-badges {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .review-ad-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .review-ad-badge i {
+      width: 10px;
+      height: 10px;
+    }
+
+    .review-ad-badge.badge-product {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
     .review-settings-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -1484,6 +1514,11 @@ function renderReview() {
       formatText = '단일 비디오';
     }
 
+    // pending_ads에서 해당 광고의 product_tags 확인
+    const pendingAd = pendingAds.find(ad => ad.id === item.id);
+    const hasProductTags = pendingAd?.product_tags?.enabled && pendingAd?.product_tags?.product_set_id;
+    const productSetName = pendingAd?.product_tags?.product_set_name || '';
+
     return `
       <div class="review-ad-item">
         <div class="review-ad-thumb">
@@ -1495,6 +1530,13 @@ function renderReview() {
         <div class="review-ad-info">
           <div class="review-ad-name">${adName}</div>
           <div class="review-ad-format">${formatText}</div>
+          ${hasProductTags ? `
+            <div class="review-ad-badges">
+              <span class="review-ad-badge badge-product" title="${productSetName}">
+                <i data-lucide="tag"></i> 제품 표시
+              </span>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -1640,7 +1682,9 @@ async function publishAds() {
         video_id: ad.video_id,
         thumbnail_url: ad.thumbnail_url,
         is_carousel: ad.is_carousel || false,
-        cards: ad.cards || []
+        cards: ad.cards || [],
+        // 제품 표시 (Product Tags) 정보
+        product_tags: ad.product_tags || null
       }));
     } else if (step3Data) {
       // 이전 방식 (sessionStorage 기반)

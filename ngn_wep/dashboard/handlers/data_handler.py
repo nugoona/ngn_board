@@ -2784,7 +2784,8 @@ def add_pending_ad():
             "cta_type": data.get("cta_type", "SHOP_NOW"),
             "ad_name": data.get("ad_name", f"AD_{len(session['pending_ads']) + 1}"),
             "is_carousel": data.get("is_carousel", False),
-            "cards": data.get("cards", [])
+            "cards": data.get("cards", []),
+            "product_tags": data.get("product_tags")  # 제품 표시 정보
         }
 
         session["pending_ads"].append(ad_data)
@@ -3676,16 +3677,47 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
         print(f"[STEP5] instagram_user_id: {instagram_user_id}")
         print(f"[STEP5] access_token 존재: {bool(access_token)}, 길이: {len(access_token) if access_token else 0}")
 
-        # 2. object_story_spec 구성 - 모든 ID는 문자열로 명시적 변환
-        # v24.0 규격: instagram_user_id는 object_story_spec 최상위 레벨에 위치
+        # 2. 제품 표시 (Product Tags) 확인
+        product_tags = ad_data.get("product_tags")
+        product_set_id = None
+        catalog_id = None
+
+        if product_tags and product_tags.get("enabled") and product_tags.get("product_set_id"):
+            product_set_id = str(product_tags["product_set_id"])
+            print(f"[STEP5] 제품 표시 활성화: product_set_id={product_set_id}")
+
+            # BigQuery에서 catalog_id 조회
+            try:
+                raw_account_id = account_id.replace("act_", "")
+                catalog_query = """
+                    SELECT catalog_id
+                    FROM `winged-precept-443218-v8.ngn_dataset.metaAds_acc`
+                    WHERE meta_acc_id = @acc_id
+                    LIMIT 1
+                """
+                catalog_job = bq_client.query(
+                    catalog_query,
+                    job_config=bigquery.QueryJobConfig(
+                        query_parameters=[bigquery.ScalarQueryParameter("acc_id", "STRING", raw_account_id)]
+                    )
+                )
+                catalog_row = next(catalog_job.result(), None)
+                if catalog_row and catalog_row["catalog_id"]:
+                    catalog_id = str(catalog_row["catalog_id"])
+                    print(f"[STEP5] catalog_id 조회 성공: {catalog_id}")
+                else:
+                    print(f"[STEP5] WARNING: catalog_id를 찾을 수 없음 (account_id={raw_account_id})")
+            except Exception as cat_err:
+                print(f"[STEP5] catalog_id 조회 오류: {cat_err}")
+
+        # 3. object_story_spec 구성
         object_story_spec = {
             "page_id": str(page_id) if page_id else None
         }
 
-        # instagram_user_id 명시적 문자열 변환 (v24.0: instagram_actor_id → instagram_user_id)
         if instagram_user_id:
             object_story_spec["instagram_user_id"] = str(instagram_user_id)
-            print(f"[STEP5] instagram_user_id 설정됨: {object_story_spec['instagram_user_id']} (type: {type(object_story_spec['instagram_user_id']).__name__})")
+            print(f"[STEP5] instagram_user_id 설정됨: {object_story_spec['instagram_user_id']}")
 
         # 캐러셀 vs 단일 미디어 분기
         if ad_data.get("is_carousel") and ad_data.get("cards"):
@@ -3698,20 +3730,16 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                     "description": card.get("description", ""),
                     "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
                 }
-                # 미디어 타입에 따라 분기
                 if card.get("video_id"):
                     video_id_str = str(card["video_id"])
                     attachment["video_id"] = video_id_str
-                    # 비디오 썸네일 처리
                     thumb_url = card.get("thumbnail_url") or card.get("image_url")
                     if not thumb_url:
                         thumb_url = get_video_thumbnail(video_id_str, access_token)
                     if thumb_url:
                         attachment["picture"] = str(thumb_url)
-                        print(f"[STEP5] 캐러셀 카드 썸네일: {thumb_url}")
                 elif card.get("image_hash"):
                     attachment["image_hash"] = str(card["image_hash"])
-
                 child_attachments.append(attachment)
 
             object_story_spec["link_data"] = {
@@ -3720,21 +3748,19 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                 "child_attachments": child_attachments,
                 "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
             }
-
         else:
             # 단일 미디어 광고
             media_type = ad_data.get("media_type", "image")
 
-            # 제품 표시 (Product Tags) 정보 확인
-            product_tags = ad_data.get("product_tags")
-            product_set_id = None
-            if product_tags and product_tags.get("enabled") and product_tags.get("product_set_id"):
-                product_set_id = str(product_tags["product_set_id"])
-                print(f"[STEP5] 제품 표시 활성화: product_set_id={product_set_id}")
-
             if media_type == "video":
-                # 비디오 광고 - image_url (썸네일) 필수
                 video_id_str = str(ad_data.get("video_id")) if ad_data.get("video_id") else None
+                thumbnail_url = ad_data.get("thumbnail_url") or ad_data.get("image_url")
+
+                if thumbnail_url and thumbnail_url.startswith("blob:"):
+                    thumbnail_url = None
+
+                if not thumbnail_url and video_id_str:
+                    thumbnail_url = get_video_thumbnail(video_id_str, access_token)
 
                 video_data = {
                     "video_id": video_id_str,
@@ -3747,34 +3773,14 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                     }
                 }
 
-                # 제품 표시 추가 (비디오)
-                if product_set_id:
-                    video_data["product_set_id"] = product_set_id
-                    print(f"[STEP5] video_data에 product_set_id 추가됨")
-
-                # 썸네일 URL 추가 (thumbnail_url 또는 image_url 필드에서 가져옴)
-                thumbnail_url = ad_data.get("thumbnail_url") or ad_data.get("image_url")
-
-                # blob URL은 Meta API에서 사용 불가 - 필터링
-                if thumbnail_url and thumbnail_url.startswith("blob:"):
-                    print(f"[STEP5] blob URL 감지, 무시: {thumbnail_url[:50]}...")
-                    thumbnail_url = None
-
-                # 썸네일이 없으면 Meta API에서 비디오 썸네일 조회
-                if not thumbnail_url and video_id_str:
-                    print(f"[STEP5] 썸네일 URL 없음, Meta API에서 조회 시도...")
-                    thumbnail_url = get_video_thumbnail(video_id_str, access_token)
-
                 if thumbnail_url:
                     video_data["image_url"] = str(thumbnail_url)
-                    print(f"[STEP5] video_data.image_url 설정됨: {thumbnail_url}")
-                else:
-                    print(f"[STEP5] WARNING: 비디오 썸네일 URL을 찾을 수 없습니다!")
 
                 object_story_spec["video_data"] = video_data
+                print(f"[STEP5] video_data 사용")
             else:
-                # 이미지 광고
-                link_data = {
+                # 이미지 광고 (제품 표시 여부와 관계없이 동일한 link_data 구조)
+                object_story_spec["link_data"] = {
                     "message": ad_data.get("message", ""),
                     "link": ad_data.get("link", ""),
                     "image_hash": str(ad_data.get("image_hash")) if ad_data.get("image_hash") else None,
@@ -3782,58 +3788,70 @@ def create_ad_creative_internal(account_id: str, ad_data: dict, page_id: str, in
                     "description": ad_data.get("description", ""),
                     "call_to_action": {"type": ad_data.get("cta_type", "SHOP_NOW")}
                 }
+                print(f"[STEP5] link_data 사용 (이미지 광고)")
 
-                # 제품 표시 추가 (이미지)
-                if product_set_id:
-                    link_data["product_set_id"] = product_set_id
-                    print(f"[STEP5] link_data에 product_set_id 추가됨")
-
-                object_story_spec["link_data"] = link_data
-
-        # 3. object_story_spec JSON 직렬화 (한 번만)
+        # 5. object_story_spec JSON 직렬화
         object_story_spec_json = json.dumps(object_story_spec, ensure_ascii=False)
-        print(f"[STEP5] object_story_spec (직렬화 전): {json.dumps(object_story_spec, indent=2, ensure_ascii=False)}")
-        print(f"[STEP5] object_story_spec (직렬화 후 길이): {len(object_story_spec_json)}")
 
-        # 4. API 요청 페이로드 - form data로 전송
+        # 6. 페이로드 구성
         payload = {
             "name": ad_data.get("name", "AdCreative"),
             "object_story_spec": object_story_spec_json,
             "access_token": access_token
         }
 
-        # UTM 파라미터 추가 (url_tags)
+        # UTM 파라미터 추가
         if url_tags:
             payload["url_tags"] = url_tags
             print(f"[STEP5] url_tags 추가: {url_tags[:80]}...")
 
-        # [v24.0] 어드밴티지+ 크리에이티브 전체 비활성화
-        # creative_features_spec만 사용 (degrees_of_freedom_spec 사용 금지)
-        # standard_enhancements는 v24.0에서 완전히 폐기됨
-        creative_features_spec = {
-            "advantage_plus_creative": {
-                "enroll_status": "OPT_OUT"
+        # 7. 제품 확장 (Product Extensions) 구성
+        # v24.0 공식 문서: https://developers.facebook.com/docs/marketing-api/advantage-catalog-ads/product-extensions/
+        # - creative_sourcing_spec: associated_product_set_id 포함
+        # - degrees_of_freedom_spec: creative_features_spec.product_extensions 포함
+        if product_set_id:
+            # 제품 확장 활성화 (카탈로그 항목 추가)
+            creative_sourcing_spec = {
+                "associated_product_set_id": product_set_id
             }
-        }
-        payload["creative_features_spec"] = json.dumps(creative_features_spec, ensure_ascii=False)
-        print(f"[STEP5] creative_features_spec 추가: {creative_features_spec}")
+            degrees_of_freedom_spec = {
+                "creative_features_spec": {
+                    "product_extensions": {
+                        "enroll_status": "OPT_IN",
+                        "action_metadata": {
+                            "type": "MANUAL"
+                        }
+                    }
+                }
+            }
+            payload["creative_sourcing_spec"] = json.dumps(creative_sourcing_spec, ensure_ascii=False)
+            payload["degrees_of_freedom_spec"] = json.dumps(degrees_of_freedom_spec, ensure_ascii=False)
+            print(f"[STEP5] 제품 확장 활성화: product_set_id={product_set_id}")
+            print(f"[STEP5] creative_sourcing_spec: {creative_sourcing_spec}")
+            print(f"[STEP5] degrees_of_freedom_spec: {degrees_of_freedom_spec}")
+        else:
+            # 제품 확장 비활성화 (OPT_OUT)
+            degrees_of_freedom_spec = {
+                "creative_features_spec": {
+                    "product_extensions": {
+                        "enroll_status": "OPT_OUT"
+                    }
+                }
+            }
+            payload["degrees_of_freedom_spec"] = json.dumps(degrees_of_freedom_spec, ensure_ascii=False)
+            print(f"[STEP5] 제품 확장 비활성화 (OPT_OUT)")
 
-        # [Emergency Check] standard_enhancements 필드가 페이로드에 존재하면 강제 삭제
-        payload_str = json.dumps(payload, ensure_ascii=False)
-        if "standard_enhancements" in payload_str:
-            print(f"[STEP5] WARNING: standard_enhancements 감지됨! 강제 삭제 시도...")
-            # 가능한 모든 위치에서 제거
-            if "degrees_of_freedom_spec" in payload:
-                del payload["degrees_of_freedom_spec"]
-                print(f"[STEP5] degrees_of_freedom_spec 삭제됨")
-
-        # 전송 직전 최종 페이로드 로깅 (access_token 마스킹)
+        # 로깅
         print(f"[STEP5] ========== 전송 직전 최종 페이로드 ==========")
         print(f"[STEP5] URL: {url}")
         print(f"[STEP5] name: {payload['name']}")
         print(f"[STEP5] object_story_spec (전체):")
         print(f"{object_story_spec_json}")
-        print(f"[STEP5] creative_features_spec: {payload.get('creative_features_spec', 'N/A')}")
+        if "creative_sourcing_spec" in payload:
+            print(f"[STEP5] creative_sourcing_spec: {payload['creative_sourcing_spec']}")
+        if "degrees_of_freedom_spec" in payload:
+            print(f"[STEP5] degrees_of_freedom_spec: {payload['degrees_of_freedom_spec']}")
+
         # 최종 검증: standard_enhancements 문자열 포함 여부
         final_payload_str = str(payload)
         if "standard_enhancements" in final_payload_str:

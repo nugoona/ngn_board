@@ -42,3 +42,9 @@ ngn_wep/ad_make/test_crop/*.png
 *.jpeg
 *.mp4
 *.gif
+
+# Google Cloud SDK & Auth
+.config/
+logs/
+config/service-account.json
+*.json

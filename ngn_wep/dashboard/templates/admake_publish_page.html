@@ -1903,8 +1903,9 @@ function handleMoreAds() {
   smartReset();
 }
 
-function handleBackHome() {
-  console.log('[STEP5] 브릿지 페이지로 클릭');
+async function handleBackHome() {
+  console.log('[STEP5] 브릿지 페이지로 클릭 - 모든 데이터 초기화');
+  await clearAllAdmakeData();
   window.location.href = `/admake?account_id=${encodeURIComponent(accountId)}`;
 }
 

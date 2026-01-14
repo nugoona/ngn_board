@@ -315,6 +315,17 @@ function showSetCreatedPopup(data) {
     </div>`;
   document.body.appendChild(wrap);
   setTimeout(() => wrap.remove(), 5000);
+
+  // 제품세트 생성 성공 시 커스텀 이벤트 발생 (Step 3에서 드롭다운 새로고침용)
+  if (ok) {
+    window.dispatchEvent(new CustomEvent('productSetCreated', {
+      detail: {
+        set_id: serverResult.set_id,
+        set_name: data.set_name,
+        catalog_id: data.catalog_id
+      }
+    }));
+  }
 }
 function successIcon() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"

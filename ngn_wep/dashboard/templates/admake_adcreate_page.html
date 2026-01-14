@@ -3351,6 +3351,45 @@ function setupProductTagsHandlers() {
     newSetBtn.addEventListener('click', openCatalogForNewSet);
   }
 
+  // 카탈로그 사이드바에서 제품세트 생성 시 드롭다운 새로고침
+  window.addEventListener('productSetCreated', async (e) => {
+    console.log('[ProductTags] 새 제품세트 생성됨:', e.detail);
+
+    // 드롭다운 새로고침
+    const sets = await fetchProductSets();
+    renderProductSetsDropdown(sets);
+
+    // 새로 생성된 세트 자동 선택
+    const dropdown = document.getElementById('productSetDropdown');
+    if (dropdown && e.detail.set_id) {
+      dropdown.value = e.detail.set_id;
+
+      // 선택 상태 업데이트
+      selectedProductSet = {
+        id: e.detail.set_id,
+        name: e.detail.set_name,
+        product_count: 0  // 정확한 수는 새로고침된 목록에서 가져옴
+      };
+
+      // 목록에서 정확한 product_count 찾기
+      const matchedSet = sets.find(s => s.id === e.detail.set_id);
+      if (matchedSet) {
+        selectedProductSet.product_count = matchedSet.product_count;
+      }
+
+      updateSelectedSetInfo();
+
+      // "기존 제품세트 사용" 옵션 선택
+      const existingRadio = document.querySelector('input[name="productSetSource"][value="existing"]');
+      if (existingRadio) {
+        existingRadio.checked = true;
+        handleProductSetSourceChange({ target: existingRadio });
+      }
+    }
+
+    showToast('새 제품세트가 자동으로 선택되었습니다.', 'success');
+  });
+
   console.log('[ProductTags] 이벤트 핸들러 설정 완료');
 }
 
@@ -3446,6 +3485,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[STEP3] 초기화 완료');
 });
 </script>
+
+<!-- 카탈로그 사이드바 (제품세트 만들기용) -->
+{% include "components/catalog_sidebar.html" %}
+<script type="module" src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
 
 </body>
 </html>

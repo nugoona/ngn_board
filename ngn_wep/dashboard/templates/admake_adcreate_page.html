@@ -693,6 +693,318 @@
       color: var(--text-tertiary);
     }
 
+    /* ===== 제품세트 만들기 모달 ===== */
+    .product-set-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .product-set-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .product-set-modal {
+      background: var(--bg-primary);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transform: scale(0.9) translateY(20px);
+      transition: transform 0.3s ease;
+    }
+    .product-set-modal-overlay.active .product-set-modal {
+      transform: scale(1) translateY(0);
+    }
+    .product-set-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-default);
+    }
+    .product-set-modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .modal-close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .modal-close-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .product-set-modal-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 12px 24px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-default);
+    }
+    .modal-tab {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .modal-tab:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+    .modal-tab.active {
+      background: var(--primary);
+      color: white;
+    }
+    .modal-tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 300px;
+      max-height: 400px;
+    }
+    .modal-tab-content.active {
+      display: flex;
+    }
+    .modal-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .modal-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .modal-select {
+      padding: 10px 14px;
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+      min-width: 120px;
+    }
+    .modal-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .modal-action-btn:hover {
+      background: var(--primary-hover);
+    }
+    .modal-action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .modal-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .modal-loading .loading-spinner.small {
+      width: 18px;
+      height: 18px;
+      border-width: 2px;
+    }
+    .modal-product-list, .modal-search-results, .modal-selected-products {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .checkbox-label input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+    }
+    .selected-count {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .modal-product-table {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      background: var(--bg-card);
+    }
+    .modal-product-table .empty-state {
+      padding: 30px;
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+    .modal-product-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-default);
+      font-size: 13px;
+    }
+    .modal-product-row:last-child {
+      border-bottom: none;
+    }
+    .modal-product-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-right: 10px;
+      accent-color: var(--primary);
+    }
+    .modal-product-row .product-name {
+      flex: 1;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .modal-product-row .product-no {
+      color: var(--text-tertiary);
+      font-size: 12px;
+      margin-left: 12px;
+    }
+    .modal-product-row .add-btn, .modal-product-row .remove-btn {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .modal-product-row .add-btn {
+      background: var(--primary);
+      color: white;
+    }
+    .modal-product-row .add-btn:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      cursor: not-allowed;
+    }
+    .modal-product-row .remove-btn {
+      background: var(--accent-red);
+      color: white;
+    }
+    .product-set-modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-default);
+      background: var(--bg-secondary);
+      border-radius: 0 0 16px 16px;
+    }
+    .modal-setname-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .modal-setname-row label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-cancel-btn {
+      padding: 10px 20px;
+      border: 1px solid var(--border-default);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .modal-cancel-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .modal-submit-btn {
+      padding: 10px 24px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-submit-btn:hover {
+      background: var(--primary-hover);
+    }
+    .modal-submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ===== 개별 카드 편집기 ===== */
     .admake-cards-section {
       background: var(--bg-secondary);
@@ -1763,6 +2075,104 @@
             <button type="button" class="clear-set-btn" id="clearSelectedSetBtn" title="선택 해제">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 제품세트 만들기 모달 -->
+    <div class="product-set-modal-overlay hidden" id="productSetModalOverlay">
+      <div class="product-set-modal">
+        <div class="product-set-modal-header">
+          <h3>새 제품세트 만들기</h3>
+          <button type="button" class="modal-close-btn" id="closeProductSetModalBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- 탭 -->
+        <div class="product-set-modal-tabs">
+          <button type="button" class="modal-tab active" data-tab="url">자사몰 페이지</button>
+          <button type="button" class="modal-tab" data-tab="manual">수동 선택</button>
+        </div>
+
+        <!-- 탭 컨텐츠: 자사몰 페이지 -->
+        <div class="modal-tab-content active" id="tabUrl">
+          <div class="modal-input-row">
+            <input type="text" id="modalUrlInput" placeholder="자사몰 카테고리 URL을 입력하세요" class="modal-input">
+            <button type="button" class="modal-action-btn" id="modalFetchBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              불러오기
+            </button>
+          </div>
+
+          <div class="modal-loading hidden" id="modalUrlLoading">
+            <div class="loading-spinner small"></div>
+            <span>상품을 수집하고 있습니다...</span>
+          </div>
+
+          <div class="modal-product-list">
+            <div class="modal-list-header">
+              <label class="checkbox-label">
+                <input type="checkbox" id="modalSelectAllUrl" checked>
+                <span>전체 선택</span>
+              </label>
+              <span class="selected-count" id="modalUrlCount">0개 선택</span>
+            </div>
+            <div class="modal-product-table" id="modalUrlProducts">
+              <div class="empty-state">URL을 입력하고 불러오기를 클릭하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 컨텐츠: 수동 선택 -->
+        <div class="modal-tab-content" id="tabManual">
+          <div class="modal-input-row">
+            <select id="modalSearchType" class="modal-select">
+              <option value="product_name">상품명</option>
+              <option value="product_no">제품번호</option>
+            </select>
+            <input type="text" id="modalSearchInput" placeholder="검색어를 입력하세요" class="modal-input">
+            <button type="button" class="modal-action-btn" id="modalSearchBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              검색
+            </button>
+          </div>
+
+          <div class="modal-loading hidden" id="modalSearchLoading">
+            <div class="loading-spinner small"></div>
+            <span>검색 중...</span>
+          </div>
+
+          <div class="modal-search-results">
+            <div class="modal-list-header">
+              <span>검색 결과</span>
+            </div>
+            <div class="modal-product-table" id="modalSearchResults">
+              <div class="empty-state">검색어를 입력하고 검색을 클릭하세요</div>
+            </div>
+          </div>
+
+          <div class="modal-selected-products">
+            <div class="modal-list-header">
+              <span>추가된 상품</span>
+              <span class="selected-count" id="modalManualCount">0개</span>
+            </div>
+            <div class="modal-product-table" id="modalSelectedProducts">
+              <div class="empty-state">검색 결과에서 상품을 추가하세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 하단: 세트명 입력 및 생성 버튼 -->
+        <div class="product-set-modal-footer">
+          <div class="modal-setname-row">
+            <label>세트명</label>
+            <input type="text" id="modalSetNameInput" placeholder="예) [20250114] 신상품 세트" class="modal-input" maxlength="100">
+          </div>
+          <div class="modal-buttons">
+            <button type="button" class="modal-cancel-btn" id="cancelProductSetModalBtn">취소</button>
+            <button type="button" class="modal-submit-btn" id="createProductSetModalBtn">제품세트 만들기</button>
           </div>
         </div>
       </div>
@@ -3299,15 +3709,383 @@ function handleProductSetSourceChange(e) {
   }
 }
 
-// 카탈로그 사이드바 열기 (새 제품세트 만들기)
-function openCatalogForNewSet() {
-  // 카탈로그 사이드바가 있는지 확인
-  const openBtn = document.getElementById('openCatalogSidebarBtn');
-  if (openBtn) {
-    openBtn.click();
-  } else {
-    showToast('카탈로그 기능을 사용할 수 없습니다.', 'error');
+// ===== 제품세트 만들기 모달 =====
+let modalUrlProducts = [];      // URL로 수집된 상품
+let modalSelectedUrlIds = new Set();  // URL 탭에서 선택된 상품
+let modalSearchResults = [];    // 검색 결과
+let modalManualProducts = [];   // 수동 탭에서 추가된 상품
+
+// 모달 열기
+function openProductSetModal() {
+  const overlay = document.getElementById('productSetModalOverlay');
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => overlay.classList.add('active'));
+
+  // 초기화
+  resetProductSetModal();
+  console.log('[Modal] 제품세트 만들기 모달 열림');
+}
+
+// 모달 닫기
+function closeProductSetModal() {
+  const overlay = document.getElementById('productSetModalOverlay');
+  overlay.classList.remove('active');
+  setTimeout(() => overlay.classList.add('hidden'), 300);
+}
+
+// 모달 초기화
+function resetProductSetModal() {
+  modalUrlProducts = [];
+  modalSelectedUrlIds = new Set();
+  modalSearchResults = [];
+  modalManualProducts = [];
+
+  // 입력 필드 초기화
+  document.getElementById('modalUrlInput').value = '';
+  document.getElementById('modalSearchInput').value = '';
+  document.getElementById('modalSetNameInput').value = '';
+
+  // 테이블 초기화
+  document.getElementById('modalUrlProducts').innerHTML = '<div class="empty-state">URL을 입력하고 불러오기를 클릭하세요</div>';
+  document.getElementById('modalSearchResults').innerHTML = '<div class="empty-state">검색어를 입력하고 검색을 클릭하세요</div>';
+  document.getElementById('modalSelectedProducts').innerHTML = '<div class="empty-state">검색 결과에서 상품을 추가하세요</div>';
+
+  // 카운트 초기화
+  document.getElementById('modalUrlCount').textContent = '0개 선택';
+  document.getElementById('modalManualCount').textContent = '0개';
+
+  // 첫 번째 탭 활성화
+  document.querySelectorAll('.modal-tab').forEach((tab, i) => tab.classList.toggle('active', i === 0));
+  document.querySelectorAll('.modal-tab-content').forEach((content, i) => content.classList.toggle('active', i === 0));
+}
+
+// 탭 전환
+function handleModalTabChange(tabName) {
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+  document.getElementById('tabUrl').classList.toggle('active', tabName === 'url');
+  document.getElementById('tabManual').classList.toggle('active', tabName === 'manual');
+}
+
+// URL로 상품 불러오기
+async function fetchModalUrlProducts() {
+  const url = document.getElementById('modalUrlInput').value.trim();
+  if (!url) return showToast('URL을 입력해주세요.', 'warning');
+
+  const loading = document.getElementById('modalUrlLoading');
+  const fetchBtn = document.getElementById('modalFetchBtn');
+
+  loading.classList.remove('hidden');
+  fetchBtn.disabled = true;
+
+  try {
+    const res = await fetch('/dashboard/get_data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_type: 'catalog_manual', category_url: url })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success' && json.products) {
+      modalUrlProducts = json.products;
+      modalSelectedUrlIds = new Set(modalUrlProducts.map(p => String(p.product_no)));
+      renderModalUrlProducts();
+      showToast(`${modalUrlProducts.length}개 상품을 불러왔습니다.`, 'success');
+    } else {
+      showToast(json.message || '상품을 불러올 수 없습니다.', 'error');
+    }
+  } catch (e) {
+    console.error('[Modal] URL 상품 조회 오류:', e);
+    showToast('상품 조회 중 오류가 발생했습니다.', 'error');
+  } finally {
+    loading.classList.add('hidden');
+    fetchBtn.disabled = false;
   }
+}
+
+// URL 상품 목록 렌더링
+function renderModalUrlProducts() {
+  const container = document.getElementById('modalUrlProducts');
+
+  if (modalUrlProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state">URL을 입력하고 불러오기를 클릭하세요</div>';
+    return;
+  }
+
+  container.innerHTML = modalUrlProducts.map(p => {
+    const checked = modalSelectedUrlIds.has(String(p.product_no)) ? 'checked' : '';
+    return `<div class="modal-product-row">
+      <input type="checkbox" data-product-no="${p.product_no}" ${checked} onchange="toggleModalUrlProduct('${p.product_no}')">
+      <span class="product-name">${p.product_name}</span>
+      <span class="product-no">${p.product_no}</span>
+    </div>`;
+  }).join('');
+
+  updateModalUrlCount();
+  updateModalSelectAll();
+}
+
+// URL 상품 선택 토글
+function toggleModalUrlProduct(productNo) {
+  if (modalSelectedUrlIds.has(productNo)) {
+    modalSelectedUrlIds.delete(productNo);
+  } else {
+    modalSelectedUrlIds.add(productNo);
+  }
+  updateModalUrlCount();
+  updateModalSelectAll();
+}
+
+// 전체 선택 토글
+function toggleModalSelectAllUrl() {
+  const selectAll = document.getElementById('modalSelectAllUrl');
+  if (selectAll.checked) {
+    modalSelectedUrlIds = new Set(modalUrlProducts.map(p => String(p.product_no)));
+  } else {
+    modalSelectedUrlIds.clear();
+  }
+  renderModalUrlProducts();
+}
+
+// 전체 선택 체크박스 상태 업데이트
+function updateModalSelectAll() {
+  const selectAll = document.getElementById('modalSelectAllUrl');
+  const allSelected = modalUrlProducts.length > 0 && modalSelectedUrlIds.size === modalUrlProducts.length;
+  const someSelected = modalSelectedUrlIds.size > 0 && modalSelectedUrlIds.size < modalUrlProducts.length;
+  selectAll.checked = allSelected;
+  selectAll.indeterminate = someSelected;
+}
+
+// URL 선택 카운트 업데이트
+function updateModalUrlCount() {
+  document.getElementById('modalUrlCount').textContent = `${modalSelectedUrlIds.size}개 선택`;
+}
+
+// 수동 검색
+async function searchModalProducts() {
+  const keyword = document.getElementById('modalSearchInput').value.trim();
+  const searchType = document.getElementById('modalSearchType').value;
+
+  if (!keyword) return showToast('검색어를 입력해주세요.', 'warning');
+
+  const loading = document.getElementById('modalSearchLoading');
+  const searchBtn = document.getElementById('modalSearchBtn');
+
+  loading.classList.remove('hidden');
+  searchBtn.disabled = true;
+
+  try {
+    const res = await fetch('/dashboard/get_data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data_type: 'catalog_manual_search',
+        account_id: accountId,
+        keyword: keyword,
+        search_type: searchType
+      })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success') {
+      modalSearchResults = json.results || [];
+      renderModalSearchResults();
+      if (modalSearchResults.length === 0) {
+        showToast('검색 결과가 없습니다.', 'info');
+      }
+    } else {
+      showToast(json.message || '검색 실패', 'error');
+    }
+  } catch (e) {
+    console.error('[Modal] 검색 오류:', e);
+    showToast('검색 중 오류가 발생했습니다.', 'error');
+  } finally {
+    loading.classList.add('hidden');
+    searchBtn.disabled = false;
+  }
+}
+
+// 검색 결과 렌더링
+function renderModalSearchResults() {
+  const container = document.getElementById('modalSearchResults');
+
+  if (modalSearchResults.length === 0) {
+    container.innerHTML = '<div class="empty-state">검색 결과가 없습니다</div>';
+    return;
+  }
+
+  container.innerHTML = modalSearchResults.map(p => {
+    const isAdded = modalManualProducts.some(mp => mp.product_no === p.product_no);
+    return `<div class="modal-product-row">
+      <span class="product-name">${p.product_name}</span>
+      <span class="product-no">${p.product_no}</span>
+      <button class="add-btn" onclick="addModalManualProduct('${p.product_no}', '${p.product_name.replace(/'/g, "\\'")}')" ${isAdded ? 'disabled' : ''}>
+        ${isAdded ? '추가됨' : '추가'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// 수동 상품 추가
+function addModalManualProduct(productNo, productName) {
+  if (modalManualProducts.some(p => p.product_no === productNo)) {
+    return showToast('이미 추가된 상품입니다.', 'warning');
+  }
+
+  modalManualProducts.push({ product_no: productNo, product_name: productName });
+  renderModalManualProducts();
+  renderModalSearchResults();  // 버튼 상태 업데이트
+}
+
+// 수동 상품 제거
+function removeModalManualProduct(productNo) {
+  modalManualProducts = modalManualProducts.filter(p => p.product_no !== productNo);
+  renderModalManualProducts();
+  renderModalSearchResults();
+}
+
+// 추가된 상품 렌더링
+function renderModalManualProducts() {
+  const container = document.getElementById('modalSelectedProducts');
+
+  if (modalManualProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state">검색 결과에서 상품을 추가하세요</div>';
+    document.getElementById('modalManualCount').textContent = '0개';
+    return;
+  }
+
+  container.innerHTML = modalManualProducts.map(p => `
+    <div class="modal-product-row">
+      <span class="product-name">${p.product_name}</span>
+      <span class="product-no">${p.product_no}</span>
+      <button class="remove-btn" onclick="removeModalManualProduct('${p.product_no}')">삭제</button>
+    </div>
+  `).join('');
+
+  document.getElementById('modalManualCount').textContent = `${modalManualProducts.length}개`;
+}
+
+// 제품세트 생성
+async function createProductSetFromModal() {
+  const setName = document.getElementById('modalSetNameInput').value.trim();
+  if (!setName) return showToast('세트명을 입력해주세요.', 'warning');
+
+  // 현재 활성 탭 확인
+  const isUrlTab = document.getElementById('tabUrl').classList.contains('active');
+
+  let retailerIds = [];
+  if (isUrlTab) {
+    retailerIds = Array.from(modalSelectedUrlIds);
+  } else {
+    retailerIds = modalManualProducts.map(p => p.product_no);
+  }
+
+  if (retailerIds.length === 0) {
+    return showToast('최소 1개 이상의 상품을 선택해주세요.', 'warning');
+  }
+
+  const catalogId = window.metaAdsState?.catalogId;
+  if (!catalogId) {
+    return showToast('카탈로그 ID를 찾을 수 없습니다.', 'error');
+  }
+
+  const submitBtn = document.getElementById('createProductSetModalBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '생성 중...';
+
+  try {
+    const res = await fetch('/dashboard/catalog_set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        catalog_id: catalogId,
+        set_name: setName,
+        retailer_ids: retailerIds
+      })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success') {
+      showToast(`제품세트가 ${json.action === 'updated' ? '업데이트' : '생성'}되었습니다.`, 'success');
+
+      // 드롭다운 새로고침 및 선택
+      const sets = await fetchProductSets();
+      renderProductSetsDropdown(sets);
+
+      // 새로 생성된 세트 선택
+      const dropdown = document.getElementById('productSetDropdown');
+      if (dropdown && json.set_id) {
+        dropdown.value = json.set_id;
+
+        const matchedSet = sets.find(s => s.id === json.set_id);
+        selectedProductSet = {
+          id: json.set_id,
+          name: setName,
+          product_count: matchedSet?.product_count || retailerIds.length
+        };
+        updateSelectedSetInfo();
+
+        // "기존 제품세트 사용" 선택
+        const existingRadio = document.querySelector('input[name="productSetSource"][value="existing"]');
+        if (existingRadio) {
+          existingRadio.checked = true;
+          handleProductSetSourceChange({ target: existingRadio });
+        }
+      }
+
+      closeProductSetModal();
+    } else {
+      showToast(json.message || '제품세트 생성 실패', 'error');
+    }
+  } catch (e) {
+    console.error('[Modal] 제품세트 생성 오류:', e);
+    showToast('제품세트 생성 중 오류가 발생했습니다.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '제품세트 만들기';
+  }
+}
+
+// 모달 이벤트 핸들러 설정
+function setupProductSetModalHandlers() {
+  // 모달 열기 버튼 (기존 openCatalogForNewSet 대체)
+  const openBtn = document.getElementById('openCatalogForNewSetBtn');
+  if (openBtn) {
+    openBtn.onclick = openProductSetModal;
+  }
+
+  // 모달 닫기
+  document.getElementById('closeProductSetModalBtn')?.addEventListener('click', closeProductSetModal);
+  document.getElementById('cancelProductSetModalBtn')?.addEventListener('click', closeProductSetModal);
+  document.getElementById('productSetModalOverlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'productSetModalOverlay') closeProductSetModal();
+  });
+
+  // 탭 전환
+  document.querySelectorAll('.modal-tab').forEach(tab => {
+    tab.addEventListener('click', () => handleModalTabChange(tab.dataset.tab));
+  });
+
+  // URL 탭
+  document.getElementById('modalFetchBtn')?.addEventListener('click', fetchModalUrlProducts);
+  document.getElementById('modalSelectAllUrl')?.addEventListener('change', toggleModalSelectAllUrl);
+
+  // 수동 탭
+  document.getElementById('modalSearchBtn')?.addEventListener('click', searchModalProducts);
+  document.getElementById('modalSearchInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchModalProducts();
+  });
+
+  // 제품세트 생성
+  document.getElementById('createProductSetModalBtn')?.addEventListener('click', createProductSetFromModal);
+
+  console.log('[Modal] 제품세트 모달 핸들러 설정 완료');
+}
+
+// 기존 함수 유지 (호환성)
+function openCatalogForNewSet() {
+  openProductSetModal();
 }
 
 // 제품 표시 이벤트 핸들러 설정
@@ -3420,6 +4198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 제품 표시 핸들러
   setupProductTagsHandlers();
 
+  // 제품세트 만들기 모달 핸들러
+  setupProductSetModalHandlers();
+
   // catalogId 로드 (제품 표시 기능용) - 백그라운드에서 로드
   loadCatalogId();
 
@@ -3485,10 +4266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[STEP3] 초기화 완료');
 });
 </script>
-
-<!-- 카탈로그 사이드바 (제품세트 만들기용) -->
-{% include "components/catalog_sidebar.html" %}
-<script type="module" src="{{ url_for('static', filename='js/catalog_sidebar.js') }}"></script>
 
 </body>
 </html>

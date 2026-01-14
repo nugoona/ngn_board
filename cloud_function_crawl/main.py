@@ -106,13 +106,27 @@ def crawl_catalog(request):
         if not rows:
             return _resp({"status": "empty", "msg": "크롤링된 상품이 없습니다."})
 
-        # 4️⃣ BigQuery Load Job (WRITE_TRUNCATE: 테이블 전체 덮어쓰기)
+        # 4️⃣ BigQuery: 해당 company_name 데이터만 삭제 후 새 데이터 추가
         client   = bigquery.Client()
         table_id = "winged-precept-443218-v8.ngn_dataset.url_product"
 
+        # 4-1) 해당 회사의 기존 데이터 삭제 (다른 회사 데이터는 유지)
+        delete_query = """
+            DELETE FROM `winged-precept-443218-v8.ngn_dataset.url_product`
+            WHERE company_name = @company_name
+        """
+        delete_job = client.query(
+            delete_query,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[bigquery.ScalarQueryParameter("company_name", "STRING", company)]
+            )
+        )
+        delete_job.result()  # 삭제 완료 대기
+
+        # 4-2) 새 데이터 추가 (WRITE_APPEND)
         load_cfg = bigquery.LoadJobConfig(
             source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
         json_data = "\n".join(json.dumps(r, ensure_ascii=False) for r in rows).encode("utf-8")
         load_job = client.load_table_from_file(
@@ -120,7 +134,7 @@ def crawl_catalog(request):
         )
         load_job.result()  # 완료 대기
 
-        return _resp({"status": "success", "count": len(rows)})
+        return _resp({"status": "success", "count": len(rows), "company": company})
 
     except Exception as e:
         return _resp({"status": "error", "msg": str(e)}, 500)

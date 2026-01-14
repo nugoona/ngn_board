@@ -344,7 +344,7 @@ def create_or_update_product_set(
             ok, msg = _replace_set_filter(existing_id, full_ids)
             if not ok:
                 return {}, msg
-            return {"action": "replaced", "set_id": existing_id}, ""
+            return {"action": "updated", "set_id": existing_id}, ""
 
         # 2-b) 너무 크면 삭제 후 재생성
         del_res = requests.delete(

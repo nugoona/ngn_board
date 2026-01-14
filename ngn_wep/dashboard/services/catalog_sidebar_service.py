@@ -315,6 +315,56 @@ def _replace_set_filter(set_id: str, ids: List[str]) -> Tuple[bool, str]:
     return True, ""
 
 # ── PUBLIC 함수 ─────────────────────────────────────────────
+
+def get_product_sets(catalog_id: str) -> Tuple[List[Dict], str]:
+    """
+    카탈로그의 모든 제품세트 목록 조회
+    Returns: ([{id, name, product_count}, ...], error_message)
+    """
+    if not FB_TOKEN:
+        return [], "META_SYSTEM_TOKEN 누락"
+
+    if not catalog_id:
+        return [], "catalog_id 누락"
+
+    sets = []
+    after = None
+
+    try:
+        while True:
+            params = {
+                "fields"      : "id,name,product_count",
+                "limit"       : 200,
+                "access_token": FB_TOKEN,
+                **({"after": after} if after else {}),
+            }
+            res = requests.get(
+                f"{FB_HOST}/{catalog_id}/product_sets",
+                params=params,
+                timeout=TIMEOUT
+            ).json()
+
+            if "error" in res:
+                return [], res["error"].get("message", "제품세트 조회 실패")
+
+            for s in res.get("data", []):
+                sets.append({
+                    "id": s.get("id"),
+                    "name": s.get("name"),
+                    "product_count": s.get("product_count", 0)
+                })
+
+            after = res.get("paging", {}).get("cursors", {}).get("after")
+            if not after:
+                break
+
+        return sets, ""
+
+    except Exception as e:
+        LOG.error(f"[get_product_sets] 오류: {e}")
+        return [], str(e)
+
+
 def create_or_update_product_set(
     catalog_id  : str,
     set_name    : str,

@@ -530,6 +530,169 @@
       padding-right: 40px;
     }
 
+    /* ===== 제품 표시 (Product Tags) 섹션 ===== */
+    .admake-product-tags-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 20px;
+      transition: opacity 0.3s ease;
+    }
+    .admake-product-tags-section.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .product-tags-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .product-tags-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--bg-tertiary);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+    .toggle-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .product-tags-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border-default);
+    }
+    .selector-options {
+      display: flex;
+      gap: 20px;
+    }
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+    .radio-option input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+    }
+    .existing-set-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .existing-set-selector select {
+      flex: 1;
+    }
+    .refresh-sets-btn, .clear-set-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-sets-btn:hover, .clear-set-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+    .refresh-sets-btn.loading {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .new-set-selector {
+      display: flex;
+    }
+    .new-set-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .new-set-btn:hover {
+      background: var(--primary-hover);
+    }
+    .selected-set-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+    }
+    .set-info-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .set-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    .set-count {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
     /* ===== 개별 카드 편집기 ===== */
     .admake-cards-section {
       background: var(--bg-secondary);
@@ -1346,6 +1509,12 @@
   var userCompanyList = {{ session['company_names'] | tojson }};
   var currentUserId = "{{ session['user_id'] }}";
   var accountId = "{{ account_id }}";
+  // metaAdsState 초기화 (제품 표시 기능에서 사용)
+  window.metaAdsState = window.metaAdsState || {
+    accountId: accountId,
+    catalogId: null,
+    company: null
+  };
 </script>
 <script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
 
@@ -1535,10 +1704,74 @@
       </div>
     </div>
 
+    <!-- 제품 표시 (Product Tags) - 단일 이미지/동영상 전용 -->
+    <div class="admake-product-tags-section" id="productTagsSection">
+      <div class="admake-section-header">
+        <span class="admake-section-number font-inter">03</span>
+        <span class="admake-section-title">제품 표시</span>
+        <span class="admake-section-subtitle">단일 이미지/동영상 전용</span>
+      </div>
+
+      <div class="product-tags-content">
+        <!-- 토글 스위치 -->
+        <div class="product-tags-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="productTagsEnabled">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">이 광고에 제품 태그 추가하기</span>
+        </div>
+
+        <!-- 제품세트 선택 영역 (토글 ON 시 표시) -->
+        <div class="product-tags-selector hidden" id="productTagsSelector">
+          <div class="selector-options">
+            <label class="radio-option">
+              <input type="radio" name="productSetSource" value="existing" checked>
+              <span>기존 제품세트 사용</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="productSetSource" value="new">
+              <span>새 제품세트 만들기</span>
+            </label>
+          </div>
+
+          <!-- 기존 제품세트 드롭다운 -->
+          <div class="existing-set-selector" id="existingSetSelector">
+            <select class="admake-field-input admake-field-select" id="productSetDropdown">
+              <option value="">제품세트를 선택하세요</option>
+              <!-- 동적으로 채워짐 -->
+            </select>
+            <button type="button" class="refresh-sets-btn" id="refreshSetsBtn" title="목록 새로고침">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+            </button>
+          </div>
+
+          <!-- 새 제품세트 만들기 버튼 -->
+          <div class="new-set-selector hidden" id="newSetSelector">
+            <button type="button" class="new-set-btn" id="openCatalogForNewSetBtn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              카탈로그에서 제품세트 만들기
+            </button>
+          </div>
+
+          <!-- 선택된 제품세트 정보 -->
+          <div class="selected-set-info hidden" id="selectedSetInfo">
+            <div class="set-info-badge">
+              <span class="set-name" id="selectedSetName">-</span>
+              <span class="set-count" id="selectedSetCount">0개 제품</span>
+            </div>
+            <button type="button" class="clear-set-btn" id="clearSelectedSetBtn" title="선택 해제">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 개별 카드 편집 (슬라이드 모드 시) -->
     <div class="admake-cards-section hidden" id="cardsSection">
       <div class="admake-section-header">
-        <span class="admake-section-number font-inter">03</span>
+        <span class="admake-section-number font-inter">04</span>
         <span class="admake-section-title">개별 카드 편집</span>
         <span class="admake-section-subtitle">자물쇠 해제 시 개별 수정</span>
       </div>
@@ -1671,6 +1904,11 @@ let currentPreviewFormat = 'INSTAGRAM_STANDARD';
 let cardLocks = {};            // { mediaId: { url: true, headline: true, ... } }
 let previewDebounceTimer = null;
 let previewTimeoutId = null;  // 이전 타임아웃 취소용
+
+// 제품 표시 (Product Tags) 상태
+let productTagsEnabled = false;
+let selectedProductSet = null;  // { id, name, product_count }
+let productSetsList = [];       // 카탈로그의 제품세트 목록
 
 // 마스터 값
 let masterValues = {
@@ -1939,6 +2177,18 @@ function handleAdTypeChange(type) {
     cardsSection.classList.remove('hidden');
   } else {
     cardsSection.classList.add('hidden');
+  }
+
+  // 제품 표시 섹션 표시/숨김 (단일 이미지/동영상만 지원)
+  const productTagsSection = document.getElementById('productTagsSection');
+  if (type === 'slide') {
+    productTagsSection.classList.add('disabled');
+    // 캐러셀 선택 시 제품 표시 비활성화
+    document.getElementById('productTagsEnabled').checked = false;
+    productTagsEnabled = false;
+    document.getElementById('productTagsSelector').classList.add('hidden');
+  } else {
+    productTagsSection.classList.remove('disabled');
   }
 
   // 미리보기 초기화
@@ -2517,7 +2767,13 @@ async function addToPendingAds() {
     cta_type: masterValues.cta || 'SHOP_NOW',
     ad_name: masterValues.adName || `AD_${Date.now()}`,
     is_carousel: isCarousel,
-    cards: cards
+    cards: cards,
+    // 제품 표시 (Product Tags) - 단일 이미지/동영상만 지원
+    product_tags: !isCarousel && productTagsEnabled && selectedProductSet ? {
+      enabled: true,
+      product_set_id: selectedProductSet.id,
+      product_set_name: selectedProductSet.name
+    } : null
   };
 
   console.log('[STEP3] pending_ads에 추가할 데이터:', adData);
@@ -2733,7 +2989,13 @@ async function handleAddMoreButton() {
       headline: masterValues.headline || '',
       description: masterValues.description || '',
       link: masterValues.url || '',
-      cta_type: masterValues.cta || 'SHOP_NOW'
+      cta_type: masterValues.cta || 'SHOP_NOW',
+      // 제품 표시 정보
+      product_tags: !isCarousel && productTagsEnabled && selectedProductSet ? {
+        enabled: true,
+        product_set_id: selectedProductSet.id,
+        product_set_name: selectedProductSet.name
+      } : null
     });
 
     renderSavedAdsList();
@@ -2806,7 +3068,12 @@ function proceedToStep4() {
     selectedMediaIds: selectedMediaIds,
     masterValues: masterValues,
     cardLocks: cardLocks,
-    cardValues: cardValues
+    cardValues: cardValues,
+    // 제품 표시 정보
+    productTags: {
+      enabled: productTagsEnabled,
+      productSet: selectedProductSet
+    }
   };
   sessionStorage.setItem('admake_step3_state', JSON.stringify(step3Data));
 
@@ -2875,6 +3142,218 @@ function clearAllAdmakeData() {
     } catch (e) { resolve(); }
   });
 }
+// ===== 제품 표시 (Product Tags) 관련 함수 =====
+
+// catalogId 로드 (accountId로 조회)
+async function loadCatalogId() {
+  if (!accountId) return;
+
+  try {
+    const res = await fetch('/dashboard/get_data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_type: 'catalog_sidebar', account_id: accountId })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success' && json.catalog_sidebar?.catalog_id) {
+      window.metaAdsState.catalogId = json.catalog_sidebar.catalog_id;
+      window.metaAdsState.company = json.catalog_sidebar.company_name;
+      console.log('[ProductTags] catalogId 로드:', window.metaAdsState.catalogId);
+    }
+  } catch (e) {
+    console.error('[ProductTags] catalogId 로드 실패:', e);
+  }
+}
+
+// 제품세트 목록 조회
+async function fetchProductSets() {
+  const catalogId = window.metaAdsState?.catalogId;
+  if (!catalogId) {
+    console.warn('[ProductTags] catalogId 없음');
+    return [];
+  }
+
+  const refreshBtn = document.getElementById('refreshSetsBtn');
+  if (refreshBtn) refreshBtn.classList.add('loading');
+
+  try {
+    const res = await fetch('/dashboard/catalog_sets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ catalog_id: catalogId })
+    });
+    const json = await res.json();
+
+    if (json.status === 'success') {
+      productSetsList = json.product_sets || [];
+      console.log('[ProductTags] 제품세트 목록 로드:', productSetsList.length, '개');
+      return productSetsList;
+    } else {
+      console.error('[ProductTags] 조회 실패:', json.message);
+      return [];
+    }
+  } catch (e) {
+    console.error('[ProductTags] 조회 오류:', e);
+    return [];
+  } finally {
+    if (refreshBtn) refreshBtn.classList.remove('loading');
+  }
+}
+
+// 제품세트 드롭다운 렌더링
+function renderProductSetsDropdown(sets) {
+  const dropdown = document.getElementById('productSetDropdown');
+  if (!dropdown) return;
+
+  dropdown.innerHTML = '<option value="">제품세트를 선택하세요</option>';
+
+  sets.forEach(set => {
+    const option = document.createElement('option');
+    option.value = set.id;
+    option.textContent = `${set.name} (${set.product_count || 0}개)`;
+    option.dataset.name = set.name;
+    option.dataset.count = set.product_count || 0;
+    dropdown.appendChild(option);
+  });
+}
+
+// 제품세트 선택 처리
+function handleProductSetSelect(e) {
+  const dropdown = e.target;
+  const selectedOption = dropdown.selectedOptions[0];
+
+  if (!selectedOption || !selectedOption.value) {
+    selectedProductSet = null;
+    updateSelectedSetInfo();
+    return;
+  }
+
+  selectedProductSet = {
+    id: selectedOption.value,
+    name: selectedOption.dataset.name,
+    product_count: parseInt(selectedOption.dataset.count) || 0
+  };
+
+  console.log('[ProductTags] 제품세트 선택:', selectedProductSet);
+  updateSelectedSetInfo();
+}
+
+// 선택된 제품세트 정보 표시
+function updateSelectedSetInfo() {
+  const infoEl = document.getElementById('selectedSetInfo');
+  const nameEl = document.getElementById('selectedSetName');
+  const countEl = document.getElementById('selectedSetCount');
+
+  if (!infoEl) return;
+
+  if (selectedProductSet) {
+    nameEl.textContent = selectedProductSet.name;
+    countEl.textContent = `${selectedProductSet.product_count}개 제품`;
+    infoEl.classList.remove('hidden');
+  } else {
+    infoEl.classList.add('hidden');
+  }
+}
+
+// 제품세트 선택 해제
+function clearSelectedProductSet() {
+  selectedProductSet = null;
+  const dropdown = document.getElementById('productSetDropdown');
+  if (dropdown) dropdown.value = '';
+  updateSelectedSetInfo();
+}
+
+// 제품 표시 토글 처리
+function handleProductTagsToggle(e) {
+  productTagsEnabled = e.target.checked;
+  const selector = document.getElementById('productTagsSelector');
+
+  if (productTagsEnabled) {
+    selector.classList.remove('hidden');
+    // 제품세트 목록 로드 (최초 1회)
+    if (productSetsList.length === 0) {
+      fetchProductSets().then(sets => renderProductSetsDropdown(sets));
+    }
+  } else {
+    selector.classList.add('hidden');
+    selectedProductSet = null;
+    updateSelectedSetInfo();
+  }
+
+  console.log('[ProductTags] 토글:', productTagsEnabled);
+}
+
+// 제품세트 소스 변경 (기존/새로 만들기)
+function handleProductSetSourceChange(e) {
+  const source = e.target.value;
+  const existingSelector = document.getElementById('existingSetSelector');
+  const newSelector = document.getElementById('newSetSelector');
+
+  if (source === 'existing') {
+    existingSelector.classList.remove('hidden');
+    newSelector.classList.add('hidden');
+  } else {
+    existingSelector.classList.add('hidden');
+    newSelector.classList.remove('hidden');
+  }
+}
+
+// 카탈로그 사이드바 열기 (새 제품세트 만들기)
+function openCatalogForNewSet() {
+  // 카탈로그 사이드바가 있는지 확인
+  const openBtn = document.getElementById('openCatalogSidebarBtn');
+  if (openBtn) {
+    openBtn.click();
+  } else {
+    showToast('카탈로그 기능을 사용할 수 없습니다.', 'error');
+  }
+}
+
+// 제품 표시 이벤트 핸들러 설정
+function setupProductTagsHandlers() {
+  // 토글 스위치
+  const toggleEl = document.getElementById('productTagsEnabled');
+  if (toggleEl) {
+    toggleEl.addEventListener('change', handleProductTagsToggle);
+  }
+
+  // 제품세트 소스 라디오 버튼
+  document.querySelectorAll('input[name="productSetSource"]').forEach(radio => {
+    radio.addEventListener('change', handleProductSetSourceChange);
+  });
+
+  // 제품세트 드롭다운
+  const dropdown = document.getElementById('productSetDropdown');
+  if (dropdown) {
+    dropdown.addEventListener('change', handleProductSetSelect);
+  }
+
+  // 새로고침 버튼
+  const refreshBtn = document.getElementById('refreshSetsBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      const sets = await fetchProductSets();
+      renderProductSetsDropdown(sets);
+      showToast('제품세트 목록을 새로고침했습니다.', 'info');
+    });
+  }
+
+  // 선택 해제 버튼
+  const clearBtn = document.getElementById('clearSelectedSetBtn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearSelectedProductSet);
+  }
+
+  // 새 제품세트 만들기 버튼
+  const newSetBtn = document.getElementById('openCatalogForNewSetBtn');
+  if (newSetBtn) {
+    newSetBtn.addEventListener('click', openCatalogForNewSet);
+  }
+
+  console.log('[ProductTags] 이벤트 핸들러 설정 완료');
+}
+
 function setupExitModalHandlers() {
   document.querySelectorAll('[data-exit-link="true"]').forEach(link => {
     link.addEventListener('click', (e) => { e.preventDefault(); showExitModal(link.href); });
@@ -2898,6 +3377,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 이탈 경고 모달 핸들러
   setupExitModalHandlers();
+
+  // 제품 표시 핸들러
+  setupProductTagsHandlers();
+
+  // catalogId 로드 (제품 표시 기능용) - 백그라운드에서 로드
+  loadCatalogId();
 
   // 데이터 로드
   await loadStep2Data();

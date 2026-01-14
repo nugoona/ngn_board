@@ -39,7 +39,7 @@ from ..services.cafe24_service import (
     get_cafe24_sales_data,
     get_cafe24_product_sales,
 )
-from ..services.catalog_sidebar_service import create_or_update_product_set
+from ..services.catalog_sidebar_service import create_or_update_product_set, get_product_sets
 from ..services.ga4_source_summary import get_ga4_source_summary
 from ..services.meta_ads_insight import get_meta_account_list_filtered
 from ..services.meta_ads_service import get_meta_ads_data
@@ -753,6 +753,38 @@ def catalog_set_route():
             return jsonify({"status": "error", "message": err}), 500
 
         return jsonify({"status": "success", **result}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 카탈로그 제품세트 목록 조회
+#     POST  /dashboard/catalog_sets
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/catalog_sets", methods=["POST"])
+def catalog_sets_route():
+    """카탈로그의 제품세트 목록 조회"""
+    try:
+        data = request.get_json(silent=True) or {}
+        catalog_id = str(data.get("catalog_id", "")).strip()
+
+        if not catalog_id:
+            return jsonify({
+                "status": "error",
+                "message": "catalog_id 누락"
+            }), 400
+
+        sets, err = get_product_sets(catalog_id)
+
+        if err:
+            return jsonify({"status": "error", "message": err}), 500
+
+        return jsonify({
+            "status": "success",
+            "product_sets": sets
+        }), 200
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

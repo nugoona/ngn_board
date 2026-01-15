@@ -512,27 +512,29 @@ async function fetchMetaAdsByAccount(accountId, page = 1) {
             // 전체 데이터 저장 (fetchMetaAdsByAccount에서만 전체 데이터 저장)
             metaAdsAllData = [...data.meta_ads_by_account];  // 배열 복사
             metaAdsTotalCount = data.meta_ads_total_count;
+            metaAdsServerTotal = data.meta_ads_total || null;  // 서버에서 계산한 총합 저장
             console.log('📊 전체 메타 광고 데이터 저장:', metaAdsAllData.length, '개');
-            
+            console.log('📊 서버 총합 데이터:', metaAdsServerTotal);
+
             // 필터링된 데이터 초기화 (새로운 데이터 로딩 시)
             metaAdsFilteredData = [];
             metaAdsCurrentFilter = [];
-            
+
             // 초기 로딩 시 지출 내림차순으로 정렬
             metaAdsAllData.sort((a, b) => {
                 const aSpend = a.spend || 0;
                 const bSpend = b.spend || 0;
                 return bSpend - aSpend; // 내림차순
             });
-            
+
             console.log('🔄 초기 지출 내림차순 정렬 완료');
-            
+
             // 페이지별 데이터로 렌더링
             const startIndex = (page - 1) * 10;
             const endIndex = startIndex + 10;
             const pageData = metaAdsAllData.slice(startIndex, endIndex);
-            
-            renderMetaAdsByAccount(pageData, metaAdsAllData.length);
+
+            renderMetaAdsByAccount(pageData, metaAdsAllData.length, metaAdsServerTotal);
             // 렌더링 후 로딩 숨김
             hideLoading("#loadingOverlayMetaAds");
         } else {
@@ -1050,6 +1052,7 @@ let cafe24ProductSalesTotalCount = 0;
 let metaAdsCurrentPage = 1;
 let metaAdsTotalCount = 0;
 let metaAdsAllData = []; // 전체 메타 광고 데이터 저장 (원본)
+let metaAdsServerTotal = null; // 서버에서 계산한 총합 데이터 (ROAS 정확도용)
 let metaAdsFilteredData = []; // 필터링된 메타 광고 데이터 저장
 let metaAdsCurrentFilter = []; // 현재 적용된 필터 상태 저장
 let tableSortEventsAdded = false; // 테이블 정렬 이벤트 중복 등록 방지
@@ -1360,7 +1363,7 @@ function handleAdPerformanceAccountChange(event) {
 }
 
 // 메타 광고별 성과 렌더링 (광고 탭 기준)
-function renderMetaAdsByAccount(adsData, totalCount = null) {
+function renderMetaAdsByAccount(adsData, totalCount = null, serverTotal = null) {
     console.log('📊 메타 광고별 성과 렌더링:', adsData);
     console.log('📊 메타 광고별 성과 전체 개수:', totalCount);
     
@@ -1470,35 +1473,38 @@ function renderMetaAdsByAccount(adsData, totalCount = null) {
         tbody.appendChild(tableRow);
     });
     
-    // 총합 로우 추가 (필터링된 데이터 기준 - 페이지와 관계없이 고정)
+    // 총합 로우 추가 (서버에서 받은 전체 총합 우선 사용)
     const dataForTotal = isFilteredData ? adsData : metaAdsAllData;
-    if (dataForTotal.length > 0) {
-        // 필터링된 데이터 또는 전체 데이터로 총합 계산 (페이지와 관계없이)
-        const totalSpend = dataForTotal.reduce((sum, row) => sum + (row.spend || 0), 0);
-        const totalClicks = dataForTotal.reduce((sum, row) => sum + (row.clicks || 0), 0);
-        const totalPurchases = dataForTotal.reduce((sum, row) => sum + (row.purchases || 0), 0);
-        const totalPurchaseValue = dataForTotal.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
-        
-        console.log('📊 총합 계산 데이터:', {
-            isFilteredData: isFilteredData,
-            dataForTotalLength: dataForTotal.length,
-            totalSpend: totalSpend,
-            totalClicks: totalClicks
-        });
-        
-        // 총합 CPC와 ROAS 계산 (웹버전과 동일한 로직)
-        const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
-        const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
-        
-        console.log('📊 전체 데이터 기준 총합 (페이지와 관계없이):', {
-            totalSpend,
-            totalClicks,
-            totalPurchases,
-            totalPurchaseValue,
-            totalCpc,
-            totalRoas
-        });
-        
+    if (dataForTotal.length > 0 || serverTotal) {
+        let totalSpend, totalClicks, totalPurchases, totalCpc, totalRoas;
+
+        // 서버에서 받은 전체 총합이 있고, 필터링되지 않은 경우 서버 데이터 사용
+        if (serverTotal && !isFilteredData) {
+            totalSpend = serverTotal.spend || 0;
+            totalClicks = serverTotal.clicks || 0;
+            totalPurchases = serverTotal.purchases || 0;
+            totalCpc = serverTotal.cpc || 0;
+            totalRoas = serverTotal.roas || 0;
+
+            console.log('📊 서버 총합 데이터 사용:', serverTotal);
+        } else {
+            // 필터링된 경우 클라이언트에서 계산
+            totalSpend = dataForTotal.reduce((sum, row) => sum + (row.spend || 0), 0);
+            totalClicks = dataForTotal.reduce((sum, row) => sum + (row.clicks || 0), 0);
+            totalPurchases = dataForTotal.reduce((sum, row) => sum + (row.purchases || 0), 0);
+            const totalPurchaseValue = dataForTotal.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+
+            totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+            totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
+
+            console.log('📊 클라이언트 총합 계산 (필터링 데이터):', {
+                isFilteredData: isFilteredData,
+                dataForTotalLength: dataForTotal.length
+            });
+        }
+
+        console.log('📊 최종 총합:', { totalSpend, totalClicks, totalPurchases, totalCpc, totalRoas });
+
         const totalRow = document.createElement('tr');
         totalRow.className = 'bg-gray-50 font-semibold';
         totalRow.innerHTML = `
@@ -1912,15 +1918,27 @@ function updatePagination(table, currentPage, totalItems) {
                         tbody.appendChild(tableRow);
                     });
                     
-                    // 총합 로우 추가
-                    if (metaAdsAllData.length > 0) {
-                        const totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
-                        const totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
-                        const totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
-                        const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
-                        const totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
-                        const totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
-                        
+                    // 총합 로우 추가 (서버 총합 우선 사용)
+                    if (metaAdsAllData.length > 0 || metaAdsServerTotal) {
+                        let totalSpend, totalClicks, totalPurchases, totalCpc, totalRoas;
+
+                        if (metaAdsServerTotal) {
+                            // 서버에서 계산한 총합 사용
+                            totalSpend = metaAdsServerTotal.spend || 0;
+                            totalClicks = metaAdsServerTotal.clicks || 0;
+                            totalPurchases = metaAdsServerTotal.purchases || 0;
+                            totalCpc = metaAdsServerTotal.cpc || 0;
+                            totalRoas = metaAdsServerTotal.roas || 0;
+                        } else {
+                            // 클라이언트에서 계산
+                            totalSpend = metaAdsAllData.reduce((sum, row) => sum + (row.spend || 0), 0);
+                            totalClicks = metaAdsAllData.reduce((sum, row) => sum + (row.clicks || 0), 0);
+                            totalPurchases = metaAdsAllData.reduce((sum, row) => sum + (row.purchases || 0), 0);
+                            const totalPurchaseValue = metaAdsAllData.reduce((sum, row) => sum + (row.purchase_value || 0), 0);
+                            totalCpc = totalClicks > 0 ? Math.round(totalSpend / totalClicks) : 0;
+                            totalRoas = totalSpend > 0 ? Math.round((totalPurchaseValue / totalSpend) * 100) : 0;
+                        }
+
                         const totalRow = document.createElement('tr');
                         totalRow.className = 'bg-gray-50 font-semibold';
                         totalRow.innerHTML = `
@@ -2096,8 +2114,8 @@ function sortTable(table, columnIndex) {
             페이지데이터개수: pageData.length,
             페이지데이터샘플: pageData.slice(0, 3)
         });
-        
-        renderMetaAdsByAccount(pageData, sortedData.length);
+
+        renderMetaAdsByAccount(pageData, sortedData.length, metaAdsServerTotal);
     }
     
     // 모든 헤더의 정렬 표시 제거
@@ -2214,13 +2232,13 @@ function filterMetaAdsByCampaign() {
         metaAdsFilteredData = filteredData;
         console.log('🔧 [DEBUG] 필터링된 데이터 저장됨:', metaAdsFilteredData.length, '개');
         
-        // 필터링된 데이터로 렌더링 (첫 페이지)
+        // 필터링된 데이터로 렌더링 (첫 페이지) - 필터링 시에는 클라이언트 계산 사용
         const startIndex = 0;
         const endIndex = 10;
         const pageData = filteredData.slice(startIndex, endIndex);
-        
+
         console.log('🔧 [DEBUG] 렌더링할 페이지 데이터:', pageData.length, '개');
-        renderMetaAdsByAccount(pageData, filteredData.length);
+        renderMetaAdsByAccount(pageData, filteredData.length, null);
         
         // 페이지네이션 업데이트
         metaAdsCurrentPage = 1;

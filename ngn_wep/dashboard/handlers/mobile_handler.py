@@ -305,12 +305,30 @@ def get_data():
         if data_type in ["meta_ads", "all"]:
             t1 = time.time()
             meta_data = get_meta_ads_data(company_name, period, start_date, end_date, "summary", "desc")
-            # 모바일용 데이터 처리
+
+            # 전체 데이터로 총합 계산 (ROAS 정확도를 위해)
+            total_spend = sum(row.get('spend', 0) or 0 for row in meta_data)
+            total_clicks = sum(row.get('clicks', 0) or 0 for row in meta_data)
+            total_purchases = sum(row.get('purchases', 0) or 0 for row in meta_data)
+            total_purchase_value = sum(row.get('purchase_value', 0) or 0 for row in meta_data)
+            total_roas = round((total_purchase_value / total_spend * 100), 0) if total_spend > 0 else 0
+            total_cpc = round(total_spend / total_clicks) if total_clicks > 0 else 0
+
+            # 모바일용 데이터 처리 (상위 10개만 테이블용)
             processed_meta_data = process_meta_ads_for_mobile(meta_data[:10])
             response_data["meta_ads"] = processed_meta_data
+            response_data["meta_ads_total"] = {
+                "spend": total_spend,
+                "clicks": total_clicks,
+                "purchases": total_purchases,
+                "purchase_value": total_purchase_value,
+                "roas": total_roas,
+                "cpc": total_cpc,
+                "count": len(meta_data)
+            }
             t2 = time.time()
             timing_log["meta_ads"] = round(t2-t1, 3)
-            print(f"[MOBILE] ✅ Meta Ads 성공: {len(processed_meta_data)}개")
+            print(f"[MOBILE] ✅ Meta Ads 성공: {len(processed_meta_data)}개 (전체: {len(meta_data)}개, ROAS: {total_roas}%)")
 
         # 🚀 성능 정보 추가
         response_data["performance"] = {
@@ -425,10 +443,18 @@ def get_meta_ads_by_account():
             rows = ads_data.get("rows", [])
             total_count = ads_data.get("total_count", len(rows))
             print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(rows)}개 / 전체: {total_count}개")
-            
+
+            # 전체 데이터로 총합 계산
+            total_spend = sum(row.get('spend', 0) or 0 for row in rows)
+            total_clicks = sum(row.get('clicks', 0) or 0 for row in rows)
+            total_purchases = sum(row.get('purchases', 0) or 0 for row in rows)
+            total_purchase_value = sum(row.get('purchase_value', 0) or 0 for row in rows)
+            total_roas = round((total_purchase_value / total_spend * 100), 0) if total_spend > 0 else 0
+            total_cpc = round(total_spend / total_clicks) if total_clicks > 0 else 0
+
             # 모바일용 데이터 처리
             processed_ads_data = process_meta_ads_for_mobile(rows)
-            
+
             # Meta Ads 최종 업데이트 시간 조회
             meta_updated_at = get_meta_ads_updated_at()
 
@@ -436,11 +462,27 @@ def get_meta_ads_by_account():
                 "status": "success",
                 "meta_ads_by_account": processed_ads_data,
                 "meta_ads_total_count": total_count,
+                "meta_ads_total": {
+                    "spend": total_spend,
+                    "clicks": total_clicks,
+                    "purchases": total_purchases,
+                    "purchase_value": total_purchase_value,
+                    "roas": total_roas,
+                    "cpc": total_cpc
+                },
                 "updated_at": meta_updated_at
             })
         else:
             # 기존 형식 (전체 데이터)
             print(f"[MOBILE] 📊 메타 광고별 성과 서비스 결과: {len(ads_data) if ads_data else 0}개")
+
+            # 전체 데이터로 총합 계산
+            total_spend = sum(row.get('spend', 0) or 0 for row in ads_data) if ads_data else 0
+            total_clicks = sum(row.get('clicks', 0) or 0 for row in ads_data) if ads_data else 0
+            total_purchases = sum(row.get('purchases', 0) or 0 for row in ads_data) if ads_data else 0
+            total_purchase_value = sum(row.get('purchase_value', 0) or 0 for row in ads_data) if ads_data else 0
+            total_roas = round((total_purchase_value / total_spend * 100), 0) if total_spend > 0 else 0
+            total_cpc = round(total_spend / total_clicks) if total_clicks > 0 else 0
 
             # 모바일용 데이터 처리 (전체 데이터)
             processed_ads_data = process_meta_ads_for_mobile(ads_data)
@@ -453,6 +495,14 @@ def get_meta_ads_by_account():
                 "status": "success",
                 "meta_ads_by_account": processed_ads_data,
                 "meta_ads_total_count": total_count,
+                "meta_ads_total": {
+                    "spend": total_spend,
+                    "clicks": total_clicks,
+                    "purchases": total_purchases,
+                    "purchase_value": total_purchase_value,
+                    "roas": total_roas,
+                    "cpc": total_cpc
+                },
                 "updated_at": meta_updated_at
             })
         

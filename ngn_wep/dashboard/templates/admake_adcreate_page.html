@@ -548,41 +548,49 @@
       box-shadow: none;
     }
 
-    /* 주요문구 템플릿 스타일 */
-    .admake-template-selector {
+    /* 주요문구 입력 영역 - 인스타 피드 너비에 맞춤 */
+    .admake-primary-text-container {
       display: flex;
+      flex-direction: column;
       gap: 8px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
     }
 
-    .admake-template-btn {
-      padding: 6px 12px;
+    .admake-primary-text-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .admake-history-select {
+      padding: 6px 28px 6px 10px;
       font-size: 12px;
-      font-weight: 500;
       color: var(--text-secondary);
       background: var(--surface-secondary);
       border: 1px solid var(--border-default);
       border-radius: 6px;
       cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      max-width: 180px;
     }
 
-    .admake-template-btn:hover {
+    .admake-history-select:hover {
       border-color: var(--primary);
-      color: var(--primary);
-      background: rgba(99, 102, 241, 0.05);
-    }
-
-    .admake-template-btn.active {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: rgba(99, 102, 241, 0.1);
     }
 
     .admake-textarea-wrapper {
       position: relative;
+      max-width: 300px;
+    }
+
+    .admake-textarea-wrapper .admake-field-textarea {
+      width: 100%;
+      font-size: 13px;
+      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
     .admake-char-counter {
@@ -602,8 +610,14 @@
       color: #ef4444;
     }
 
+    .admake-feed-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
     .admake-field-textarea {
-      min-height: 120px;
+      min-height: 160px;
       resize: vertical;
       padding-bottom: 28px;
     }
@@ -2080,19 +2094,21 @@
 
       <div class="admake-editor-grid full-width" style="margin-top: 16px;">
         <div class="admake-field-group">
-          <label class="admake-field-label">
-            <i data-lucide="align-left"></i>
-            주요문구
-          </label>
-          <div class="admake-template-selector">
-            <button type="button" class="admake-template-btn" data-template="basic3">📋 기본 3줄</button>
-            <button type="button" class="admake-template-btn" data-template="detail5">📝 상세 5줄</button>
-            <button type="button" class="admake-template-btn" data-template="minimal">✨ 미니멀</button>
-            <button type="button" class="admake-template-btn active" data-template="free">✍️ 자유 입력</button>
-          </div>
-          <div class="admake-textarea-wrapper">
-            <textarea class="admake-field-input admake-field-textarea" id="masterPrimaryText" placeholder="광고 본문을 입력하세요..."></textarea>
-            <span class="admake-char-counter" id="primaryTextCounter">0/125</span>
+          <div class="admake-primary-text-container">
+            <div class="admake-primary-text-header">
+              <label class="admake-field-label" style="margin-bottom: 0;">
+                <i data-lucide="align-left"></i>
+                주요문구
+              </label>
+              <select class="admake-history-select" id="primaryTextHistory">
+                <option value="">📂 지난 문구</option>
+              </select>
+            </div>
+            <div class="admake-textarea-wrapper">
+              <textarea class="admake-field-input admake-field-textarea" id="masterPrimaryText" placeholder="인스타 피드 너비에 맞춰 줄바꿈이 표시됩니다..."></textarea>
+              <span class="admake-char-counter" id="primaryTextCounter">0자</span>
+            </div>
+            <span class="admake-feed-hint">💡 이 너비가 실제 인스타/메타 피드에서 보이는 너비입니다</span>
           </div>
         </div>
 
@@ -2464,49 +2480,93 @@ function getFullAdName() {
   return prefix + userInput;
 }
 
-// ===== 주요문구 템플릿 관리 =====
-const primaryTextTemplates = {
-  basic3: `English hook line. #BRAND
+// ===== 주요문구 히스토리 관리 (최근 5개 저장) =====
+const PRIMARY_TEXT_HISTORY_KEY = 'admake_primary_text_history';
+const MAX_HISTORY_COUNT = 5;
 
-🌟한글 설명 문구를 여기에 입력하세요
-Tagline here`,
-  detail5: `This is my summer vibe. #BRAND
+function getPrimaryTextHistory() {
+  try {
+    const saved = localStorage.getItem(PRIMARY_TEXT_HISTORY_KEY);
+    return saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    console.error('[STEP3] 히스토리 로드 오류:', e);
+    return [];
+  }
+}
 
-🌞시즌 키워드와 함께 설명
-Loved. Worn. Repeated.
+function savePrimaryTextToHistory(text) {
+  if (!text || text.trim().length < 5) return; // 너무 짧은 문구는 저장 안함
 
-👉 지금 바로 확인하세요`,
-  minimal: `#BRAND
+  let history = getPrimaryTextHistory();
 
-✨한 줄 메시지`,
-  free: ''
-};
+  // 이미 동일한 문구가 있으면 제거 (중복 방지, 최신으로 이동)
+  history = history.filter(item => item.text !== text);
 
-let currentTemplate = 'free';
+  // 첫 줄만 추출해서 미리보기로 사용
+  const preview = text.split('\n')[0].substring(0, 25) + (text.length > 25 ? '...' : '');
 
-function applyTemplate(templateKey) {
+  // 맨 앞에 추가
+  history.unshift({
+    text: text,
+    preview: preview,
+    savedAt: new Date().toISOString()
+  });
+
+  // 최대 5개만 유지
+  if (history.length > MAX_HISTORY_COUNT) {
+    history = history.slice(0, MAX_HISTORY_COUNT);
+  }
+
+  try {
+    localStorage.setItem(PRIMARY_TEXT_HISTORY_KEY, JSON.stringify(history));
+    console.log('[STEP3] 주요문구 히스토리 저장됨:', preview);
+  } catch (e) {
+    console.error('[STEP3] 히스토리 저장 오류:', e);
+  }
+}
+
+function renderPrimaryTextHistory() {
+  const select = document.getElementById('primaryTextHistory');
+  if (!select) return;
+
+  const history = getPrimaryTextHistory();
+
+  // 기존 옵션 제거 (첫 번째 기본 옵션 제외)
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+
+  // 히스토리 옵션 추가
+  history.forEach((item, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${index + 1}. ${item.preview}`;
+    select.appendChild(option);
+  });
+
+  // 히스토리가 없으면 비활성화 표시
+  if (history.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '(저장된 문구 없음)';
+    option.disabled = true;
+    select.appendChild(option);
+  }
+}
+
+function applyPrimaryTextFromHistory(index) {
+  const history = getPrimaryTextHistory();
+  if (index < 0 || index >= history.length) return;
+
   const textarea = document.getElementById('masterPrimaryText');
   if (!textarea) return;
 
-  currentTemplate = templateKey;
-
-  // 버튼 활성화 상태 업데이트
-  document.querySelectorAll('.admake-template-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.template === templateKey);
-  });
-
-  // 템플릿 적용
-  if (templateKey !== 'free') {
-    textarea.value = primaryTextTemplates[templateKey] || '';
-    textarea.placeholder = '템플릿을 수정하세요...';
-  } else {
-    textarea.value = '';
-    textarea.placeholder = '광고 본문을 입력하세요...';
-  }
-
-  // masterValues 업데이트
+  textarea.value = history[index].text;
   handleMasterChange('primaryText', textarea.value);
   updateCharCounter();
+
+  // 선택 초기화
+  document.getElementById('primaryTextHistory').selectedIndex = 0;
 }
 
 function updateCharCounter() {
@@ -2515,23 +2575,27 @@ function updateCharCounter() {
   if (!textarea || !counter) return;
 
   const len = textarea.value.length;
-  const max = 125;
-
-  counter.textContent = `${len}/${max}`;
+  counter.textContent = `${len}자`;
   counter.classList.remove('warning', 'danger');
 
-  if (len > max) {
+  if (len > 150) {
     counter.classList.add('danger');
-  } else if (len > max * 0.8) {
+  } else if (len > 100) {
     counter.classList.add('warning');
   }
 }
 
-function setupTemplateHandlers() {
-  // 템플릿 버튼 이벤트
-  document.querySelectorAll('.admake-template-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyTemplate(btn.dataset.template));
-  });
+function setupPrimaryTextHandlers() {
+  // 히스토리 드롭다운 이벤트
+  const historySelect = document.getElementById('primaryTextHistory');
+  if (historySelect) {
+    historySelect.addEventListener('change', (e) => {
+      const index = parseInt(e.target.value);
+      if (!isNaN(index)) {
+        applyPrimaryTextFromHistory(index);
+      }
+    });
+  }
 
   // 글자수 카운터 업데이트
   const textarea = document.getElementById('masterPrimaryText');
@@ -2539,6 +2603,9 @@ function setupTemplateHandlers() {
     textarea.addEventListener('input', updateCharCounter);
     updateCharCounter();
   }
+
+  // 히스토리 드롭다운 렌더링
+  renderPrimaryTextHistory();
 }
 
 console.log('[STEP3] 페이지 초기화 시작');
@@ -3624,6 +3691,12 @@ async function handleAddMoreButton() {
 
     showToast(`광고가 저장되었습니다. (총 ${result.total_count}개)`, 'success', 2000);
 
+    // 주요문구 히스토리에 저장
+    if (masterValues.primaryText) {
+      savePrimaryTextToHistory(masterValues.primaryText);
+      renderPrimaryTextHistory();
+    }
+
     // 마스터 설정은 유지, 광고 이름만 자동 증가
     const currentName = masterValues.adName || 'AD';
     const match = currentName.match(/^(.+?)(\d+)?$/);
@@ -4421,8 +4494,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 광고 이름 접두사 초기화
   updateAdNamePrefix();
 
-  // 주요문구 템플릿 핸들러 초기화
-  setupTemplateHandlers();
+  // 주요문구 히스토리 핸들러 초기화
+  setupPrimaryTextHandlers();
 
   // 광고 유형 버튼 이벤트
   document.querySelectorAll('.admake-type-btn').forEach(btn => {

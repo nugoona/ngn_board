@@ -247,14 +247,11 @@ def get_meta_ads_insight_table(
         is_recent_period = period_length <= 7
         
         print(f"[DEBUG] 광고 상태 필터링 - 기간: {start_date} ~ {end_date}, 기간 길이: {period_length}일, 최근 기간: {is_recent_period}")
-        
-        if is_recent_period:
-            # 최근 기간 (7일 이내): ACTIVE 광고만
-            conditions.append(f"({latest_alias}.ad_status = 'ACTIVE' OR {latest_alias}.ad_status IS NULL)")
-            print(f"[DEBUG] 최근 기간 - ACTIVE 광고만 포함")
-        else:
-            # 과거 기간 (7일 초과): 모든 광고 (ACTIVE, PAUSED, DELETED 등)
-            print(f"[DEBUG] 과거 기간 - 모든 광고 상태 포함")
+
+        # 🔥 수정: 해당 기간에 지출 데이터가 있는 모든 광고 포함 (상태 무관)
+        # HAVING SUM(A.spend) > 0 조건이 이미 있으므로 지출 있는 광고만 포함됨
+        # 광고 상태 필터 제거 - PAUSED 광고도 지출 데이터가 있으면 ROAS 계산에 포함
+        print(f"[DEBUG] 모든 광고 상태 포함 (지출 데이터가 있는 광고만 - HAVING 조건)")
             
     elif level != "account":
         conditions.append("(A.campaign_name IS NULL OR NOT LOWER(A.campaign_name) LIKE '%instagram%')")

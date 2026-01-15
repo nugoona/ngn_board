@@ -2285,7 +2285,7 @@ function updateInstagramCompatibilityBadge() {
     // 9:16 - 모든 플랫폼 호환
     badge.style.background = 'rgba(16, 185, 129, 0.1)';
     badge.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-    textEl.innerHTML = '✅ REELS + STORY + FEED';
+    textEl.innerHTML = '✅ 릴스 + 스토리 + 피드';
     textEl.style.color = '#10b981';
     detailEl.innerHTML = '9:16 (1080×1920)';
     detailEl.style.color = '#059669';
@@ -2293,7 +2293,7 @@ function updateInstagramCompatibilityBadge() {
     // 4:5 - 피드 전용
     badge.style.background = 'rgba(59, 130, 246, 0.1)';
     badge.style.border = '1px solid rgba(59, 130, 246, 0.3)';
-    textEl.innerHTML = '📱 FEED ONLY';
+    textEl.innerHTML = '📱 피드 전용';
     textEl.style.color = '#3b82f6';
     detailEl.innerHTML = '4:5 (1080×1350)';
     detailEl.style.color = '#2563eb';
@@ -2301,7 +2301,7 @@ function updateInstagramCompatibilityBadge() {
     // 1:1 - 피드 전용
     badge.style.background = 'rgba(245, 158, 11, 0.1)';
     badge.style.border = '1px solid rgba(245, 158, 11, 0.3)';
-    textEl.innerHTML = '📱 FEED ONLY';
+    textEl.innerHTML = '📱 피드 전용';
     textEl.style.color = '#f59e0b';
     detailEl.innerHTML = '1:1 (1080×1080)';
     detailEl.style.color = '#d97706';
@@ -2313,11 +2313,11 @@ function updateInstagramCompatibilityBadge() {
   if (isVideo && !is916) {
     badge.style.background = 'rgba(245, 158, 11, 0.1)';
     badge.style.border = '1px solid rgba(245, 158, 11, 0.3)';
-    textEl.innerHTML = '📹 VIDEO: FEED ONLY';
+    textEl.innerHTML = '📹 동영상: 피드 전용';
     textEl.style.color = '#f59e0b';
-    detailEl.innerHTML = is45 ? '4:5 - Feed Placement' :
-                         is11 ? '1:1 - Feed Placement' :
-                         'Feed Placement';
+    detailEl.innerHTML = is45 ? '4:5 - 피드 게재' :
+                         is11 ? '1:1 - 피드 게재' :
+                         '피드 게재';
     detailEl.style.color = '#d97706';
   }
 }

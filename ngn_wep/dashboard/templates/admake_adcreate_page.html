@@ -517,6 +517,37 @@
       color: var(--text-muted);
     }
 
+    /* 광고 이름 접두사 스타일 */
+    .admake-name-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--surface-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .admake-name-prefix {
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+      white-space: nowrap;
+      border-right: 1px solid var(--border-default);
+    }
+
+    .admake-name-input-wrapper .admake-field-input {
+      border: none;
+      border-radius: 0;
+      flex: 1;
+    }
+
+    .admake-name-input-wrapper .admake-field-input:focus {
+      box-shadow: none;
+    }
+
     .admake-field-textarea {
       min-height: 80px;
       resize: vertical;
@@ -1958,7 +1989,10 @@
             <i data-lucide="tag"></i>
             광고 이름
           </label>
-          <input type="text" class="admake-field-input font-inter" id="masterAdName" placeholder="AD_2024_SUMMER">
+          <div class="admake-name-input-wrapper">
+            <span class="admake-name-prefix" id="adNamePrefix">[20260115][단일]</span>
+            <input type="text" class="admake-field-input font-inter" id="masterAdName" placeholder="광고명 입력">
+          </div>
         </div>
 
         <div class="admake-field-group">
@@ -2333,6 +2367,39 @@ let masterValues = {
 // 개별 카드 값 (마스터 동기화 해제 시 사용)
 let cardValues = {}; // { mediaId: { url, headline, description } }
 
+// ===== 광고 이름 접두사 관리 =====
+function getAdTypeLabel(type) {
+  switch (type) {
+    case 'single_image': return '[단일]';
+    case 'single_video': return '[영상]';
+    case 'slide': return '[슬라이드]';
+    default: return '[단일]';
+  }
+}
+
+function getTodayString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `[${year}${month}${day}]`;
+}
+
+function updateAdNamePrefix() {
+  const prefixEl = document.getElementById('adNamePrefix');
+  if (prefixEl) {
+    const dateStr = getTodayString();
+    const typeStr = getAdTypeLabel(currentAdType);
+    prefixEl.textContent = dateStr + typeStr;
+  }
+}
+
+function getFullAdName() {
+  const prefix = document.getElementById('adNamePrefix')?.textContent || '';
+  const userInput = masterValues.adName || '';
+  return prefix + userInput;
+}
+
 console.log('[STEP3] 페이지 초기화 시작');
 
 // ===== IndexedDB에서 File 객체 가져오기 =====
@@ -2573,6 +2640,9 @@ function handleAdTypeChange(type) {
   document.querySelectorAll('.admake-type-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.type === type);
   });
+
+  // 광고 이름 접두사 업데이트
+  updateAdNamePrefix();
 
   // 선택 초기화
   selectedMediaIds = [];
@@ -3175,7 +3245,7 @@ async function addToPendingAds() {
     description: masterValues.description || '',
     link: masterValues.url || '',
     cta_type: masterValues.cta || 'SHOP_NOW',
-    ad_name: masterValues.adName || `AD_${Date.now()}`,
+    ad_name: getFullAdName() || `AD_${Date.now()}`,
     is_carousel: isCarousel,
     cards: cards,
     // 제품 표시 (Product Tags) - 단일 이미지/동영상만 지원
@@ -3375,7 +3445,7 @@ async function handleAddMoreButton() {
       media_type: firstMedia?.mediaType || 'image',
       video_id: firstMedia?.videoId || null,
       image_hash: firstMedia?.hash || null,
-      ad_name: masterValues.adName || `AD_${Date.now()}`,
+      ad_name: getFullAdName() || `AD_${Date.now()}`,
       is_carousel: isCarousel,
       cards: cards
     };
@@ -4206,6 +4276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 데이터 로드
   await loadStep2Data();
+
+  // 광고 이름 접두사 초기화
+  updateAdNamePrefix();
 
   // 광고 유형 버튼 이벤트
   document.querySelectorAll('.admake-type-btn').forEach(btn => {

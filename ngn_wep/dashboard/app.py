@@ -61,6 +61,7 @@ app = Flask(__name__,
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret")
 app.permanent_session_lifetime = timedelta(hours=8)
 app.config["SESSION_PERMANENT"] = True
+app.config["TEMPLATES_AUTO_RELOAD"] = True  # 템플릿 변경 즉시 반영
 
 # 정적 파일 경로 디버깅
 print(f"[DEBUG] Flask static folder: {static_folder_path}")

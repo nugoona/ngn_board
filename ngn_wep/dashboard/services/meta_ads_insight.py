@@ -279,7 +279,7 @@ def get_meta_ads_insight_table(
       {latest_join}
       WHERE {" AND ".join(conditions)}
       GROUP BY { (group_date + ', ' if group_date else '') + group_cols }
-      HAVING SUM(A.spend) > 0
+      HAVING SUM(A.spend) > 0 OR SUM(A.purchases) > 0
       {order_by}
       {limit_clause}
     """
@@ -305,7 +305,7 @@ def get_meta_ads_insight_table(
                 {latest_join}
                 WHERE {" AND ".join(conditions)}
                 GROUP BY { (group_date + ', ' if group_date else '') + group_cols }
-                HAVING SUM(A.spend) > 0
+                HAVING SUM(A.spend) > 0 OR SUM(A.purchases) > 0
               )
             """
 

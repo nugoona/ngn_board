@@ -548,9 +548,64 @@
       box-shadow: none;
     }
 
+    /* 주요문구 템플릿 스타일 */
+    .admake-template-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .admake-template-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--surface-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .admake-template-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .admake-template-btn.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .admake-textarea-wrapper {
+      position: relative;
+    }
+
+    .admake-char-counter {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .admake-char-counter.warning {
+      color: #f59e0b;
+    }
+
+    .admake-char-counter.danger {
+      color: #ef4444;
+    }
+
     .admake-field-textarea {
-      min-height: 80px;
+      min-height: 120px;
       resize: vertical;
+      padding-bottom: 28px;
     }
 
     .admake-field-select {
@@ -2029,7 +2084,16 @@
             <i data-lucide="align-left"></i>
             주요문구
           </label>
-          <textarea class="admake-field-input admake-field-textarea" id="masterPrimaryText" placeholder="광고 본문을 입력하세요..."></textarea>
+          <div class="admake-template-selector">
+            <button type="button" class="admake-template-btn" data-template="basic3">📋 기본 3줄</button>
+            <button type="button" class="admake-template-btn" data-template="detail5">📝 상세 5줄</button>
+            <button type="button" class="admake-template-btn" data-template="minimal">✨ 미니멀</button>
+            <button type="button" class="admake-template-btn active" data-template="free">✍️ 자유 입력</button>
+          </div>
+          <div class="admake-textarea-wrapper">
+            <textarea class="admake-field-input admake-field-textarea" id="masterPrimaryText" placeholder="광고 본문을 입력하세요..."></textarea>
+            <span class="admake-char-counter" id="primaryTextCounter">0/125</span>
+          </div>
         </div>
 
         <div class="admake-field-group">
@@ -2398,6 +2462,83 @@ function getFullAdName() {
   const prefix = document.getElementById('adNamePrefix')?.textContent || '';
   const userInput = masterValues.adName || '';
   return prefix + userInput;
+}
+
+// ===== 주요문구 템플릿 관리 =====
+const primaryTextTemplates = {
+  basic3: `English hook line. #BRAND
+
+🌟한글 설명 문구를 여기에 입력하세요
+Tagline here`,
+  detail5: `This is my summer vibe. #BRAND
+
+🌞시즌 키워드와 함께 설명
+Loved. Worn. Repeated.
+
+👉 지금 바로 확인하세요`,
+  minimal: `#BRAND
+
+✨한 줄 메시지`,
+  free: ''
+};
+
+let currentTemplate = 'free';
+
+function applyTemplate(templateKey) {
+  const textarea = document.getElementById('masterPrimaryText');
+  if (!textarea) return;
+
+  currentTemplate = templateKey;
+
+  // 버튼 활성화 상태 업데이트
+  document.querySelectorAll('.admake-template-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.template === templateKey);
+  });
+
+  // 템플릿 적용
+  if (templateKey !== 'free') {
+    textarea.value = primaryTextTemplates[templateKey] || '';
+    textarea.placeholder = '템플릿을 수정하세요...';
+  } else {
+    textarea.value = '';
+    textarea.placeholder = '광고 본문을 입력하세요...';
+  }
+
+  // masterValues 업데이트
+  handleMasterChange('primaryText', textarea.value);
+  updateCharCounter();
+}
+
+function updateCharCounter() {
+  const textarea = document.getElementById('masterPrimaryText');
+  const counter = document.getElementById('primaryTextCounter');
+  if (!textarea || !counter) return;
+
+  const len = textarea.value.length;
+  const max = 125;
+
+  counter.textContent = `${len}/${max}`;
+  counter.classList.remove('warning', 'danger');
+
+  if (len > max) {
+    counter.classList.add('danger');
+  } else if (len > max * 0.8) {
+    counter.classList.add('warning');
+  }
+}
+
+function setupTemplateHandlers() {
+  // 템플릿 버튼 이벤트
+  document.querySelectorAll('.admake-template-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyTemplate(btn.dataset.template));
+  });
+
+  // 글자수 카운터 업데이트
+  const textarea = document.getElementById('masterPrimaryText');
+  if (textarea) {
+    textarea.addEventListener('input', updateCharCounter);
+    updateCharCounter();
+  }
 }
 
 console.log('[STEP3] 페이지 초기화 시작');
@@ -4279,6 +4420,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 광고 이름 접두사 초기화
   updateAdNamePrefix();
+
+  // 주요문구 템플릿 핸들러 초기화
+  setupTemplateHandlers();
 
   // 광고 유형 버튼 이벤트
   document.querySelectorAll('.admake-type-btn').forEach(btn => {

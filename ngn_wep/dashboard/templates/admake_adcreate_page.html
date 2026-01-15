@@ -583,14 +583,15 @@
 
     .admake-textarea-wrapper {
       position: relative;
-      max-width: 300px;
+      max-width: 320px;  /* 한글 약 24자 기준 */
     }
 
     .admake-textarea-wrapper .admake-field-textarea {
       width: 100%;
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.5;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      letter-spacing: -0.2px;
     }
 
     .admake-char-counter {
@@ -2480,13 +2481,16 @@ function getFullAdName() {
   return prefix + userInput;
 }
 
-// ===== 주요문구 히스토리 관리 (최근 5개 저장) =====
-const PRIMARY_TEXT_HISTORY_KEY = 'admake_primary_text_history';
+// ===== 주요문구 히스토리 관리 (최근 5개 저장, 계정별 분리) =====
 const MAX_HISTORY_COUNT = 5;
+
+function getPrimaryTextHistoryKey() {
+  return `admake_primary_text_history_${accountId}`;
+}
 
 function getPrimaryTextHistory() {
   try {
-    const saved = localStorage.getItem(PRIMARY_TEXT_HISTORY_KEY);
+    const saved = localStorage.getItem(getPrimaryTextHistoryKey());
     return saved ? JSON.parse(saved) : [];
   } catch (e) {
     console.error('[STEP3] 히스토리 로드 오류:', e);
@@ -2518,8 +2522,8 @@ function savePrimaryTextToHistory(text) {
   }
 
   try {
-    localStorage.setItem(PRIMARY_TEXT_HISTORY_KEY, JSON.stringify(history));
-    console.log('[STEP3] 주요문구 히스토리 저장됨:', preview);
+    localStorage.setItem(getPrimaryTextHistoryKey(), JSON.stringify(history));
+    console.log('[STEP3] 주요문구 히스토리 저장됨 (계정:', accountId, '):', preview);
   } catch (e) {
     console.error('[STEP3] 히스토리 저장 오류:', e);
   }
@@ -3690,12 +3694,6 @@ async function handleAddMoreButton() {
     updatePendingAdsCount();
 
     showToast(`광고가 저장되었습니다. (총 ${result.total_count}개)`, 'success', 2000);
-
-    // 주요문구 히스토리에 저장
-    if (masterValues.primaryText) {
-      savePrimaryTextToHistory(masterValues.primaryText);
-      renderPrimaryTextHistory();
-    }
 
     // 마스터 설정은 유지, 광고 이름만 자동 증가
     const currentName = masterValues.adName || 'AD';

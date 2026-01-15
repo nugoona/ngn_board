@@ -1257,6 +1257,49 @@ let accountInfo = null; // 계정 정보 (UTM, pixel_id 등)
 
 console.log('[STEP5] 페이지 초기화 시작');
 
+// ===== 주요문구 히스토리 저장 (광고 전송 성공 시) =====
+const MAX_HISTORY_COUNT = 5;
+
+function getPrimaryTextHistoryKey() {
+  return `admake_primary_text_history_${accountId}`;
+}
+
+function savePrimaryTextsToHistory(ads) {
+  try {
+    // 기존 히스토리 로드
+    const saved = localStorage.getItem(getPrimaryTextHistoryKey());
+    let history = saved ? JSON.parse(saved) : [];
+
+    // 전송된 광고에서 고유한 주요문구만 추출
+    const uniqueTexts = [...new Set(ads.map(ad => ad.message).filter(msg => msg && msg.trim().length >= 5))];
+
+    uniqueTexts.forEach(text => {
+      // 중복 제거
+      history = history.filter(item => item.text !== text);
+
+      // 첫 줄 미리보기
+      const preview = text.split('\n')[0].substring(0, 25) + (text.length > 25 ? '...' : '');
+
+      // 맨 앞에 추가
+      history.unshift({
+        text: text,
+        preview: preview,
+        savedAt: new Date().toISOString()
+      });
+    });
+
+    // 최대 5개만 유지
+    if (history.length > MAX_HISTORY_COUNT) {
+      history = history.slice(0, MAX_HISTORY_COUNT);
+    }
+
+    localStorage.setItem(getPrimaryTextHistoryKey(), JSON.stringify(history));
+    console.log('[STEP5] 주요문구 히스토리 저장됨 (계정:', accountId, ', 개수:', history.length, ')');
+  } catch (e) {
+    console.error('[STEP5] 히스토리 저장 오류:', e);
+  }
+}
+
 // ===== IndexedDB에서 File 객체 가져오기 =====
 async function getFileFromIndexedDB(mediaId) {
   return new Promise((resolve, reject) => {
@@ -1776,6 +1819,9 @@ async function publishAds() {
 
       // 전송 성공 후 pending_ads 클리어
       await clearPendingAds();
+
+      // 주요문구 히스토리에 저장 (계정별)
+      savePrimaryTextsToHistory(adsToPublish);
 
       // 모든 성공 시 애니메이션 표시
       if (result.fail_count === 0) {

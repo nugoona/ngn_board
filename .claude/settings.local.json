@@ -18,7 +18,11 @@
       "Bash(bq query:*)",
       "Bash(bq show:*)",
       "Bash(./deploy_image_extractor.sh)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(python3:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.facebook.com)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

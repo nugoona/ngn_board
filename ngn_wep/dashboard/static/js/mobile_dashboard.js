@@ -1478,6 +1478,9 @@ function renderMetaAdsByAccount(adsData, totalCount = null, serverTotal = null) 
     if (dataForTotal.length > 0 || serverTotal) {
         let totalSpend, totalClicks, totalPurchases, totalCpc, totalRoas;
 
+        // 🔥 디버그: serverTotal 상태 로그
+        console.log('🔥 ROAS 계산 조건 - serverTotal:', serverTotal, 'isFilteredData:', isFilteredData);
+
         // 서버에서 받은 전체 총합이 있고, 필터링되지 않은 경우 서버 데이터 사용
         if (serverTotal && !isFilteredData) {
             totalSpend = serverTotal.spend || 0;
@@ -1486,9 +1489,10 @@ function renderMetaAdsByAccount(adsData, totalCount = null, serverTotal = null) 
             totalCpc = serverTotal.cpc || 0;
             totalRoas = serverTotal.roas || 0;
 
-            console.log('📊 서버 총합 데이터 사용:', serverTotal);
+            console.log('✅ 서버 총합 데이터 사용:', serverTotal);
         } else {
             // 필터링된 경우 클라이언트에서 계산
+            console.log('⚠️ 클라이언트에서 총합 계산 (serverTotal 없거나 필터링됨)');
             totalSpend = dataForTotal.reduce((sum, row) => sum + (row.spend || 0), 0);
             totalClicks = dataForTotal.reduce((sum, row) => sum + (row.clicks || 0), 0);
             totalPurchases = dataForTotal.reduce((sum, row) => sum + (row.purchases || 0), 0);
@@ -1499,7 +1503,8 @@ function renderMetaAdsByAccount(adsData, totalCount = null, serverTotal = null) 
 
             console.log('📊 클라이언트 총합 계산 (필터링 데이터):', {
                 isFilteredData: isFilteredData,
-                dataForTotalLength: dataForTotal.length
+                dataForTotalLength: dataForTotal.length,
+                serverTotalWas: serverTotal
             });
         }
 

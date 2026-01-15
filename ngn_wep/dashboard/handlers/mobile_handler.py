@@ -452,6 +452,9 @@ def get_meta_ads_by_account():
             total_roas = round((total_purchase_value / total_spend * 100), 0) if total_spend > 0 else 0
             total_cpc = round(total_spend / total_clicks) if total_clicks > 0 else 0
 
+            # 🔥 ROAS 디버깅 로그 (dict 응답)
+            print(f"[MOBILE] 🔥 ROAS 계산 (dict) - 총 {len(rows)}개 광고, spend={total_spend}, purchase_value={total_purchase_value}, ROAS={total_roas}%")
+
             # 모바일용 데이터 처리
             processed_ads_data = process_meta_ads_for_mobile(rows)
 
@@ -483,6 +486,9 @@ def get_meta_ads_by_account():
             total_purchase_value = sum(row.get('purchase_value', 0) or 0 for row in ads_data) if ads_data else 0
             total_roas = round((total_purchase_value / total_spend * 100), 0) if total_spend > 0 else 0
             total_cpc = round(total_spend / total_clicks) if total_clicks > 0 else 0
+
+            # 🔥 ROAS 디버깅 로그
+            print(f"[MOBILE] 🔥 ROAS 계산 - 총 {len(ads_data)}개 광고, spend={total_spend}, purchase_value={total_purchase_value}, ROAS={total_roas}%")
 
             # 모바일용 데이터 처리 (전체 데이터)
             processed_ads_data = process_meta_ads_for_mobile(ads_data)

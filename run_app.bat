@@ -3,13 +3,13 @@ title NGN Board Dashboard - Local
 cd /d D:\github\ngn_board
 
 echo ===========================================
-echo [NGN Board] CMD 로컬 서버 가동 중...
+echo [NGN Board] Local Server Starting...
 echo ===========================================
 
-:: 디버그 모드 활성화 (템플릿 변경 즉시 반영)
+:: Enable debug mode
 set FLASK_ENV=development
 
-:: 가상환경 파이썬으로 직접 실행 (오차 없는 방식)
+:: Run with venv python
 .\venv\Scripts\python.exe -m ngn_wep.dashboard.app
 
 pause

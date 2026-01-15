@@ -107,11 +107,10 @@ def execute_bigquery(process_type="today"):
         o.main_url,
         oid.product_no,
         o.order_id,
-        REGEXP_REPLACE(
-          oid.product_name,
-          r'^\\[(?i)(?!set\\])[^\\]]+\\]\\s*',
-          ''
-        ) AS product_name,
+        CASE
+          WHEN REGEXP_CONTAINS(oid.product_name, r'^\\[[Ss][Ee][Tt]\\]') THEN oid.product_name
+          ELSE REGEXP_REPLACE(oid.product_name, r'^\\[[^\\]]+\\]\\s*', '')
+        END AS product_name,
         CAST(oid.product_price AS FLOAT64) AS product_price,
         oid.quantity,
         oid.canceled_quantity,

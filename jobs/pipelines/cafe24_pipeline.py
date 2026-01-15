@@ -4,13 +4,15 @@ Cafe24 파이프라인 통합 스크립트
 - ngn-orders-job + query-sales-today-job + query-items-today-job → ngn-cafe24-pipeline-job
 
 순서:
-1. orders_handler.py - Cafe24 API 호출 → BigQuery 저장
-2. daily_cafe24_sales_handler.py - 매출 집계 쿼리
-3. daily_cafe24_items_handler.py - 아이템 집계 쿼리
+1. orders_handler.py - Cafe24 주문 API 호출 → cafe24_orders 저장
+2. product_handler.py - Cafe24 주문아이템 API 호출 → cafe24_order_items_table 저장
+3. daily_cafe24_sales_handler.py - 매출 집계 쿼리
+4. daily_cafe24_items_handler.py - 아이템 집계 쿼리
 
 Usage:
     python cafe24_pipeline.py today
     python cafe24_pipeline.py yesterday
+    python cafe24_pipeline.py last_7_days
 """
 import os
 import sys
@@ -85,9 +87,9 @@ def main(mode: str = "today"):
 
     # 1단계: 주문 데이터 수집
     logging.info(f"=" * 60)
-    logging.info(f"[1/3] Cafe24 주문 데이터 수집 시작")
+    logging.info(f"[1/4] Cafe24 주문 데이터 수집 시작")
     logging.info(f"=" * 60)
-    if not run_script("orders_handler.py", [mode], "[1/3] 주문 수집"):
+    if not run_script("orders_handler.py", [mode], "[1/4] 주문 수집"):
         logging.error("주문 데이터 수집 실패로 파이프라인 중단")
         sys.exit(1)
 
@@ -95,19 +97,31 @@ def main(mode: str = "today"):
     logging.info("데이터 안정화 대기 (5초)...")
     time.sleep(5)
 
-    # 2단계: 매출 집계
+    # 2단계: 주문 아이템 수집 (cafe24_order_items_table)
     logging.info(f"=" * 60)
-    logging.info(f"[2/3] 매출 집계 시작")
+    logging.info(f"[2/4] Cafe24 주문 아이템 수집 시작")
     logging.info(f"=" * 60)
-    if not run_script("daily_cafe24_sales_handler.py", [mode], "[2/3] 매출 집계"):
+    if not run_script("product_handler.py", [mode], "[2/4] 주문 아이템 수집"):
+        logging.error("주문 아이템 수집 실패")
+        # 실패해도 집계는 시도
+
+    # 데이터 안정화를 위한 대기
+    logging.info("데이터 안정화 대기 (5초)...")
+    time.sleep(5)
+
+    # 3단계: 매출 집계
+    logging.info(f"=" * 60)
+    logging.info(f"[3/4] 매출 집계 시작")
+    logging.info(f"=" * 60)
+    if not run_script("daily_cafe24_sales_handler.py", [mode], "[3/4] 매출 집계"):
         logging.error("매출 집계 실패")
         # 매출 집계 실패해도 아이템 집계는 시도
 
-    # 3단계: 아이템 집계
+    # 4단계: 아이템 집계
     logging.info(f"=" * 60)
-    logging.info(f"[3/3] 아이템 집계 시작")
+    logging.info(f"[4/4] 아이템 집계 시작")
     logging.info(f"=" * 60)
-    if not run_script("daily_cafe24_items_handler.py", [mode], "[3/3] 아이템 집계"):
+    if not run_script("daily_cafe24_items_handler.py", [mode], "[4/4] 아이템 집계"):
         logging.error("아이템 집계 실패")
 
     elapsed = time.time() - start_time

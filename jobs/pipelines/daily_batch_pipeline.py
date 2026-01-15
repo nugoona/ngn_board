@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 """
 Daily Batch 파이프라인 통합 스크립트 (Yesterday 전용)
-- 8개 Job → 1개 통합
-
-통합 대상:
-1. ngn-orders-job-yesterday
-2. ngn-product-job-yesterday
-3. query-sales-yesterday-job
-4. query-items-yesterday-job
-5. ngn-meta-ads-job-yesterday
-6. ngn-meta-query-job-yesterday
-7. ngn-ga4-view-job-yesterday
-8. ngn-performance-summary-yesterday
+- 9개 스텝 통합
 
 실행 순서:
-1. Cafe24 주문/상품 수집
-2. Cafe24 매출/아이템 집계
-3. Meta Ads 수집 + 집계
-4. GA4 수집
-5. Performance Summary 업데이트
+1. Cafe24 주문 수집 (orders_handler.py)
+2. Cafe24 주문 아이템 수집 (product_handler.py)
+3. Cafe24 매출 집계 (daily_cafe24_sales_handler.py)
+4. Cafe24 아이템 집계 (daily_cafe24_items_handler.py)
+5. Meta Ads 수집 (meta_ads_handler.py)
+6. Meta Ads Summary (Merge_Meta_Ads_Summary.py)
+7. GA4 Traffic 수집 (ga4_traffic_today.py)
+8. GA4 ViewItem 수집 (ga4_viewitem_today.py)
+9. Performance Summary 업데이트 (insert_performance_summary.py)
 
 Usage:
     python daily_batch_pipeline.py
@@ -105,12 +99,12 @@ def main():
     logging.info(f"{'=' * 70}")
 
     # 1-1. 주문 데이터 수집
-    results["orders"] = run_script("orders_handler.py", [mode], "[1/8] 주문 수집")
+    results["orders"] = run_script("orders_handler.py", [mode], "[1/9] 주문 수집")
     time.sleep(3)
 
-    # 1-2. 상품 데이터 수집 (product_handler가 있다면)
-    # ngn-product-job-yesterday는 orders_handler와 비슷한 구조일 수 있음
-    # 현재 구조상 orders_handler가 product도 포함할 수 있음 - 확인 필요
+    # 1-2. 주문 아이템 수집
+    results["products"] = run_script("product_handler.py", [mode], "[2/9] 주문 아이템 수집")
+    time.sleep(3)
 
     # ============================================
     # Phase 2: Cafe24 집계 쿼리
@@ -120,10 +114,10 @@ def main():
     logging.info(f"{'=' * 70}")
 
     # 2-1. 매출 집계
-    results["sales"] = run_script("daily_cafe24_sales_handler.py", [mode], "[2/8] 매출 집계")
+    results["sales"] = run_script("daily_cafe24_sales_handler.py", [mode], "[3/9] 매출 집계")
 
     # 2-2. 아이템 집계
-    results["items"] = run_script("daily_cafe24_items_handler.py", [mode], "[3/8] 아이템 집계")
+    results["items"] = run_script("daily_cafe24_items_handler.py", [mode], "[4/9] 아이템 집계")
     time.sleep(3)
 
     # ============================================
@@ -134,11 +128,11 @@ def main():
     logging.info(f"{'=' * 70}")
 
     # 3-1. Meta Ads API 호출
-    results["meta_ads"] = run_script("meta_ads_handler.py", [mode], "[4/8] Meta Ads 수집")
+    results["meta_ads"] = run_script("meta_ads_handler.py", [mode], "[5/9] Meta Ads 수집")
     time.sleep(5)
 
     # 3-2. Meta Ads Summary MERGE
-    results["meta_summary"] = run_script("Merge_Meta_Ads_Summary.py", [mode], "[5/8] Meta Summary")
+    results["meta_summary"] = run_script("Merge_Meta_Ads_Summary.py", [mode], "[6/9] Meta Summary")
     time.sleep(3)
 
     # ============================================
@@ -150,13 +144,13 @@ def main():
 
     # 4-1. GA4 Traffic
     results["ga4_traffic"] = run_script(
-        "ga4_traffic_today.py", [], "[6/8] GA4 Traffic",
+        "ga4_traffic_today.py", [], "[7/9] GA4 Traffic",
         env_vars={"RUN_MODE": mode}
     )
 
     # 4-2. GA4 ViewItem
     results["ga4_viewitem"] = run_script(
-        "ga4_viewitem_today.py", [], "[7/8] GA4 ViewItem",
+        "ga4_viewitem_today.py", [], "[8/9] GA4 ViewItem",
         env_vars={"RUN_MODE": mode}
     )
     time.sleep(3)
@@ -169,7 +163,7 @@ def main():
     logging.info(f"{'=' * 70}")
 
     results["perf_summary"] = run_script(
-        "insert_performance_summary.py", [mode], "[8/8] Performance Summary"
+        "insert_performance_summary.py", [mode], "[9/9] Performance Summary"
     )
 
     # ============================================

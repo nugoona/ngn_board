@@ -3,30 +3,7 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(grep:*)",
-      "Bash(python -m py_compile:*)",
-      "Bash(gcloud auth:*)",
-      "Bash(curl:*)",
-      "Bash(bash -s:*)",
-      "Bash(export PATH=\"$HOME/google-cloud-sdk/bin:$PATH\")",
-      "Bash(gcloud:*)",
-      "Bash(find:*)",
-      "Bash(chmod:*)",
-      "Bash(bash:*)",
-      "Bash(wc:*)",
-      "Bash(bq query:*)",
-      "Bash(bq show:*)",
-      "Bash(./deploy_image_extractor.sh)",
-      "Bash(ls:*)",
-<<<<<<< Updated upstream
-      "Bash(python3:*)",
-      "WebSearch",
-      "WebFetch(domain:developers.facebook.com)",
-      "WebFetch(domain:github.com)"
-=======
-      "Bash(python:*)"
->>>>>>> Stashed changes
+      "Bash(git push:*)"
     ]
   }
 }

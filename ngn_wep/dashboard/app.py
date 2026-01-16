@@ -364,6 +364,70 @@ def admake_publish_page():
                            company_names=session.get("company_names", []),
                            account_id=account_id)
 
+
+# ──────────────────────────────────────────────────────────────
+# 카탈로그 광고 만들기 라우트
+# ──────────────────────────────────────────────────────────────
+@app.route("/admake/catalog/step1")
+def admake_catalog_step1():
+    """카탈로그 광고 Step 1: 제품 세트 선택"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_catalog_step1.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
+
+@app.route("/admake/catalog/step2")
+def admake_catalog_step2():
+    """카탈로그 광고 Step 2: 타겟 & 리타겟팅"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_catalog_step2.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
+
+@app.route("/admake/catalog/step3")
+def admake_catalog_step3():
+    """카탈로그 광고 Step 3: 광고 소재 & 문구"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_catalog_step3.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
+
+@app.route("/admake/catalog/step4")
+def admake_catalog_step4():
+    """카탈로그 광고 Step 4: 검토 & 게시"""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    account_id = request.args.get('account_id')
+    if not account_id:
+        return redirect(url_for("ads_page"))
+
+    return render_template("admake_catalog_step4.html",
+                           company_names=session.get("company_names", []),
+                           account_id=account_id)
+
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")

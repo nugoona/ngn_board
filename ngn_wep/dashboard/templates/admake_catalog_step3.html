@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEP 3 - 카탈로그 광고</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0d0d0d;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-violet: #8b5cf6;
+      --accent-red: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    .font-inter { font-family: 'Inter Tight', sans-serif; }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-subtle) !important;
+    }
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+    }
+    .hamburger-icon div { background: var(--text-primary) !important; }
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+    .hamburger-dropdown a { color: var(--text-secondary) !important; }
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar ===== */
+    .admake-progress-bar {
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 17, 17, 0.95) 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 40px 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    .admake-progress-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .admake-progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+
+    .admake-progress-step .step-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .admake-progress-step .step-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .admake-progress-step.active {
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .admake-progress-step.active .step-number {
+      font-size: 14px;
+      color: #1a1a1a;
+    }
+
+    .admake-progress-step.active .step-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2a2a2a;
+      opacity: 1;
+    }
+
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .admake-progress-step.completed .step-number,
+    .admake-progress-step.completed .step-label {
+      color: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    .admake-progress-connector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+    }
+
+    .admake-progress-connector::before,
+    .admake-progress-connector::after {
+      content: '';
+      width: 12px;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .admake-progress-connector-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .admake-progress-connector.completed::before,
+    .admake-progress-connector.completed::after {
+      background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-dot {
+      background: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    /* ===== 메인 레이아웃 ===== */
+    .admake-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+      padding-bottom: 120px;
+    }
+
+    .admake-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ===== 왼쪽 패널 ===== */
+    .admake-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-right: 20px;
+      border-right: 1px solid rgba(39, 39, 42, 0.6);
+    }
+
+    .admake-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .admake-section-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-violet);
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      padding: 5px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+    }
+
+    .admake-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* ===== 입력 필드 ===== */
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .input-label-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .text-input:focus {
+      outline: none;
+      border-color: var(--accent-violet);
+    }
+
+    .text-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .textarea-input {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .textarea-input:focus {
+      outline: none;
+      border-color: var(--accent-violet);
+    }
+
+    .char-count {
+      text-align: right;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ===== 동적 토큰 힌트 ===== */
+    .token-hints {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .token-hint {
+      padding: 4px 10px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 4px;
+      font-family: 'Inter Tight', monospace;
+      font-size: 11px;
+      color: var(--accent-violet);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .token-hint:hover {
+      background: rgba(139, 92, 246, 0.15);
+    }
+
+    /* ===== CTA 버튼 선택 ===== */
+    .cta-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .cta-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .cta-option {
+      padding: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cta-option:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .cta-option.selected {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .cta-option-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .cta-option.selected .cta-option-text {
+      color: var(--accent-violet);
+    }
+
+    /* ===== 광고 형식 ===== */
+    .format-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .format-options {
+      display: flex;
+      gap: 12px;
+    }
+
+    .format-option {
+      flex: 1;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .format-option:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .format-option.selected {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .format-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-input);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .format-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--text-muted);
+      fill: none;
+    }
+
+    .format-option.selected .format-icon {
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .format-option.selected .format-icon svg {
+      stroke: var(--accent-violet);
+    }
+
+    .format-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .format-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 오른쪽 패널: 미리보기 ===== */
+    .admake-right-panel {
+      position: sticky;
+      top: 180px;
+    }
+
+    .preview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .preview-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-violet);
+      fill: none;
+    }
+
+    .preview-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* ===== 광고 미리보기 (인스타그램 스타일) ===== */
+    .ad-preview {
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .ad-preview-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ad-preview-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-blue));
+      border-radius: 50%;
+    }
+
+    .ad-preview-account {
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .ad-preview-sponsored {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .ad-preview-image {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .ad-preview-image-placeholder {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .ad-preview-image-placeholder svg {
+      width: 48px;
+      height: 48px;
+      stroke: rgba(255, 255, 255, 0.2);
+      fill: none;
+      margin-bottom: 8px;
+    }
+
+    .ad-preview-image-text {
+      font-size: 12px;
+    }
+
+    .ad-preview-carousel-dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+    }
+
+    .carousel-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .carousel-dot.active {
+      background: white;
+    }
+
+    .ad-preview-content {
+      padding: 12px;
+    }
+
+    .ad-preview-headline {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 4px;
+      min-height: 20px;
+    }
+
+    .ad-preview-description {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 12px;
+      min-height: 18px;
+    }
+
+    .ad-preview-cta {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--accent-violet);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* ===== 하단 액션 바 ===== */
+    .admake-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, var(--bg-primary) 20%);
+      padding: 24px 40px;
+      z-index: 100;
+    }
+
+    .admake-action-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .admake-action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .admake-btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .admake-btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .admake-btn-secondary:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .admake-btn-primary {
+      background: var(--accent-violet);
+      color: white;
+    }
+
+    .admake-btn-primary:hover {
+      background: #7c3aed;
+    }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 1024px) {
+      .admake-layout {
+        grid-template-columns: 1fr;
+      }
+      .admake-left-panel {
+        padding-right: 0;
+        border-right: none;
+      }
+      .admake-right-panel {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+  var accountId = "{{ account_id }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- 네비게이션 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">AdCanvas</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('admake_page') }}?account_id={{ account_id }}">AdCanvas</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">01</span>
+      <span class="step-label">제품 세트</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">02</span>
+      <span class="step-label">타겟팅</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">03</span>
+      <span class="step-label">광고 문구</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">04</span>
+      <span class="step-label">검토 & 게시</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div class="admake-wrapper">
+  <div class="admake-layout">
+
+    <!-- 왼쪽 패널: 광고 문구 설정 -->
+    <div class="admake-left-panel">
+      <div class="admake-section-header">
+        <span class="admake-section-number font-inter">03</span>
+        <span class="admake-section-title">광고 소재 & 문구 설정</span>
+      </div>
+
+      <!-- 메시지 입력 -->
+      <div class="input-group">
+        <label class="input-label">
+          메시지
+          <span class="input-label-hint">(광고 본문)</span>
+        </label>
+        <textarea class="textarea-input" id="messageInput" placeholder="고객에게 전달할 메시지를 입력하세요&#10;&#10;예: 지금 바로 {{product.name}} 을(를) 만나보세요!"></textarea>
+        <div class="char-count"><span id="messageCount">0</span>/125</div>
+        <div class="token-hints">
+          <span class="token-hint" data-token="{{product.name}}">상품명</span>
+          <span class="token-hint" data-token="{{product.price}}">가격</span>
+          <span class="token-hint" data-token="{{product.current_price}}">할인가</span>
+          <span class="token-hint" data-token="{{product.brand}}">브랜드</span>
+        </div>
+      </div>
+
+      <!-- 헤드라인 입력 -->
+      <div class="input-group">
+        <label class="input-label">
+          헤드라인
+          <span class="input-label-hint">(제품 카드 제목)</span>
+        </label>
+        <input type="text" class="text-input" id="headlineInput" placeholder="예: {{product.name}}">
+        <div class="char-count"><span id="headlineCount">0</span>/40</div>
+        <div class="token-hints">
+          <span class="token-hint" data-token="{{product.name}}">상품명</span>
+          <span class="token-hint" data-token="{{product.price}}">가격</span>
+        </div>
+      </div>
+
+      <!-- 설명 입력 -->
+      <div class="input-group">
+        <label class="input-label">
+          설명
+          <span class="input-label-hint">(제품 카드 설명)</span>
+        </label>
+        <input type="text" class="text-input" id="descriptionInput" placeholder="예: {{product.price}}">
+        <div class="char-count"><span id="descriptionCount">0</span>/30</div>
+      </div>
+
+      <!-- CTA 버튼 선택 -->
+      <div class="cta-section">
+        <label class="input-label">CTA 버튼</label>
+        <div class="cta-options">
+          <div class="cta-option selected" data-cta="SHOP_NOW">
+            <span class="cta-option-text">지금 쇼핑하기</span>
+          </div>
+          <div class="cta-option" data-cta="LEARN_MORE">
+            <span class="cta-option-text">더 알아보기</span>
+          </div>
+          <div class="cta-option" data-cta="SEE_MORE">
+            <span class="cta-option-text">더 보기</span>
+          </div>
+          <div class="cta-option" data-cta="BUY_NOW">
+            <span class="cta-option-text">지금 구매</span>
+          </div>
+          <div class="cta-option" data-cta="GET_OFFER">
+            <span class="cta-option-text">혜택 받기</span>
+          </div>
+          <div class="cta-option" data-cta="ORDER_NOW">
+            <span class="cta-option-text">지금 주문</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 광고 형식 -->
+      <div class="format-section">
+        <label class="input-label">광고 형식</label>
+        <div class="format-options">
+          <div class="format-option selected" data-format="carousel">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="4" width="6" height="16" rx="1"></rect><rect x="9" y="4" width="6" height="16" rx="1"></rect><rect x="16" y="4" width="6" height="16" rx="1"></rect></svg>
+            </div>
+            <div class="format-title">슬라이드</div>
+            <div class="format-desc">여러 제품을 슬라이드로</div>
+          </div>
+          <div class="format-option" data-format="single">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+            </div>
+            <div class="format-title">단일 이미지</div>
+            <div class="format-desc">한 개 제품만 노출</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 패널: 미리보기 -->
+    <div class="admake-right-panel">
+      <div class="preview-card">
+        <div class="preview-header">
+          <div class="preview-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <span class="preview-title">광고 미리보기</span>
+        </div>
+
+        <!-- 인스타그램 스타일 미리보기 -->
+        <div class="ad-preview">
+          <div class="ad-preview-header">
+            <div class="ad-preview-avatar"></div>
+            <div>
+              <div class="ad-preview-account">브랜드명</div>
+              <div class="ad-preview-sponsored">Sponsored</div>
+            </div>
+          </div>
+          <div class="ad-preview-image">
+            <div class="ad-preview-image-placeholder">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <div class="ad-preview-image-text">제품 이미지</div>
+            </div>
+            <div class="ad-preview-carousel-dots" id="carouselDots">
+              <div class="carousel-dot active"></div>
+              <div class="carousel-dot"></div>
+              <div class="carousel-dot"></div>
+            </div>
+          </div>
+          <div class="ad-preview-content">
+            <div class="ad-preview-headline" id="previewHeadline">상품명</div>
+            <div class="ad-preview-description" id="previewDescription">가격</div>
+            <div class="ad-preview-cta" id="previewCta">지금 쇼핑하기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-inner">
+    <div class="admake-action-left font-inter">STEP 3 OF 4</div>
+    <div class="admake-action-buttons">
+      <button class="admake-btn admake-btn-secondary" id="prevBtn">이전</button>
+      <button class="admake-btn admake-btn-primary" id="nextBtn">다음 단계로</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+$(document).ready(function() {
+    // 이전 스텝 데이터 확인
+    const step1Data = JSON.parse(sessionStorage.getItem('catalogAdStep1') || '{}');
+    const step2Data = JSON.parse(sessionStorage.getItem('catalogAdStep2') || '{}');
+
+    if (!step1Data.selectedSetId && !step1Data.isNewSet) {
+        window.location.href = "/admake/catalog/step1?account_id=" + encodeURIComponent(accountId);
+        return;
+    }
+
+    // 상태 관리
+    let message = '';
+    let headline = '{{product.name}}';
+    let description = '{{product.price}}';
+    let ctaType = 'SHOP_NOW';
+    let adFormat = 'carousel';
+
+    // 기존 세션 데이터 복원
+    const savedData = sessionStorage.getItem('catalogAdStep3');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        message = data.message || '';
+        headline = data.headline || '{{product.name}}';
+        description = data.description || '{{product.price}}';
+        ctaType = data.ctaType || 'SHOP_NOW';
+        adFormat = data.adFormat || 'carousel';
+
+        // UI 복원
+        $("#messageInput").val(message);
+        $("#headlineInput").val(headline);
+        $("#descriptionInput").val(description);
+        $(`.cta-option[data-cta="${ctaType}"]`).click();
+        $(`.format-option[data-format="${adFormat}"]`).click();
+    } else {
+        // 기본값 설정
+        $("#headlineInput").val(headline);
+        $("#descriptionInput").val(description);
+    }
+
+    // CTA 텍스트 매핑
+    const ctaTextMap = {
+        'SHOP_NOW': '지금 쇼핑하기',
+        'LEARN_MORE': '더 알아보기',
+        'SEE_MORE': '더 보기',
+        'BUY_NOW': '지금 구매',
+        'GET_OFFER': '혜택 받기',
+        'ORDER_NOW': '지금 주문'
+    };
+
+    // 글자 수 카운트
+    function updateCharCount(input, countEl, max) {
+        const len = $(input).val().length;
+        $(countEl).text(len);
+        if (len > max) {
+            $(countEl).css('color', 'var(--accent-red)');
+        } else {
+            $(countEl).css('color', 'var(--text-muted)');
+        }
+    }
+
+    $("#messageInput").on("input", function() {
+        message = $(this).val();
+        updateCharCount(this, "#messageCount", 125);
+    });
+
+    $("#headlineInput").on("input", function() {
+        headline = $(this).val();
+        updateCharCount(this, "#headlineCount", 40);
+        updatePreview();
+    });
+
+    $("#descriptionInput").on("input", function() {
+        description = $(this).val();
+        updateCharCount(this, "#descriptionCount", 30);
+        updatePreview();
+    });
+
+    // 토큰 힌트 클릭
+    $(".token-hint").on("click", function() {
+        const token = $(this).data("token");
+        const $input = $(this).closest(".input-group").find("input, textarea");
+
+        if ($input.length) {
+            const cursorPos = $input[0].selectionStart;
+            const val = $input.val();
+            const newVal = val.substring(0, cursorPos) + token + val.substring(cursorPos);
+            $input.val(newVal);
+            $input.trigger("input");
+            $input.focus();
+        }
+    });
+
+    // CTA 선택
+    $(".cta-option").on("click", function() {
+        $(".cta-option").removeClass("selected");
+        $(this).addClass("selected");
+        ctaType = $(this).data("cta");
+        updatePreview();
+    });
+
+    // 광고 형식 선택
+    $(".format-option").on("click", function() {
+        $(".format-option").removeClass("selected");
+        $(this).addClass("selected");
+        adFormat = $(this).data("format");
+
+        // 슬라이드 도트 표시/숨김
+        if (adFormat === 'carousel') {
+            $("#carouselDots").show();
+        } else {
+            $("#carouselDots").hide();
+        }
+    });
+
+    // 미리보기 업데이트
+    function updatePreview() {
+        // 토큰을 예시 텍스트로 변환
+        let previewHeadline = headline
+            .replace('{{product.name}}', '샘플 상품명')
+            .replace('{{product.price}}', '₩59,000')
+            .replace('{{product.current_price}}', '₩49,000')
+            .replace('{{product.brand}}', '브랜드');
+
+        let previewDesc = description
+            .replace('{{product.name}}', '샘플 상품명')
+            .replace('{{product.price}}', '₩59,000')
+            .replace('{{product.current_price}}', '₩49,000')
+            .replace('{{product.brand}}', '브랜드');
+
+        $("#previewHeadline").text(previewHeadline || '상품명');
+        $("#previewDescription").text(previewDesc || '가격');
+        $("#previewCta").text(ctaTextMap[ctaType] || '지금 쇼핑하기');
+    }
+
+    // 이전 버튼
+    $("#prevBtn").on("click", function() {
+        window.location.href = "/admake/catalog/step2?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 다음 버튼
+    $("#nextBtn").on("click", function() {
+        // 세션 스토리지에 데이터 저장
+        const data = {
+            message: message,
+            headline: headline,
+            description: description,
+            ctaType: ctaType,
+            adFormat: adFormat
+        };
+        sessionStorage.setItem('catalogAdStep3', JSON.stringify(data));
+
+        // Step 4로 이동
+        window.location.href = "/admake/catalog/step4?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 초기화
+    updateCharCount("#messageInput", "#messageCount", 125);
+    updateCharCount("#headlineInput", "#headlineCount", 40);
+    updateCharCount("#descriptionInput", "#descriptionCount", 30);
+    updatePreview();
+});
+</script>
+
+</body>
+</html>

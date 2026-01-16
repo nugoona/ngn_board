@@ -765,15 +765,45 @@ def catalog_set_route():
 
 @data_blueprint.route("/catalog_sets", methods=["POST"])
 def catalog_sets_route():
-    """카탈로그의 제품세트 목록 조회"""
+    """카탈로그의 제품세트 목록 조회 (account_id로 catalog 자동 조회)"""
+    from google.cloud import bigquery
+
     try:
         data = request.get_json(silent=True) or {}
+        account_id = str(data.get("account_id", "")).strip()
         catalog_id = str(data.get("catalog_id", "")).strip()
+
+        # account_id로 catalog_id 조회
+        if not catalog_id and account_id:
+            raw_account_id = account_id.replace("act_", "")
+            bq_client = bigquery.Client()
+
+            catalog_query = """
+                SELECT catalog_id
+                FROM `ngn_dataset.metaAds_acc`
+                WHERE account_id = @account_id
+                LIMIT 1
+            """
+            catalog_job = bq_client.query(
+                catalog_query,
+                job_config=bigquery.QueryJobConfig(
+                    query_parameters=[bigquery.ScalarQueryParameter("account_id", "STRING", raw_account_id)]
+                )
+            )
+            catalog_row = next(catalog_job.result(), None)
+
+            if catalog_row and catalog_row.get("catalog_id"):
+                catalog_id = catalog_row.get("catalog_id")
+            else:
+                return jsonify({
+                    "status": "error",
+                    "message": "해당 계정의 카탈로그를 찾을 수 없습니다"
+                }), 404
 
         if not catalog_id:
             return jsonify({
                 "status": "error",
-                "message": "catalog_id 누락"
+                "message": "account_id 또는 catalog_id가 필요합니다"
             }), 400
 
         sets, err = get_product_sets(catalog_id)
@@ -783,10 +813,300 @@ def catalog_sets_route():
 
         return jsonify({
             "status": "success",
+            "catalog_id": catalog_id,
             "product_sets": sets
         }), 200
 
     except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────────────────────
+# 📌 카탈로그 광고 생성 (AdSet + Creative + Ad)
+#     POST  /dashboard/catalog_ad/create
+# ─────────────────────────────────────────────────────────────
+
+@data_blueprint.route("/catalog_ad/create", methods=["POST"])
+def create_catalog_ad():
+    """카탈로그 광고 생성 - AdSet, Creative, Ad 한번에 생성"""
+    import os
+    import requests
+    from google.cloud import bigquery
+
+    FB_VER = os.getenv("FB_GRAPH_VERSION", "v24.0")
+    FB_HOST = f"https://graph.facebook.com/{FB_VER}"
+    FB_TOKEN = os.getenv("META_SYSTEM_TOKEN") or os.getenv("META_SYSTEM_USER_TOKEN")
+
+    try:
+        data = request.get_json(silent=True) or {}
+        account_id = str(data.get("account_id", "")).strip()
+
+        if not account_id:
+            return jsonify({"status": "error", "message": "account_id 누락"}), 400
+
+        # account_id 정규화
+        raw_account_id = account_id.replace("act_", "")
+        prefixed_account_id = f"act_{raw_account_id}"
+
+        print(f"[CATALOG_AD] ========== 카탈로그 광고 생성 시작 ==========")
+        print(f"[CATALOG_AD] account_id: {raw_account_id}")
+
+        # BigQuery에서 매핑 정보 조회
+        bq_client = bigquery.Client()
+
+        # 1) catalog_campaign_id, page_id, pixel_id 조회
+        mapping_query = """
+            SELECT catalog_campaign_id, page_id, pixel_id, instagram_user_id
+            FROM `ngn_dataset.meta_account_mapping`
+            WHERE account_id = @account_id
+            LIMIT 1
+        """
+        mapping_job = bq_client.query(
+            mapping_query,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[bigquery.ScalarQueryParameter("account_id", "STRING", raw_account_id)]
+            )
+        )
+        mapping_row = next(mapping_job.result(), None)
+
+        if not mapping_row:
+            return jsonify({"status": "error", "message": "계정 매핑 정보를 찾을 수 없습니다"}), 404
+
+        catalog_campaign_id = mapping_row.get("catalog_campaign_id")
+        page_id = mapping_row.get("page_id")
+        pixel_id = mapping_row.get("pixel_id")
+        instagram_user_id = mapping_row.get("instagram_user_id")
+
+        if not catalog_campaign_id:
+            return jsonify({"status": "error", "message": "카탈로그 캠페인이 설정되지 않았습니다"}), 400
+
+        print(f"[CATALOG_AD] catalog_campaign_id: {catalog_campaign_id}")
+        print(f"[CATALOG_AD] page_id: {page_id}")
+        print(f"[CATALOG_AD] pixel_id: {pixel_id}")
+
+        # 2) catalog_id 조회
+        catalog_query = """
+            SELECT catalog_id
+            FROM `ngn_dataset.metaAds_acc`
+            WHERE meta_acc_id = @acc_id
+            LIMIT 1
+        """
+        catalog_job = bq_client.query(
+            catalog_query,
+            job_config=bigquery.QueryJobConfig(
+                query_parameters=[bigquery.ScalarQueryParameter("acc_id", "STRING", raw_account_id)]
+            )
+        )
+        catalog_row = next(catalog_job.result(), None)
+        catalog_id = catalog_row.get("catalog_id") if catalog_row else None
+
+        if not catalog_id:
+            return jsonify({"status": "error", "message": "카탈로그 ID를 찾을 수 없습니다"}), 404
+
+        print(f"[CATALOG_AD] catalog_id: {catalog_id}")
+
+        # 요청 데이터 파싱
+        product_set_id = data.get("product_set_id")
+        targeting_type = data.get("targeting_type", "retarget_view_cart")
+        retention_days = int(data.get("retention_days", 14))
+        exclude_purchase = data.get("exclude_purchase", True)
+        message = data.get("message", "")
+        headline = data.get("headline", "{{product.name}}")
+        description = data.get("description", "{{product.price}}")
+        cta_type = data.get("cta_type", "SHOP_NOW")
+        ad_format = data.get("ad_format", "carousel")
+        adset_name = data.get("adset_name", "카탈로그 광고 세트")
+        budget = int(data.get("budget", 10000))
+        budget_type = data.get("budget_type", "daily")
+
+        # retention_seconds 계산
+        retention_seconds = retention_days * 24 * 60 * 60
+
+        print(f"[CATALOG_AD] product_set_id: {product_set_id}")
+        print(f"[CATALOG_AD] targeting_type: {targeting_type}")
+        print(f"[CATALOG_AD] retention_days: {retention_days}")
+
+        # ─────────────────────────────────────────────────────────
+        # STEP 1: AdSet 생성
+        # ─────────────────────────────────────────────────────────
+        print(f"[CATALOG_AD] STEP 1: AdSet 생성 시작")
+
+        # 타겟팅 구성
+        targeting = {
+            "geo_locations": {"countries": ["KR"]}
+        }
+
+        # 리타겟팅 타입별 product_audience_specs 구성
+        if targeting_type == "retarget_view_cart":
+            targeting["product_audience_specs"] = [{
+                "product_set_id": product_set_id,
+                "inclusions": [
+                    {"retention_seconds": retention_seconds, "rule": {"event": {"eq": "ViewContent"}}},
+                    {"retention_seconds": retention_seconds, "rule": {"event": {"eq": "AddToCart"}}}
+                ]
+            }]
+            if exclude_purchase:
+                targeting["excluded_product_audience_specs"] = [{
+                    "product_set_id": product_set_id,
+                    "inclusions": [{"retention_seconds": retention_seconds, "rule": {"event": {"eq": "Purchase"}}}]
+                }]
+        elif targeting_type == "retarget_cart":
+            targeting["product_audience_specs"] = [{
+                "product_set_id": product_set_id,
+                "inclusions": [
+                    {"retention_seconds": retention_seconds, "rule": {"event": {"eq": "AddToCart"}}}
+                ]
+            }]
+            if exclude_purchase:
+                targeting["excluded_product_audience_specs"] = [{
+                    "product_set_id": product_set_id,
+                    "inclusions": [{"retention_seconds": retention_seconds, "rule": {"event": {"eq": "Purchase"}}}]
+                }]
+        elif targeting_type == "upsell":
+            targeting["product_audience_specs"] = [{
+                "product_set_id": product_set_id,
+                "inclusions": [
+                    {"retention_seconds": retention_seconds, "rule": {"event": {"eq": "Purchase"}}}
+                ]
+            }]
+        # broad 타입은 product_audience_specs 없이 geo_locations만 사용
+
+        # AdSet 페이로드
+        adset_payload = {
+            "name": adset_name,
+            "campaign_id": catalog_campaign_id,
+            "billing_event": "IMPRESSIONS",
+            "optimization_goal": "OFFSITE_CONVERSIONS",
+            "promoted_object": {
+                "product_set_id": product_set_id,
+                "custom_event_type": "PURCHASE"
+            },
+            "targeting": json.dumps(targeting),
+            "status": "PAUSED",
+            "access_token": FB_TOKEN
+        }
+
+        # 예산 설정
+        if budget_type == "daily":
+            adset_payload["daily_budget"] = budget
+        else:
+            adset_payload["lifetime_budget"] = budget
+
+        print(f"[CATALOG_AD] AdSet payload: {json.dumps(adset_payload, indent=2, ensure_ascii=False)[:500]}")
+
+        # AdSet API 호출
+        adset_url = f"{FB_HOST}/{prefixed_account_id}/adsets"
+        adset_response = requests.post(adset_url, data=adset_payload, timeout=30)
+        adset_result = adset_response.json()
+
+        print(f"[CATALOG_AD] AdSet 응답: {adset_result}")
+
+        if "error" in adset_result:
+            error_msg = adset_result["error"].get("message", "Unknown error")
+            print(f"[CATALOG_AD] AdSet 생성 실패: {error_msg}")
+            return jsonify({"status": "error", "message": f"AdSet 생성 실패: {error_msg}"}), 500
+
+        adset_id = adset_result.get("id")
+        print(f"[CATALOG_AD] AdSet 생성 성공: {adset_id}")
+
+        # ─────────────────────────────────────────────────────────
+        # STEP 2: AdCreative 생성
+        # ─────────────────────────────────────────────────────────
+        print(f"[CATALOG_AD] STEP 2: AdCreative 생성 시작")
+
+        # template_data 구성
+        template_data = {
+            "message": message,
+            "link": "https://example.com",  # 카탈로그에서 자동 대체됨
+            "name": headline,
+            "description": description,
+            "call_to_action": {"type": cta_type}
+        }
+
+        if ad_format == "carousel":
+            template_data["multi_share_end_card"] = False
+        else:
+            template_data["force_single_link"] = True
+
+        object_story_spec = {
+            "page_id": page_id,
+            "template_data": template_data
+        }
+
+        if instagram_user_id:
+            object_story_spec["instagram_user_id"] = instagram_user_id
+
+        creative_payload = {
+            "name": f"Creative - {adset_name}",
+            "object_story_spec": json.dumps(object_story_spec),
+            "product_set_id": product_set_id,
+            "access_token": FB_TOKEN
+        }
+
+        print(f"[CATALOG_AD] Creative payload: {json.dumps(creative_payload, indent=2, ensure_ascii=False)[:500]}")
+
+        # AdCreative API 호출
+        creative_url = f"{FB_HOST}/{prefixed_account_id}/adcreatives"
+        creative_response = requests.post(creative_url, data=creative_payload, timeout=30)
+        creative_result = creative_response.json()
+
+        print(f"[CATALOG_AD] Creative 응답: {creative_result}")
+
+        if "error" in creative_result:
+            error_msg = creative_result["error"].get("message", "Unknown error")
+            print(f"[CATALOG_AD] Creative 생성 실패: {error_msg}")
+            return jsonify({"status": "error", "message": f"Creative 생성 실패: {error_msg}", "adset_id": adset_id}), 500
+
+        creative_id = creative_result.get("id")
+        print(f"[CATALOG_AD] Creative 생성 성공: {creative_id}")
+
+        # ─────────────────────────────────────────────────────────
+        # STEP 3: Ad 생성
+        # ─────────────────────────────────────────────────────────
+        print(f"[CATALOG_AD] STEP 3: Ad 생성 시작")
+
+        ad_payload = {
+            "name": f"Ad - {adset_name}",
+            "adset_id": adset_id,
+            "creative": json.dumps({"creative_id": creative_id}),
+            "status": "PAUSED",
+            "access_token": FB_TOKEN
+        }
+
+        # Ad API 호출
+        ad_url = f"{FB_HOST}/{prefixed_account_id}/ads"
+        ad_response = requests.post(ad_url, data=ad_payload, timeout=30)
+        ad_result = ad_response.json()
+
+        print(f"[CATALOG_AD] Ad 응답: {ad_result}")
+
+        if "error" in ad_result:
+            error_msg = ad_result["error"].get("message", "Unknown error")
+            print(f"[CATALOG_AD] Ad 생성 실패: {error_msg}")
+            return jsonify({
+                "status": "error",
+                "message": f"Ad 생성 실패: {error_msg}",
+                "adset_id": adset_id,
+                "creative_id": creative_id
+            }), 500
+
+        ad_id = ad_result.get("id")
+        print(f"[CATALOG_AD] Ad 생성 성공: {ad_id}")
+
+        print(f"[CATALOG_AD] ========== 카탈로그 광고 생성 완료 ==========")
+
+        return jsonify({
+            "status": "success",
+            "message": "카탈로그 광고가 생성되었습니다",
+            "adset_id": adset_id,
+            "creative_id": creative_id,
+            "ad_id": ad_id
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[CATALOG_AD] 오류: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

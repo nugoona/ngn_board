@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEP 1 - 카탈로그 광고</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0d0d0d;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-violet: #8b5cf6;
+      --accent-red: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    .font-inter { font-family: 'Inter Tight', sans-serif; }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-subtle) !important;
+    }
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.1em !important;
+    }
+    .hamburger-icon div { background: var(--text-primary) !important; }
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+    .hamburger-dropdown a { color: var(--text-secondary) !important; }
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar ===== */
+    .admake-progress-bar {
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 17, 17, 0.95) 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 40px 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    .admake-progress-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .admake-progress-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+    }
+
+    .admake-progress-step .step-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .admake-progress-step .step-label {
+      font-family: 'Pretendard', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      white-space: nowrap;
+      opacity: 0.7;
+    }
+
+    .admake-progress-step.active {
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .admake-progress-step.active .step-number {
+      font-size: 14px;
+      color: #1a1a1a;
+      opacity: 1;
+    }
+
+    .admake-progress-step.active .step-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2a2a2a;
+      opacity: 1;
+    }
+
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .admake-progress-step.completed .step-number,
+    .admake-progress-step.completed .step-label {
+      color: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    .admake-progress-connector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+    }
+
+    .admake-progress-connector::before,
+    .admake-progress-connector::after {
+      content: '';
+      width: 12px;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .admake-progress-connector-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .admake-progress-connector.completed::before,
+    .admake-progress-connector.completed::after {
+      background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-dot {
+      background: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    /* ===== 메인 레이아웃 ===== */
+    .admake-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+      padding-bottom: 120px;
+    }
+
+    .admake-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ===== 왼쪽 패널 ===== */
+    .admake-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-right: 20px;
+      border-right: 1px solid rgba(39, 39, 42, 0.6);
+    }
+
+    .admake-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .admake-section-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-violet);
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      padding: 5px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+    }
+
+    .admake-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    /* ===== 제품 세트 선택 타입 ===== */
+    .set-type-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .set-type-tab {
+      flex: 1;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .set-type-tab:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .set-type-tab.active {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .set-type-tab .tab-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .set-type-tab .tab-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .set-type-tab.active .tab-title {
+      color: var(--accent-violet);
+    }
+
+    /* ===== 기존 세트 목록 ===== */
+    .product-sets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .product-set-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .product-set-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .product-set-item.selected {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .product-set-radio {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--text-muted);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .product-set-item.selected .product-set-radio {
+      border-color: var(--accent-violet);
+    }
+
+    .product-set-radio::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background 0.2s;
+    }
+
+    .product-set-item.selected .product-set-radio::after {
+      background: var(--accent-violet);
+    }
+
+    .product-set-info {
+      flex: 1;
+    }
+
+    .product-set-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .product-set-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 새 세트 만들기 ===== */
+    .new-set-section {
+      display: none;
+    }
+
+    .new-set-section.active {
+      display: block;
+    }
+
+    .auto-set-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .auto-set-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .auto-set-option:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .auto-set-option.selected {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .auto-set-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--text-muted);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .auto-set-option.selected .auto-set-checkbox {
+      background: var(--accent-violet);
+      border-color: var(--accent-violet);
+    }
+
+    .auto-set-checkbox svg {
+      width: 12px;
+      height: 12px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      opacity: 0;
+    }
+
+    .auto-set-option.selected .auto-set-checkbox svg {
+      opacity: 1;
+    }
+
+    .auto-set-info {
+      flex: 1;
+    }
+
+    .auto-set-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .auto-set-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ===== 수동 선택 ===== */
+    .manual-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .manual-section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .manual-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .manual-input {
+      flex: 1;
+      padding: 12px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    .manual-input:focus {
+      outline: none;
+      border-color: var(--accent-violet);
+    }
+
+    .manual-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .manual-btn {
+      padding: 12px 18px;
+      background: var(--accent-violet);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .manual-btn:hover {
+      background: #7c3aed;
+    }
+
+    .manual-btn:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* ===== 세트 이름 입력 ===== */
+    .set-name-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .set-name-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .set-name-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .set-name-input:focus {
+      outline: none;
+      border-color: var(--accent-violet);
+    }
+
+    /* ===== 오른쪽 패널: 미리보기 ===== */
+    .admake-right-panel {
+      position: sticky;
+      top: 180px;
+    }
+
+    .preview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .preview-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-violet);
+      fill: none;
+    }
+
+    .preview-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .preview-content {
+      min-height: 200px;
+    }
+
+    .preview-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--text-muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .preview-empty svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--text-muted);
+      fill: none;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .preview-selected {
+      display: none;
+    }
+
+    .preview-selected.active {
+      display: block;
+    }
+
+    .preview-set-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .preview-set-info {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .preview-products-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .preview-product-placeholder {
+      aspect-ratio: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-product-placeholder svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--text-muted);
+      fill: none;
+      opacity: 0.4;
+    }
+
+    /* ===== 하단 액션 바 ===== */
+    .admake-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, var(--bg-primary) 20%);
+      padding: 24px 40px;
+      z-index: 100;
+    }
+
+    .admake-action-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .admake-action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .admake-btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .admake-btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .admake-btn-secondary:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .admake-btn-primary {
+      background: var(--accent-violet);
+      color: white;
+    }
+
+    .admake-btn-primary:hover {
+      background: #7c3aed;
+    }
+
+    .admake-btn-primary:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* ===== 로딩 ===== */
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .loading-spinner.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--accent-violet);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 1024px) {
+      .admake-layout {
+        grid-template-columns: 1fr;
+      }
+      .admake-left-panel {
+        padding-right: 0;
+        border-right: none;
+      }
+      .admake-right-panel {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+  var accountId = "{{ account_id }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- 네비게이션 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">AdCanvas</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('admake_page') }}?account_id={{ account_id }}">AdCanvas</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">01</span>
+      <span class="step-label">제품 세트</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">02</span>
+      <span class="step-label">타겟팅</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">03</span>
+      <span class="step-label">광고 문구</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">04</span>
+      <span class="step-label">검토 & 게시</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div class="admake-wrapper">
+  <div class="admake-layout">
+
+    <!-- 왼쪽 패널: 제품 세트 선택 -->
+    <div class="admake-left-panel">
+      <div class="admake-section-header">
+        <span class="admake-section-number font-inter">01</span>
+        <span class="admake-section-title">제품 세트 선택</span>
+      </div>
+
+      <!-- 세트 타입 탭 -->
+      <div class="set-type-tabs">
+        <div class="set-type-tab active" data-type="existing">
+          <div class="tab-title">기존 세트 선택</div>
+          <div class="tab-desc">등록된 제품 세트 사용</div>
+        </div>
+        <div class="set-type-tab" data-type="new">
+          <div class="tab-title">새 세트 만들기</div>
+          <div class="tab-desc">자동/수동 세트 생성</div>
+        </div>
+      </div>
+
+      <!-- 기존 세트 목록 -->
+      <div id="existingSetSection">
+        <div class="loading-spinner active" id="setsLoading">
+          <div class="spinner"></div>
+          <div>제품 세트 불러오는 중...</div>
+        </div>
+        <div class="product-sets-list" id="productSetsList" style="display: none;">
+          <!-- 동적으로 로드 -->
+        </div>
+      </div>
+
+      <!-- 새 세트 만들기 -->
+      <div id="newSetSection" class="new-set-section">
+        <div class="auto-set-options">
+          <div class="auto-set-option" data-period="28">
+            <div class="auto-set-checkbox">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="auto-set-info">
+              <div class="auto-set-title">최근 28일 베스트셀러</div>
+              <div class="auto-set-desc">최근 28일간 판매량 상위 60개 상품</div>
+            </div>
+          </div>
+          <div class="auto-set-option" data-period="7">
+            <div class="auto-set-checkbox">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="auto-set-info">
+              <div class="auto-set-title">최근 7일 베스트셀러</div>
+              <div class="auto-set-desc">최근 7일간 판매량 상위 20개 상품</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="manual-section">
+          <div class="manual-section-title">또는 수동으로 상품 선택</div>
+          <div class="manual-input-group">
+            <input type="text" class="manual-input" id="categoryUrlInput" placeholder="카테고리 URL 입력 (예: /product/list.html?cate_no=123)">
+            <button class="manual-btn" id="fetchCategoryBtn">가져오기</button>
+          </div>
+          <div class="manual-input-group">
+            <input type="text" class="manual-input" id="searchQueryInput" placeholder="상품명 또는 상품번호 검색">
+            <button class="manual-btn" id="searchProductBtn">검색</button>
+          </div>
+        </div>
+
+        <div class="set-name-section">
+          <label class="set-name-label">새 제품 세트 이름</label>
+          <input type="text" class="set-name-input" id="newSetNameInput" placeholder="예: 2025년 1월 베스트">
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 패널: 미리보기 -->
+    <div class="admake-right-panel">
+      <div class="preview-card">
+        <div class="preview-header">
+          <div class="preview-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+          </div>
+          <span class="preview-title">선택된 제품 세트</span>
+        </div>
+        <div class="preview-content">
+          <div class="preview-empty" id="previewEmpty">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="3" y1="15" x2="21" y2="15"></line>
+            </svg>
+            <span>제품 세트를 선택하면<br>여기에 미리보기가 표시됩니다</span>
+          </div>
+          <div class="preview-selected" id="previewSelected">
+            <div class="preview-set-name" id="previewSetName">-</div>
+            <div class="preview-set-info" id="previewSetInfo">상품 0개</div>
+            <div class="preview-products-grid">
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+              <div class="preview-product-placeholder">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-inner">
+    <div class="admake-action-left font-inter">STEP 1 OF 4</div>
+    <div class="admake-action-buttons">
+      <button class="admake-btn admake-btn-secondary" id="cancelBtn">이전</button>
+      <button class="admake-btn admake-btn-primary" id="nextBtn" disabled>다음 단계로</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+$(document).ready(function() {
+    // 상태 관리
+    let selectedSetId = null;
+    let selectedSetName = null;
+    let selectedSetCount = 0;
+    let catalogId = null;
+    let isNewSet = false;
+    let autoSetPeriod = null;
+
+    // 기존 세션 데이터 복원
+    const savedData = sessionStorage.getItem('catalogAdStep1');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        selectedSetId = data.selectedSetId;
+        selectedSetName = data.selectedSetName;
+        selectedSetCount = data.selectedSetCount;
+        isNewSet = data.isNewSet;
+        autoSetPeriod = data.autoSetPeriod;
+    }
+
+    // 탭 전환
+    $(".set-type-tab").on("click", function() {
+        $(".set-type-tab").removeClass("active");
+        $(this).addClass("active");
+
+        const type = $(this).data("type");
+        if (type === "existing") {
+            $("#existingSetSection").show();
+            $("#newSetSection").removeClass("active");
+            isNewSet = false;
+        } else {
+            $("#existingSetSection").hide();
+            $("#newSetSection").addClass("active");
+            isNewSet = true;
+        }
+        updateNextButton();
+    });
+
+    // 기존 제품 세트 로드
+    function loadProductSets() {
+        $.ajax({
+            url: "/dashboard/catalog_sets",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ account_id: accountId }),
+            success: function(response) {
+                $("#setsLoading").removeClass("active");
+
+                if (response.status === "success" && response.product_sets) {
+                    catalogId = response.catalog_id;
+                    renderProductSets(response.product_sets);
+                } else {
+                    $("#productSetsList").html('<div class="preview-empty">제품 세트를 불러올 수 없습니다</div>');
+                }
+                $("#productSetsList").show();
+            },
+            error: function() {
+                $("#setsLoading").removeClass("active");
+                $("#productSetsList").html('<div class="preview-empty">오류가 발생했습니다</div>').show();
+            }
+        });
+    }
+
+    function renderProductSets(sets) {
+        const $list = $("#productSetsList");
+        $list.empty();
+
+        if (sets.length === 0) {
+            $list.html('<div class="preview-empty">등록된 제품 세트가 없습니다</div>');
+            return;
+        }
+
+        sets.forEach(function(set) {
+            const isSelected = selectedSetId === set.id;
+            const $item = $(`
+                <div class="product-set-item ${isSelected ? 'selected' : ''}" data-id="${set.id}" data-name="${set.name}" data-count="${set.product_count || 0}">
+                    <div class="product-set-radio"></div>
+                    <div class="product-set-info">
+                        <div class="product-set-name">${set.name}</div>
+                        <div class="product-set-count">상품 ${set.product_count || 0}개</div>
+                    </div>
+                </div>
+            `);
+            $list.append($item);
+
+            if (isSelected) {
+                updatePreview(set.name, set.product_count || 0);
+            }
+        });
+    }
+
+    // 제품 세트 선택
+    $(document).on("click", ".product-set-item", function() {
+        $(".product-set-item").removeClass("selected");
+        $(this).addClass("selected");
+
+        selectedSetId = $(this).data("id");
+        selectedSetName = $(this).data("name");
+        selectedSetCount = $(this).data("count");
+
+        updatePreview(selectedSetName, selectedSetCount);
+        updateNextButton();
+    });
+
+    // 자동 세트 옵션 선택
+    $(".auto-set-option").on("click", function() {
+        $(".auto-set-option").removeClass("selected");
+        $(this).addClass("selected");
+
+        autoSetPeriod = $(this).data("period");
+        const title = $(this).find(".auto-set-title").text();
+        const count = autoSetPeriod === 28 ? 60 : 20;
+
+        updatePreview(title, count);
+        updateNextButton();
+    });
+
+    // 미리보기 업데이트
+    function updatePreview(name, count) {
+        $("#previewEmpty").hide();
+        $("#previewSelected").addClass("active");
+        $("#previewSetName").text(name);
+        $("#previewSetInfo").text(`상품 ${count}개`);
+    }
+
+    // 다음 버튼 상태 업데이트
+    function updateNextButton() {
+        let canProceed = false;
+
+        if (!isNewSet && selectedSetId) {
+            canProceed = true;
+        } else if (isNewSet && autoSetPeriod) {
+            canProceed = true;
+        }
+
+        $("#nextBtn").prop("disabled", !canProceed);
+    }
+
+    // 이전 버튼
+    $("#cancelBtn").on("click", function() {
+        window.location.href = "/admake?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 다음 버튼
+    $("#nextBtn").on("click", function() {
+        // 세션 스토리지에 데이터 저장
+        const data = {
+            selectedSetId: selectedSetId,
+            selectedSetName: selectedSetName,
+            selectedSetCount: selectedSetCount,
+            catalogId: catalogId,
+            isNewSet: isNewSet,
+            autoSetPeriod: autoSetPeriod,
+            newSetName: $("#newSetNameInput").val()
+        };
+        sessionStorage.setItem('catalogAdStep1', JSON.stringify(data));
+
+        // Step 2로 이동
+        window.location.href = "/admake/catalog/step2?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 초기 로드
+    loadProductSets();
+    updateNextButton();
+});
+</script>
+
+</body>
+</html>

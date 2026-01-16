@@ -514,8 +514,8 @@
       </a>
 
       <!-- 카드 2: 카탈로그 광고 -->
-      <a href="#" class="admake-card-link disabled">
-        <div class="admake-card card-catalog disabled">
+      <a href="#" id="admakeCatalogCard" class="admake-card-link">
+        <div class="admake-card card-catalog">
           <div class="admake-card-icon">
             <!-- Grid 아이콘 (얇은 선) -->
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -527,7 +527,7 @@
           </div>
           <div class="admake-card-header">
             <h3 class="admake-card-title">카탈로그 광고</h3>
-            <span class="admake-card-tag coming">Coming</span>
+            <span class="admake-card-tag active">Active</span>
           </div>
           <p class="admake-card-description">
             상품 카탈로그 기반의 다이나믹 광고를 자동 생성합니다
@@ -608,6 +608,13 @@ $(document).ready(function() {
             const createUrl = "/admake/create?account_id=" + encodeURIComponent(accountId);
             console.log("[DEBUG] 광고 만들기 클릭, 이동:", createUrl);
             window.location.href = createUrl;
+        });
+
+        $("#admakeCatalogCard").on("click", function(e) {
+            e.preventDefault();
+            const catalogUrl = "/admake/catalog/step1?account_id=" + encodeURIComponent(accountId);
+            console.log("[DEBUG] 카탈로그 광고 클릭, 이동:", catalogUrl);
+            window.location.href = catalogUrl;
         });
     }
 });

@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STEP 2 - 카탈로그 광고</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.4">
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-card: #161616;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0d0d0d;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-violet: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      font-family: 'Pretendard', 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    .font-inter { font-family: 'Inter Tight', sans-serif; }
+
+    /* ===== 네비게이션 오버라이드 ===== */
+    .nav-buttons {
+      background: var(--bg-primary) !important;
+      border-bottom: 1px solid var(--border-subtle) !important;
+    }
+    .nav-buttons .updated-at-text {
+      color: var(--text-primary) !important;
+      font-family: 'Inter Tight', sans-serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.1em !important;
+    }
+    .hamburger-icon div { background: var(--text-primary) !important; }
+    .hamburger-dropdown {
+      background: var(--bg-secondary) !important;
+      border: 1px solid var(--border-subtle) !important;
+    }
+    .hamburger-dropdown a { color: var(--text-secondary) !important; }
+    .hamburger-dropdown a:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-primary) !important;
+    }
+
+    /* ===== Progress Bar ===== */
+    .admake-progress-bar {
+      position: sticky;
+      top: 56px;
+      z-index: 100;
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(17, 17, 17, 0.95) 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 40px 18px;
+      backdrop-filter: blur(12px);
+    }
+
+    .admake-progress-steps {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .admake-progress-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s;
+      border: 1px solid transparent;
+    }
+
+    .admake-progress-step .step-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .admake-progress-step .step-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .admake-progress-step.active {
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .admake-progress-step.active .step-number {
+      font-size: 14px;
+      color: #1a1a1a;
+    }
+
+    .admake-progress-step.active .step-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2a2a2a;
+      opacity: 1;
+    }
+
+    .admake-progress-step.completed {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .admake-progress-step.completed .step-number,
+    .admake-progress-step.completed .step-label {
+      color: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    .admake-progress-connector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 4px;
+    }
+
+    .admake-progress-connector::before,
+    .admake-progress-connector::after {
+      content: '';
+      width: 12px;
+      height: 1px;
+      background: var(--border-subtle);
+    }
+
+    .admake-progress-connector-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .admake-progress-connector.completed::before,
+    .admake-progress-connector.completed::after {
+      background: var(--accent-emerald);
+    }
+
+    .admake-progress-connector.completed .admake-progress-connector-dot {
+      background: var(--accent-emerald);
+      opacity: 1;
+    }
+
+    /* ===== 메인 레이아웃 ===== */
+    .admake-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+      padding-bottom: 120px;
+    }
+
+    .admake-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ===== 왼쪽 패널 ===== */
+    .admake-left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding-right: 20px;
+      border-right: 1px solid rgba(39, 39, 42, 0.6);
+    }
+
+    .admake-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .admake-section-number {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent-violet);
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      padding: 5px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+    }
+
+    .admake-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* ===== 타겟팅 프리셋 ===== */
+    .targeting-presets {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .targeting-preset {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .targeting-preset:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .targeting-preset.selected {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .targeting-radio {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--text-muted);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .targeting-preset.selected .targeting-radio {
+      border-color: var(--accent-violet);
+    }
+
+    .targeting-radio::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+      transition: background 0.2s;
+    }
+
+    .targeting-preset.selected .targeting-radio::after {
+      background: var(--accent-violet);
+    }
+
+    .targeting-info {
+      flex: 1;
+    }
+
+    .targeting-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .targeting-icon {
+      font-size: 18px;
+    }
+
+    .targeting-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .targeting-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .targeting-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ===== 기간 설정 ===== */
+    .retention-section {
+      margin-top: 24px;
+      padding: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+    }
+
+    .retention-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .retention-label-icon {
+      width: 20px;
+      height: 20px;
+      background: rgba(245, 158, 11, 0.1);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .retention-slider-container {
+      margin-bottom: 16px;
+    }
+
+    .retention-slider {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: var(--bg-input);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .retention-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--accent-violet);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+    }
+
+    .retention-value {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .retention-value-display {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .retention-value-unit {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .retention-presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .retention-preset-btn {
+      padding: 6px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .retention-preset-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+    }
+
+    .retention-preset-btn.active {
+      background: rgba(139, 92, 246, 0.1);
+      border-color: rgba(139, 92, 246, 0.3);
+      color: var(--accent-violet);
+    }
+
+    /* ===== 제외 조건 ===== */
+    .exclusion-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .exclusion-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .exclusion-toggle-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .toggle-switch {
+      width: 44px;
+      height: 24px;
+      background: var(--bg-input);
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .toggle-switch.active {
+      background: var(--accent-violet);
+    }
+
+    .toggle-switch.active::after {
+      left: 23px;
+      background: white;
+    }
+
+    .exclusion-options {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .exclusion-options.active {
+      display: block;
+    }
+
+    .exclusion-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--bg-input);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .exclusion-option:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .exclusion-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--text-muted);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .exclusion-option.selected .exclusion-checkbox {
+      background: var(--accent-violet);
+      border-color: var(--accent-violet);
+    }
+
+    .exclusion-checkbox svg {
+      width: 10px;
+      height: 10px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      opacity: 0;
+    }
+
+    .exclusion-option.selected .exclusion-checkbox svg {
+      opacity: 1;
+    }
+
+    .exclusion-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ===== 오른쪽 패널: 요약 ===== */
+    .admake-right-panel {
+      position: sticky;
+      top: 180px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .summary-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--accent-violet);
+      fill: none;
+    }
+
+    .summary-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .summary-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .summary-item-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .summary-item-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: right;
+      max-width: 60%;
+    }
+
+    .summary-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 8px 0;
+    }
+
+    .summary-note {
+      padding: 14px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+
+    .summary-note-text {
+      font-size: 12px;
+      color: var(--accent-amber);
+      line-height: 1.5;
+    }
+
+    /* ===== 하단 액션 바 ===== */
+    .admake-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, var(--bg-primary) 20%);
+      padding: 24px 40px;
+      z-index: 100;
+    }
+
+    .admake-action-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admake-action-left {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .admake-action-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .admake-btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .admake-btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .admake-btn-secondary:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+
+    .admake-btn-primary {
+      background: var(--accent-violet);
+      color: white;
+    }
+
+    .admake-btn-primary:hover {
+      background: #7c3aed;
+    }
+
+    .admake-btn-primary:disabled {
+      background: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 1024px) {
+      .admake-layout {
+        grid-template-columns: 1fr;
+      }
+      .admake-left-panel {
+        padding-right: 0;
+        border-right: none;
+      }
+      .admake-right-panel {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<script>
+  var userCompanyList = {{ session['company_names'] | tojson }};
+  var currentUserId = "{{ session['user_id'] }}";
+  var accountId = "{{ account_id }}";
+</script>
+<script src="{{ url_for('static', filename='js/mobile_detection.js') }}"></script>
+
+<!-- 네비게이션 -->
+<div class="nav-buttons">
+  <div class="nav-left">
+    <div id="updatedAtText" class="updated-at-text">AdCanvas</div>
+  </div>
+  <div class="nav-right">
+    <div class="hamburger-menu-wrapper">
+      <div class="hamburger-icon" id="hamburgerIcon">
+        <div></div><div></div><div></div>
+      </div>
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <a href="/">사이트 성과</a>
+        <a href="{{ url_for('ads_page') }}">광고 성과</a>
+        <a href="{{ url_for('admake_page') }}?account_id={{ account_id }}">AdCanvas</a>
+        <a href="{{ url_for('auth.logout') }}">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="admake-progress-bar">
+  <div class="admake-progress-steps">
+    <div class="admake-progress-step completed">
+      <span class="step-number font-inter">01</span>
+      <span class="step-label">제품 세트</span>
+    </div>
+    <div class="admake-progress-connector completed">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step active">
+      <span class="step-number font-inter">02</span>
+      <span class="step-label">타겟팅</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">03</span>
+      <span class="step-label">광고 문구</span>
+    </div>
+    <div class="admake-progress-connector">
+      <div class="admake-progress-connector-dot"></div>
+    </div>
+    <div class="admake-progress-step">
+      <span class="step-number font-inter">04</span>
+      <span class="step-label">검토 & 게시</span>
+    </div>
+  </div>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div class="admake-wrapper">
+  <div class="admake-layout">
+
+    <!-- 왼쪽 패널: 타겟팅 설정 -->
+    <div class="admake-left-panel">
+      <div class="admake-section-header">
+        <span class="admake-section-number font-inter">02</span>
+        <span class="admake-section-title">타겟 & 리타겟팅 설정</span>
+      </div>
+
+      <!-- 타겟팅 프리셋 -->
+      <div class="targeting-presets">
+        <!-- 프리셋 1: 조회/장바구니 → 미구매 -->
+        <div class="targeting-preset selected" data-type="retarget_view_cart">
+          <div class="targeting-radio"></div>
+          <div class="targeting-info">
+            <div class="targeting-header">
+              <span class="targeting-icon">🔁</span>
+              <span class="targeting-title">조회/장바구니 → 미구매</span>
+              <span class="targeting-tag">추천</span>
+            </div>
+            <div class="targeting-desc">
+              상품을 조회하거나 장바구니에 담았으나 구매하지 않은 사람에게 광고를 노출합니다
+            </div>
+          </div>
+        </div>
+
+        <!-- 프리셋 2: 장바구니 → 미구매 -->
+        <div class="targeting-preset" data-type="retarget_cart">
+          <div class="targeting-radio"></div>
+          <div class="targeting-info">
+            <div class="targeting-header">
+              <span class="targeting-icon">🛒</span>
+              <span class="targeting-title">장바구니 → 미구매</span>
+            </div>
+            <div class="targeting-desc">
+              장바구니에 담았으나 구매하지 않은 사람에게만 광고를 노출합니다
+            </div>
+          </div>
+        </div>
+
+        <!-- 프리셋 3: 업셀/크로스셀 -->
+        <div class="targeting-preset" data-type="upsell">
+          <div class="targeting-radio"></div>
+          <div class="targeting-info">
+            <div class="targeting-header">
+              <span class="targeting-icon">🔄</span>
+              <span class="targeting-title">업셀 / 크로스셀</span>
+            </div>
+            <div class="targeting-desc">
+              이미 구매한 고객에게 다른 상품을 추천합니다
+            </div>
+          </div>
+        </div>
+
+        <!-- 프리셋 4: 광범위 타겟팅 -->
+        <div class="targeting-preset" data-type="broad">
+          <div class="targeting-radio"></div>
+          <div class="targeting-info">
+            <div class="targeting-header">
+              <span class="targeting-icon">🌐</span>
+              <span class="targeting-title">광범위 타겟팅</span>
+            </div>
+            <div class="targeting-desc">
+              신규 고객 확보를 위해 넓은 타겟에게 광고를 노출합니다
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기간 설정 -->
+      <div class="retention-section">
+        <div class="retention-label">
+          <div class="retention-label-icon">📅</div>
+          <span>리타겟팅 기간</span>
+        </div>
+        <div class="retention-slider-container">
+          <input type="range" class="retention-slider" id="retentionSlider" min="1" max="180" value="14">
+        </div>
+        <div class="retention-value">
+          <div>
+            <span class="retention-value-display font-inter" id="retentionValue">14</span>
+            <span class="retention-value-unit">일</span>
+          </div>
+          <div class="retention-presets">
+            <button class="retention-preset-btn" data-days="7">7일</button>
+            <button class="retention-preset-btn active" data-days="14">14일</button>
+            <button class="retention-preset-btn" data-days="30">30일</button>
+            <button class="retention-preset-btn" data-days="60">60일</button>
+          </div>
+        </div>
+
+        <!-- 제외 조건 -->
+        <div class="exclusion-section">
+          <div class="exclusion-toggle">
+            <span class="exclusion-toggle-label">제외 조건 추가</span>
+            <div class="toggle-switch active" id="exclusionToggle"></div>
+          </div>
+          <div class="exclusion-options active" id="exclusionOptions">
+            <div class="exclusion-option selected" data-event="Purchase">
+              <div class="exclusion-checkbox">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <span class="exclusion-text">이미 구매한 사람 제외</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 패널: 요약 -->
+    <div class="admake-right-panel">
+      <div class="summary-card">
+        <div class="summary-header">
+          <div class="summary-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 6v6l4 2"></path>
+            </svg>
+          </div>
+          <span class="summary-title">타겟팅 요약</span>
+        </div>
+        <div class="summary-content">
+          <div class="summary-item">
+            <span class="summary-item-label">제품 세트</span>
+            <span class="summary-item-value" id="summaryProductSet">-</span>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <span class="summary-item-label">타겟팅 유형</span>
+            <span class="summary-item-value" id="summaryTargetType">조회/장바구니 → 미구매</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-item-label">기간</span>
+            <span class="summary-item-value" id="summaryRetention">최근 14일</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-item-label">제외 조건</span>
+            <span class="summary-item-value" id="summaryExclusion">구매자 제외</span>
+          </div>
+        </div>
+        <div class="summary-note">
+          <div class="summary-note-text">
+            💡 지난 14일 동안 해당 제품을 조회하거나 장바구니에 담은 사람들에게 광고를 노출합니다
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 하단 액션 바 -->
+<div class="admake-action-bar">
+  <div class="admake-action-inner">
+    <div class="admake-action-left font-inter">STEP 2 OF 4</div>
+    <div class="admake-action-buttons">
+      <button class="admake-btn admake-btn-secondary" id="prevBtn">이전</button>
+      <button class="admake-btn admake-btn-primary" id="nextBtn">다음 단계로</button>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common_ui.js') }}"></script>
+
+<script>
+$(document).ready(function() {
+    // Step 1 데이터 로드
+    const step1Data = JSON.parse(sessionStorage.getItem('catalogAdStep1') || '{}');
+    if (!step1Data.selectedSetId && !step1Data.isNewSet) {
+        // Step 1 미완료 시 리다이렉트
+        window.location.href = "/admake/catalog/step1?account_id=" + encodeURIComponent(accountId);
+        return;
+    }
+
+    // 제품 세트 표시
+    $("#summaryProductSet").text(step1Data.selectedSetName || step1Data.newSetName || '-');
+
+    // 상태 관리
+    let targetingType = 'retarget_view_cart';
+    let retentionDays = 14;
+    let excludePurchase = true;
+
+    // 기존 세션 데이터 복원
+    const savedData = sessionStorage.getItem('catalogAdStep2');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        targetingType = data.targetingType || 'retarget_view_cart';
+        retentionDays = data.retentionDays || 14;
+        excludePurchase = data.excludePurchase !== false;
+
+        // UI 복원
+        $(`.targeting-preset[data-type="${targetingType}"]`).click();
+        $("#retentionSlider").val(retentionDays);
+        updateRetentionDisplay(retentionDays);
+    }
+
+    // 타겟팅 프리셋 선택
+    $(".targeting-preset").on("click", function() {
+        $(".targeting-preset").removeClass("selected");
+        $(this).addClass("selected");
+
+        targetingType = $(this).data("type");
+        const title = $(this).find(".targeting-title").text();
+        $("#summaryTargetType").text(title);
+
+        updateSummaryNote();
+    });
+
+    // 기간 슬라이더
+    $("#retentionSlider").on("input", function() {
+        retentionDays = parseInt($(this).val());
+        updateRetentionDisplay(retentionDays);
+    });
+
+    function updateRetentionDisplay(days) {
+        $("#retentionValue").text(days);
+        $("#summaryRetention").text(`최근 ${days}일`);
+
+        // 프리셋 버튼 활성화
+        $(".retention-preset-btn").removeClass("active");
+        $(`.retention-preset-btn[data-days="${days}"]`).addClass("active");
+
+        updateSummaryNote();
+    }
+
+    // 기간 프리셋 버튼
+    $(".retention-preset-btn").on("click", function() {
+        const days = parseInt($(this).data("days"));
+        $("#retentionSlider").val(days);
+        retentionDays = days;
+        updateRetentionDisplay(days);
+    });
+
+    // 제외 조건 토글
+    $("#exclusionToggle").on("click", function() {
+        $(this).toggleClass("active");
+        $("#exclusionOptions").toggleClass("active");
+
+        if ($(this).hasClass("active")) {
+            excludePurchase = $(".exclusion-option.selected").length > 0;
+        } else {
+            excludePurchase = false;
+        }
+
+        updateExclusionSummary();
+    });
+
+    // 제외 조건 선택
+    $(".exclusion-option").on("click", function() {
+        $(this).toggleClass("selected");
+        excludePurchase = $(this).hasClass("selected");
+        updateExclusionSummary();
+    });
+
+    function updateExclusionSummary() {
+        if (excludePurchase) {
+            $("#summaryExclusion").text("구매자 제외");
+        } else {
+            $("#summaryExclusion").text("없음");
+        }
+        updateSummaryNote();
+    }
+
+    function updateSummaryNote() {
+        let noteText = "";
+        const days = retentionDays;
+
+        switch (targetingType) {
+            case 'retarget_view_cart':
+                noteText = `💡 지난 ${days}일 동안 해당 제품을 조회하거나 장바구니에 담은 사람들에게 광고를 노출합니다`;
+                break;
+            case 'retarget_cart':
+                noteText = `💡 지난 ${days}일 동안 장바구니에 담았으나 구매하지 않은 사람들에게 광고를 노출합니다`;
+                break;
+            case 'upsell':
+                noteText = `💡 지난 ${days}일 동안 구매한 고객에게 다른 제품을 추천합니다`;
+                break;
+            case 'broad':
+                noteText = `💡 넓은 타겟에게 광고를 노출하여 신규 고객을 확보합니다`;
+                break;
+        }
+
+        if (excludePurchase && targetingType !== 'upsell') {
+            noteText += " (구매자 제외)";
+        }
+
+        $(".summary-note-text").html(noteText);
+    }
+
+    // 이전 버튼
+    $("#prevBtn").on("click", function() {
+        window.location.href = "/admake/catalog/step1?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 다음 버튼
+    $("#nextBtn").on("click", function() {
+        // 세션 스토리지에 데이터 저장
+        const data = {
+            targetingType: targetingType,
+            retentionDays: retentionDays,
+            excludePurchase: excludePurchase
+        };
+        sessionStorage.setItem('catalogAdStep2', JSON.stringify(data));
+
+        // Step 3으로 이동
+        window.location.href = "/admake/catalog/step3?account_id=" + encodeURIComponent(accountId);
+    });
+
+    // 초기 요약 업데이트
+    updateSummaryNote();
+});
+</script>
+
+</body>
+</html>
